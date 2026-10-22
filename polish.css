@@ -1,0 +1,59 @@
+/* Header geometry is intentionally identical on overview, food and workout. */
+body main #workout-identity{display:flex!important;align-items:center!important;justify-content:space-between!important;height:64px!important;min-height:64px!important;margin:0!important;gap:0!important}
+body main #workout-identity[hidden]{display:none!important}
+body main .datebar{position:relative!important;display:flex;align-items:center!important;justify-content:center!important;height:64px!important;min-height:64px!important;margin:-64px auto 16px!important;padding:0!important;gap:0!important;width:calc(100% - 184px)!important;max-width:180px!important;min-width:0!important;border:0!important;border-radius:0!important}
+body main .datebar[hidden]{display:none!important}
+body main .datebar .quiet{display:grid;place-items:center;width:24px!important;min-width:24px!important;height:44px;padding:0!important;flex:none}
+body main .daylabel{font-size:14px!important;font-weight:650;line-height:1.25!important;letter-spacing:0;min-width:0!important;min-height:44px;margin:0;padding:3px 0!important;display:flex;align-items:center;justify-content:center;text-align:center;flex:1}
+body main .identityprofile{display:flex!important;flex-direction:row!important;align-items:center!important;width:92px;gap:6px!important;min-height:44px;padding:0!important;flex:none}
+body main .identityprofile .profileavatar{width:34px!important;height:34px!important;font-size:17px!important;flex:none}
+body main .identitylevels{width:52px!important;min-width:0!important;gap:3px!important;line-height:1.15}
+body main .identitylevels strong{font-size:11px!important;font-weight:650;white-space:nowrap}
+body main .identitylevels small{font-size:8px!important;letter-spacing:0!important;white-space:nowrap}
+body main .xpfill{height:4px;width:52px}
+body main .identitystreak{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;min-width:64px;width:64px;margin-left:auto;text-align:right;line-height:1.15}
+body main .identitystreak strong{font-size:21px!important;line-height:1.2;white-space:nowrap}
+body main .identitystreak small{font-size:9px!important;letter-spacing:0;margin:0!important;line-height:1.2}
+body main .identityspacer{display:none!important}
+body main .accountidentity{min-height:64px!important;align-items:center!important;padding:4px 0!important;margin:0 0 8px;gap:12px}
+body main .accountstreak{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;min-width:64px;line-height:1.15}
+body main .accountstreak strong{font-size:21px!important;line-height:1.2}.accountstreak small{font-size:9px!important;margin:0!important;line-height:1.2}
+/* Vector icons sit in explicit boxes, labels share a baseline. */
+.pulsicon{display:block;width:24px;height:24px;overflow:visible;flex:none;pointer-events:none}.chevronback{transform:rotate(180deg)}.datebar .pulsicon{width:17px;height:17px;stroke-width:1.8}
+#nav button{position:relative;isolation:isolate;overflow:hidden}#nav .ico{display:grid;place-items:center;flex:none;width:26px;height:26px;font-size:0;line-height:1}#nav .ico>.pulsicon{width:24px;height:24px}#nav .navlabel{line-height:14px;white-space:nowrap;font-weight:550}#nav .centraladd .ico{width:48px;height:48px;display:grid;place-items:center}#nav .centraladd .pulsicon{width:27px;height:27px;stroke-width:2}#nav .centraladd{overflow:visible}
+@media(max-width:760px){
+#nav{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;align-items:center!important;gap:4px;margin:0;padding:0}
+#nav button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;height:62px!important;min-height:62px!important;padding:7px 0!important;text-align:center;font-size:10px!important;border-width:0;box-sizing:border-box}
+#nav .centraladd{gap:0!important;padding:0!important}#nav .centraladd .ico{transform:none!important;margin:0!important;align-self:center}
+#nav .navlabel{display:block;height:14px;width:100%;text-align:center;letter-spacing:.05px}
+#nav button:not(.centraladd) .ico{margin:0!important;align-self:center}
+aside{padding-top:6px!important;padding-bottom:calc(8px + env(safe-area-inset-bottom))!important}
+}
+/* Optical rhythm for mixed text, symbols, chips and controls. */
+.cardhead{align-items:center}.cardhead>div{min-width:0}.cardhead h2,.cardhead h3{margin:0}.cardhead .textbtn,.cardhead>.badge{flex-shrink:0}.badge{display:inline-flex;align-items:center;justify-content:center;line-height:1.25;vertical-align:middle}.routinepreviewrow{align-items:center;gap:12px}.routinepreviewrow>span{min-width:0;line-height:1.45}.routinepreviewrow>small{margin-top:0;line-height:1.3}.actionrow{align-items:center}.waterinline h3{line-height:1.35}.waterinline strong{line-height:1.25}.waterglass{display:inline-flex;align-items:center;justify-content:center;line-height:1.2}.compactfood>strong{white-space:nowrap;font-variant-numeric:tabular-nums}.bodystrip>span{min-width:0}.charttoggles button{display:inline-flex;align-items:center;justify-content:center;min-height:36px;line-height:1.2}.completedmetrics{align-items:center}.completedmetrics span{line-height:1.3}.foodtabs .btn{display:flex;align-items:center;justify-content:center;line-height:1.3;min-height:46px}.sessionhead .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;line-height:1.25}.weekdots>div{display:flex;flex-direction:column;align-items:center}.weekdots>div>span{width:100%;max-width:46px}.designcaption strong{line-height:1.3}.soundsettings .cardhead{align-items:center}
+/* Motion accents only on navigation, deliberate touch and entry, not each input. */
+button{position:relative}.tapwave{position:absolute;width:8px;height:8px;border-radius:50%;background:currentColor;opacity:0;pointer-events:none;z-index:0;transform:translate(-50%,-50%);animation:tap-wave .42s ease-out}
+#nav .active .pulsicon{animation:nav-land .35s cubic-bezier(.2,.8,.2,1);stroke-width:2.05}
+#nav button.active .navlabel{transition:color .2s}
+#content.pagearriving{animation:page-glide .26s cubic-bezier(.2,.7,.2,1)}
+#content.pagearriving>:is(.dashboardstack,.designhome,.foodscreen)>.card:nth-of-type(2){animation:quiet-lift .34s ease both}
+#content.pagearriving>:is(.dashboardstack,.designhome,.foodscreen)>.card:nth-of-type(3){animation:quiet-lift .4s ease both}
+dialog.sheetarriving{animation:sheet-glide .28s cubic-bezier(.2,.8,.2,1)}
+.nutritiondeck .caloriedial{transition:box-shadow .35s ease,background .35s ease}
+.bar i{transition:width .45s cubic-bezier(.2,.7,.2,1)!important}
+.xpfill i{transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.designoption[aria-pressed=true]{animation:chosen-design .28s ease-out}
+.btn:active{transform:scale(.965)}.textbtn:active{transform:scale(.96)}
+button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+@keyframes tap-wave{0%{opacity:.15;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(24)}}
+@keyframes nav-land{0%{transform:translateY(3px) scale(.9)}65%{transform:translateY(-1px) scale(1.06)}100%{transform:none}}
+@keyframes page-glide{from{opacity:.65;transform:translateX(calc(var(--page-direction,1)*7px))}to{opacity:1;transform:none}}
+@keyframes quiet-lift{from{opacity:.65;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes sheet-glide{from{opacity:.6;transform:translateY(35px)}to{opacity:1;transform:none}}
+@keyframes chosen-design{50%{transform:scale(1.025)}100%{transform:none}}
+@media(hover:hover){.btn:hover{filter:brightness(1.06)}.designoption:hover{transform:translateY(-2px)}#nav button:hover .pulsicon{transform:translateY(-1px)}}
+@media(prefers-reduced-motion:reduce){.tapwave{display:none!important}#content.pagearriving,#nav .active .pulsicon,dialog.sheetarriving,.designoption[aria-pressed=true],#content.pagearriving .card{animation:none!important}.bar i,.xpfill i{transition:none!important}}
+button:has(>.tapwave){overflow:hidden}
+body[data-app-design] #content .cardhead{align-items:center}
+html{scrollbar-gutter:stable}
+.daystack{display:grid;justify-items:center;align-content:center;gap:2px;line-height:1.15}.daystack>span{white-space:nowrap}body #content .workouttabs{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;width:100%;overflow:visible!important}body #content .workouttabs>.btn{min-width:0!important;max-width:100%;font-size:11px!important;padding:10px 3px!important;white-space:nowrap;min-height:44px;justify-content:center;text-align:center;line-height:1.2}@media(max-width:359px){body main .daylabel{font-size:12px!important}body main .datebar .quiet{width:20px!important;min-width:20px!important}body #content .workouttabs{gap:5px!important}body #content .workouttabs>.btn{font-size:10px!important;padding:9px 2px!important}}
