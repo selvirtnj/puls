@@ -57,4 +57,5 @@ const readableWorkoutCard=workoutCard;workoutCard=function(w){return readableWor
 const readableRoutines=routinesPage;routinesPage=function(){return readableRoutines().replace(/\b1 Sätze/g,'1 Satz').replace(/\b1 Übungen/g,'1 Übung')};
 const readableCompletion=completionHtml;completionHtml=function(id,step){return readableCompletion(id,step).replace(/\b1 Sätze/g,'1 Satz').replace(/\b1 Übungen/g,'1 Übung').replace(/\b1 Wochen/g,'1 Woche')};render();
 
+const flowAccount=accountPage;accountPage=function(){return flowAccount().replace('Version 12','Version 14')};render();
 
