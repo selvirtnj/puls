@@ -1,10 +1,12 @@
 const $=id=>document.getElementById(id),modal=$('modal');
 const today=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const initial=()=>({goals:{kcal:2200,p:150,c:250,f:70},foods:[],weights:[],workouts:[],custom:[]});
-let state;try{state=JSON.parse(localStorage.getItem('puls-v1'))||initial()}catch{state=initial()}let date=today(),page='home',foodSelection=null;
+const firstRunPreview=typeof location.search==='string'&&/[?&]erststart=1(?:&|$)/.test(location.search);
+const appStore=firstRunPreview?{getItem:()=>null,setItem(){}}:localStorage;
+let state;try{state=JSON.parse(appStore.getItem('puls-v1'))||initial()}catch{state=initial()}let date=today(),page='home',foodSelection=null;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n=x=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:1}).format(x),uid=()=>crypto.randomUUID(),round=x=>Math.round(x*10)/10;
-function save(){try{localStorage.setItem('puls-v1',JSON.stringify(state))}catch{alert('Speichern fehlgeschlagen. Bitte exportiere deine Daten.')}}
+function save(){try{appStore.setItem('puls-v1',JSON.stringify(state))}catch{alert('Speichern fehlgeschlagen. Bitte exportiere deine Daten.')}}
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2400)}
 function setDate(d){date=d;$('date').value=d;render()}function moveDay(v){let d=new Date(date+'T12:00:00');d.setDate(d.getDate()+v);setDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)}$('date').onchange=e=>{if(e.target.value)setDate(e.target.value)};
 const foods=[['Haferflocken',372,13.5,58.7,7],['Skyr natur',63,11,4,0.2],['Banane',89,1.1,20.2,.3],['Hähnchenbrust, roh',110,23,0,1.5],['Reis, gekocht',130,2.7,28,.3],['Ei',143,12.6,.7,9.5],['Vollkornbrot',230,8.5,41,3.3],['Magerquark',67,12,4,.2],['Lachs, roh',208,20,0,13],['Brokkoli',34,2.8,4,.4],['Olivenöl',884,0,0,100],['Apfel',52,.3,11.4,.2],['Mandeln',579,21.2,9,49.9],['Kartoffeln, gekocht',77,2,15,0.1],['Tofu natur',144,15.7,1.5,8.7],['Whey Protein',390,78,8,6]].map((v,i)=>({id:'base'+i,name:v[0],kcal:v[1],p:v[2],c:v[3],f:v[4]}));
@@ -51,4 +53,3 @@ function exportData(){let a=document.createElement('a'),u=URL.createObjectURL(ne
 function validData(s){const finite=(v,min=0)=>typeof v==='number'&&Number.isFinite(v)&&v>=min;const str=x=>typeof x==='string';const day=x=>str(x)&&/^\d{4}-\d{2}-\d{2}$/.test(x);const nutrients=x=>['kcal','p','c','f'].every(k=>finite(x[k]));return s&&s.goals&&nutrients(s.goals)&&finite(s.goals.kcal,1)&&['p','c','f'].every(k=>finite(s.goals[k]))&&['foods','weights','workouts','custom'].every(k=>Array.isArray(s[k]))&&s.foods.every(x=>str(x.id)&&str(x.name)&&day(x.date)&&meals.includes(x.meal)&&finite(x.grams,.1)&&nutrients(x))&&s.weights.every(x=>str(x.id)&&day(x.date)&&finite(x.kg,20)&&x.kg<=400)&&s.custom.every(x=>str(x.id)&&str(x.name)&&nutrients(x))&&s.workouts.every(w=>str(w.id)&&str(w.name)&&day(w.date)&&typeof w.finished==='boolean'&&Array.isArray(w.exercises)&&w.exercises.every(e=>str(e.id)&&str(e.name)&&Array.isArray(e.sets)&&e.sets.every(s=>(s.kg===''||finite(s.kg))&&(s.reps===''||finite(s.reps,1))&&typeof s.done==='boolean')))}
 async function importData(file){if(!file)return;try{if(file.size>5000000)throw Error();let s=JSON.parse(await file.text());if(!validData(s))throw Error();if(!confirm('Alle aktuellen Daten durch diese Sicherung ersetzen?'))return;state=s;save();modal.close();render();toast('Sicherung wiederhergestellt')}catch{toast('Ungültige Sicherung. Daten bleiben erhalten.')}}
 setDate(date);
-
