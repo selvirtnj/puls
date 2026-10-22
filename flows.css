@@ -43,3 +43,125 @@ main{padding-top:12px!important}body[data-current-page=account] .datebar,body[da
 #content[data-design=mono] .card .btn{border-radius:4px;box-shadow:none}
 #content[data-design=mono] .charttoggles button{border-radius:4px}
 .designoptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.designoption{min-width:0;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);color:var(--design-ink,#eee);text-align:left;transition:transform .15s,border-color .2s}.designoption[aria-pressed=true]{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime)}.designoption:active{transform:scale(.98)}.designmini{height:86px;background:var(--sample-bg);display:flex;position:relative;gap:9px;align-items:center;padding:15px 12px;border-bottom:1px solid var(--sample-line)}.designmini::before{content:'';position:absolute;inset:9px;border:1px solid var(--sample-line);border-radius:var(--sample-radius);background:var(--sample-panel)}.designmini>i{position:relative;display:block;width:32px;height:32px;border:4px solid var(--sample-accent);border-right-color:var(--sample-line);border-radius:50%;flex-shrink:0}.designmini>span{position:relative;display:grid;gap:6px;flex:1}.designmini b{height:4px;border-radius:3px;background:linear-gradient(to right,var(--sample-accent) 65%,var(--sample-line) 65%);display:block}.designmini b:nth-child(2){width:85%}.designmini b:nth-child(3){width:70%}.designmini>em{display:none}.designmini-apple::before{box-shadow:0 4px 10px #0005}.designmini-liftoff::before{box-shadow:0 3px 0 #650c41}.designmini-aurora::before{background:linear-gradient(135deg,#214954,var(--sample-panel))}.designcaption{display:block;padding:10px}.designcaption strong{font-size:12px;display:block}.designcaption small{font-size:10px!important;line-height:1.4;letter-spacing:0;margin-top:4px}.designchooser>.cardhead{margin-bottom:8px}
+/* Complete design systems: composition, hierarchy, rhythm, lists and controls. */
+body[data-app-design]:not([data-app-design=classic]){background:var(--bg);color:var(--app-ink)}
+body[data-app-design]:not([data-app-design=classic]) :is(dialog,.modalhead,#session-root,.sessionhead){background:var(--panel);color:var(--app-ink)}
+body[data-app-design]:not([data-app-design=classic]) :is(input,select){background:var(--bg);border-color:var(--line);color:var(--app-ink)}
+body[data-app-design]:not([data-app-design=classic]) .btn:not(.secondary){color:var(--bg)}
+body[data-app-design]:not([data-app-design=classic]) .nutritiondeck{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#f0f3e9}
+.designhome{display:grid;gap:24px}.designhome>.nutritiondeck{margin-bottom:0}.designactionstrip{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:10px}.designactionstrip button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:48px;padding:10px 8px;background:var(--panel);color:var(--lime);border:1px solid var(--line);border-radius:12px;font-size:11px;font-weight:600}.designactionstrip button span{font-size:20px;line-height:1}.designsectionlabel{font-size:11px;color:var(--muted);letter-spacing:1px;margin:0 4px 10px;font-weight:650}.designdiary>.nutritiondeck{margin-bottom:20px}.designchapter{min-width:0}.chapterlabel{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}.chapterlabel>span{color:var(--muted);font:13px monospace}.chapterlabel h2{font-size:24px}.designworkouts{display:flow-root}.designworkouts>.card{margin:0 0 18px!important}.designworkouts .tabs{overflow-x:auto}.designworkouts .tabs button{white-space:nowrap}.designworkouts .routinepreviewrow{min-height:42px}.designdiary>.dashboardstack{gap:20px}
+/* Apple: grouped iOS lists and an action dock, generous open section labels. */
+body[data-app-design=apple] #content{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body[data-app-design=apple] .designhome{gap:28px}
+body[data-app-design=apple] .designactionstrip{border:1px solid #ffffff12;border-radius:24px;background:#252527bb;padding:6px;box-shadow:0 8px 30px #0005;backdrop-filter:blur(20px);gap:0}
+body[data-app-design=apple] .designactionstrip button{border:0;background:none;border-radius:18px;flex-direction:column;font-size:10px;gap:5px}
+body[data-app-design=apple] .designactionstrip button:first-child{background:#323236}
+body[data-app-design=apple] #content .card{border:0!important;padding:22px!important;box-shadow:0 4px 16px #0002}
+body[data-app-design=apple] .designsectionlabel{font-size:21px;color:#f5f5f7;letter-spacing:-.5px;font-weight:700;margin:0 4px 12px}
+body[data-app-design=apple] .todayfoods .cardhead{display:none}
+body[data-app-design=apple] .compactfood{padding:15px 0;border-bottom:1px solid #ffffff12}
+body[data-app-design=apple] .compactfood:last-child{border-bottom:0}
+body[data-app-design=apple] .recommendedroutine .cardhead h2{font-size:25px}
+body[data-app-design=apple] .routinepreviewrow{padding:15px 0;border-bottom:1px solid #ffffff12}
+body[data-app-design=apple] #content .cardhead{align-items:baseline}
+body[data-app-design=apple] #content .card .btn.full{border-radius:15px;min-height:50px}
+body[data-app-design=apple] .designworkouts .tabs{background:#2c2c2e;border-radius:11px;padding:4px;gap:3px}
+body[data-app-design=apple] .designworkouts .tabs .btn{border:0;padding:9px;font-size:11px;border-radius:8px;min-height:38px;background:none;color:#ddd}
+body[data-app-design=apple] .designworkouts .tabs .btn:not(.secondary){background:#56565c;color:white;box-shadow:0 2px 6px #0004}
+body[data-app-design=apple] .accountcompact .compactplan dl{display:block}
+body[data-app-design=apple] .compactplan dt{padding-top:12px;font-size:11px}
+body[data-app-design=apple] .compactplan dd{padding:4px 0 12px;border-bottom:1px solid #ffffff12;text-align:left;font-size:16px}
+/* Cronometer: a continuous diary surface, compact separators and utility rows. */
+body[data-app-design=cronometer] .designhome{gap:16px}
+body[data-app-design=cronometer] .designactionstrip{gap:0;background:#353848;border-radius:8px;padding:3px}
+body[data-app-design=cronometer] .designactionstrip button{border:0;border-right:1px solid #555764;border-radius:0;min-height:42px;background:none;font-size:10px}
+body[data-app-design=cronometer] .designactionstrip button:last-child{border-right:0}
+body[data-app-design=cronometer] #content .card{border:0!important;border-radius:7px;padding:16px!important;box-shadow:none}
+body[data-app-design=cronometer] .journalbody .compactdiary{padding:0!important;overflow:hidden}
+body[data-app-design=cronometer] .compactdiary .cardhead{padding:13px 16px;margin:0;background:#303344}
+body[data-app-design=cronometer] .diaryrow{padding:12px 16px;min-height:58px;border-color:#454858}
+body[data-app-design=cronometer] .diaryrow>span:first-child{border-left:3px solid #ff9b76;padding-left:10px}
+body[data-app-design=cronometer] .diaryrow:nth-child(even){background:#ffffff03}
+body[data-app-design=cronometer] .journaltraining .cardhead h2{font-size:15px!important}
+body[data-app-design=cronometer] .recommendedroutine{border-left:3px solid var(--lime);padding-left:12px}
+body[data-app-design=cronometer] .designworkouts .routinepreview{border-bottom:1px solid #535665!important;border-radius:0!important}
+body[data-app-design=cronometer] .designdiary .actionrow{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:5px}
+body[data-app-design=cronometer] .designdiary .actionrow .btn{padding:9px 5px;font-size:10px;border-radius:5px;min-height:40px}
+body[data-app-design=cronometer] .accountcompact .bodystrip{padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+/* Liftoff: a prominent session stage, stacked exercise tiles and tactile controls. */
+body[data-app-design=liftoff] .designhome{gap:22px}
+body[data-app-design=liftoff] .trainingstage{border:1px solid #7e292b;border-radius:24px;overflow:hidden;background:linear-gradient(145deg,#4b1415,#260a16);padding:18px 12px 12px}
+body[data-app-design=liftoff] .trainingstage>.designsectionlabel{text-align:center;color:#e3ad72;font-size:10px;letter-spacing:2px;margin-bottom:12px}
+body[data-app-design=liftoff] .trainingstage>.card{background:none!important;border:0!important;box-shadow:none!important;padding:12px!important}
+body[data-app-design=liftoff] .trainingstage .cardhead>h2{font-size:15px!important}
+body[data-app-design=liftoff] .recommendedroutine{padding:18px;background:#4c170e;border-radius:18px;border:1px solid #69271b}
+body[data-app-design=liftoff] .recommendedroutine .cardhead{display:block;text-align:center}
+body[data-app-design=liftoff] .recommendedroutine .cardhead h2{font-size:32px!important;letter-spacing:-1px}
+body[data-app-design=liftoff] .recommendedroutine .badge{display:inline-block;margin-top:10px;border:0;background:#601e3d;color:#ffe9b4}
+body[data-app-design=liftoff] .recommendedroutine .routinepreviewrow{border:0;background:#250a10;border-radius:10px;padding:12px;margin-top:8px}
+body[data-app-design=liftoff] #content .btn.full{min-height:52px;font-size:14px}
+body[data-app-design=liftoff] .designactionstrip button{flex-direction:column;min-height:70px;border-radius:18px;background:#341019;box-shadow:0 4px 0 #0b0004}
+body[data-app-design=liftoff] .designworkouts .routinepreview{border:1px solid #652324!important;padding:20px!important;border-radius:24px!important}
+body[data-app-design=liftoff] .designworkouts .routinepreviewrow{background:#42120f;padding:11px;border-radius:10px;border:0;margin:8px 0}
+body[data-app-design=liftoff] #content .metrictiles>div{border:2px solid #8f306b;background:#200810;border-radius:18px;padding:18px 10px}
+body[data-app-design=liftoff] .accountcompact .bodystrip>span{background:#40110f;padding:12px 7px;border-radius:12px;flex:1}
+/* Hevy: flat training lists, blue full-width starts, activity feed instead of stacked panels. */
+body[data-app-design=hevy] .designhome{gap:24px}
+body[data-app-design=hevy] .athleteworkout>.card{border:0!important;background:none!important;padding:0!important;border-radius:0!important}
+body[data-app-design=hevy] .athleteworkout>.designsectionlabel{color:#7d8999;border-bottom:1px solid #313640;padding-bottom:10px;font-size:10px;letter-spacing:1.5px}
+body[data-app-design=hevy] .recommendedroutine{background:#151a22;border:1px solid #363d48;border-radius:9px;padding:18px}
+body[data-app-design=hevy] .recommendedroutine .cardhead{display:block;border-bottom:1px solid #313640;padding-bottom:14px}
+body[data-app-design=hevy] .recommendedroutine .badge{display:none}
+body[data-app-design=hevy] .recommendedroutine .cardhead h2{font-size:25px!important}
+body[data-app-design=hevy] .routinepreviewrow{border:0!important;position:relative;padding:10px 0 10px 16px}
+body[data-app-design=hevy] .routinepreviewrow:before{content:'';width:4px;height:24px;border-radius:3px;background:#3893eb;position:absolute;left:0;top:11px}
+body[data-app-design=hevy] .designactionstrip{grid-template-columns:1fr 1fr 1fr;gap:8px}
+body[data-app-design=hevy] .designactionstrip button{border-radius:6px;background:none;border:1px solid #3c526d;min-height:42px;font-size:10px}
+body[data-app-design=hevy] .activityfeed>.card{padding:0!important;border:0!important;background:none!important}
+body[data-app-design=hevy] .activityfeed .compactfood{padding:16px 0;border-bottom:1px solid #30353e}
+body[data-app-design=hevy] .designworkouts .routinepreview{border:1px solid #333b48!important;border-radius:8px!important;padding:18px!important}
+body[data-app-design=hevy] .designworkouts .tabs{gap:0;border-bottom:1px solid #30353e;border-radius:0;padding:0}
+body[data-app-design=hevy] .designworkouts .tabs button{border:0!important;background:none!important;border-radius:0;font-size:12px;padding:12px 6px}
+body[data-app-design=hevy] .designworkouts .tabs button:not(.secondary){border-bottom:3px solid #62afff!important}
+body[data-app-design=hevy] .accountcompact .compactbody{background:none!important;padding:0!important;border:0!important}
+/* Aurora: floating dashboard modules and wide luminous calls to action. */
+body[data-app-design=aurora]{background:radial-gradient(ellipse at 15% 0,#173c47 0,transparent 50%),#07191e!important;background-attachment:fixed!important}
+body[data-app-design=aurora] .designhome{gap:26px}
+body[data-app-design=aurora] #content .card{border:1px solid #74e4d21f!important;border-radius:26px;padding:24px!important;box-shadow:0 16px 45px #0003}
+body[data-app-design=aurora] .designactionstrip button{min-height:62px;flex-direction:column;border-radius:20px;background:#143b43b3;border:1px solid #74e4d240;box-shadow:0 6px 20px #0002}
+body[data-app-design=aurora] .auroramodules{display:grid;grid-template-columns:1fr;gap:24px}
+body[data-app-design=aurora] .recommendedroutine .cardhead h2{font-size:30px!important;font-weight:500!important}
+body[data-app-design=aurora] .recommendedroutine .routinepreviewrow{border:0;padding:12px 0}
+body[data-app-design=aurora] .recommendedroutine .btn{background:linear-gradient(100deg,#70ead2,#85bfff)!important}
+body[data-app-design=aurora] .todayfoods .compactfood{background:#ffffff05;border:0;border-radius:14px;padding:13px;margin-top:10px}
+body[data-app-design=aurora] .designworkouts .tabs{gap:8px}
+body[data-app-design=aurora] .designworkouts .tabs button{border-radius:22px;min-height:42px}
+body[data-app-design=aurora] #content .metrictiles{grid-template-columns:repeat(2,1fr);gap:14px}
+body[data-app-design=aurora] #content .metrictiles>div{padding:22px 14px;border-radius:22px;background:#10333a;border:1px solid #74e4d222}
+/* Graphit: editorial chapter structure, numbered sections, ruled data and square geometry. */
+body[data-app-design=mono] .designhome{gap:32px}
+body[data-app-design=mono] .chapterlabel{border-top:1px solid #808080;padding-top:16px;align-items:center}
+body[data-app-design=mono] .chapterlabel>span{font-size:25px;font-weight:300;color:#777}
+body[data-app-design=mono] .chapterlabel h2{font:500 26px Georgia,serif;letter-spacing:-.5px}
+body[data-app-design=mono] .designchapter>.card{border:0!important;border-radius:0!important;background:none!important;padding:0!important;box-shadow:none!important}
+body[data-app-design=mono] .designchapter>.designactionstrip{margin-bottom:24px}
+body[data-app-design=mono] .designactionstrip{grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid #666}
+body[data-app-design=mono] .designactionstrip button{border:0;border-right:1px solid #666;border-radius:0;background:none;font-size:10px;min-height:50px}
+body[data-app-design=mono] .designactionstrip button:last-child{border:0}
+body[data-app-design=mono] .recommendedroutine{display:block;border-left:2px solid #eee;padding-left:16px;margin:24px 0}
+body[data-app-design=mono] .recommendedroutine .cardhead h2{font-size:30px!important;font-weight:400!important}
+body[data-app-design=mono] .routinepreviewrow{border:0;border-bottom:1px dotted #555;padding:15px 0}
+body[data-app-design=mono] .designworkouts .routinepreview{border:0!important;border-top:2px solid #aaa!important;border-radius:0!important;padding:24px 0!important;background:none!important;box-shadow:none}
+body[data-app-design=mono] .designworkouts .routinepreview h2{font:400 28px Georgia,serif!important}
+body[data-app-design=mono] #content .card .btn{font-size:11px;letter-spacing:.8px;text-transform:uppercase;border-radius:0}
+body[data-app-design=mono] #content .metrictiles>div{border:1px solid #555;border-radius:0;background:none;padding:20px 10px}
+body[data-app-design=mono] .accountcompact>.card:not(.designchooser){border:0!important;border-top:1px solid #777!important;border-radius:0;background:none!important;box-shadow:none;padding:20px 0!important}
+/* Distinct previews reflect each composition instead of repeating one sample. */
+.designmini-apple{height:115px;align-items:flex-start;padding-top:24px}.designmini-apple::before{inset:9px 9px 35px;border-radius:18px}.designmini-apple>em{display:block;position:absolute;left:25px;right:25px;bottom:11px;height:15px;border-radius:12px;background:#44444a}
+.designmini-cronometer{height:115px}.designmini-cronometer::before{border-radius:4px;inset:9px}.designmini-cronometer>i{width:22px;height:22px}.designmini-cronometer>span{gap:12px}.designmini-cronometer b{height:1px;border-radius:0}
+.designmini-liftoff{height:115px;padding:24px}.designmini-liftoff::before{inset:9px 14px 19px;border-radius:18px}.designmini-liftoff>i{display:none}.designmini-liftoff>span{gap:8px}.designmini-liftoff b{height:10px;background:#4b1716!important;width:100%!important;border-radius:4px}.designmini-liftoff>em{display:block;position:absolute;bottom:12px;left:35px;right:35px;height:13px;background:#ed419e;border-radius:8px;box-shadow:0 3px 0 #6e0d48}
+.designmini-hevy{height:115px}.designmini-hevy::before{border-radius:5px}.designmini-hevy>i{width:3px;height:40px;border:0;background:#62afff;border-radius:1px}.designmini-hevy b{height:4px;background:#657181;width:100%!important}.designmini-hevy>em{display:block;position:absolute;left:20px;right:20px;bottom:15px;background:#62afff;height:11px;border-radius:3px}
+.designmini-aurora{height:115px}.designmini-aurora::before{inset:9px 9px 47px;border-radius:16px}.designmini-aurora>i{width:24px;height:24px;margin-bottom:24px}.designmini-aurora>span{margin-bottom:24px}.designmini-aurora>em{display:block;position:absolute;left:12px;right:12px;bottom:10px;height:29px;border:1px solid #74e4d233;border-radius:10px;background:linear-gradient(90deg,#194750 45%,transparent 45% 50%,#14383f 50%)}
+.designmini-mono{height:115px}.designmini-mono::before{inset:9px;border-width:1px 0;border-radius:0;background:transparent}.designmini-mono>i{border:0;border-radius:0;width:20px;height:32px;background:none;font:25px Georgia;color:#999}.designmini-mono>i::after{content:'01'}.designmini-mono b{height:2px;border-radius:0;background:#888!important}.designmini-classic{height:115px}
+@media(min-width:900px){body[data-app-design=aurora] .auroramodules{grid-template-columns:1.2fr 1fr}body[data-app-design=mono] .designchapter{display:grid;grid-template-columns:160px 1fr;gap:20px}body[data-app-design=mono] .designchapter>.chapterlabel{grid-row:span 3;display:block}body[data-app-design=mono] .designchapter .chapterlabel h2{margin-top:12px}}
+@media(max-width:359px){.designactionstrip{gap:5px}.designactionstrip button{font-size:9px;padding:8px 4px}.designactionstrip button span{font-size:16px}body[data-app-design=liftoff] .recommendedroutine{padding:12px}}
