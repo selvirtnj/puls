@@ -31,8 +31,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.selvir.puls
-        MARKETING_VERSION: '7.0'
-        CURRENT_PROJECT_VERSION: '7'
+        MARKETING_VERSION: '28.0'
+        CURRENT_PROJECT_VERSION: '28'
     dependencies:
       - target: PULSActivity
     scheme:
@@ -52,8 +52,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.selvir.puls.activity
-        MARKETING_VERSION: '7.0'
-        CURRENT_PROJECT_VERSION: '7'
+        MARKETING_VERSION: '28.0'
+        CURRENT_PROJECT_VERSION: '28'
         APPLICATION_EXTENSION_API_ONLY: YES
         SKIP_INSTALL: YES
-

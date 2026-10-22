@@ -1,34 +1,43 @@
-# PULS auf deinem iPhone mit Dynamic Island
+# PULS kostenlos mit deinem Mac auf das iPhone installieren
 
-Dieses Paket ist ein vorbereiteter nativer iOS-Quellcode, **hier noch nicht mit Xcode gebaut oder auf einem echten iPhone geprüft**. Die bestehende PULS-Oberfläche wird per WKWebView geladen. Die Swift-Hülle ergänzt ActivityKit und lokale Pausen-Mitteilungen. Keine App-Store-Veröffentlichung erforderlich.
+PULS hat eine installierbare iOS-Hülle aus SwiftUI, WKWebView, ActivityKit und lokalen Mitteilungen. Die vorhandene Oberfläche wird aus der veröffentlichten Web-App geladen. Die Bildschirme sind somit keine vollständige SwiftUI-Neuentwicklung; Aussehen und Bedienung deiner PULS-App bleiben erhalten. Diese Quellen wurden früher im GitHub-Mac-Build kompiliert. Ein aktueller Build und ein echter Gerätetest müssen separat bestätigt werden.
 
-## Installation am Mac
+## Einfachster Weg: vorbereitetes Xcode-Projekt
 
-1. Aktuelles Xcode aus dem Mac App Store installieren und einmal öffnen. Unter Xcode → Settings → Accounts deine Apple-ID hinzufügen.
-2. XcodeGen installieren: `brew install xcodegen` (falls Homebrew noch fehlt: dessen offizielle Anleitung auf https://brew.sh verwenden).
-3. Dieses Paket entpacken. Im Terminal in den Ordner mit `project.yml` wechseln und `xcodegen generate` ausführen. Danach `open PULS.xcodeproj`.
-4. In Xcode bei **beiden Targets PULS und PULSActivity** unter Signing & Capabilities dein Team auswählen. Bei Bedarf die Bundle IDs auf eigene eindeutige Werte ändern; die Extension-ID muss mit der App-ID beginnen.
-5. iPhone per Kabel verbinden, entsperren, dem Mac vertrauen und falls verlangt den Entwicklermodus unter Einstellungen → Datenschutz & Sicherheit aktivieren. Scheme **PULS**, dein iPhone als Ziel auswählen und ▶ Run drücken.
-6. Auf dem iPhone Entwicklerprofil vertrauen, falls iOS das verlangt. Workout starten, einen Satz abhaken und Mitteilungen erlauben. Für Dynamic Island ist ein iPhone mit Dynamic Island nötig; auf anderen unterstützten iPhones erscheint die Live Activity am Sperrbildschirm.
+1. Auf dem Mac **Xcode** kostenlos aus dem Mac App Store installieren und einmal starten. Unter **Xcode → Settings → Accounts** mit deinem eigenen Apple Account anmelden.
+2. Unter https://github.com/selvirtnj/puls/actions den neuesten erfolgreichen Lauf **PULS iPhone kostenlos** öffnen. Das Artefakt **PULS-Xcode-Projekt** herunterladen und entpacken. Darin `PULS.xcodeproj` öffnen.
+3. Beide Targets **PULS** und **PULSActivity** auswählen. Unter **Signing & Capabilities** dein **Personal Team** wählen und **Automatically manage signing** einschalten. Falls die Kennungen schon vergeben sind: `de.DEINNAME.puls` und `de.DEINNAME.puls.activity` verwenden. Die Extension-ID muss mit der App-ID beginnen.
+4. iPhone per Kabel mit dem Mac verbinden, entsperren und dem Mac vertrauen. In Xcode oben dein iPhone als Ziel auswählen. Falls verlangt, auf dem iPhone **Einstellungen → Datenschutz & Sicherheit → Entwicklermodus** aktivieren und neu starten.
+5. In Xcode das Scheme **PULS** und dein iPhone wählen, dann **▶ Run** drücken. Wenn iOS es verlangt, unter **Einstellungen → Allgemein → VPN & Geräteverwaltung** dem Entwicklerprofil vertrauen.
+6. PULS auf dem iPhone starten. Kamera- und Mitteilungserlaubnis bei der jeweiligen Funktion erteilen.
 
-Ein kostenloses persönliches Signing kann zeitlich befristet sein; Xcode zeigt die Bedingungen für dein Team. Für dauerhafte Verteilung gelten Apples Entwicklerprogramm-Regeln.
+Mit einem kostenlosen Personal Team laufen die Provisioning-Profile **7 Tage**. Danach am Mac erneut mit **Run** signieren und installieren. Nicht die App löschen: Ein erneutes Installieren mit derselben Bundle-ID erhält normalerweise ihren Datenspeicher. Vorher trotzdem eine JSON-Sicherung erstellen. Nach einer Änderung der Bundle-ID entsteht eine getrennte App.
 
-## Bestehende Daten übertragen
+## Alternativ: aus dem Repository erzeugen
 
-Die native App hat einen eigenen Datenspeicher. Safari und die bisherige Home-Screen-App teilen ihn **nicht automatisch** mit WKWebView. Exportiere zuerst unter Konto in deiner bisherigen PULS-App eine Sicherung. Die native Hülle enthält unter der Oberfläche einen Knopf **Daten aus Sicherung importieren**, der die JSON-Datei mit einem nativen Dateidialog importiert. Bestehende native Daten werden nach Rückfrage ersetzt. Bewahre die Sicherung auf. Keine Cloud-Synchronisierung.
+Falls du nur den Quellcode hast, installiere XcodeGen aus der offiziellen Quelle (https://github.com/yonaskolb/XcodeGen, z. B. `brew install xcodegen`), wechsle im Terminal in den Ordner `native` und führe aus:
 
-## Verhalten und Grenzen
+```sh
+xcodegen generate
+open PULS.xcodeproj
+```
 
-- Ein abgeschlossener Satz plant die Pausen-Mitteilung nativ. Sie kann auch bei gesperrtem Gerät erscheinen; iOS-Mitteilungseinstellungen und Fokus steuern die Anzeige.
-- Verlängern, Beenden oder Aufheben des Satzhakens aktualisiert bzw. entfernt die geplante Mitteilung. Workout-Ende entfernt Live Activity und geplante Mitteilung.
-- Ohne Pause zeigt die Live Activity die verstrichene Workout-Zeit. Während der Pause zählt sie bis 0 herunter; die Gesamtdauer bleibt in der erweiterten Ansicht sichtbar.
-- Nach Ablauf im Hintergrund bleibt der Pausen-Zähler bei 0, bis du PULS wieder öffnest. Ein automatischer Layoutwechsel von Pause auf Workout bei suspendierter App ist in dieser Version ohne zusätzliche native Hintergrundaktualisierung nicht zugesagt. Die lokale Mitteilung erinnert dich trotzdem an den nächsten Satz. Live Activities unterliegen Apples Laufzeitgrenzen.
-- Die Web-Oberfläche lädt online von https://selvirtnj.github.io/puls/. Deine Einträge bleiben lokal in der App. Die Hülle erlaubt die JS-Brücke ausschließlich vom Hauptframe dieser HTTPS-Domain.
-- Kamera, Dateisicherung/-import und ActivityKit unbedingt auf deinem Gerät prüfen. Ein Xcode-Projekt erzeugt zu haben ist kein erfolgreicher Build.
+Danach die Signing-Schritte oben ausführen. Das Xcode-Artefakt enthält das erzeugte Projekt bereits; dafür brauchst du XcodeGen auf deinem Mac nicht.
 
-## Prüfliste am Gerät
+## Deine vorhandenen Daten
 
-Workout starten → Island zeigt Gesamtzeit. Satz abhaken → Pause zählt herunter. Sperren → Mitteilung am Pausenende. Zurückkehren → korrekte Zeit. Pause verlängern/stoppen → alte Mitteilung wird ersetzt/entfernt. Workout beenden → Auswertung, Island beendet. App neu öffnen → Daten erhalten. Sicherung exportieren und testweise importieren.
+WKWebView und Safari/Home-Screen-Web-App haben getrennte Datenspeicher. Solange die Cloud nicht eingerichtet ist: In der bestehenden App unter **Konto → Sicherung** exportieren und in der iOS-Hülle **Sicherung importieren** wählen. Nach aktivierter Cloud-Synchronisierung in beiden Apps mit demselben PULS-Konto anmelden. Die Einrichtung steht unter https://github.com/selvirtnj/puls/blob/main/backend/ACCOUNT-SETUP-DE.md. Anmeldetokens werden nicht in JSON-Sicherungen exportiert.
 
-Referenzen: https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities und https://developer.apple.com/documentation/usernotifications/untimeintervalnotificationtrigger
+## Freunde
 
+- **Kostenlos und unkompliziert:** Freunde öffnen die Web-App und verwenden nach der Supabase-Einrichtung jeweils ein eigenes PULS-Konto.
+- **Kostenlose eigene Entwicklerinstallation:** Wer einen Mac mit Xcode besitzt, kann den Quellcode mit dem eigenen Apple Account für den eigenen persönlichen Gerätetest signieren. Auch hier gilt die 7-Tage-Frist.
+- **Bequeme native Verteilung an Freunde über TestFlight/App Store:** Dafür ist die kostenpflichtige Apple-Developer-Program-Mitgliedschaft nötig (Apple nennt 99 USD pro Jahr bzw. den lokalen Preis). Ein kostenloses Personal Team ist keine dauerhafte Verteilungslösung für Dritte. Keine fremden Apple-Account-Passwörter oder Zertifikate teilen.
+
+## Gerätetest und Grenzen
+
+Workout starten → Live Activity zeigt Zeit. Satz abhaken → Pause zählt herunter. Sperren → Mitteilung am Pausenende. Pause verlängern/stoppen → alte Mitteilung wird ersetzt/entfernt. Workout beenden → Auswertung und Ende der Live Activity. Kamera, Sicherung, Import, Klänge, Einklappen/Fortsetzen und Anmeldung zusätzlich auf dem echten Gerät testen.
+
+Die Web-Hülle braucht beim Laden Internet. iOS kann Hintergrundausführung aussetzen. Deshalb erfolgt das automatische Ende überlanger Workouts nach 5 Stunden bei geöffneter App oder rückwirkend beim Wiederöffnen. Live Activities und Mitteilungen hängen von Gerätefunktionen, Freigaben und Fokus ab. Das automatische Ende der Live Activity bei dauerhaft suspendierter App ist dadurch nicht garantiert.
+
+Quellen: https://developer.apple.com/help/account/basics/about-your-developer-account · https://developer.apple.com/programs/whats-included/ · https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities

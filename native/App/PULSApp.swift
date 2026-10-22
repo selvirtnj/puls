@@ -78,7 +78,7 @@ struct PULSBrowser: UIViewRepresentable {
         web.isOpaque = false
         web.backgroundColor = .black
         web.scrollView.backgroundColor = .black
-        web.load(URLRequest(url: URL(string: "https://selvirtnj.github.io/puls/?v=7")!))
+        web.load(URLRequest(url: URL(string: "https://selvirtnj.github.io/puls/?v=28")!))
         UNUserNotificationCenter.current().delegate = context.coordinator
         return web
     }
@@ -169,5 +169,3 @@ struct PULSBrowser: UIViewRepresentable {
         }
     }
 }
-
-
