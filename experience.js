@@ -30,4 +30,17 @@ const experienceAccountPage=accountPage;accountPage=function(){return experience
 const personalProfileForm=profileForm;profileForm=function(){personalProfileForm();$('planner-form').querySelectorAll('p').forEach(p=>{if(p.textContent.includes('Der Parameter gehört zur ursprünglichen Mifflin-Formel.'))p.remove()})};
 render();
 
+// Follow local calendar days without clearing history or moving an in-progress entry.
+let observedCalendarDay=today(),followCurrentDay=date===observedCalendarDay,pendingCalendarDay=null,calendarTimer=null;
+const calendarSetDate=setDate;
+setDate=function(value){followCurrentDay=value===today();pendingCalendarDay=null;return calendarSetDate(value)};
+function calendarEditing(){return modal.open||Boolean(document.activeElement?.matches?.('#content input, #content textarea, #content select'))}
+function scheduleCalendarCheck(){if(calendarTimer!==null)clearTimeout(calendarTimer);let now=new Date(),midnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);calendarTimer=setTimeout(syncCalendarDay,Math.max(1000,midnight.getTime()-now.getTime()+250))}
+function syncCalendarDay(){let current=today();if(current!==observedCalendarDay){if(followCurrentDay)pendingCalendarDay=current;observedCalendarDay=current}if(pendingCalendarDay&&followCurrentDay&&!calendarEditing()){let next=pendingCalendarDay;pendingCalendarDay=null;calendarSetDate(next);toast('Neuer Tag – dein Tagebuch ist bereit')}scheduleCalendarCheck()}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncCalendarDay()});
+document.addEventListener('focusout',()=>{if(pendingCalendarDay)setTimeout(syncCalendarDay,0)});
+window.addEventListener?.('pageshow',syncCalendarDay);window.addEventListener?.('focus',syncCalendarDay);
+modal.addEventListener('close',syncCalendarDay);
+scheduleCalendarCheck();
+
 
