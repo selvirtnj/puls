@@ -1,2 +1,2 @@
-/* Only the project's public publishable/anon key belongs here. Never a secret key. */
-window.PULS_CLOUD={url:'',publicKey:''};
+/* Public browser key; profile access is protected by Supabase Auth and RLS. */
+window.PULS_CLOUD={url:'https://qqqwzvqsvngvfhpgelpm.supabase.co',publicKey:'sb_publishable_N0g7wEGTDHaHUwM7-joPeg_8fAHE7Iv'};
