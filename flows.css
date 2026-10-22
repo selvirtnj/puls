@@ -165,3 +165,88 @@ body[data-app-design=mono] .accountcompact>.card:not(.designchooser){border:0!im
 .designmini-mono{height:115px}.designmini-mono::before{inset:9px;border-width:1px 0;border-radius:0;background:transparent}.designmini-mono>i{border:0;border-radius:0;width:20px;height:32px;background:none;font:25px Georgia;color:#999}.designmini-mono>i::after{content:'01'}.designmini-mono b{height:2px;border-radius:0;background:#888!important}.designmini-classic{height:115px}
 @media(min-width:900px){body[data-app-design=aurora] .auroramodules{grid-template-columns:1.2fr 1fr}body[data-app-design=mono] .designchapter{display:grid;grid-template-columns:160px 1fr;gap:20px}body[data-app-design=mono] .designchapter>.chapterlabel{grid-row:span 3;display:block}body[data-app-design=mono] .designchapter .chapterlabel h2{margin-top:12px}}
 @media(max-width:359px){.designactionstrip{gap:5px}.designactionstrip button{font-size:9px;padding:8px 4px}.designactionstrip button span{font-size:16px}body[data-app-design=liftoff] .recommendedroutine{padding:12px}}
+/* Shared chrome, independent interiors. */
+.designworkouts>.workouttabs{margin:0 0 4px!important}.designworkouts>.restglobal{display:block;width:100%;text-align:right;font-size:11px;min-height:30px;margin:0 0 12px!important;padding:3px 0}.workoutbody>.card{margin-bottom:16px}.workoutbody>.sectionhead{margin-top:8px}.workoutbody{display:flow-root}.watercompact{padding:12px 16px!important}.waterinline{display:flex;align-items:center;justify-content:space-between;gap:10px}.waterinline h3{font-size:12px;margin:0 0 4px}.waterinline strong{font-size:22px;color:#81cbdc}.waterinline strong small{display:inline;font-size:10px;letter-spacing:0;font-weight:400}.waterglass{min-height:38px!important;font-size:12px!important;padding:8px 12px!important;margin:0!important}.waterfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}.waterfoot>.textbtn{font-size:10px;padding:3px 0}.waterfoot details{font-size:10px;max-width:65%;text-align:right}.waterfoot summary{min-height:24px;padding:3px}.watercompact>.bar{margin:8px 0 2px}.accountname{flex:1;padding:0;text-align:left}.accountname>strong{font-size:21px!important;line-height:1.3;font-weight:700}.accountidentity{padding:8px 0;gap:12px;min-height:74px}.accountidentity .avatarpicker{width:52px;height:52px;min-width:52px;overflow:visible;border-radius:50%;margin:0}.accountidentity .avatarpicker>span{box-sizing:border-box;position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;padding:0;border:2px solid var(--bg);display:grid;place-items:center;font-size:11px;line-height:1;border-radius:50%;z-index:1;pointer-events:none}.accountidentity .avatarpicker input{cursor:pointer;min-height:0!important;border:0;padding:0;margin:0;z-index:2;border-radius:50%}.accountstreak{margin-left:auto;text-align:right;flex-shrink:0;color:#f0edf5}.accountstreak strong{display:block;font-size:21px;line-height:1.3}.accountstreak small{font-size:10px;letter-spacing:0}.accountidentity .accountname{color:var(--lime)!important}
+/* Same header/navigation geometry and appearance in every design. */
+#workout-identity,.datebar,aside,.accountidentity{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important}#workout-identity .profileavatar,.accountidentity .profileavatar{background:var(--theme-tint)}
+/* Nutrient cards share behavior but take on their design's own composition. */
+body[data-app-design]:not([data-app-design=classic]) .nutritiondeck{color:var(--design-ink);background:var(--panel);border-color:var(--line)}
+body[data-app-design]:not([data-app-design=classic]) .nutritiondeck :is(h2,strong){color:var(--design-ink)}
+body[data-app-design]:not([data-app-design=classic]) .nutritiondeck :is(small,p,span){color:var(--design-muted)}
+body[data-app-design]:not([data-app-design=classic]) .nutritiondeck .caloriedial>div{background:var(--panel)}
+body[data-app-design]:not([data-app-design=classic]) .nutritiondeck .combinedallowance strong{color:var(--lime)}
+/* STUDIO: ivory canvas, right-hand energy ring, airy grouped lists. */
+body[data-app-design=apple]{color:#20332c!important;background:#f2f0e9!important}body[data-app-design=apple] #content .card{color:#20332c!important;box-shadow:0 6px 20px #244a3610!important}
+body[data-app-design=apple] #content :is(.designsectionlabel,.chapterlabel h2){color:#285e50}
+body[data-app-design=apple] #content .card :is(h2,h3,strong,dt,dd){color:#20332c}
+body[data-app-design=apple] .nutritiondeck{border:0;box-shadow:0 6px 20px #244a3610;border-radius:26px}
+body[data-app-design=apple] .combinednutrition{grid-template-columns:minmax(0,1fr) 112px;gap:20px}.applehome .combinedbars{order:-1}
+body[data-app-design=apple] .nutritiondeck .combinedbars{order:-1}
+body[data-app-design=apple] .designactionstrip{background:#fff;border:0;box-shadow:0 4px 20px #244a3610}
+body[data-app-design=apple] .designactionstrip button:first-child{background:#e4eee7}
+body[data-app-design=apple] .compactfood,body[data-app-design=apple] .routinepreviewrow{border-color:#dce3dc}
+body[data-app-design=apple] .designworkouts .tabs{background:#dfe5de}.designworkouts .workoutbody>.sectionhead{margin-top:0}
+body[data-app-design=apple] .designworkouts .tabs .btn{color:#43574b}
+body[data-app-design=apple] .designworkouts .tabs .btn:not(.secondary){background:white;color:#285e50}
+body[data-app-design=apple] .designworkouts>.restglobal{color:#285e50}
+body[data-app-design=apple] .compactplan dd{border-color:#dce3dc}
+body[data-app-design=apple] .waterinline strong{color:#285e50}
+body[data-app-design=apple] #content .watercompact{padding:12px 16px!important}
+/* LEDGER: denser utility journal with a small ring and clearly ruled data. */
+body[data-app-design=cronometer] .nutritiontrack,body[data-app-design=cronometer] .nutritionslide{height:205px!important}
+body[data-app-design=cronometer] .nutritiondeck{border-radius:7px}
+body[data-app-design=cronometer] .combinednutrition{grid-template-columns:90px minmax(0,1fr);margin-top:14px;gap:16px}
+body[data-app-design=cronometer] .combinednutrition .caloriedial{width:90px;height:90px;padding:5px}
+body[data-app-design=cronometer] .combinednutrition .caloriedial strong{font-size:21px}
+body[data-app-design=cronometer] .combinedallowance{margin-top:13px;font-size:10px}
+body[data-app-design=cronometer] .nutritiondeck .compactmicros{gap:9px 16px;margin-top:9px}
+body[data-app-design=cronometer] .designdiary>.dashboardstack{gap:12px}
+body[data-app-design=cronometer] .watercompact{padding:10px 14px!important}
+/* FORGE: an arena, large numeric energy, strong exercise tiles and orange starts. */
+body[data-app-design=liftoff] .nutritiondeck{border:1px solid #6a3c28;background:linear-gradient(130deg,#382015,#251711);border-radius:22px}
+body[data-app-design=liftoff] .combinednutrition{grid-template-columns:130px minmax(0,1fr);gap:12px;margin-top:12px}
+body[data-app-design=liftoff] .combinednutrition .caloriedial{width:130px;height:130px;padding:8px}
+body[data-app-design=liftoff] .combinednutrition .caloriedial strong{font-size:30px}
+body[data-app-design=liftoff] .nutritiondeck .combinedbars .bar{height:9px;border-radius:3px}
+body[data-app-design=liftoff] .nutritiontrack,body[data-app-design=liftoff] .nutritionslide{height:250px!important}
+body[data-app-design=liftoff] .trainingstage{background:linear-gradient(145deg,#4b2917,#22130c);border-color:#764329}
+body[data-app-design=liftoff] .recommendedroutine{background:#3a2116;border-color:#6a3e25}
+body[data-app-design=liftoff] .recommendedroutine .badge{background:#5d341c;color:#ffcf9d}
+body[data-app-design=liftoff] .recommendedroutine .routinepreviewrow{background:#20130e}
+body[data-app-design=liftoff] #content .card .btn{box-shadow:0 4px 0 #854327}
+body[data-app-design=liftoff] .designworkouts .routinepreviewrow{background:#422716}
+body[data-app-design=liftoff] #content .watercompact{padding:12px 16px!important}
+/* ORBIT: circle above a three-column macro deck; floating dashboard modules. */
+body[data-app-design=aurora] .nutritiontrack,body[data-app-design=aurora] .nutritionslide{height:306px!important}
+body[data-app-design=aurora] .nutritiondeck{border-radius:26px;background:linear-gradient(145deg,#173a42,#102b33);border-color:#477c7d}
+body[data-app-design=aurora] .combinednutrition{display:flex;flex-direction:column;gap:16px;margin-top:10px}
+body[data-app-design=aurora] .combinednutrition .caloriedial{width:140px;height:140px;padding:7px}
+body[data-app-design=aurora] .combinednutrition .caloriedial strong{font-size:34px}
+body[data-app-design=aurora] .combinedbars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;width:100%}
+body[data-app-design=aurora] .combinedbars .slideprogress{margin:0!important}
+body[data-app-design=aurora] .combinedbars .slideprogress>div:first-child{display:block}
+body[data-app-design=aurora] .combinedbars strong{display:block;margin-top:4px}
+body[data-app-design=aurora] .combinedallowance{margin-top:11px}
+body[data-app-design=aurora] .nutritiondeck .compactmicros{margin-top:25px;gap:19px}
+body[data-app-design=aurora] #content .watercompact{padding:12px 16px!important}
+/* EDITION: split editorial sheet with a slender ruled macro column. */
+body[data-app-design=mono] .nutritiondeck{border-width:2px 0;border-color:#999;border-radius:0;background:none}
+body[data-app-design=mono] .combinednutrition{grid-template-columns:105px minmax(0,1fr);gap:20px}
+body[data-app-design=mono] .combinednutrition .caloriedial{width:105px;height:105px;padding:3px}
+body[data-app-design=mono] .combinedbars{border-left:1px solid #777;padding-left:14px}
+body[data-app-design=mono] .nutritiondeck h2{font:400 20px Georgia,serif}
+body[data-app-design=mono] .combinedallowance{text-align:left;border-top:1px solid #555;padding-top:10px}
+body[data-app-design=mono] .nutritiondeck .bar{border-radius:0;height:3px}
+body[data-app-design=mono] .nutritiondeck .compactmicros>div{border-bottom:1px solid #555;padding-bottom:7px}
+body[data-app-design=mono] .watercompact{padding:12px 0!important;border-width:1px 0;border-radius:0}
+/* Preview compositions match the new designs. */
+.designmini-apple{background:#eeeee6}.designmini-apple::before{background:white;border-color:#d5d9d2}.designmini-apple>em{background:#e4eee7}.designmini-liftoff>em{background:#ff975d;box-shadow:0 3px 0 #854327}.designmini-liftoff b{background:#4b2917!important}.designmini-aurora>i{position:absolute;top:18px;left:calc(50% - 12px);margin:0}.designmini-aurora>span{margin:28px 0 0;grid-template-columns:1fr 1fr 1fr;gap:5px}.designmini-aurora b{width:100%!important}.designmini-aurora::before{inset:9px 9px 20px}.designmini-aurora>em{display:none}
+@media(max-width:359px){body[data-app-design=liftoff] .combinednutrition{grid-template-columns:112px minmax(0,1fr)}body[data-app-design=liftoff] .combinednutrition .caloriedial{width:112px;height:112px}.accountname>strong{font-size:18px!important}.accountidentity{gap:9px}.accountstreak strong{font-size:19px}}
+#toast{color:var(--bg)}
+body[data-app-design=apple] :is(dialog,#session-root){color:#20332c}
+body[data-app-design=apple] :is(dialog,#session-root) :is(label,.note,small,p){color:#58685f}
+body[data-app-design=apple] :is(dialog,#session-root) :is(h2,h3,strong,.searchitem,.sethead,.setlabel){color:#20332c}
+body[data-app-design=apple] :is(dialog,#session-root) .searchitem{background:#fff;border-color:#dce3dc}
+body[data-app-design=apple] :is(dialog,#session-root) :is(.previewbox,.foodlive,.exerciseinsight,.restpanel){background:#e4eee7;color:#20332c}
+body[data-app-design=apple] :is(dialog,#session-root) .btn:not(.secondary){background:#285e50;color:white}
+body[data-app-design=apple] .nutritiondeck .bar{background:#dce3dc}
