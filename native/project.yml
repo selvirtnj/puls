@@ -20,6 +20,9 @@ targets:
       properties:
         CFBundleDisplayName: PULS
         UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations: {}
         NSSupportsLiveActivities: true
         NSCameraUsageDescription: PULS scannt Lebensmittel-Barcodes mit deiner Kamera.
         LSRequiresIPhoneOS: true
