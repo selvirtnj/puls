@@ -95,3 +95,7 @@ Unter „Essen hinzufügen → Foto“ kann eine Nährwerttabelle mit lokaler Te
 
 Neue gezielte Prüfungen: `node check-food32.cjs` und `node check-food-offline.cjs`. Der Service Worker speichert keine Cloud-/OFF-Antworten. Eigene App-Skripte und Styles laden bei Verbindung aktuell und fallen offline auf lokale Dateien zurück; Katalogdateien werden nach dem ersten kontrollierten Laden zwischengespeichert. Bei Änderungen an der Offline-Shell Cacheversion und Assetliste in `dist/sw.js` mitpflegen.
 
+# Konto und Komfort · Version 33
+
+Neu: bestätigtes Zurücksetzen des Fitnessprofils und eigene Kontolöschung, neu geordnetes Konto, wiederholbare Einführung nach dem Erststart, gemeinsame Trainings-Werkzeugzeile, Einheitenwahl (g/kg/oz/ml/l) und erweitertes Plus-Menü. Einheiten verschiedener Dimensionen benötigen ausdrücklich bekannte Dichte. Technische Details und Grenzen: [ACCOUNT-33.md](docs/ACCOUNT-33.md). Die serverseitige Funktion aus `backend/account-delete.sql` wurde mit Zustimmung eingerichtet; die Einrichtung löscht selbst kein Konto.
+
