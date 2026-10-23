@@ -1,4 +1,16 @@
-# PULS 2
+# PULS 30
+
+Persönlicher Fitness- und Ernährungstracker als werbefreie statische Web-App. [Live öffnen](https://selvirtnj.github.io/puls/?v=30). Deutsch/Englisch, sechs Designs und private optionale Supabase-Synchronisierung. Die bestehende Web-App wird weiterentwickelt; native Distribution ist derzeit zurückgestellt.
+
+Version 30 ergänzt Icon-Farben, kontrolliertes Wisch-Löschen, Drag-and-drop, CSV, Gewichtstrend, Körpermaße, lokale Progress-Fotos, Meal Planning, Fasten-Timer, Supersets, Scheiben-/Aufwärmrechner, Text-/Spracheingabe, eingeschränkten Recipe-Import, optionale Verlaufskalibrierung und Check-ins. [Vollständiger Abgleich, Grenzen und Quellen](docs/PREMIUM-AUDIT.md).
+
+Code: `dist/`; Oberfläche nutzt denselben Profilzustand wie Training, Essen und Cloud. Fotos bleiben kontogetrennt lokal und werden separat exportiert. Keine Schlüssel eines privaten KI-Dienstes oder Health-Anbieters sind eingebaut.
+
+Validierung: `node check-premium.cjs`, `node check-cloud.cjs`, `node check-preview.cjs`, `node check-tracker.cjs` und die bisherigen modulbezogenen Checks. `node bundle.cjs` erstellt die Einzeldatei; die veröffentlichte Ordnerfassung enthält Katalog, Worker und Icon-Dateien.
+
+Die folgenden Abschnitte dokumentieren ältere Entwicklungsstände. Angaben wie „noch nicht veröffentlicht“ oder „nur lokal“ beziehen sich auf den jeweiligen damaligen Stand.
+
+## Entwicklungshistorie
 
 ## Workout-Tracker (Version 6)
 
@@ -70,3 +82,10 @@ Food Suggestions wählen aus Grund- und eigenen Lebensmitteln nach offenen Makro
 Prüfung: `node check-insights.cjs` zusätzlich zu den vorhandenen Checks. App-Berechnungen und UI im mobilen Browser geprüft; native APIs benötigen den Gerätetest.
 
 
+## Version 14 · Tagebuch und Trainingsablauf
+
+Wischbare Energie-, Makro- und Nährstoffkarten, kompakte Essensliste, Eingaben als Bottom Sheet auf dem iPhone. Eigenständiger Trainingsbildschirm, Routine-Vorschau, breite Satzschaltflächen und explizite Abschlussbestätigung mit optionalem Körpergewicht. Nicht abgehakte Sätze werden nach Bestätigung verworfen; Routinen bleiben erhalten. Session-Auswertung mit Dauer, Volumen, Reps, persönlichen Bestleistungen, Tageserie und XP-Fortschritt. Die Wochenserie bleibt separat in der Statistik.
+
+`enrich-nutrients.py` ergänzt die bereits importierten offiziellen BLS-, USDA- und Ciqual-Dateien um Wasser, Ballaststoffe, Vitamin C, Eisen, Calcium, B12, Folat, Kalium und Magnesium. Einheiten: Wasser/Ballaststoffe g, B12/Folat µg, übrige Felder mg je 100 g; numerische Null bleibt Null, unbekannte/unter Nachweisgrenze liegende Werte werden nicht erfunden. OFF-Mineral-/Vitaminwerte werden aus Gramm in die jeweiligen Einheiten umgerechnet. Wasser ist 1 g ≈ 1 ml; Werte werden beim Loggen als Portions-Snapshot gespeichert und beim Ändern der Menge proportional angepasst. Wasserwerte fehlen bei vielen Markengetränken; bei ml-Produkten kann ein bekannter Wasseranteil optional eingegeben werden. Reines Wasser wird separat erfasst. Kein pauschales Zählen unbekannter Getränke als 100 % Wasser. Für bestehende Tagebucheinträge und Rezepte ohne Nährstoffdaten keine rückwirkenden Annahmen. Eigene Tagesziele optional, keine universellen Referenzwerte vorgegeben.
+
+Prüfung: `node check-flows.cjs`, `node check-catalog.cjs` und bestehende Checks. Nährstoffabdeckung ist immer pro Feld sichtbar. Quellen/Lizenzen bleiben in der Katalogansicht ausgewiesen.
