@@ -5,11 +5,13 @@
 
 Ein persönlicher, werbefreier Fitness- und Ernährungstracker – für iPhone und Browser.
 
-[**App öffnen →**](https://selvirtnj.github.io/puls/?v=34) · [Neues in Version 34](docs/RELEASE-34.md) · [Dokumentation](docs/README.md)
+[**App öffnen →**](https://selvirtnj.github.io/puls/?v=35) · [Neues in Version 34](docs/RELEASE-34.md) · [Dokumentation](docs/README.md)
 
 </div>
 
 ---
+
+**Neu in Version 35:** Mehr Maschinenübungen, Filter für Maschinen/Kabelzug/Smith, deutsche Suchbegriffe und nachladbare Ergebnislisten. Bestehende Routinen und Übungs-IDs bleiben erhalten.
 
 ## Was PULS kann
 
