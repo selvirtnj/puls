@@ -1,0 +1,20 @@
+const fs33=require('fs'),vm33=require('vm');let code33=fs33.readFileSync('tests/check-premium.cjs','utf8');
+let extra33=String.raw`
+ctx.localStorage.removeItem=()=>{};run('render=function(){};var navSymbols={workout:""};');
+for(let f of ['food-search.js','catalog-search.js','food-upgrade.js','cloud.js','account-guide.js','quick-units.js'])run(fs.readFileSync(''+f,'utf8'));
+assert.equal(run('canonicalQuantity(.5,"kg","g")'),500);
+assert(Math.abs(run('canonicalQuantity(1,"oz","g")')-28.349523125)<1e-10);
+assert.equal(run('canonicalQuantity(.75,"l","ml")'),750);
+assert.equal(run('canonicalQuantity(100,"ml","g")'),null);
+assert.equal(run('canonicalQuantity(100,"ml","g",1.03)'),103);
+assert.equal(run('canonicalQuantity(103,"g","ml",1.03)'),100);
+assert.equal(run('unitFactor("oz","ml",0)'),null);
+run('state.displayName="Keep me";state.appDesign="classic";state.profile={age:30,height:180,weight:80,target:75,sex:"male",activity:1.375,method:"mifflin"};var clean33=cleanFitnessState()');
+assert(run('validData(clean33)'));assert.equal(run('clean33.displayName'),'Keep me');assert.equal(run('clean33.workouts.length'),0);assert.equal(run('clean33.foods.length'),0);assert.equal(run('clean33.profile'),null);assert.equal(run('clean33.setupPending'),true);assert.equal(run('clean33.tutorialVersion'),0);assert.equal(run('cleanFitnessState(state,false).displayName'),undefined);assert(run('accountManagementCard().includes("accountActionForm")'));
+run('state.custom.push({id:"bad-density",name:"Test",kcal:0,p:0,c:0,f:0,density:-1})');assert(!run('validData(state)'));run('state.custom.pop()');
+run('var before33=JSON.stringify(state);state.tutorialVersion=99');assert(!run('validData(state)'));run('state=JSON.parse(before33)');
+assert(run('pulsTourSteps.length>=10'));assert(run('quickAddActions.some(x=>x[0]==="camera")'));assert(run('quickAddActions.some(x=>x[0]==="water")'));
+run('document.querySelectorAll=function(){return []};settings=function(){};nameProfile=function(){};cloudSession={user:{id:"self",email:"test@example.com"},access_token:"test",expires_at:Date.now()/1000+9999};cloudRevision=4;cloudRequest=async function(){return null};$("account-action-confirm").value="RESET";$("account-action-ack").checked=true;var state33=JSON.stringify(state)');
+(async()=>{await run('performAccountAction({preventDefault(){}},"reset")');assert.equal(run('JSON.stringify(state)'),run('state33'));assert(run('$("account-action-error").textContent.includes("anderen Gerät")'));run('cloudRequest=async function(){return {revision:5}};');await run('performAccountAction({preventDefault(){}},"reset")');assert.equal(run('state.foods.length'),0);assert.equal(run('cloudRevision'),5);assert.equal(run('state.displayName'),'Keep me');assert.equal(run('cloudSession.user.id'),'self');assert.equal(run('cloudDirty'),false);console.log('PASS: unit precision, density gates, fresh-state validity, identity-preserving reset, CAS conflicts, cloud identity preservation, confirmation actions and tour navigation definitions');})().catch(e=>{console.error(e);process.exitCode=1});
+`;
+vm33.runInNewContext('(function(require){'+code33+'\n'+extra33+'\n})(require)',{require,console,process},{filename:'account33-harness.cjs'});
