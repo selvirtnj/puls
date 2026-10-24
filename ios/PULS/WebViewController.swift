@@ -3,7 +3,7 @@ import WebKit
 
 /// Native PULS-Hülle: lädt die veröffentlichte Web-App, damit Updates ohne neue App-Version ankommen.
 /// Daten liegen wie im Browser im WebView-Speicher; Cloud-Sync läuft über das PULS-Konto.
-final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, WKScriptMessageHandler {
     static let home = URL(string: "https://selvirtnj.github.io/puls/")!
     static let appHost = "selvirtnj.github.io"
     static let appPath = "/puls"
@@ -19,6 +19,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         config.websiteDataStore = .default()
+        // Gegenstück: native-bridge.js (window.webkit.messageHandlers.pulsNative).
+        config.userContentController.add(self, name: "pulsNative")
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
@@ -63,6 +65,31 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         <body><div><b>Keine Verbindung</b><br>PULS konnte nicht geladen werden.<br><a href="\(Self.home.absoluteString)">Erneut versuchen</a></div></body></html>
         """
         webView.loadHTMLString(html, baseURL: nil)
+    }
+
+    // MARK: Nachrichten der Web-App
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.frameInfo.isMainFrame,
+              message.frameInfo.securityOrigin.host == Self.appHost,
+              let body = message.body as? [String: Any],
+              let type = body["type"] as? String else { return }
+        switch type {
+        case "restStart":
+            guard let endsAt = body["endsAt"] as? Double else { return }
+            let startsAt = body["startsAt"] as? Double ?? Date().timeIntervalSince1970 * 1000
+            RestCoordinator.shared.start(
+                workout: body["workout"] as? String ?? "Workout",
+                startsAt: Date(timeIntervalSince1970: startsAt / 1000),
+                endsAt: Date(timeIntervalSince1970: endsAt / 1000),
+                exercise: body["exercise"] as? String ?? "Nächster Satz",
+                detail: body["detail"] as? String ?? "Weiter geht's"
+            )
+        case "restCancel":
+            RestCoordinator.shared.cancel()
+        default:
+            break
+        }
     }
 
     // MARK: Navigation

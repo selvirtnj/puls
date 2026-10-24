@@ -19,6 +19,7 @@ Mit einer kostenlosen Apple-ID läuft die Signatur nach 7 Tagen ab. AltStore ern
 - Kamera/Mikrofon für Barcode-Scan und Spracheingabe (iOS fragt einmal).
 - Downloads (Sicherung, CSV) öffnen das Teilen-Menü → „In Dateien sichern“.
 - `alert`/`confirm`/`prompt` als native Dialoge; iPad in allen Ausrichtungen und mit Split View.
+- **Pausentimer außerhalb der App** (ab App 1.1 / Web 39): `native-bridge.js` meldet jede laufende Pause über `window.webkit.messageHandlers.pulsNative` (`restStart`/`restCancel`). Die App plant dann eine Mitteilung „Pause vorbei – Nächster Satz: …“ zum Pausenende und zeigt eine Live-Aktivität mit Countdown in Dynamic Island und Sperrbildschirm (Widget-Erweiterung `ios/PULSWidgets`). iOS zählt den Countdown selbst; nach Ablauf zeigt sie „Los!“ und wird beim nächsten Öffnen der App entfernt. Beim ersten Pausenstart fragt iOS einmal nach der Erlaubnis für Mitteilungen. In der offenen App bleibt es beim gewohnten Hinweis mit Ton.
 
 ## Bauen
 
@@ -30,5 +31,6 @@ Das Xcode-Projekt wird mit XcodeGen aus `ios/project.yml` erzeugt und nicht eing
 
 - Nicht im App Store, unsigniert; Signatur übernimmt AltStore mit Selvirs Apple-ID.
 - Web-Speech-Spracheingabe hängt von der iOS-Version im WebView ab.
-- Kein HealthKit, keine Widgets/Dynamic Island, keine Hintergrundalarme — das wären spätere native Erweiterungen.
+- Kein HealthKit und keine Home-Bildschirm-Widgets. Dynamic Island gibt es nur auf iPhones ab 14 Pro; das iPad bekommt nur die Mitteilung.
+- Die Live-Aktivität kann iOS nur beim Pausenstart in der offenen App anlegen. Verlängerungen und das Ende werden gemeldet, sobald die Web-App wieder läuft.
 - Das Build-Ergebnis ist ohne echtes Gerät nur kompiliert, nicht auf iPad/iPhone getestet.

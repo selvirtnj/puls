@@ -4,8 +4,8 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Stand bei Einrichtung der Zusammenarbeit
 
-- Veröffentlichte App-Version: **38** (24.10.2026, Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign). Selvir hat 38 auf dem iPhone bestätigt.
-- Live: https://selvirtnj.github.io/puls/?v=38 ; Repository: https://github.com/selvirtnj/puls .
+- Veröffentlichte App-Version: **39** (24.10.2026: `native-bridge.js` für Pausen-Mitteilung und Dynamic Island in der iOS-App). Davor 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign), von Selvir auf dem iPhone bestätigt.
+- Live: https://selvirtnj.github.io/puls/?v=39 ; Repository: https://github.com/selvirtnj/puls .
 - Davor veröffentlicht: 35, Ausgangscommit `6e878204b677d1e9aa8f51f51f22f2df526f2c81`.
 - Version 34: fokussierte Oberfläche, neu geordnetes Konto, mehr Diagramme, vier zusätzliche Designs, Archiv und Projektdokumentation.
 - Version 35: 87 neue Übungsvarianten, insgesamt 963; Maschinen-/Kabel-/Smith-Filter, deutsche Suchnamen und Ergebnis-Paginierung.
@@ -54,6 +54,12 @@ Keine der folgenden Aufgaben ist durch diese Liste automatisch zur Umsetzung fre
 6. Einige neue Diagramm- und Beschreibungsdetails sind möglicherweise noch nicht vollständig übersetzt. Bei englischer UI konkret prüfen, nicht pauschal Vollständigkeit behaupten.
 
 ## Übergabe nach jeder größeren Aufgabe
+
+### Pausen-Mitteilung und Dynamic Island — Web 39 / iOS-App 1.1 — 24.10.2026
+
+- Selvirs Wunsch: Bei Pausenende außerhalb der App benachrichtigt werden, Countdown in der Dynamic Island (iPhone 16 Pro Max). Neue `native-bridge.js` (nur in der iOS-Hülle aktiv, im Browser wirkungslos) meldet die erste ablaufende Pause unbeendeter Workouts; `ios/PULS/RestCoordinator.swift` plant die Mitteilung und steuert die Live-Aktivität, `ios/PULSWidgets/` zeichnet Dynamic Island und Sperrbildschirm. Keine Änderung an Timer-Logik, Datenmodell oder `validData()`.
+- Prüfung: `node scripts/check.cjs` grün; VM-Simulation der Brücke (Start, +30 s, neuer Satz, Übungswechsel, Superset, zwei Workouts, Reload nach Pausenende, Workout-Ende, Browser ohne Handler). Review durch Claude-Prüfer (Codex im Nutzungslimit); alle sieben Befunde behoben.
+- Grenzen: Swift nur durch CI kompiliert, nicht auf Gerät getestet. Ob AltStore mit kostenloser Apple-ID die Widget-Erweiterung behält, ist ungeprüft; ohne sie gibt es nur die Mitteilung.
 
 ### Native iOS-Hülle — 24.10.2026
 
