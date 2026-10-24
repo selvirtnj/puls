@@ -35,9 +35,12 @@ body[data-current-page=food][data-app-design=classic] #content > .designdiary > 
   margin: 0;
 }
 body[data-current-page=food][data-app-design=classic] #content .nutritionslide {
-  padding: 10px 0 8px !important;
+  padding: 10px 16px 8px !important;
   background: transparent;
 }
+/* Wie in der Übersicht: Wischband bis an den Rand, Inhalt bündig, 32 px Luft zwischen den Seiten. */
+body[data-current-page=food][data-app-design=classic] #content .nutritiondeck { overflow: visible; }
+body[data-current-page=food][data-app-design=classic] #content .nutritiontrack { margin-inline: -16px; }
 
 /* Typografie und Abschnittsnummern wie in der Übersicht. */
 body[data-current-page=food][data-app-design=classic] #content :is(.nutritionslide h2,.cardhead h2,.cardhead h3,.dashboardstack > .card > h3,details.card > summary) {

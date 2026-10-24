@@ -25,9 +25,13 @@ body[data-current-page=home][data-app-design=classic] #content > .dashboardstack
   padding: 22px 0 !important;
 }
 body[data-current-page=home][data-app-design=classic] #content .nutritionslide {
-  padding: 10px 0 8px !important;
+  padding: 10px 16px 8px !important;
   background: transparent;
 }
+/* Wischband bis an den Bildschirmrand: Inhalt bleibt bündig, zwischen den Seiten 32 px Luft.
+   Seitenbreite = Bandbreite, daher stimmen Punkte und setNutrientSlide() weiter. */
+body[data-current-page=home][data-app-design=classic] #content .nutritiondeck { overflow: visible; }
+body[data-current-page=home][data-app-design=classic] #content .nutritiontrack { margin-inline: -16px; }
 body[data-current-page=home][data-app-design=classic] #content :is(.nutritionslide h2,.cardhead h2,.cardhead h3) {
   margin: 0;
   font-size: 22px;

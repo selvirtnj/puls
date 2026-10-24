@@ -4,8 +4,8 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Stand bei Einrichtung der Zusammenarbeit
 
-- Veröffentlichte App-Version: **41** (24.10.2026: Essen im neuen Originaldesign). Davor 40 (optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen), 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
-- Live: https://selvirtnj.github.io/puls/?v=41 ; Repository: https://github.com/selvirtnj/puls .
+- Veröffentlichte App-Version: **42** (24.10.2026: Abstand zwischen den Wischseiten Energie/Mikronährstoffe). Davor 41 (Essen im neuen Originaldesign), 40 (optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen), 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
+- Live: https://selvirtnj.github.io/puls/?v=42 ; Repository: https://github.com/selvirtnj/puls .
 - Davor veröffentlicht: 35, Ausgangscommit `6e878204b677d1e9aa8f51f51f22f2df526f2c81`.
 - Version 34: fokussierte Oberfläche, neu geordnetes Konto, mehr Diagramme, vier zusätzliche Designs, Archiv und Projektdokumentation.
 - Version 35: 87 neue Übungsvarianten, insgesamt 963; Maschinen-/Kabel-/Smith-Filter, deutsche Suchnamen und Ergebnis-Paginierung.
@@ -54,6 +54,10 @@ Keine der folgenden Aufgaben ist durch diese Liste automatisch zur Umsetzung fre
 6. Einige neue Diagramm- und Beschreibungsdetails sind möglicherweise noch nicht vollständig übersetzt. Bei englischer UI konkret prüfen, nicht pauschal Vollständigkeit behaupten.
 
 ## Übergabe nach jeder größeren Aufgabe
+
+### Version 42 — Wischseiten mit Abstand — veröffentlicht 24.10.2026
+
+- Selvirs Wunsch: Beim Wischen von Energie & Makros zu Mikronährstoffen lagen die Inhalte zu dicht. Übersicht und Essen (Original): .nutritiontrack reicht per margin-inline:-16px bis an den Rand, Seiten haben 16 px Innenabstand → Inhalt bündig, 32 px Luft zwischen den Seiten; Seitenbreite = Bandbreite, daher Punkte/setNutrientSlide() unverändert. Browser: Einrasten, Punkte, kein Überlauf auf beiden Seiten geprüft.
 
 ### Version 41 — Essen im Originaldesign — veröffentlicht 24.10.2026
 
