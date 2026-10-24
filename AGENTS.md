@@ -46,7 +46,7 @@ Für einfache Änderungen keinen Agentenverbund starten. Größere Implementieru
 - Workout-IDs, Übungs-IDs, gespeicherte Nährwert-Snapshots und historische Messungen erhalten.
 - Keine fehlenden Nährwerte, Trainingszeiten oder Messpunkte erfinden. Gramm und Milliliter nur mit ausdrücklicher Dichte ineinander umrechnen.
 - Die entfernten Features aus `docs/PROJECT-CONTEXT.md` nicht ungefragt wieder einführen.
-- Seit 24.10.2026 gibt es eine native iOS-Hülle in `ios/` (lädt die Live-Web-App, Sideload per AltStore, siehe `docs/IOS-APP.md`). Die Web-App bleibt die eine Codebasis; App-Funktionen gehören weiter in die Web-Dateien. Health-Sync, Dynamic Island, Widgets und Hintergrundalarme sind nicht der aktive Auftrag.
+- Seit 24.10.2026 gibt es eine native iOS-Hülle in `ios/` (lädt die Live-Web-App, Sideload per AltStore, siehe `docs/IOS-APP.md`). Die Web-App bleibt die eine Codebasis; App-Funktionen gehören weiter in die Web-Dateien. Ausnahme: Pausen-Mitteilung und Live-Aktivität/Dynamic Island laufen nativ über `native-bridge.js` → `ios/`. Health-Sync und Home-Bildschirm-Widgets sind nicht der aktive Auftrag.
 
 ## Backend und Datenschutz
 
