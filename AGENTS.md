@@ -25,7 +25,9 @@ Der Hauptchat koordiniert und bleibt Selvirs einziger nötiger Ansprechpartner. 
 - `puls_backend`: Auth, Zustand, Synchronisierung und SQL.
 - `puls_reviewer`: unabhängige Prüfung, Tests, Datenintegrität und Sicherheit.
 
-Rollen stehen in `.codex/agents/*.toml`. Falls ein Client diese Rollen nicht automatisch lädt, lies die entsprechende Datei und gib deren Anweisung einem normalen Subagenten mit. Modell und Denkaufwand vom Hauptagenten erben; keine kostensteigernden Modellwechsel aus eigener Initiative.
+Rollen stehen in `.codex/agents/*.toml`. Falls ein Client diese Rollen nicht automatisch lädt, lies die entsprechende Datei und gib deren Anweisung einem normalen Subagenten mit.
+
+Claude Code und Codex arbeiten als ein Team. Wer welche Aufgabe übernimmt, welches Modell und welchen Denkaufwand, steht in `docs/AI-TEAM.md`; der Koordinator wählt danach selbst. Ein Auftrag von Claude Code an Codex (über `scripts/codex-bridge.ps1`) ist ein Koordinator-Auftrag: ausführen, Rückfragen unter `RÜCKFRAGEN:` stellen, nicht committen oder veröffentlichen.
 
 Für einfache Änderungen keinen Agentenverbund starten. Größere Implementierungen anschließend unabhängig prüfen lassen. Der zuständige Entwickler behebt Befunde, der Prüfer prüft relevante Korrekturen erneut. Höchstens zwei schreibende Agenten parallel und nur bei klar getrennten Dateien/Arbeitskopien. Nebenagenten dürfen nicht selbst veröffentlichen, keine fremden Chats anschreiben und keine Live-Backend-Änderungen vornehmen.
 

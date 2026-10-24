@@ -4,6 +4,8 @@
 
 Selvir arbeitet mit einem Hauptchat im PULS-Projekt. Dieser liest `AGENTS.md`, Produktkontext und aktuellen Stand. Die drei Spezialisten werden bei passender Arbeit vom Hauptchat eingesetzt. Separate dauerhafte Chats und zusätzliche API-Konten sind nicht nötig. Modell- und Denkaufwandseinstellungen werden geerbt; mehrere Agenten verbrauchen zusätzliche Nutzung und werden nicht für jeden kleinen Auftrag gestartet.
 
+Claude Code kann als Hauptchat arbeiten und Codex per `scripts/codex-bridge.ps1` einsetzen; Aufteilung und Modellwahl stehen in `docs/AI-TEAM.md` und haben Vorrang vor der Erbregel oben.
+
 Projektrollen: `.codex/agents/puls_frontend.toml`, `puls_backend.toml`, `puls_reviewer.toml`. Aktuelle Codex-Versionen können projektbezogene Rollen laden. Verfügbarkeit und Menü unterscheiden sich je Client; wenn benannte Rollen nicht erscheinen, reicht ein normaler Subagent mit den jeweiligen Dateianweisungen. Keine globale Konfiguration oder Rechteänderung ist dafür vorgesehen.
 
 ## Ablauf je größerer Aufgabe
