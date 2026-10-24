@@ -10,12 +10,12 @@ function parseForm(html){
 function decorate(node){let html=node.innerHTML||'';Object.defineProperty(node,'innerHTML',{get:()=>html,set(value){html=String(value);parseForm(html)}});node.insertAdjacentHTML=(where,value)=>{html=where==='afterbegin'?value+html:html+value;parseForm(value)};node.closest=()=>({set outerHTML(value){parseForm(value)}});node.querySelector=()=>el('submit-button');node.querySelectorAll=()=>[];node.style.removeProperty=()=>{};node.classList={add(){},remove(){},toggle(){}}}
 let put=els.set.bind(els);els.set=(id,node)=>{decorate(node);return put(id,node)};for(let node of els.values())decorate(node);
 `;
-bootstrap=bootstrap.replace("for(let f of ['app.js'",formDOM+"for(let f of ['app.js'");
+bootstrap=bootstrap.replace("for(let f of ['js/app.js'",formDOM+"for(let f of ['js/app.js'");
 function app(fixture=null){return vm.runInNewContext('(function(require,fixture){'+bootstrap+String.raw`
 run('render=function(){};dismissSheet=function(){};var navSymbols={workout:""};');
 ctx.localStorage.removeItem=()=>{};
 ctx.document.createElement=()=>({content:{querySelector:()=>null}});
-for(let file of ['cloud.js','account-guide.js'])run(fs.readFileSync(file,'utf8'));
+for(let file of ['js/cloud.js','js/account-guide.js'])run(fs.readFileSync(file,'utf8'));
 return {run,el,saved:()=>storage};
 })(require,fixture)`,{require,fixture:fixture&&JSON.stringify(fixture),console},{filename:'onboarding-vm.cjs'})}
 const submit='({preventDefault(){}})';

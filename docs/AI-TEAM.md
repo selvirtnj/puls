@@ -6,7 +6,7 @@ Wenn Selvir stattdessen direkt in Codex arbeitet, gilt dieselbe Aufteilung; Code
 
 ## Grundregeln
 
-- **Nur Web-App.** Gearbeitet wird an der Web-App im Repository-Stamm, damit Selvir jede Änderung direkt auf dem iPhone testen kann. `ios/` wird nur geändert, wenn Selvir es ausdrücklich sagt; Befunde zu `ios/` werden nur berichtet.
+- **Nur Web-App.** Gearbeitet wird an der Web-App (`index.html`, `js/`, `css/`), damit Selvir jede Änderung direkt auf dem iPhone testen kann. `ios/` wird nur geändert, wenn Selvir es ausdrücklich sagt; Befunde zu `ios/` werden nur berichtet.
 - **Wer schreibt, prüft nicht selbst.** Jede größere Änderung sieht mindestens eine andere KI.
 - **Höchstens zwei schreibende Agenten gleichzeitig**, nur in getrennten Dateien oder Worktrees.
 - **Nur der Koordinator** integriert, committet und veröffentlicht. Ein Push auf `main` geht sofort live.

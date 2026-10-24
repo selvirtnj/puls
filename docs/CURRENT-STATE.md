@@ -4,8 +4,8 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Stand bei Einrichtung der Zusammenarbeit
 
-- Veröffentlichte App-Version: **45** (25.10.2026: Training — Workout-Tab als Startseite mit kompakten Routinenzeilen, „Heute erledigt“ abgesetzt, Routinen-Tab bleibt Verwaltung, Kalender ohne doppelte Linie; `training-tabs.js`/`.css`, alle Designs, Review Codex: EN-Befund behoben). Davor 44 (Profil-Schalter Richtung/Tempo untereinander), 43 (Profil & Ziele überarbeitet, Logikfehler behoben), 42 (Abstand zwischen den Wischseiten), 41 (Essen im neuen Originaldesign), 40 (optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen), 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
-- Live: https://selvirtnj.github.io/puls/?v=45 ; Repository: https://github.com/selvirtnj/puls .
+- Veröffentlichte App-Version: **46** (25.10.2026: Repository aufgeräumt — Skripte in `js/`, Styles in `css/`, alte Doku in `docs/archive/`, `archive/` entfernt, neue README; `sw.js` aktiviert neue Versionen sofort per `skipWaiting()` nach vollständigem Precache; Review Codex: Offline-Lücke beim Update behoben). Davor 45 (25.10.2026: Training — Workout-Tab als Startseite mit kompakten Routinenzeilen, „Heute erledigt“ abgesetzt, Routinen-Tab bleibt Verwaltung, Kalender ohne doppelte Linie; `training-tabs.js`/`.css`, alle Designs, Review Codex: EN-Befund behoben). Davor 44 (Profil-Schalter Richtung/Tempo untereinander), 43 (Profil & Ziele überarbeitet, Logikfehler behoben), 42 (Abstand zwischen den Wischseiten), 41 (Essen im neuen Originaldesign), 40 (optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen), 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
+- Live: https://selvirtnj.github.io/puls/?v=46 ; Repository: https://github.com/selvirtnj/puls .
 - Davor veröffentlicht: 35, Ausgangscommit `6e878204b677d1e9aa8f51f51f22f2df526f2c81`.
 - Version 34: fokussierte Oberfläche, neu geordnetes Konto, mehr Diagramme, vier zusätzliche Designs, Archiv und Projektdokumentation.
 - Version 35: 87 neue Übungsvarianten, insgesamt 963; Maschinen-/Kabel-/Smith-Filter, deutsche Suchnamen und Ergebnis-Paginierung.
@@ -14,7 +14,7 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Was jetzt eingerichtet ist
 
-`AGENTS.md`, `START-HERE.md`, Produktkontext, Backend-Übergabe, Teamablauf und die Rollen `puls_frontend`, `puls_backend`, `puls_reviewer`. Ein Hauptchat koordiniert die Aufgaben. Seit 24.10.2026: Hauptchat „PULS · Hauptchat“ in Claude Code koordiniert Claude, Codex (`scripts/codex-bridge.ps1`) und Gemini/Antigravity (`scripts/gemini-bridge.ps1`) nach `docs/AI-TEAM.md`; Brücken inkl. Rückfragen getestet. Regel: nur Web-App, `ios/` nur auf Selvirs ausdrücklichen Wunsch. Neue Chats müssen die Dokumentation lesen; automatische vollständige Übertragung beliebiger Gesprächshistorien wird nicht vorausgesetzt.
+`AGENTS.md`, `docs/START-HERE.md`, Produktkontext, Backend-Übergabe, Teamablauf und die Rollen `puls_frontend`, `puls_backend`, `puls_reviewer`. Ein Hauptchat koordiniert die Aufgaben. Seit 24.10.2026: Hauptchat „PULS · Hauptchat“ in Claude Code koordiniert Claude, Codex (`scripts/codex-bridge.ps1`) und Gemini/Antigravity (`scripts/gemini-bridge.ps1`) nach `docs/AI-TEAM.md`; Brücken inkl. Rückfragen getestet. Regel: nur Web-App, `ios/` nur auf Selvirs ausdrücklichen Wunsch. Neue Chats müssen die Dokumentation lesen; automatische vollständige Übertragung beliebiger Gesprächshistorien wird nicht vorausgesetzt.
 
 ## Sofort nutzbare Befehle
 
@@ -30,13 +30,13 @@ node scripts/serve.cjs
 
 ## Aktueller Auftrag / nächster Schritt
 
-Selvir hat am 24.10.2026 die Zielklärung bestätigt: persönliche iPhone-Nutzung, sportliches dunkles lila Original, weniger verschachtelte Karten, sichtbare kurze Aktionsreaktionen. Konto- und Übersichts-Vorschau wurden ausdrücklich positiv beurteilt. Training im selben Stil ist umgesetzt; Konto, Übersicht und Training sind als Version 38 live. Nächster geplanter Abschnitt laut Plan: Essen, erst nach Selvirs Auftrag. Keine automatische kontinuierliche Hintergrundarbeit. Verbindlicher Plan: `docs/DESIGN-WORKPLAN.md`.
+Selvir hat am 24.10.2026 die Zielklärung bestätigt: persönliche iPhone-Nutzung, sportliches dunkles lila Original, weniger verschachtelte Karten, sichtbare kurze Aktionsreaktionen. Konto- und Übersichts-Vorschau wurden ausdrücklich positiv beurteilt. Alle vier Hauptbereiche (Konto, Übersicht, Training, Essen) sind im neuen Originaldesign live; danach folgen Selvirs Einzelwünsche (siehe Übergaben unten). Keine automatische kontinuierliche Hintergrundarbeit. Verbindlicher Plan: `docs/DESIGN-WORKPLAN.md`.
 
-Nach Einbindung des Repository-Ordners als Codex-Projekt dort einen Hauptchat starten; `START-HERE.md` enthält den Einstiegsauftrag. Projektrollen werden je nach Client nach Projektöffnung/neuem Chat geladen, nicht zwingend mitten in einer bestehenden Sitzung.
+Hauptchat ist Claude Code („PULS · Hauptchat“); wer direkt in Codex arbeitet, findet den Einstiegsauftrag in `docs/START-HERE.md`. Projektrollen werden je nach Client nach Projektöffnung/neuem Chat geladen, nicht zwingend mitten in einer bestehenden Sitzung.
 
 ## Technische Orientierung
 
-Statische Dateien direkt im Stamm; kein Bundler und kein React-/Flutter-Projekt. JS-Dateien definieren Globals und umschließen bestehende Funktionen. Die letzte Definition in der Ladereihenfolge gewinnt; beim Ändern immer die Kette prüfen. Tests verwenden VM-/DOM-/Netzwerkstubs.
+Statische Dateien: `index.html`/`sw.js` im Stamm, Skripte in `js/`, Styles in `css/` (seit 25.10.2026, siehe `docs/ARCHITECTURE.md`); kein Bundler und kein React-/Flutter-Projekt. Ältere Übergaben unten nennen Dateien noch ohne `js/`/`css/`-Präfix. JS-Dateien definieren Globals und umschließen bestehende Funktionen. Die letzte Definition in der Ladereihenfolge gewinnt; beim Ändern immer die Kette prüfen. Tests verwenden VM-/DOM-/Netzwerkstubs.
 
 `state` bleibt die gemeinsame Datenbasis. Lokales Profil: `puls-v1`. Auth-/Synchronisierungsmetadaten und gegebenenfalls alte lokale Fotos haben weitere Schlüssel. Supabase speichert pro Nutzer ein revisionsgeprüftes JSON-Profil. Die Backend-Dateien belegen die beabsichtigte Konfiguration, nicht den aktuellen Live-Zustand.
 

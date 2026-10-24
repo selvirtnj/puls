@@ -1,7 +1,7 @@
 const fs34=require('node:fs'),vm34=require('node:vm');
 let harness34=fs34.readFileSync('tests/check-premium.cjs','utf8');
 let tests34=String.raw`
-run('render=function(){}');run(fs.readFileSync('progress-metrics.js','utf8'));run(fs.readFileSync('designs-extra.js','utf8'));
+run('render=function(){}');run(fs.readFileSync('js/progress-metrics.js','utf8'));run(fs.readFileSync('js/designs-extra.js','utf8'));
 run("state=initial();migrate();state.profile={age:30,height:180,weight:80,target:75,sex:'male',activity:1.375,method:'mifflin',special:false};state.weights=[];state.foods=[];state.workouts=[];state.measurements=[];");
 assert.equal(run('Object.keys(appDesigns).length'),10);
 run("state.workouts=[{id:'one',date:today(),finished:true,durationSeconds:600,exercises:[{id:'a',name:'Bench',exerciseId:'bench',sets:[{kg:50,reps:8,done:true}]}]},{id:'two',date:today(),finished:true,exercises:[{id:'b',name:'High rep',exerciseId:'high',sets:[{kg:20,reps:20,done:true}]}]}];var result=buildProgressMetrics();var value=k=>result.definitions.find(x=>x.key===k).points.at(-1)?.value");

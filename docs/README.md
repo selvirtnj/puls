@@ -1,16 +1,19 @@
-# Dokumentation
+# PULS-Dokumentation
 
-- [Einstieg für neue Chats](../START-HERE.md)
+**Aktuell und verbindlich**
+
+- [Hier weiterarbeiten](START-HERE.md)
 - [Produkt und Entscheidungen](PROJECT-CONTEXT.md)
-- [Aktueller Stand](CURRENT-STATE.md)
-- [Team und Agenten](TEAM-WORKFLOW.md)
-- [Backend-Übergabe](BACKEND-HANDOFF.md)
-- [Maschinenbibliothek · Version 35](EXERCISES-35.md)
+- [Aktueller Stand, Versionen und Übergaben](CURRENT-STATE.md)
+- [Projektstruktur und Prüfablauf](ARCHITECTURE.md)
+- [KI-Team: Claude, Codex, Gemini](AI-TEAM.md) · [Teamablauf](TEAM-WORKFLOW.md)
+- [Gestaltungsplan](DESIGN-WORKPLAN.md)
+- [Backend-Übergabe](BACKEND-HANDOFF.md) · [Backend-Einrichtung](../backend/ACCOUNT-SETUP-DE.md)
+- [iOS-App (AltStore)](IOS-APP.md)
 
-- [Aktueller Stand · Version 34](RELEASE-34.md)
-- [Projektstruktur und Entwicklung](ARCHITECTURE.md)
-- [Lebensmitteldaten, OCR und Grenzen](FOOD-32.md)
-- [Kontoverwaltung und Tutorial](ACCOUNT-33.md)
-- [Backend einrichten](../backend/ACCOUNT-SETUP-DE.md)
+**Archiv** – beschreibt den damaligen Stand; bei Abweichungen gelten Code und die Dokumente oben.
 
-Historische Unterlagen beschreiben ihren damaligen Stand: [Feature-Audit](PREMIUM-AUDIT.md), [Entwicklungshistorie](DEVELOPMENT-HISTORY.md). Bei Abweichungen gilt Version 34.
+- [Lebensmitteldaten, OCR und Grenzen · Version 32](archive/FOOD-32.md)
+- [Kontoverwaltung · Version 33](archive/ACCOUNT-33.md)
+- [Version 34](archive/RELEASE-34.md) · [Maschinenbibliothek · Version 35](archive/EXERCISES-35.md)
+- [Feature-Audit](archive/PREMIUM-AUDIT.md) · [Entwicklungshistorie](archive/DEVELOPMENT-HISTORY.md)

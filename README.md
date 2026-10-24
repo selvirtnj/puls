@@ -1,49 +1,56 @@
 <div align="center">
 
+<img src="icons/purple-180.png" width="88" alt="PULS">
+
 # PULS
-### Dein Essen. Dein Training. Dein Fortschritt.
 
-Ein persönlicher, werbefreier Fitness- und Ernährungstracker – für iPhone und Browser.
+**Dein Essen. Dein Training. Dein Fortschritt.**
 
-[**App öffnen →**](https://selvirtnj.github.io/puls/?v=35) · [Neues in Version 34](docs/RELEASE-34.md) · [Dokumentation](docs/README.md)
+Ein persönlicher, werbefreier Fitness- und Ernährungstracker für iPhone und Browser.
+
+[**App öffnen →**](https://selvirtnj.github.io/puls/) &nbsp;·&nbsp; [iOS-App](docs/IOS-APP.md) &nbsp;·&nbsp; [Dokumentation](docs/README.md)
 
 </div>
 
 ---
 
-**Neu in Version 35:** Mehr Maschinenübungen, Filter für Maschinen/Kabelzug/Smith, deutsche Suchbegriffe und nachladbare Ergebnislisten. Bestehende Routinen und Übungs-IDs bleiben erhalten.
-
 ## Was PULS kann
 
-**Mit Codex weiterentwickeln:** [Hier starten](START-HERE.md) · [Produktwissen](docs/PROJECT-CONTEXT.md) · [Aktueller Stand](docs/CURRENT-STATE.md) · [Teamablauf](docs/TEAM-WORKFLOW.md). Die projektbezogenen Rollen für Frontend, Backend und unabhängige Prüfung sind vorbereitet.
-
-| Ernährung | Training | Körper & Komfort |
+| Ernährung | Training | Körper & Konto |
 |---|---|---|
-| Kalorien, Makros und bekannte Mikronährstoffe | Eigene Routinen und Übungen | Gewicht, Wochenmittel und geglätteter Trend |
-| Lebensmittelsuche und Barcode-Kamera | Sätze, Gewicht, Reps und letzte Werte | Körpermaße und Biometrie |
-| Nährwertfoto mit kontrollierter OCR | Supersets, Pausen- und Workout-Timer | Persönliche XP, Level und Trainingsserie |
-| Rezepte, Portionen, Favoriten und zuletzt gegessen | PRs, geschätztes 1RM und Muskelverteilung | Zehn Designs, Deutsch/Englisch, Klänge |
-| Gramm, kg, oz, ml und l | Kalender, Auswertungen und Diagramme | JSON-Sicherung, CSV und optionaler Konto-Sync |
+| Kalorien, Makros und bekannte Mikronährstoffe | Eigene Routinen, Übungsbibliothek mit Maschinen und Kabelzug | Gewicht, Wochenmittel und geglätteter Trend |
+| Lebensmittelsuche, Barcode-Scan, Nährwertfoto (OCR) | Sätze mit Vorwerten, Supersets, Pausentimer | Profil & Ziele mit berechnetem oder eigenem Kalorienziel |
+| Rezepte, Portionen, Favoriten, zuletzt gegessen | Pausen-Mitteilung und Dynamic Island (iOS-App) | XP, Level und Trainingsserie |
+| Gramm, kg, oz, ml und l | Kalender, Rekorde, geschätztes 1RM, Muskelverteilung | Elf Designs, Deutsch/Englisch, Klänge |
+| Wasser mit eigenem Ziel | Laufendes Workout minimieren und fortsetzen | JSON-Sicherung, CSV und optionaler Konto-Sync |
 
-**Version 34** räumt die Oberfläche auf, integriert den Gewichtstrend in Körper & Entwicklung, ergänzt ausführliche Verlaufskurven und die Designs **Terra, Volt, Blueprint und Nocturne**. Nicht mehr gewünscht: Meal Planning, Fasten, Check-ins/Coaching, Progress-Fotos und Scheiben-/Aufwärmrechner.
+## Auf dem iPhone
 
-## Auf dem iPhone verwenden
+**Als Web-App:** [PULS in Safari öffnen](https://selvirtnj.github.io/puls/) → Teilen → **Zum Home-Bildschirm**. Updates kommen automatisch; zum Laden einer neuen Version die App einmal ganz schließen und neu öffnen.
 
-1. [PULS in Safari öffnen](https://selvirtnj.github.io/puls/).
-2. Teilen → **Zum Home-Bildschirm**.
-3. Profil und Ziel einrichten. Optional unter **Konto & Synchronisierung** anmelden, um PC und iPhone zu verbinden.
+**Als iOS-App (AltStore):** native Hülle um dieselbe Web-App, zusätzlich mit Mitteilung bei Pausenende und Countdown in der Dynamic Island. Installation: [docs/IOS-APP.md](docs/IOS-APP.md).
 
-PULS ist eine installierbare Web-App. Kamera und Onlinesuche benötigen passende Browserunterstützung bzw. Internet. Gespeicherte Produkte und bereits geladene Katalogteile sind nach dem ersten Online-Laden offline verfügbar. Hintergrundtöne und Timer-Mitteilungen bei gesperrtem iPhone sind browserabhängig; echte Dynamic Island und Apple Health sind nicht eingebaut.
+Ohne Anmeldung bleiben die Daten auf dem Gerät. Unter **Konto → Konto & Synchronisierung** verbindet ein PULS-Konto iPhone, iPad und PC.
 
-## Lebensmitteldaten
+## Projektstruktur
 
-18.200 gebündelte Einträge aus **BLS 4.0, USDA SR Legacy, USDA Foundation und Ciqual 2025**; zusätzliche Produktsuche und Barcodes über **Open Food Facts**. Herkunft und Datenabdeckung stehen in der App. Community-Einträge sind nicht pauschal verifiziert. Unbekannte Nährwerte werden nicht erfunden; OCR-Ergebnisse werden vor dem Speichern geprüft.
+```
+index.html · sw.js · manifest.webmanifest   Einstieg, Offline-Cache, PWA
+js/          App-Skripte (feste Ladereihenfolge in index.html)
+css/         Stylesheets
+catalog/     Gebündelte Lebensmittel- und Portionsdaten
+icons/       App-Icons in sechs Farben
+backend/     Supabase-SQL und Einrichtung
+ios/         Native iOS-Hülle (Swift), Build über GitHub Actions
+tests/       Regressionstests      scripts/   Server, Tests, KI-Brücken
+docs/        Produktwissen, aktueller Stand, Team-Ablauf
+```
 
-Übungsnamen stammen aus [Free Exercise DB](https://github.com/yuhonas/free-exercise-db), ergänzt um eigene Übungen. [Lizenz](EXERCISE-LICENSE.txt). Weitere Quellen und Nutzungsbedingungen: [Lebensmitteldokumentation](docs/FOOD-32.md) und catalog/manifest.json.
+Details: [Projektstruktur und Prüfablauf](docs/ARCHITECTURE.md).
 
 ## Lokal entwickeln
 
-Node.js 24 oder neuer; keine npm-Abhängigkeiten erforderlich.
+Node.js 24 oder neuer, keine npm-Abhängigkeiten.
 
 ```sh
 git clone https://github.com/selvirtnj/puls.git
@@ -52,18 +59,16 @@ npm test
 npm start
 ```
 
-Dann http://127.0.0.1:4173 öffnen. Die statischen Dateien werden direkt ausgeliefert. [Architektur und Prüfablauf](docs/ARCHITECTURE.md).
+Dann `http://127.0.0.1:4173/?erststart=1` öffnen – die Erststart-Vorschau arbeitet mit Testdaten und lässt gespeicherte Daten unberührt. Ein Push auf `main` veröffentlicht sofort über GitHub Pages.
 
-## Eigene Daten und Synchronisierung
+## Wie PULS weiterentwickelt wird
 
-Ohne Anmeldung speichert PULS das Profil auf dem jeweiligen Gerät. Für geräteübergreifende Speicherung nutzt die App Supabase Auth mit Zugriff auf die eigene Nutzer-ID und Konflikterkennung bei gleichzeitigen Änderungen. [Backend-Einrichtung](backend/ACCOUNT-SETUP-DE.md). Das öffentliche Repository enthält keinen Zugriff auf private Profile.
+Ein KI-Team arbeitet nach festen Regeln zusammen: **Claude Code** ist Hauptchat und Koordinator, **Codex** übernimmt Daten- und Logikarbeit, **Gemini** prüft als dritte Stimme. Wer schreibt, prüft nicht selbst. Rollen, Aufteilung und Ablauf: [AGENTS.md](AGENTS.md), [docs/AI-TEAM.md](docs/AI-TEAM.md), [docs/START-HERE.md](docs/START-HERE.md).
 
-Sicherung und CSV stehen unter **Konto → Deine Daten**. Reset und Kontolöschung verlangen eine ausdrückliche Bestätigung; für das endgültige Cloud-Löschen ist eine erneute Anmeldung nötig.
+## Daten und Quellen
 
-## Berechnungen und Grenzen
+18.200 gebündelte Lebensmittel aus **BLS 4.0, USDA SR Legacy, USDA Foundation und Ciqual 2025**, dazu Produktsuche und Barcodes über **Open Food Facts**. Unbekannte Nährwerte werden nicht erfunden; OCR-Ergebnisse werden vor dem Speichern geprüft. Übungsnamen stammen aus [Free Exercise DB](https://github.com/yuhonas/free-exercise-db), ergänzt um eigene Übungen ([Lizenz](EXERCISE-LICENSE.txt)). Weitere Quellen: `catalog/manifest.json` und [docs/archive/FOOD-32.md](docs/archive/FOOD-32.md).
 
-Kalorienbedarf, Zieltermin, Körperfett und 1RM sind Schätzungen. Verlaufsgrafiken verwenden erfasste Messpunkte und kennzeichnen fehlende Werte. Adaptive Kalorienkalibrierung benötigt ausreichend vollständige Ernährungs- und Gewichtsdaten. Methodik und Grenzen stehen in der App und [Dokumentation](docs/README.md).
+## Datenschutz und Grenzen
 
-## Projektstand
-
-Aktiv entwickelt wird die Web-App. Frühere native Experimente liegen unter archive/native; sie gehören nicht zur aktuellen Veröffentlichung.
+Sync über Supabase Auth mit Zugriff nur auf die eigene Nutzer-ID und Konflikterkennung ([Backend-Einrichtung](backend/ACCOUNT-SETUP-DE.md)). Das Repository enthält nur den öffentlichen Client-Schlüssel, keine privaten Profile. Kalorienbedarf, Zieltermin, Körperfett und 1RM sind Schätzungen; Diagramme zeigen nur erfasste Messpunkte.

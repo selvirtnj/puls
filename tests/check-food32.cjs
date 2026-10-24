@@ -2,7 +2,7 @@
 const fs32=require('fs'),vm32=require('vm');
 const existing32=fs32.readFileSync('tests/check-premium.cjs','utf8');
 const extra32=String.raw`
-run(fs.readFileSync('food-search.js','utf8'));run(fs.readFileSync('catalog-search.js','utf8'));run(fs.readFileSync('food-upgrade.js','utf8'));
+run(fs.readFileSync('js/food-search.js','utf8'));run(fs.readFileSync('js/catalog-search.js','utf8'));run(fs.readFileSync('js/food-upgrade.js','utf8'));
 assert.equal(run('parseLabelText("Energie 840 kJ / 200 kcal\\nFett 10 g\\ndavon gesättigte Fettsäuren 2 g\\nKohlenhydrate 20 g\\ndavon Zucker 8 g\\nEiweiß 7,5 g").p'),7.5);
 assert.equal(run('parseLabelText("Eiweiss 8 g").p'),8);
 assert.equal(run('parseLabelText("Protein < 0,5 g").p'),undefined);

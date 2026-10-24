@@ -1,7 +1,7 @@
 const fs33=require('fs'),vm33=require('vm');let code33=fs33.readFileSync('tests/check-premium.cjs','utf8');
 let extra33=String.raw`
 ctx.localStorage.removeItem=()=>{};run('render=function(){};var navSymbols={workout:""};');
-for(let f of ['food-search.js','catalog-search.js','food-upgrade.js','cloud.js','account-guide.js','quick-units.js'])run(fs.readFileSync(''+f,'utf8'));
+for(let f of ['js/food-search.js','js/catalog-search.js','js/food-upgrade.js','js/cloud.js','js/account-guide.js','js/quick-units.js'])run(fs.readFileSync(''+f,'utf8'));
 assert.equal(run('canonicalQuantity(.5,"kg","g")'),500);
 assert(Math.abs(run('canonicalQuantity(1,"oz","g")')-28.349523125)<1e-10);
 assert.equal(run('canonicalQuantity(.75,"l","ml")'),750);

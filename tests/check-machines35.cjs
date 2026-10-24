@@ -1,6 +1,6 @@
 const fs35=require('node:fs'),vm35=require('node:vm');let base35=fs35.readFileSync('tests/check-premium.cjs','utf8');
 vm35.runInNewContext(base35+String.raw`
-run('render=function(){}');let originalLength=run('exerciseCatalog.length');run(fs.readFileSync('machine-library.js','utf8'));
+run('render=function(){}');let originalLength=run('exerciseCatalog.length');run(fs.readFileSync('js/machine-library.js','utf8'));
 assert(run('machineExercisesAdded>=80'));assert.equal(run('exerciseCatalog.length'),originalLength+run('machineExercisesAdded'));
 assert.equal(run('new Set(exerciseCatalog.map(x=>x.id)).size'),run('exerciseCatalog.length'));
 assert.equal(run('new Set(exerciseCatalog.map(x=>normalizeSearch(x.name))).size'),run('exerciseCatalog.length'));

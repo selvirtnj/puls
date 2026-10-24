@@ -2,11 +2,11 @@ const fsPlan=require('node:fs'),vmPlan=require('node:vm');
 // Use the first-run harness's parsed form controls, without executing its fixtures.
 let harnessPlan=fsPlan.readFileSync('tests/check-onboarding.cjs','utf8').split('(async()=>{')[0];
 harnessPlan=harnessPlan.replace('var navSymbols={workout:""};','');
-harnessPlan=harnessPlan.replace("for(let file of ['cloud.js','account-guide.js'])",String.raw`
+harnessPlan=harnessPlan.replace("for(let file of ['js/cloud.js','js/account-guide.js'])",String.raw`
 el('workout-dock').remove=()=>{};el('workout-dock').querySelector=()=>null;el('session-root').querySelector=()=>null;
 ctx.document.body.classList.toggle=()=>{};
-for(let file of ['interactions.js','polish.js','compact.js','lifecycle.js','workout-polish.js','comfort.js','tracker-tools.js','nutrition-input.js','adaptation.js'])run(fs.readFileSync(file,'utf8'));
-for(let file of ['cloud.js','account-guide.js'])`);
+for(let file of ['js/interactions.js','js/polish.js','js/compact.js','js/lifecycle.js','js/workout-polish.js','js/comfort.js','js/tracker-tools.js','js/nutrition-input.js','js/adaptation.js'])run(fs.readFileSync(file,'utf8'));
+for(let file of ['js/cloud.js','js/account-guide.js'])`);
 const casesPlan=String.raw`
 const profilePlan={...profile,rmr:1650.5},autoPlan={mode:'auto',direction:'lose',pace:'medium',macroMode:'auto',protein:1.8,fat:.8,adaptive:true,learnTdee:false};
 function seeded(p=profilePlan,pl=autoPlan){let test=app();test.run('state.onboardingComplete=true;state.setupPending=false;setupPending=false;state.profile='+JSON.stringify(p)+';state.plan='+JSON.stringify(pl)+';state.weights=[];state.goalHistory=[];state.profileHistory=[];settings()');return test}

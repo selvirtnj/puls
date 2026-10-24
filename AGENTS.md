@@ -35,7 +35,7 @@ Für einfache Änderungen keinen Agentenverbund starten. Größere Implementieru
 
 ## Ein Repository, ein maßgeblicher Codebestand
 
-- Dieses Repository ist die Arbeitsgrundlage. Die Web-App liegt direkt im Repository-Stamm, nicht in `dist/` oder `release34/`.
+- Dieses Repository ist die Arbeitsgrundlage. Die Web-App: `index.html`, `sw.js` und Manifest im Stamm, Skripte in `js/`, Styles in `css/` (Übersicht in `docs/ARCHITECTURE.md`). Kein Build-Schritt, kein `dist/`.
 - Alte Bauordner und Skripte aus früheren Chats sind historische Werkzeuge. Sie können neuere Dateien überschreiben und werden nicht blind erneut ausgeführt.
 - Repository: `https://github.com/selvirtnj/puls`; Live: `https://selvirtnj.github.io/puls/`.
 - GitHub Pages veröffentlicht `main`. Ein Push auf `main` kann unmittelbar die Live-App ändern.
