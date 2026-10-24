@@ -4,8 +4,8 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Stand bei Einrichtung der Zusammenarbeit
 
-- Veröffentlichte App-Version: **43** (24.10.2026: Profil & Ziele überarbeitet, Logikfehler behoben). Davor 42 (Abstand zwischen den Wischseiten), 41 (Essen im neuen Originaldesign), 40 (optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen), 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
-- Live: https://selvirtnj.github.io/puls/?v=43 ; Repository: https://github.com/selvirtnj/puls .
+- Veröffentlichte App-Version: **44** (24.10.2026: Profil-Schalter Richtung/Tempo untereinander, auf dem iPhone überlappten sie). Davor 43 (Profil & Ziele überarbeitet, Logikfehler behoben), 42 (Abstand zwischen den Wischseiten), 41 (Essen im neuen Originaldesign), 40 (optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen), 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
+- Live: https://selvirtnj.github.io/puls/?v=44 ; Repository: https://github.com/selvirtnj/puls .
 - Davor veröffentlicht: 35, Ausgangscommit `6e878204b677d1e9aa8f51f51f22f2df526f2c81`.
 - Version 34: fokussierte Oberfläche, neu geordnetes Konto, mehr Diagramme, vier zusätzliche Designs, Archiv und Projektdokumentation.
 - Version 35: 87 neue Übungsvarianten, insgesamt 963; Maschinen-/Kabel-/Smith-Filter, deutsche Suchnamen und Ergebnis-Paginierung.

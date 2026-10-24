@@ -49,6 +49,7 @@ function refineProfileForm(){
     let group=document.createElement('div');group.className='segmented';group.dataset.for=id;group.setAttribute('role','group');group.setAttribute('aria-label',translatedProfileText(profileLabelText[id]||''));
     group.innerHTML=[...select.options].map(o=>`<button type="button" data-value="${esc(o.value)}" aria-pressed="false" onclick="chooseProfileSegment('${id}','${esc(o.value)}')">${esc(labels[o.value]||o.text)}</button>`).join('');
     select.insertAdjacentElement('afterend',group);
+    select.closest('.formgrid')?.classList.add('segstack');
   }
   // Abschnitte: 01 Körper · 02 Ziel · 03 Makros · 04 Automatik, Ergebnis und Speichern unten fest.
   let sections=form.querySelectorAll(':scope > .formsection');

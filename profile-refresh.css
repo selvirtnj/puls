@@ -31,6 +31,9 @@
 }
 #mb.profilemodal #planner-form .profileoff { display: none !important; }
 #mb.profilemodal #planner-form .formgrid { gap: 12px; margin: 0; }
+/* Schaltergruppen brauchen die volle Breite: Richtung und Tempo untereinander statt nebeneinander. */
+#mb.profilemodal #planner-form .formgrid.segstack { grid-template-columns: minmax(0, 1fr) !important; }
+#mb.profilemodal #planner-form .formgrid.segstack > label { grid-column: 1 / -1; min-width: 0; }
 #mb.profilemodal #planner-form label {
   display: grid;
   gap: 6px;
@@ -53,6 +56,8 @@
 #mb.profilemodal #planner-form .segsource { display: none !important; }
 #mb.profilemodal #planner-form .segmented {
   display: flex;
+  min-width: 0;
+  overflow: hidden;
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--line);
@@ -71,6 +76,9 @@
   font: inherit;
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
   transition: background-color .16s ease, color .16s ease, transform .16s ease;
 }
@@ -82,7 +90,10 @@
 #mb.profilemodal #planner-form .segmented button:active:not(:disabled) { transform: scale(.97); }
 #mb.profilemodal #planner-form .segmented button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 #mb.profilemodal #planner-form .segmented.disabled { opacity: .55; }
-#mb.profilemodal #planner-form #pace-info { margin: -4px 0 0; font-size: 12px; color: var(--muted); }
+#mb.profilemodal #planner-form #pace-info { margin: -4px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 359px) {
+  #mb.profilemodal #planner-form .segmented button { font-size: 12px; padding-inline: 2px; }
+}
 
 /* Automatik: Schalterzeilen */
 #mb.profilemodal #planner-form label.checklabel {
