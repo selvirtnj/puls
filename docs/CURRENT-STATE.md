@@ -4,8 +4,8 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Stand bei Einrichtung der Zusammenarbeit
 
-- Veröffentlichte App-Version: **39** (24.10.2026: `native-bridge.js` für Pausen-Mitteilung und Dynamic Island in der iOS-App). Davor 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign), von Selvir auf dem iPhone bestätigt.
-- Live: https://selvirtnj.github.io/puls/?v=39 ; Repository: https://github.com/selvirtnj/puls .
+- Veröffentlichte App-Version: **40** (24.10.2026: optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen). Davor 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
+- Live: https://selvirtnj.github.io/puls/?v=40 ; Repository: https://github.com/selvirtnj/puls .
 - Davor veröffentlicht: 35, Ausgangscommit `6e878204b677d1e9aa8f51f51f22f2df526f2c81`.
 - Version 34: fokussierte Oberfläche, neu geordnetes Konto, mehr Diagramme, vier zusätzliche Designs, Archiv und Projektdokumentation.
 - Version 35: 87 neue Übungsvarianten, insgesamt 963; Maschinen-/Kabel-/Smith-Filter, deutsche Suchnamen und Ergebnis-Paginierung.
@@ -14,7 +14,7 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Was jetzt eingerichtet ist
 
-`AGENTS.md`, `START-HERE.md`, Produktkontext, Backend-Übergabe, Teamablauf und die Rollen `puls_frontend`, `puls_backend`, `puls_reviewer`. Ein Hauptchat koordiniert die Aufgaben. Neue Chats müssen die Dokumentation lesen; automatische vollständige Übertragung beliebiger Gesprächshistorien wird nicht vorausgesetzt.
+`AGENTS.md`, `START-HERE.md`, Produktkontext, Backend-Übergabe, Teamablauf und die Rollen `puls_frontend`, `puls_backend`, `puls_reviewer`. Ein Hauptchat koordiniert die Aufgaben. Seit 24.10.2026: Hauptchat „PULS · Hauptchat“ in Claude Code koordiniert Claude, Codex (`scripts/codex-bridge.ps1`) und Gemini/Antigravity (`scripts/gemini-bridge.ps1`) nach `docs/AI-TEAM.md`; Brücken inkl. Rückfragen getestet. Regel: nur Web-App, `ios/` nur auf Selvirs ausdrücklichen Wunsch. Neue Chats müssen die Dokumentation lesen; automatische vollständige Übertragung beliebiger Gesprächshistorien wird nicht vorausgesetzt.
 
 ## Sofort nutzbare Befehle
 
@@ -54,6 +54,20 @@ Keine der folgenden Aufgaben ist durch diese Liste automatisch zur Umsetzung fre
 6. Einige neue Diagramm- und Beschreibungsdetails sind möglicherweise noch nicht vollständig übersetzt. Bei englischer UI konkret prüfen, nicht pauschal Vollständigkeit behaupten.
 
 ## Übergabe nach jeder größeren Aufgabe
+
+### Version 40 — veröffentlicht 24.10.2026 (erster Teamauftrag Claude + Codex + Gemini)
+
+- Laufendes Workout (Claude): `session-focus.css`/`session-focus.js`. Pausentimer klebt in allen 11 Designs direkt unter der Session-Kopfzeile; deren echte Höhe (Safe Area/Dynamic Island) wird als `--session-head-h` gemessen. Vorher lag `top:80px` auf dem iPhone hinter der ~128 px hohen Kopfzeile, im Original-Design zudem halbtransparent. Satzzeilen ohne Trennlinien mit 8 px Abstand; Abhak-Box sichtbar 24 px in 44 × 44 px Tippfläche, helles Häkchen bei dunklen Akzenten (apple, mono, terra, blueprint).
+- Erststart optional + Tutorial entfernt (Codex, Einträge unten). Landkarte vorab von Gemini.
+- Reviews: Codex prüfte `native-bridge.js` (2 Befunde behoben: geänderte Satzangaben während der Pause, Cloud-Abgleich setzte Fortschritt zurück); Gemini prüfte Claudes Session-Änderungen (2 Befunde behoben: Häkchen-Kontrast, 44-px-Spalte); Claude und Gemini prüften Codex' Erststart/Tutorial (keine Befunde).
+- Prüfung: `node scripts/check.cjs`, Bridge-VM-Simulation, Browser 390 × 844 mit `?erststart=1` (leerer Erststart bis Übersicht, Konto ohne NaN/Tutorial, Session in allen Designs mit simulierter 59-px-Safe-Area). Grenzen: kein echtes iPhone vor Veröffentlichung, kein Live-Sync-Test.
+
+### Optionaler Erststart und Tutorial entfernt — Teil von Version 40
+
+- Koordinator-Auftrag auf Basis `2e5f450`: Name und alle Planungsangaben beim Erststart optional; Abschluss über `onboardingComplete`/`setupPending`, unabhängig vom Namen. Unvollständige oder nicht automatisch planbare Eingaben speichern kein Teilprofil und verändern keine bestehenden Ziele. Vollständige geeignete Angaben nutzen die bisherigen Profil-, Plan-, Historien- und Startgewichtswege. Kontobearbeitung behält ihre Validierung. Avatar und Kontoname berücksichtigen Leerzeichen.
+- Tutorial samt automatischem Start, Konto-Menü, Wrappern, Übersetzungen und CSS entfernt. `tutorialVersion` undefined/0/1 bleibt importierbar. Erfolgreicher Backup-Import bestimmt den lokalen Onboarding-Ablauf neu; fertige Backups bleiben nicht in der Erststart-Schleife hängen.
+- `node scripts/check.cjs` einschließlich neuer `tests/check-onboarding.cjs` bestanden: leerer Erststart, nur Name, vollständige/unvollständige/ungültige Profile, Neustart, unveränderte Ziele, bisherige Kontovalidierung, alte Flags und Backup-Import. Bestehende Cloud-/Konflikttests ebenfalls bestanden. VM-Tests sind kein Layout- oder Live-RLS-Nachweis.
+- Keine Veröffentlichung, Backend- oder iOS-Änderung. Versions-/Asset-/SW-Anpassungen und unabhängiges Review übernimmt Claude als Koordinator. Browser hier nicht verfügbar (`Browser is not available: iab`); Prüfung bei 390 × 844, Interaktionen und Designs bleibt beim Koordinator offen. Seine bestehenden Änderungen an Session-Fokus, Native Bridge, Einstieg und Service Worker bleiben unberührt.
 
 ### Pausen-Mitteilung und Dynamic Island — Web 39 / iOS-App 1.1 — 24.10.2026
 

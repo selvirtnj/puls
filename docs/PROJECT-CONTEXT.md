@@ -54,9 +54,9 @@ Nach Bestätigung der Übersicht ist auch Training im selben Stil beauftragt: di
 
 Profilidentität: Nutzername und optionales Profilbild. E-Mail ist kein dauerhaftes Profilheaderfeld; Supabase-Anmeldung kann E-Mail/Passwort benötigen. Profilname allein ist keine sichere geräteübergreifende Anmeldung.
 
-Konto-Reihenfolge: Profil/Streak → Konto & Synchronisierung → Plan → Körper & Entwicklung einschließlich Gewichtstrend/Wochenmittel → adaptiver Erhalt → Design → Sprache/Icon → Klänge & Feedback → Tutorial → Deine Daten → Konto verwalten.
+Konto-Reihenfolge: Profil/Streak → Konto & Synchronisierung → Plan → Körper & Entwicklung einschließlich Gewichtstrend/Wochenmittel → adaptiver Erhalt → Design → Sprache/Icon → Klänge & Feedback → Deine Daten → Konto verwalten.
 
-- Erststart fragt Profil, Ziele und relevante Körper-/Planungsdaten, danach Übersicht und Tutorial. Tutorial über Konto wiederholbar.
+- Alle Angaben beim Erststart sind optional, einschließlich Name. Ohne vollständiges, gültiges Profil bleiben bestehende Tagesziele erhalten; es wird kein Teilprofil gespeichert. Vollständige, für automatische Planung geeignete Angaben übernehmen wie bisher Profil, Plan und Startgewicht. Nach Abschluss erscheint die Übersicht; fehlende Angaben lassen sich später im Konto ergänzen. Der Abschluss wird unabhängig vom Namen gespeichert. Das Tutorial ist vollständig entfernt; alte Tutorial-Flags bleiben für Sicherungen gültig.
 - Körpergewicht, Wochenmittel, geglätteter Trend, BMI und grobe Körperfettschätzung. Körperfett deutlich als Schätzung kennzeichnen; keine Messung aus Trainingsstärke behaupten.
 - Gesamtfortschritt: Woche/Monat/Halbjahr/Jahr/Gesamt, einzelne Kurven schaltbar. Zusätzliche Metrikdiagramme im Training-Fortschritt mit korrekten Einheiten und Datenlücken.
 - Profil auf PC/iPhone per Supabase synchronisieren, Offline-Änderungen und Revisionskonflikte berücksichtigen. JSON-Sicherung/CSV, Reset und Kontolöschung mit klarer Bestätigung.

@@ -24,12 +24,15 @@ function syncNativeRest(){
   try{
     let w=activeRest();
     if(!w){if(sent!==null){sent=null;bridge.postMessage({type:'restCancel'})}return}
-    if(sent&&sent.rest===w.rest&&sent.endAt===w.rest.endAt)return;
-    // „+30 s“ verlängert dasselbe rest-Objekt; ein neu abgehakter Satz legt ein neues an.
-    let startsAt=sent&&sent.rest===w.rest?sent.startsAt:Date.now();
-    sent={rest:w.rest,endAt:w.rest.endAt,startsAt};
     let current=(w.exercises||[]).find(e=>e.id===w.rest.exerciseId);
-    bridge.postMessage({type:'restStart',startsAt,endsAt:w.rest.endAt,workout:w.name||'Workout',...nextSetInfo(w,current)});
+    let info={endsAt:w.rest.endAt,workout:w.name||'Workout',...nextSetInfo(w,current)},key=JSON.stringify(info);
+    // Dieselbe Pause: „+30 s“ verlängert dasselbe rest-Objekt; ein Cloud-Abgleich ersetzt es mit gleicher Endzeit.
+    // Ein neu abgehakter Satz legt ein neues Objekt mit neuer Endzeit an.
+    let same=sent&&sent.workoutId===w.id&&sent.exerciseId===w.rest.exerciseId&&(sent.rest===w.rest||sent.endAt===w.rest.endAt);
+    if(same&&sent.key===key){sent.rest=w.rest;return}
+    let startsAt=same?sent.startsAt:Date.now();
+    sent={rest:w.rest,workoutId:w.id,exerciseId:w.rest.exerciseId,endAt:w.rest.endAt,startsAt,key};
+    bridge.postMessage({type:'restStart',startsAt,...info});
   }catch(error){console.warn('PULS native bridge',error)}
 }
 // Kurzer Takt, damit die Live-Aktivität angelegt wird, solange die App noch im Vordergrund ist.
