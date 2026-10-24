@@ -1,0 +1,65 @@
+/* Training-Tabs, alle Designs: Workout = Starten, Routinen = Verwalten, Kalender ohne doppelte Abschlusslinie. */
+
+/* Workout-Tab: jede Routine eine kompakte Zeile mit Start rechts. */
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart {
+  margin: 0 !important;
+  padding: 12px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > :not(.cardhead) { display: none !important; }
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 !important;
+}
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead > div { flex: 1 1 auto; min-width: 0; }
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead h2 {
+  margin: 0;
+  font-size: 17px !important;
+  letter-spacing: -.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead small { display: block; margin-top: 2px; color: var(--muted); }
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead .textbtn { display: none; }
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead .btn {
+  flex: 0 0 auto;
+  min-width: 84px;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+#content .designworkouts[data-train-tab=current] .workoutbody > .sectionhead .quickhidden { display: none; }
+#content .designworkouts[data-train-tab=current] .workoutbody > .btn.secondary.full { margin: 14px 0 0 !important; }
+
+/* „Heute erledigt“: klar abgesetzter eigener Abschnitt. */
+#content .designworkouts .workoutbody > h3.donehead {
+  margin: 34px 0 6px !important;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+#content .designworkouts .workoutbody > h3.donehead + .completedworkout { margin-top: 0 !important; }
+#content .designworkouts .workoutbody > .completedworkout + .completedworkout { margin-top: 14px !important; }
+
+/* Routinen-Tab: Verwaltung bleibt ausführlich; Starten ist dort Nebenaktion. */
+#content .designworkouts[data-train-tab=routines] .routinepreview .actionrow .btn:not(.secondary) {
+  background: transparent;
+  color: var(--lime);
+  border: 1px solid var(--line);
+}
+
+/* Kalender: Abschlusslinie des Blocks entfällt, die Linie unter dem letzten Eintrag reicht. */
+#content .designworkouts[data-train-tab=calendar] .workoutbody > .card:last-child { border-bottom: 0 !important; }
