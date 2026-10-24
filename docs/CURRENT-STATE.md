@@ -4,8 +4,9 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Stand bei Einrichtung der Zusammenarbeit
 
-- Veröffentlichte App-Version: **35**. Ausgangscommit: `6e878204b677d1e9aa8f51f51f22f2df526f2c81`.
-- Live: https://selvirtnj.github.io/puls/?v=35 ; Repository: https://github.com/selvirtnj/puls .
+- Veröffentlichte App-Version: **38** (24.10.2026, Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign). Selvir hat 38 auf dem iPhone bestätigt.
+- Live: https://selvirtnj.github.io/puls/?v=38 ; Repository: https://github.com/selvirtnj/puls .
+- Davor veröffentlicht: 35, Ausgangscommit `6e878204b677d1e9aa8f51f51f22f2df526f2c81`.
 - Version 34: fokussierte Oberfläche, neu geordnetes Konto, mehr Diagramme, vier zusätzliche Designs, Archiv und Projektdokumentation.
 - Version 35: 87 neue Übungsvarianten, insgesamt 963; Maschinen-/Kabel-/Smith-Filter, deutsche Suchnamen und Ergebnis-Paginierung.
 - Die anschließende Team-Einrichtung ändert Dokumentation, Agentenrollen und Entwicklungswerkzeuge, keine Runtime-Funktion der App. Deshalb bleibt die App-Version 35.
@@ -29,7 +30,7 @@ node scripts/serve.cjs
 
 ## Aktueller Auftrag / nächster Schritt
 
-Selvir hat am 24.10.2026 die Zielklärung bestätigt: persönliche iPhone-Nutzung, sportliches dunkles lila Original, weniger verschachtelte Karten, sichtbare kurze Aktionsreaktionen. Konto- und Übersichts-Vorschau wurden ausdrücklich positiv beurteilt. Nun ist Training im selben Stil beauftragt, wieder bis zur lokalen geprüften Vorschau. Keine automatische kontinuierliche Hintergrundarbeit. Verbindlicher Plan: `docs/DESIGN-WORKPLAN.md`.
+Selvir hat am 24.10.2026 die Zielklärung bestätigt: persönliche iPhone-Nutzung, sportliches dunkles lila Original, weniger verschachtelte Karten, sichtbare kurze Aktionsreaktionen. Konto- und Übersichts-Vorschau wurden ausdrücklich positiv beurteilt. Training im selben Stil ist umgesetzt; Konto, Übersicht und Training sind als Version 38 live. Nächster geplanter Abschnitt laut Plan: Essen, erst nach Selvirs Auftrag. Keine automatische kontinuierliche Hintergrundarbeit. Verbindlicher Plan: `docs/DESIGN-WORKPLAN.md`.
 
 Nach Einbindung des Repository-Ordners als Codex-Projekt dort einen Hauptchat starten; `START-HERE.md` enthält den Einstiegsauftrag. Projektrollen werden je nach Client nach Projektöffnung/neuem Chat geladen, nicht zwingend mitten in einer bestehenden Sitzung.
 
@@ -58,11 +59,11 @@ Keine der folgenden Aufgaben ist durch diese Liste automatisch zur Umsetzung fre
 
 - Nach Bestätigung der Übersicht beauftragt. Neue `training-refresh.css` gestaltet ausschließlich Training im Originaldesign sowie Original-Vollbildsessions unabhängig vom Hintergrundtab. Vier unterstrichene Reiter, offene Routinen-/Kalender-/Fortschrittsabschnitte, klare Typografie, flache Ergebnisgitter. Kurze Übergangs-/Satzanimationen; bestehende Feieranimationen und Reduced Motion erhalten.
 - Keine neue JS-Logik, Timer-/Daten-/ID-/Handleränderung oder Backendänderung. Satzfelder/Checkboxen 44 px; fünfspaltiges Raster mit schmaler Variante. Modals und Sortierghosts unverändert.
-- Version 38 lokal konsistent in Anzeige, Package, Asset-Queries und SW-Cache; Stylesheet zuletzt und als Offline-Asset ergänzt. Nicht veröffentlicht, kein Release-Commit; veröffentlichter Stand weiterhin 35.
+- Version 38 lokal konsistent in Anzeige, Package, Asset-Queries und SW-Cache; Stylesheet zuletzt und als Offline-Asset ergänzt. Am 24.10.2026 zusammen mit 36 und 37 als Commit `0c62ef6` veröffentlicht; GitHub Pages liefert 38 aus.
 - Prüfung: `node scripts/check.cjs`, Integrationsprüfung und `git diff --check` bestanden. Unabhängiges Review ohne offene belegte Befunde; letzte Select-Farbkorrektur nachgeprüft.
 - Browser mit isolierten Testdaten: alle vier Tabs, leere Ansicht und Routine mit langem Namen/zwei Übungen, Start, 50 kg × 8 eintragen/abhaken, automatischer Pausenstart und +30 s, Positionswechsel mit erhaltenen Satzwerten, Minimieren und Fortsetzen aus Übersicht, Abschluss mit unerledigter Übung einschließlich Zurück sowie alle drei Abschlussansichten. Kalender zeigt Testtraining; Fortschritt 400 kg Volumen/8 Reps und Zeitraumfilter geprüft. Hauptprüfung 390 × 844; Session zusätzlich bei 320 px ohne horizontalen Überlauf. Sichtbare Satzfelder und Checkboxen 44 px bestätigt.
 - Grenzen: kein reales iPhone/Safari, kein echter Touch-Drag-/Safe-Area-/Hintergrundtimer-Test, kein Offline-SW- oder Live-Sync-Lauf. Positionswechsel per Auswahlfeld geprüft; vorhandene Drag-Logik nicht verändert. Reduced Motion implementiert/im Code geprüft, nicht mit aktivierter Betriebssystemoption getestet. Andere Designs vom neuen CSS ausgeschlossen, nicht erneut vollständig geprüft.
-- Nächster Schritt: Selvir beurteilt die lokale Trainingsvorschau. Essen folgt erst nach weiterem konkretem Auftrag; keine Veröffentlichung beauftragt.
+- Selvir hat Version 38 veröffentlichen lassen und auf dem iPhone bestätigt. Essen folgt erst nach weiterem konkretem Auftrag.
 
 ### Übersichts-Vorschau 37 — 24.10.2026
 
