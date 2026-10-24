@@ -4,3 +4,11 @@ Thumbs.db
 *.log
 .env
 .env.*
+
+# iOS-Build (wird in GitHub Actions erzeugt)
+ios/build/
+ios/*.xcodeproj/
+ios/Payload/
+*.ipa
+ios/PULS/Info.plist
+ios/PULS/Assets.xcassets/AppIcon.appiconset/AppIcon.png

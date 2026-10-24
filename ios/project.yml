@@ -1,0 +1,50 @@
+# XcodeGen-Projekt der nativen PULS-Hülle. Wird in .github/workflows/ios-app.yml auf macOS gebaut.
+name: PULS
+options:
+  bundleIdPrefix: com.selvirtnj
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    CODE_SIGNING_ALLOWED: "NO"
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGN_IDENTITY: ""
+targets:
+  PULS:
+    type: application
+    platform: iOS
+    sources: [PULS]
+    scheme: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.selvirtnj.puls
+    info:
+      path: PULS/Info.plist
+      properties:
+        CFBundleDisplayName: PULS
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UIUserInterfaceStyle: Dark
+        UIViewControllerBasedStatusBarAppearance: true
+        UIRequiresFullScreen: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        WKAppBoundDomains:
+          - selvirtnj.github.io
+        NSCameraUsageDescription: PULS nutzt die Kamera zum Scannen von Barcodes und für Fotos.
+        NSMicrophoneUsageDescription: PULS nutzt das Mikrofon für die Spracheingabe.
+        NSPhotoLibraryUsageDescription: PULS nutzt Fotos, wenn du ein Bild hinzufügst.
