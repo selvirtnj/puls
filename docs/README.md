@@ -1,5 +1,12 @@
 # Dokumentation
 
+- [Einstieg für neue Chats](../START-HERE.md)
+- [Produkt und Entscheidungen](PROJECT-CONTEXT.md)
+- [Aktueller Stand](CURRENT-STATE.md)
+- [Team und Agenten](TEAM-WORKFLOW.md)
+- [Backend-Übergabe](BACKEND-HANDOFF.md)
+- [Maschinenbibliothek · Version 35](EXERCISES-35.md)
+
 - [Aktueller Stand · Version 34](RELEASE-34.md)
 - [Projektstruktur und Entwicklung](ARCHITECTURE.md)
 - [Lebensmitteldaten, OCR und Grenzen](FOOD-32.md)

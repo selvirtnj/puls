@@ -1,0 +1,7 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert');
+new (require('node:vm').Script)(fs.readFileSync('scripts/new-worktree.cjs','utf8'),{filename:'new-worktree.cjs'});
+const required=['AGENTS.md','START-HERE.md','docs/PROJECT-CONTEXT.md','docs/CURRENT-STATE.md','docs/BACKEND-HANDOFF.md','docs/TEAM-WORKFLOW.md','.codex/config.toml','scripts/new-worktree.cjs'];
+for(let file of required)assert(fs.existsSync(file),'Missing '+file);
+for(let role of ['puls_frontend','puls_backend','puls_reviewer']){let file='.codex/agents/'+role+'.toml',text=fs.readFileSync(file,'utf8');assert(text.includes('name = "'+role+'"'),file+' name');assert(/^description = ".+"$/m.test(text),file+' description');assert(/developer_instructions = '''[\s\S]+'''\s*$/.test(text),file+' instructions');assert(!/^(?:model|model_reasoning_effort|sandbox_mode|approval_policy)\s*=/m.test(text),file+' must inherit settings');}
+for(let file of ['START-HERE.md','docs/PROJECT-CONTEXT.md','docs/CURRENT-STATE.md','docs/TEAM-WORKFLOW.md']){let text=fs.readFileSync(file,'utf8');for(let match of text.matchAll(/\]\(([^)]+)\)/g)){let ref=match[1];if(/^(?:https?:|#)/.test(ref))continue;assert(fs.existsSync(path.resolve(path.dirname(file),ref.split('#')[0])),'Broken link '+file+' -> '+ref)}}
+console.log('PASS: handoff documents, relative links and three project role definitions; no model or permission overrides.');

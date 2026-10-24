@@ -1,0 +1,4 @@
+# Project-scoped coordination only. No model, credential or permission overrides.
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3

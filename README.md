@@ -15,6 +15,8 @@ Ein persönlicher, werbefreier Fitness- und Ernährungstracker – für iPhone u
 
 ## Was PULS kann
 
+**Mit Codex weiterentwickeln:** [Hier starten](START-HERE.md) · [Produktwissen](docs/PROJECT-CONTEXT.md) · [Aktueller Stand](docs/CURRENT-STATE.md) · [Teamablauf](docs/TEAM-WORKFLOW.md). Die projektbezogenen Rollen für Frontend, Backend und unabhängige Prüfung sind vorbereitet.
+
 | Ernährung | Training | Körper & Komfort |
 |---|---|---|
 | Kalorien, Makros und bekannte Mikronährstoffe | Eigene Routinen und Übungen | Gewicht, Wochenmittel und geglätteter Trend |
