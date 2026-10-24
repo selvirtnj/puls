@@ -1,0 +1,350 @@
+/* Training keeps its existing views, set grids and handlers. Only the Original
+   design changes. Full-screen sessions can also open from the overview. */
+body[data-current-page=workout][data-app-design=classic] #content .designworkouts {
+  max-width: 720px;
+  margin: 0 auto;
+  color: var(--app-ink);
+  --muted: #b3a9bf;
+}
+body[data-current-page=workout][data-app-design=classic] #content .designworkouts > .workouttabs {
+  gap: 4px !important;
+  margin: 0 !important;
+  padding: 6px 0 0;
+  border-bottom: 1px solid var(--line);
+}
+body[data-current-page=workout][data-app-design=classic] #content .designworkouts > .workouttabs > .btn {
+  min-height: 48px;
+  padding: 10px 2px !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--muted);
+  font-weight: 650;
+  transition: color .18s ease,border-color .18s ease;
+}
+body[data-current-page=workout][data-app-design=classic] #content .designworkouts > .workouttabs > .btn[aria-pressed=true] {
+  border-bottom-color: var(--lime) !important;
+  color: var(--lime);
+  font-weight: 800;
+}
+body[data-current-page=workout][data-app-design=classic] #content .trainingutilities {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+body[data-current-page=workout][data-app-design=classic] #content .trainingutilities .restglobal {
+  min-height: 44px;
+  margin: 0;
+  padding: 5px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+/* Match and exceed the existing compact.css !important card selector. */
+body[data-current-page=workout][data-app-design=classic] #content .workoutbody .card:not(.watercompact):not(.designchooser):not(.compactdiary) {
+  padding: 20px 0 !important;
+  margin: 0 !important;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body[data-current-page=workout][data-app-design=classic] #content .workoutbody {
+  min-width: 0;
+  animation: training-enter .3s cubic-bezier(.2,.8,.2,1) both;
+}
+body[data-current-page=workout][data-app-design=classic] #content .workoutbody :is(.sectionhead,.cardhead) {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+body[data-current-page=workout][data-app-design=classic] #content .workoutbody :is(.sectionhead h2,.cardhead h2,.metricexplorer h2) {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.045em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+body[data-current-page=workout][data-app-design=classic] #content .workoutbody > .sectionhead:first-child {
+  margin-top: 18px;
+}
+body[data-current-page=workout][data-app-design=classic] #content :is(.btn,.textbtn,.quiet,.delete,.searchitem,.metricgroups button,.metricrange select) {
+  min-height: 44px;
+}
+body[data-current-page=workout][data-app-design=classic] #content .btn { border-radius: 7px; }
+body[data-current-page=workout][data-app-design=classic] #content .workoutbody .cardhead .textbtn {
+  font-size: 11px;
+  padding: 4px 0;
+}
+body[data-current-page=workout][data-app-design=classic] #content .routinepreview .cardhead > div { flex: 1; }
+body[data-current-page=workout][data-app-design=classic] #content .routinepreview small {
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+body[data-current-page=workout][data-app-design=classic] #content .routinepreview .routinepreviewrow {
+  min-height: 44px;
+  align-items: center;
+  font-size: 13px;
+}
+body[data-current-page=workout][data-app-design=classic] #content .routinepreviewrow > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+body[data-current-page=workout][data-app-design=classic] #content .routinepreview .actionrow {
+  margin-top: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+body[data-current-page=workout][data-app-design=classic] #content .routinepreview .actionrow .btn { min-width: 124px; }
+body[data-current-page=workout][data-app-design=classic] #content .routinepreview .actionrow .textbtn { color: var(--muted); }
+body[data-current-page=workout][data-app-design=classic] #content .trainingcalendar {
+  gap: 4px;
+  margin-top: 14px;
+}
+body[data-current-page=workout][data-app-design=classic] #content .trainingcalendar .calday {
+  min-width: 0;
+  min-height: 52px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--app-ink);
+  font-weight: 600;
+}
+body[data-current-page=workout][data-app-design=classic] #content .trainingcalendar .calday.hasworkout {
+  background: var(--theme-tint);
+  border-bottom-color: var(--lime);
+}
+body[data-current-page=workout][data-app-design=classic] #content .trainingcalendar .calday.selected {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+body[data-current-page=workout][data-app-design=classic] #content .calroutines {
+  margin-top: 4px;
+  font-weight: 400;
+  font-size: 8px;
+  line-height: 1.4;
+}
+body[data-current-page=workout][data-app-design=classic] #content .fullprogress { gap: 0; }
+body[data-current-page=workout][data-app-design=classic] #content .metricexplorer .cardhead > div {
+  flex: 1;
+  min-width: 160px;
+}
+body[data-current-page=workout][data-app-design=classic] #content .metricgroups { margin: 14px 0; }
+body[data-current-page=workout][data-app-design=classic] #content .metricgroups button {
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+body[data-current-page=workout][data-app-design=classic] #content :is(select,.metricempty,.metricmini) { border-radius: 4px; }
+body[data-current-page=workout][data-app-design=classic] #content select {
+  background: var(--bg);
+  color: var(--app-ink);
+  border-color: var(--line);
+}
+body[data-current-page=workout][data-app-design=classic] #content .metricheadline {
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+body[data-current-page=workout][data-app-design=classic] #content .metricheadline > strong {
+  font-size: 34px;
+  letter-spacing: -.05em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+body[data-current-page=workout][data-app-design=classic] #content .metricheadline > span { text-align: left; }
+body[data-current-page=workout][data-app-design=classic] #content .metrictiles {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 0 !important;
+  border-top: 1px solid var(--line);
+  margin-top: 14px;
+}
+body[data-current-page=workout][data-app-design=classic] #content .metrictiles > div {
+  min-width: 0;
+  padding: 14px 10px 14px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+body[data-current-page=workout][data-app-design=classic] #content .metrictiles > div:nth-child(even) {
+  border-left: 1px solid var(--line);
+  padding-left: 14px;
+}
+body[data-current-page=workout][data-app-design=classic] #content .metrictiles strong {
+  font-size: 23px;
+  letter-spacing: -.04em;
+  overflow-wrap: anywhere;
+}
+body[data-current-page=workout][data-app-design=classic] #content .metricmini {
+  padding: 12px 0;
+  background: transparent;
+  border-width: 0 0 1px;
+}
+body[data-current-page=workout][data-app-design=classic] #content .musclerow > div > i {
+  transform-origin: left;
+  animation: training-fill .5s ease-out both;
+}
+body[data-current-page=workout][data-app-design=classic] #content :is(button,select,input):focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+/* Session uses the same open sections; maintain its five-column set layout. */
+body[data-app-design=classic] #session-root { --muted: #b3a9bf; }
+body[data-app-design=classic] #session-root .sessionhead {
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+}
+body[data-app-design=classic] #session-root :is(.btn,.quiet,.textbtn,.exerciseoptions) { min-height: 44px; }
+body[data-app-design=classic] #session-root .btn { border-radius: 7px; }
+body[data-app-design=classic] #session-root .sessionhead > strong {
+  font-size: 25px;
+  letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+}
+body[data-app-design=classic] #session-root .sessioncontent {
+  max-width: 720px;
+  padding: 16px 18px 30px;
+}
+body[data-app-design=classic] #session-root .sessioncontent > h2 {
+  margin: 4px 0 18px;
+  font-size: 29px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.05em;
+  overflow-wrap: anywhere;
+}
+body[data-app-design=classic] #session-root .sessioncontent > .compactexercise {
+  padding: 18px 0 !important;
+  margin: 0 0 14px !important;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  overflow: visible;
+}
+body[data-app-design=classic] #session-root .exercisename strong { font-size: 16px; letter-spacing: -.02em; }
+body[data-app-design=classic] #session-root .exercisenumber {
+  flex-basis: 25px;
+  height: 25px;
+  border-radius: 0;
+  background: transparent;
+  border-left: 2px solid var(--lime);
+}
+body[data-app-design=classic] #session-root .exerciseoptions { flex-basis: 44px; width: 44px; }
+body[data-app-design=classic] #session-root .exercisehistory { margin: 3px 0 12px !important; }
+body[data-app-design=classic] #session-root .compactexercise .liveset {
+  grid-template-columns: 20px 62px minmax(48px,1fr) minmax(48px,1fr) 44px;
+  gap: 6px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--line) !important;
+  border-radius: 0;
+}
+body[data-app-design=classic] #session-root .compactexercise .setlabels {
+  min-height: 24px;
+  border: 0 !important;
+  color: var(--muted);
+}
+body[data-app-design=classic] #session-root .compactexercise .liveset input:not([type=checkbox]) {
+  min-height: 44px !important;
+  height: 44px !important;
+  border-radius: 5px;
+  border-color: var(--line);
+  background: var(--bg);
+  color: var(--app-ink);
+}
+body[data-app-design=classic] #session-root .compactexercise .liveset input[type=checkbox] {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  accent-color: var(--lime);
+  box-shadow: none;
+}
+body[data-app-design=classic] #session-root .compactexercise .setdone {
+  background: var(--theme-tint);
+  box-shadow: none;
+  animation: training-set .25s ease-out;
+}
+body[data-app-design=classic] #session-root .compactexercise .addsetwide {
+  min-height: 44px !important;
+  height: 44px;
+  margin-top: 10px !important;
+}
+body[data-app-design=classic] #session-root .compactexercise .removeset {
+  min-height: 44px;
+  font-size: 11px;
+}
+body[data-app-design=classic] #session-root .sessioncontent > .restpanel {
+  padding: 8px 12px;
+  border: 0;
+  border-left: 3px solid var(--lime);
+  border-radius: 3px;
+  box-shadow: none;
+  background: var(--theme-tint);
+}
+body[data-app-design=classic] #session-root .restpanel :is(strong,[data-rest-clock]) { font-variant-numeric: tabular-nums; }
+body[data-app-design=classic] #session-root :is(button,input):focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+}
+/* Keep celebrations, make result metrics part of one clear typographic grid. */
+body[data-app-design=classic] #session-root .completion { max-width: 600px; }
+body[data-app-design=classic] #session-root .completion h1 {
+  font-size: 36px;
+  font-weight: 850;
+  line-height: 1.1;
+  letter-spacing: -.05em;
+}
+body[data-app-design=classic] #session-root .completiontiles {
+  gap: 0;
+  border-top: 1px solid var(--line);
+  margin: 24px 0 14px;
+}
+body[data-app-design=classic] #session-root .completiontiles > div {
+  min-width: 0;
+  padding: 18px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+body[data-app-design=classic] #session-root .completiontiles > div:nth-child(even) { border-left: 1px solid var(--line); }
+body[data-app-design=classic] #session-root .completiontiles strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 25px;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+}
+body[data-app-design=classic] #session-root .completion .weekdots {
+  padding: 20px 0;
+  border-radius: 0;
+  border-block: 1px solid var(--line);
+  background: transparent;
+}
+body[data-app-design=classic] #session-root .completionxp { height: 12px; border-radius: 3px; }
+body[data-app-design=classic] #session-root .completionxp i { border-radius: 3px; }
+@keyframes training-enter { from { opacity: .5; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+@keyframes training-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes training-set { from { box-shadow: inset 3px 0 var(--lime); filter: brightness(1.12); } to { box-shadow: none; filter: none; } }
+@media(max-width:359px) {
+  body[data-current-page=workout][data-app-design=classic] #content .workoutbody :is(.sectionhead h2,.cardhead h2,.metricexplorer h2) { font-size: 20px; }
+  body[data-app-design=classic] #session-root .compactexercise .liveset {
+    grid-template-columns: 16px 52px minmax(44px,1fr) minmax(44px,1fr) 44px;
+    gap: 4px;
+  }
+  body[data-app-design=classic] #session-root .exercisename strong { font-size: 14px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  body[data-current-page=workout][data-app-design=classic] #content *,
+  body[data-current-page=workout][data-app-design=classic] #content *::before,
+  body[data-current-page=workout][data-app-design=classic] #content *::after,
+  body[data-app-design=classic] #session-root,
+  body[data-app-design=classic] #session-root *,
+  body[data-app-design=classic] #session-root *::before,
+  body[data-app-design=classic] #session-root *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

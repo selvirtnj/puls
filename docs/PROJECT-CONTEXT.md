@@ -4,11 +4,17 @@ Stand der Übergabe: 24.10.2026. Dieser Text fasst die wichtigen Produktentschei
 
 ## Ziel und Nutzung
 
-PULS ist Selvirs persönlicher Fitness-, Gewichts- und Ernährungstracker für das iPhone, zusätzlich am PC nutzbar. Die aktive Version ist eine installierbare Web-App auf GitHub Pages. Die App-Oberfläche ist öffentlich abrufbar; private Kontoprofile werden separat über Supabase gespeichert. Freunde sollen bei Bedarf eigene Konten verwenden können. Aktuell keine Arbeit an nativer iOS-Distribution.
+PULS ist Selvirs persönlicher Fitness-, Gewichts- und Ernährungstracker für das iPhone, zusätzlich am PC nutzbar. Die aktive Version ist eine installierbare Web-App auf GitHub Pages. Die App-Oberfläche ist öffentlich abrufbar; private Kontoprofile werden separat über Supabase gespeichert. Seit der Zielklärung am 24.10.2026 ist ausschließlich Selvirs persönliche Nutzung das Produktziel; ein Ausbau für Freunde ist nicht beauftragt. Bestehende Authentifizierung und Synchronisierung erhalten. Aktuell keine Arbeit an nativer iOS-Distribution.
 
 Prioritäten: sofort praktisch nutzbar, kompakt und übersichtlich, kostenfrei soweit möglich, Deutsch als Standard mit Englisch als Option, schönes dunkles Originaldesign in Lila. Referenzen sind Cronometer, Liftoff, Hevy und MacroFactor; keine Behauptung einer technischen oder markenrechtlichen Verbindung.
 
 ## Navigation und Gestaltung
+
+Neue bestätigte Richtung vom 24.10.2026: sportlich und präzise, dunkles lila Original zuerst, weniger verschachtelte Karten, mehr kompakte Zeilen und klare Typografie. Lebendige Aktionsreaktionen und gezielte Erfolgsmomente. Konto zuerst mit kompakter Übersicht und Unterseiten; danach gemeinsame Beurteilung vor Übertragung auf weitere Tabs. Einzelheiten und Abnahmekriterien: `docs/DESIGN-WORKPLAN.md`. Diese neue Kontoaufteilung ersetzt die frühere lange Liste vollständig sichtbarer Abschnitte.
+
+Selvir hat die Konto-Vorschau ausdrücklich bestätigt und als nächsten Abschnitt die Übersicht im gleichen Stil beauftragt. Kreis/Makrobalken, Tagesnavigation, Essenvorschau, Trainingsaktionen und Gesamtfortschritt bleiben erhalten. Veröffentlichung ist noch nicht beauftragt.
+
+Nach Bestätigung der Übersicht ist auch Training im selben Stil beauftragt: die vier Trainingtabs, laufende Session und Abschluss. Bestehende Trainingslogik und Daten bleiben maßgeblich; zunächst lokale Vorschau.
 
 - Untere Leiste: Training | Übersicht | mittiges Plus | Essen | Konto. Symmetrische Icons und gute Touch-Ziele.
 - Übersicht/Essen/Training: oben links Profil/Level/XP, Datum in der Mitte, Streak rechts. Der aktuelle Tag heißt nur „Heute“, andere Tage zeigen Wochentag/Datum.

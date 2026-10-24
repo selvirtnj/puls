@@ -1,0 +1,197 @@
+/* Original overview: retain the existing HTML, actions and nutrition calculations.
+   Both page and design are required so diary, account and other themes stay intact. */
+body[data-current-page=home][data-app-design=classic] #content > .dashboardstack {
+  gap: 0;
+  max-width: 720px;
+  margin: 0 auto;
+  color: var(--app-ink);
+  --muted: #b3a9bf;
+}
+body[data-current-page=home][data-app-design=classic] #content > .dashboardstack > :is(.card,.nutritiondeck) {
+  min-width: 0;
+  margin: 0;
+  padding: 22px 0 !important;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: overview-enter .34s cubic-bezier(.2,.8,.2,1) both;
+}
+body[data-current-page=home][data-app-design=classic] #content > .dashboardstack > .nutritiondeck {
+  padding: 0 !important;
+}
+body[data-current-page=home][data-app-design=classic] #content > .dashboardstack > .card:not(.watercompact):not(.designchooser):not(.compactdiary) {
+  padding: 22px 0 !important;
+}
+body[data-current-page=home][data-app-design=classic] #content .nutritionslide {
+  padding: 10px 0 8px !important;
+  background: transparent;
+}
+body[data-current-page=home][data-app-design=classic] #content :is(.nutritionslide h2,.cardhead h2,.cardhead h3) {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.045em;
+  line-height: 1.18;
+  color: var(--app-ink);
+}
+body[data-current-page=home][data-app-design=classic] #content :where(.nutritionslide h2,.todayfoods h3,.dashboardstack > .card > .cardhead h2)::before {
+  display: inline-block;
+  content: '01';
+  margin-right: 10px;
+  vertical-align: middle;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: .03em;
+  color: var(--lime);
+}
+body[data-current-page=home][data-app-design=classic] #content .todayfoods h3::before { content: '02'; }
+body[data-current-page=home][data-app-design=classic] #content .dashboardstack > .card:not(.todayfoods) > .cardhead h2::before { content: '03'; }
+body[data-current-page=home][data-app-design=classic] #content .dashboardstack > .card:last-child > .cardhead h2::before { content: '04'; }
+body[data-current-page=home][data-app-design=classic] #content .combinednutrition {
+  grid-template-columns: 118px minmax(0,1fr);
+  gap: 18px;
+  margin-top: 16px;
+}
+body[data-current-page=home][data-app-design=classic] #content .combinednutrition .caloriedial {
+  width: 118px;
+  height: 118px;
+  padding: 6px;
+  animation: overview-dial .45s cubic-bezier(.2,.8,.2,1) both;
+}
+body[data-current-page=home][data-app-design=classic] #content .caloriedial > div { background: var(--bg); }
+body[data-current-page=home][data-app-design=classic] #content .caloriedial strong {
+  font-size: 27px;
+  font-weight: 850;
+  letter-spacing: -.05em;
+  font-variant-numeric: tabular-nums;
+}
+body[data-current-page=home][data-app-design=classic] #content .combinedbars .slideprogress > div:first-child {
+  font-size: 11px;
+  gap: 6px;
+}
+body[data-current-page=home][data-app-design=classic] #content .combinedbars .slideprogress strong {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}
+body[data-current-page=home][data-app-design=classic] #content .combinedbars .bar {
+  height: 5px;
+  border-radius: 2px;
+  background: var(--line);
+}
+body[data-current-page=home][data-app-design=classic] #content .nutritiondeck .bar i {
+  border-radius: 2px;
+  transform-origin: left center;
+  animation: overview-progress .55s cubic-bezier(.2,.8,.2,1) both;
+}
+body[data-current-page=home][data-app-design=classic] #content .combinedallowance { margin-top: 14px; }
+body[data-current-page=home][data-app-design=classic] #content .combinedallowance strong { font-size: 16px; }
+body[data-current-page=home][data-app-design=classic] #content .slidedots {
+  justify-content: flex-end;
+  gap: 0;
+  padding: 0;
+}
+body[data-current-page=home][data-app-design=classic] #content .slidedots button { width: 44px; height: 44px; }
+body[data-current-page=home][data-app-design=classic] #content .slidedots button::after { left: 18px; top: 18px; }
+body[data-current-page=home][data-app-design=classic] #content > .dashboardstack > .mainaction {
+  min-height: 48px;
+  padding: 13px 16px;
+  margin: 16px 0 0;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 750;
+  text-align: left;
+  transition: transform .16s ease,filter .16s ease;
+}
+body[data-current-page=home][data-app-design=classic] #content .cardhead {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+body[data-current-page=home][data-app-design=classic] #content .cardhead .textbtn {
+  min-height: 44px;
+  padding: 4px 0;
+  font-size: 11px;
+  text-align: left;
+}
+body[data-current-page=home][data-app-design=classic] #content .compactfood {
+  min-width: 0;
+  min-height: 56px;
+  padding: 10px 0;
+  font-size: 13px;
+}
+body[data-current-page=home][data-app-design=classic] #content .compactfood > div { min-width: 0; overflow-wrap: anywhere; }
+body[data-current-page=home][data-app-design=classic] #content .compactfood > strong {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}
+body[data-current-page=home][data-app-design=classic] #content .compactfood small { font-size: 11px; }
+body[data-current-page=home][data-app-design=classic] #content .recommendedroutine {
+  margin-top: 12px;
+  padding: 0 0 0 14px;
+  border-left: 3px solid var(--lime);
+  background: none;
+  border-radius: 0;
+}
+body[data-current-page=home][data-app-design=classic] #content .recommendedroutine :is(h2,h3) {
+  letter-spacing: -.03em;
+  font-size: 19px;
+}
+body[data-current-page=home][data-app-design=classic] #content .btn {
+  min-height: 44px;
+  border-radius: 7px;
+}
+body[data-current-page=home][data-app-design=classic] #content .chartperiod { margin: 0 0 0 auto; }
+body[data-current-page=home][data-app-design=classic] #content .chartperiod select {
+  min-height: 44px;
+  min-width: 102px;
+  border-radius: 5px;
+  margin-top: 0;
+  color: var(--app-ink);
+  background: var(--bg);
+  border-color: var(--line);
+}
+body[data-current-page=home][data-app-design=classic] #content .charttoggles { gap: 6px; margin-bottom: 12px; }
+body[data-current-page=home][data-app-design=classic] #content .charttoggles button {
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  transition: background .18s ease,border-color .18s ease,transform .18s ease;
+}
+body[data-current-page=home][data-app-design=classic] #content .charttoggles button[aria-pressed=true] {
+  background: var(--theme-tint);
+}
+body[data-current-page=home][data-app-design=classic] #content .progressplot { margin-top: 12px; }
+body[data-current-page=home][data-app-design=classic] #content :is(.note,details) { line-height: 1.6; }
+body[data-current-page=home][data-app-design=classic] #content details > summary { padding: 10px 0; min-height: 44px; }
+body[data-current-page=home][data-app-design=classic] #content :is(button,select):focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 4px;
+}
+body[data-current-page=home][data-app-design=classic] #content .charttoggles button:active { transform: scale(.97); }
+@keyframes overview-enter { from { opacity: .45; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes overview-dial { from { opacity: .5; transform: scale(.93); } to { opacity: 1; transform: none; } }
+@keyframes overview-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media(max-width:359px) {
+  body[data-current-page=home][data-app-design=classic] #content .combinednutrition { grid-template-columns: 98px minmax(0,1fr); gap: 12px; }
+  body[data-current-page=home][data-app-design=classic] #content .combinednutrition .caloriedial { width: 98px; height: 98px; }
+  body[data-current-page=home][data-app-design=classic] #content .caloriedial strong { font-size: 24px; }
+  body[data-current-page=home][data-app-design=classic] #content .combinedbars .slideprogress strong { font-size: 10px; }
+  body[data-current-page=home][data-app-design=classic] #content :is(.nutritionslide h2,.cardhead h2,.cardhead h3) { font-size: 20px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  body[data-current-page=home][data-app-design=classic] #content *,
+  body[data-current-page=home][data-app-design=classic] #content *::before,
+  body[data-current-page=home][data-app-design=classic] #content *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

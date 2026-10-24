@@ -7,10 +7,10 @@ PULS ist eine statische Web-App ohne Build-Abhängigkeiten. GitHub Pages veröff
 | Einstieg und Offline | index.html, manifest.webmanifest, sw.js |
 | Gemeinsame Daten | app.js, enhancements.js, personal.js |
 | Ernährung | products.js, recipes.js, portions.js, food-search.js, catalog-search.js, food-upgrade.js, quick-units.js |
-| Training | training.js, insights.js, finish.js, workout-polish.js |
+| Training | training.js, insights.js, finish.js, workout-polish.js; training-refresh.css für Originaldesign in Training, Session und Abschluss |
 | Darstellung | navigation.js, flows.js, visuals.js, designs-extra.js mit CSS |
 | Konto und Datenschutz | cloud.js, cloud-config.js, account-guide.js, backend/ |
-| Aktuelle Verfeinerung | refinement.js, progress-metrics.js mit CSS |
+| Aktuelle Verfeinerung | refinement.js, progress-metrics.js mit CSS; account-refresh.js/.css für Konto; overview-refresh.css für das Originaldesign der Übersicht |
 | Lokale Tests | tests/, scripts/check.cjs |
 
 ## Änderungen
