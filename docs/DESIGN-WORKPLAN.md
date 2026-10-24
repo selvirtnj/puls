@@ -33,3 +33,5 @@ Selvir hat die Übersicht mit „sieht gut aus“ bestätigt.
 ## Dritter Abschnitt: Training
 
 Anschließend ausdrücklich beauftragt: bestätigten Stil auf Workout, Routinen, Kalender und Fortschritt übertragen. Laufende Workoutansicht und Abschluss passend visuell verfeinern. Bestehende Trainingslogik, Satzdaten, IDs, Vorbelegung, zentrale Pause, Minimieren/Fortsetzen, Sortierung und Abschlusskontrollen erhalten. Originaldesign zuerst, reduzierte Bewegung respektieren. Keine Backendänderung. Ergebnis bis zur geprüften lokalen iPhone-Vorschau; keine Veröffentlichung beauftragt.
+
+Selvir hat Training und die übrigen Tabs danach selbst bestätigt und am 24.10.2026 Essen als letzten Abschnitt beauftragt. Umgesetzt und veröffentlicht als Version 41 (`food-refresh.css`). Damit sind alle vier Hauptbereiche im neuen Originaldesign.

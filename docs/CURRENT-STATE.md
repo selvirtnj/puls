@@ -4,8 +4,8 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Stand bei Einrichtung der Zusammenarbeit
 
-- Veröffentlichte App-Version: **40** (24.10.2026: optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen). Davor 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
-- Live: https://selvirtnj.github.io/puls/?v=40 ; Repository: https://github.com/selvirtnj/puls .
+- Veröffentlichte App-Version: **41** (24.10.2026: Essen im neuen Originaldesign). Davor 40 (optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen), 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
+- Live: https://selvirtnj.github.io/puls/?v=41 ; Repository: https://github.com/selvirtnj/puls .
 - Davor veröffentlicht: 35, Ausgangscommit `6e878204b677d1e9aa8f51f51f22f2df526f2c81`.
 - Version 34: fokussierte Oberfläche, neu geordnetes Konto, mehr Diagramme, vier zusätzliche Designs, Archiv und Projektdokumentation.
 - Version 35: 87 neue Übungsvarianten, insgesamt 963; Maschinen-/Kabel-/Smith-Filter, deutsche Suchnamen und Ergebnis-Paginierung.
@@ -54,6 +54,11 @@ Keine der folgenden Aufgaben ist durch diese Liste automatisch zur Umsetzung fre
 6. Einige neue Diagramm- und Beschreibungsdetails sind möglicherweise noch nicht vollständig übersetzt. Bei englischer UI konkret prüfen, nicht pauschal Vollständigkeit behaupten.
 
 ## Übergabe nach jeder größeren Aufgabe
+
+### Version 41 — Essen im Originaldesign — veröffentlicht 24.10.2026
+
+- Letzter Abschnitt aus docs/DESIGN-WORKPLAN.md (Claude): neue food-refresh.css, nur body[data-current-page=food][data-app-design=classic]. Offene Abschnitte 01–05 (Energie & Makros, Dein Essen, Vorschläge, Nährstoffwerte, Erfassung abschließen) mit Trennlinien statt Karten, Hauptaktion breit und zwei Nebenaktionen, Wasser als schlanke Zeile, Tagebuch als Zeilen mit deckendem Hintergrund (Wischen zum Löschen unverändert), kurze Animationen, reduzierte Bewegung. Kein JS/HTML/Datenmodell geändert.
+- Review Codex: 2 Befunde behoben (Wasserknopf 44 px gegen comfort.css-!important; Innenabstand 04/05 gegen compact.css-Spezifität). Browser 390 × 844 und 320 px ohne Überlauf, Wischen-Löschen geprüft. Grenzen: kein echtes iPhone, andere Designs bewusst unverändert.
 
 ### Version 40 — veröffentlicht 24.10.2026 (erster Teamauftrag Claude + Codex + Gemini)
 
