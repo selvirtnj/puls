@@ -35,6 +35,15 @@ function syncNativeRest(){
     bridge.postMessage({type:'restStart',startsAt,...info});
   }catch(error){console.warn('PULS native bridge',error)}
 }
+// App-Icon: In der iOS-App wechselt iOS das echte Symbol; der Weg über „Zum Home-Bildschirm“ entfällt.
+// Eigener try-Block: ein Fehler hier darf die Pausen-Meldungen unten nie verhindern.
+try{
+  document.documentElement.classList.add('nativeapp');
+  let iconStyle=document.createElement('style');
+  iconStyle.textContent='.nativeapp .preferences .iconchoices~.note,.nativeapp .preferences a[href^="icon-install"]{display:none!important}';
+  document.head.appendChild(iconStyle);
+  if(typeof chooseAppIcon==='function'){const nativeChooseIcon=chooseAppIcon;chooseAppIcon=function(key){nativeChooseIcon(key);if(state.iconColor===key)bridge.postMessage({type:'setAppIcon',icon:key})}}
+}catch(error){console.warn('PULS native icon',error)}
 // Kurzer Takt, damit die Live-Aktivität angelegt wird, solange die App noch im Vordergrund ist.
 setInterval(syncNativeRest,400);
 document.addEventListener('visibilitychange',syncNativeRest);

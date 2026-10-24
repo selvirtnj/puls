@@ -7,7 +7,7 @@ on:
     branches: [main]
     paths:
       - 'ios/**'
-      - 'icons/purple.svg'
+      - 'icons/*.svg'
       - '.github/workflows/ios-app.yml'
   workflow_dispatch:
 
@@ -30,8 +30,17 @@ jobs:
       - name: Werkzeuge
         run: brew install xcodegen librsvg
 
-      - name: App-Icon
-        run: rsvg-convert -w 1024 -h 1024 --background-color '#15121b' icons/purple.svg -o ios/PULS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+      - name: App-Icons
+        # Hauptsymbol (lila) plus fünf Farbvarianten für den Icon-Wechsel in der App.
+        run: |
+          set -e
+          assets=ios/PULS/Assets.xcassets
+          for color in purple blue mint rose amber green; do
+            if [ "$color" = purple ]; then set="$assets/AppIcon.appiconset"; else set="$assets/AppIcon-$color.appiconset"; fi
+            mkdir -p "$set"
+            rsvg-convert -w 1024 -h 1024 --background-color '#15121b' "icons/$color.svg" -o "$set/AppIcon.png"
+            if [ "$color" != purple ]; then cp "$assets/AppIcon.appiconset/Contents.json" "$set/Contents.json"; fi
+          done
 
       - name: Xcode-Projekt erzeugen
         working-directory: ios

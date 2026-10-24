@@ -13,3 +13,4 @@ ios/Payload/
 ios/PULS/Info.plist
 ios/PULS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 ios/PULSWidgets/Info.plist
+ios/PULS/Assets.xcassets/AppIcon-*.appiconset/

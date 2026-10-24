@@ -7,7 +7,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.1"
+    MARKETING_VERSION: "1.2"
     CURRENT_PROJECT_VERSION: "1"
     TARGETED_DEVICE_FAMILY: "1,2"
     CODE_SIGNING_ALLOWED: "NO"
@@ -25,6 +25,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.selvirtnj.puls
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Farbvarianten für den Icon-Wechsel in der App (AppIcon-<farbe>.appiconset, im CI erzeugt).
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-blue AppIcon-mint AppIcon-rose AppIcon-amber AppIcon-green"
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: "YES"
     info:
       path: PULS/Info.plist
       properties:

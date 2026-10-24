@@ -19,6 +19,8 @@ Mit einer kostenlosen Apple-ID läuft die Signatur nach 7 Tagen ab. AltStore ern
 - Kamera/Mikrofon für Barcode-Scan und Spracheingabe (iOS fragt einmal).
 - Downloads (Sicherung, CSV) öffnen das Teilen-Menü → „In Dateien sichern“.
 - `alert`/`confirm`/`prompt` als native Dialoge; iPad in allen Ausrichtungen und mit Split View.
+- **App-Icon** (ab App 1.2): Konto → Sprache & App-Icon wechselt das echte Home-Bildschirm-Symbol über `setAlternateIconName` (iOS zeigt dazu kurz eine Systemmeldung). Die Farbvarianten entstehen im Build aus `icons/<farbe>.svg`. Kein automatischer Abgleich beim Start, um wiederholte Systemmeldungen zu vermeiden: nach dem Update die gewünschte Farbe einmal antippen.
+- **Dynamic Island / Sperrbildschirm** (ab App 1.2): Fortschrittsring links, Zeit mit fester Breite rechts (laufende Timer-Texte reservieren sonst Platz für „0:00:00“ und ziehen die Insel breit), aufgeklappt mit Übung, Satz und Balken.
 - **Pausentimer außerhalb der App** (ab App 1.1 / Web 39): `native-bridge.js` meldet jede laufende Pause über `window.webkit.messageHandlers.pulsNative` (`restStart`/`restCancel`). Die App plant dann eine Mitteilung „Pause vorbei – Nächster Satz: …“ zum Pausenende und zeigt eine Live-Aktivität mit Countdown in Dynamic Island und Sperrbildschirm (Widget-Erweiterung `ios/PULSWidgets`). iOS zählt den Countdown selbst; nach Ablauf zeigt sie „Los!“ und wird beim nächsten Öffnen der App entfernt. Beim ersten Pausenstart fragt iOS einmal nach der Erlaubnis für Mitteilungen. In der offenen App bleibt es beim gewohnten Hinweis mit Ton.
 
 ## Bauen
