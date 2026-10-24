@@ -1,0 +1,156 @@
+/* Profil & Ziele: offene Abschnitte, Schalter statt Auswahllisten, Ergebnis und Speichern unten fest.
+   Gilt in allen Designs; Farben kommen aus den Design-Variablen. */
+#mb.profilemodal #planner-form > .note:not(.keepnote),
+#mb.profilemodal #planner-form .formsection > .note:not(#pace-info) { display: none; }
+#mb.profilemodal #planner-form { display: grid; gap: 0; }
+#mb.profilemodal #planner-form .formsection {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 18px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+#mb.profilemodal #planner-form .formsection > .label {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  text-transform: none;
+  color: var(--app-ink, inherit);
+}
+#mb.profilemodal #planner-form .formsection > .label i {
+  margin-right: 10px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .03em;
+  vertical-align: middle;
+  color: var(--lime);
+}
+#mb.profilemodal #planner-form .profileoff { display: none !important; }
+#mb.profilemodal #planner-form .formgrid { gap: 12px; margin: 0; }
+#mb.profilemodal #planner-form label {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+}
+#mb.profilemodal #planner-form label :is(input:not([type=checkbox]),select) {
+  min-height: 44px;
+  margin: 0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+#mb.profilemodal #planner-form label[hidden],
+#mb.profilemodal #planner-form [hidden] { display: none !important; }
+
+/* Schalter */
+#mb.profilemodal #planner-form .segsource { display: none !important; }
+#mb.profilemodal #planner-form .segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+#mb.profilemodal #planner-form .segmented button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color .16s ease, color .16s ease, transform .16s ease;
+}
+#mb.profilemodal #planner-form .segmented button[aria-pressed=true] {
+  background: var(--lime);
+  color: var(--bg);
+}
+#mb.profilemodal #planner-form .segmented button:disabled { opacity: .38; cursor: default; }
+#mb.profilemodal #planner-form .segmented button:active:not(:disabled) { transform: scale(.97); }
+#mb.profilemodal #planner-form .segmented button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+#mb.profilemodal #planner-form .segmented.disabled { opacity: .55; }
+#mb.profilemodal #planner-form #pace-info { margin: -4px 0 0; font-size: 12px; color: var(--muted); }
+
+/* Automatik: Schalterzeilen */
+#mb.profilemodal #planner-form label.checklabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-ink, inherit);
+}
+#mb.profilemodal #planner-form label.checklabel input { width: 22px; height: 22px; margin: 0; flex: 0 0 auto; accent-color: var(--lime); }
+
+/* Ergebnis und Speichern bleiben unten sichtbar. */
+#mb.profilemodal #planner-form .profilefooter {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 14px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+/* 05 Ergebnis */
+#mb.profilemodal #planner-form .previewbox {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#mb.profilemodal #planner-form .previewbox > .label { display: none; }
+#mb.profilemodal #planner-form .previewbox h3 {
+  margin: 12px 0 2px !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+#mb.profilemodal #planner-form .previewbox .planmetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 10px;
+}
+#mb.profilemodal #planner-form .previewbox .planmetrics > div {
+  display: grid;
+  gap: 2px;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: transparent;
+}
+#mb.profilemodal #planner-form .previewbox .planmetrics > div + div { padding-left: 10px; border-left: 1px solid var(--line); }
+#mb.profilemodal #planner-form .previewbox .planmetrics strong { font-size: 22px; font-weight: 850; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+#mb.profilemodal #planner-form .previewbox .planmetrics small { font-size: 11px; color: var(--muted); }
+#mb.profilemodal #planner-form .previewbox p { margin: 0; font-size: 15px; font-weight: 750; font-variant-numeric: tabular-nums; }
+#mb.profilemodal #planner-form .previewbox p.note { margin-top: 4px; font-size: 12px; font-weight: 500; color: var(--muted); }
+#mb.profilemodal #planner-form .profilefooter #plan-error:empty { display: none; }
+#mb.profilemodal #planner-form .profilefooter .btn.full { min-height: 48px; margin: 0; border-radius: 8px; }
+
+/* Sicherung */
+#mb #profile-form.backuppane { display: grid; gap: 10px; }
+#mb #profile-form.backuppane :is(.btn,label) { min-height: 44px; margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  #mb.profilemodal #planner-form .segmented button { transition: none; }
+}

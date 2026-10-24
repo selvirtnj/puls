@@ -4,8 +4,8 @@ Aktualisiert: 24.10.2026. Maßgeblicher Code: dieses Repository. Git-Historie un
 
 ## Stand bei Einrichtung der Zusammenarbeit
 
-- Veröffentlichte App-Version: **42** (24.10.2026: Abstand zwischen den Wischseiten Energie/Mikronährstoffe). Davor 41 (Essen im neuen Originaldesign), 40 (optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen), 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
-- Live: https://selvirtnj.github.io/puls/?v=42 ; Repository: https://github.com/selvirtnj/puls .
+- Veröffentlichte App-Version: **43** (24.10.2026: Profil & Ziele überarbeitet, Logikfehler behoben). Davor 42 (Abstand zwischen den Wischseiten), 41 (Essen im neuen Originaldesign), 40 (optionaler Erststart, Tutorial entfernt, klebender Pausentimer, ruhigere Satzzeilen), 39 (`native-bridge.js` für Pausen-Mitteilung und Dynamic Island; von Selvir auf iPhone und iPad bestätigt) und 38 (Commit `0c62ef6`: Konto 36, Übersicht 37, Training 38 im neuen Originaldesign).
+- Live: https://selvirtnj.github.io/puls/?v=43 ; Repository: https://github.com/selvirtnj/puls .
 - Davor veröffentlicht: 35, Ausgangscommit `6e878204b677d1e9aa8f51f51f22f2df526f2c81`.
 - Version 34: fokussierte Oberfläche, neu geordnetes Konto, mehr Diagramme, vier zusätzliche Designs, Archiv und Projektdokumentation.
 - Version 35: 87 neue Übungsvarianten, insgesamt 963; Maschinen-/Kabel-/Smith-Filter, deutsche Suchnamen und Ergebnis-Paginierung.
@@ -54,6 +54,21 @@ Keine der folgenden Aufgaben ist durch diese Liste automatisch zur Umsetzung fre
 6. Einige neue Diagramm- und Beschreibungsdetails sind möglicherweise noch nicht vollständig übersetzt. Bei englischer UI konkret prüfen, nicht pauschal Vollständigkeit behaupten.
 
 ## Übergabe nach jeder größeren Aufgabe
+
+### Profil-/Planformular — Schritt 1 Logik, lokal — 24.10.2026
+
+- Koordinator-Auftrag auf Basis `98cadad` (Version 42): ausschließlich Profil-/Planlogik in `enhancements.js`, `experience.js`, `adaptation.js`; Layout und Entfernen von Erklärungstexten folgen bei Claude. Keine Veröffentlichung, Versions-/Asset-/SW- oder iOS-Änderung.
+- Review-Nacharbeit nach Koordinatorentscheidung: Persönliches männliches Profil bleibt verbindlich; Laden und Formular normalisieren wie zuvor `sex` auf `male` und `special` auf `false`. `validData()` akzeptiert alte Sicherungen unverändert. Zusätzliche Profil-/Planfelder bleiben erhalten. Inaktive Makroparameter und Tempo blockieren keinen Moduswechsel; ungültiger inaktiver RMR erhält den bisherigen Messwert. Dezimalwerte aus gültigen Sicherungen werden nicht durch HTML-Schrittweiten blockiert.
+- 4/4/9-Prüfung mit 50-kcal-Toleranz bei manuellen Kalorien und bei automatischen Kalorien mit selbst gesetzten Makros: nur bei Änderungen relevanter kcal-/Makrofelder oder Wechsel des Kalorien-/Makromodus. Unveränderte unstimmige Altziele blockieren andere Profiländerungen nicht; keine automatische Umrechnung. Vorschau und Speichern verwenden dieselbe Validierung, auch bei teilweise ausgefülltem Profil im manuellen Modus. Automatische Gewichtsanpassungen erhalten selbst gesetzte Makros weiterhin.
+- Vorschau/Prognose verwenden den aktuellen Lern-Schalter; geänderte Formelgrundlagen verwerfen Kalibrierung vor dem Neuberechnen. Abgewiesenes Speichern löst keine nachträgliche Kalibrierung aus. Adaptive Ziele prüfen Ausschlüsse, endliche Werte und Grenzen. Extremes Abnehmtempo erzeugt bei zu niedrigem Erhalt keinen Überschuss; bei Wechsel auf Zunehmen gilt das bisher rechnerisch verwendete hohe Tempo auch sichtbar.
+- Unverändertes vorbelegtes Gewicht erzeugt keine heutige Messung. Explizite Änderungen behalten vorhandene Messungs-IDs; direkte Zieländerungen werden wie adaptive Änderungen tagesweise in `goalHistory` erfasst. Neue Regressionen: `tests/check-profile-planning.cjs`, im regulären Prüflauf eingetragen. Prüfung: `node scripts/check.cjs` und `git diff --check` bestanden.
+- Grenzen/Integration: Kern vom unabhängigen Claude-Prüfer bestätigt; dessen vier Nacharbeiten sind umgesetzt, Nachprüfung und Browser-/iPhone-Prüfung beim Koordinator offen. VM-Tests belegen kein Layout oder Live-RLS. Claudes neue `profile-refresh.js`/`.css` wurden bei der Logik-Nacharbeit nicht verändert; bestehende IDs/Container bleiben Schnittstelle. Konto → Deine Daten bietet JSON-Export und CSV direkt; Wiederherstellen liegt weiterhin im Sicherungs-Tab (zuvor „Daten & Methoden“). Versteckte `pr-sex`/`pr-special` bleiben als kompatible Formularschnittstelle erhalten.
+
+### Version 43 — Profil & Ziele — veröffentlicht 24.10.2026
+
+- Oberfläche (Claude): `profile-refresh.js`/`.css`, alle Designs. Abschnitte 01 Körper, 02 Ziel, 03 Makros, 04 Automatik, 05 Ergebnis; Erklär- und Annahmetexte ausgeblendet; Selects `pl-mode`, `pl-direction`, `pl-pace`, `pl-macros`, `pr-method` als Schalter (Selects bleiben versteckt die Quelle); im Modus irrelevante Felder ausgeblendet; Speichern und `#plan-error` fest unten; Tab „Daten & Methoden“ heißt „Sicherung“ (nur Export, Wiederherstellen, CSV). EN-Übersetzungen und `aria-label` nach Codex-Review ergänzt.
+- Logik (Codex, Einträge unten): 9 Fehler behoben, danach 4 Review-Punkte des Claude-Prüfers: männliches Profil wieder normalisiert (Koordinator-Entscheidung gemäß früherer Produktentscheidung), 4/4/9-Prüfung auch bei berechneten kcal mit selbst gesetzten Makros und nur bei geänderten Zielfeldern, Vorschau und Speichern identisch validiert.
+- Reviews: Codex prüfte die Oberfläche (2 Befunde behoben), Claude-Prüfer die Logik (Gemini im Kontingent-Limit bis ca. 31.10.2026). Browser 390 × 844: Selbst/Berechnet, Halten, Teilprofil, 4/4/9, Speichern und Wiederöffnen, Sicherungs-Tab, Englisch. Grenzen: kein echtes iPhone, kein VoiceOver-Gerätetest.
 
 ### Version 42 — Wischseiten mit Abstand — veröffentlicht 24.10.2026
 

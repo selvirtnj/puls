@@ -32,8 +32,10 @@ const form={'pr-age':30,'pr-height':180,'pr-weight':80,'pr-target':75,'pr-sex':'
  test=app();continueName(test);fill(test,{'pr-height':180,'pr-weight':80});let partial=complete(test);assert.equal(partial.profile,null);assert.deepEqual(partial.goals,blank.goals);assert.equal(partial.profileHistory.length,0);assert.equal(partial.weights.length,0);
  let existing={...blank,goals:{kcal:2400,p:160,c:260,f:75},setupPending:true,onboardingComplete:false,weights:[{id:'keep-weight',date:'2026-10-01',kg:81}]};test=app(existing);fill(test,{'pr-height':180});let preserved=complete(test);assert.deepEqual(preserved.goals,existing.goals);assert.deepEqual(preserved.weights,existing.weights);
  test=app();continueName(test);fill(test,{'pr-age':12,'manual-kcal':''});let invalid=complete(test);assert.equal(invalid.profile,null);assert.deepEqual(invalid.goals,blank.goals);
- // First-run novalidate must not bypass persisted plan bounds, even for hidden inputs.
- for(let fields of [{'pl-protein':.5},{'pl-fat':0},{'pl-protein':'','pl-macros':'manual'}]){test=app();continueName(test);fill(test,{...form,...fields});let invalidPlan=complete(test);assert.equal(invalidPlan.profile,null);assert.deepEqual(invalidPlan.goals,blank.goals)}
+ // First-run novalidate must not bypass active automatic macro parameter bounds.
+ for(let fields of [{'pl-protein':.5},{'pl-fat':0}]){test=app();continueName(test);fill(test,{...form,...fields});let invalidPlan=complete(test);assert.equal(invalidPlan.profile,null);assert.deepEqual(invalidPlan.goals,blank.goals)}
+ // Custom macros ignore inactive g/kg inputs and retain valid persisted parameters.
+ test=app();continueName(test);fill(test,{...form,'pl-protein':'','pl-fat':0,'pl-macros':'manual'});let customKcal=test.run('planNumbers(collectProfile(),{...collectPlan(),mode:"auto"}).kcal');fill(test,{'manual-c':(customKcal-blank.goals.p*4-blank.goals.f*9)/4});let customMacros=complete(test);assert.equal(customMacros.profile.weight,80);assert.equal(customMacros.plan.protein,1.8);assert.equal(customMacros.plan.fat,.8);assert.equal(customMacros.goals.p,blank.goals.p);
  // Valid profile inputs whose automatic plan is unsupported also cannot trap first run.
  test=app();continueName(test);fill(test,{...form,'pr-target':90});let unsupported=complete(test);assert.equal(unsupported.profile,null);assert.deepEqual(unsupported.goals,blank.goals);
  // Editing in the account retains its existing blocking validation.
