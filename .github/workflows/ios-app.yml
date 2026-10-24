@@ -1,0 +1,63 @@
+# Baut die native PULS-Hülle als unsignierte .ipa zum Sideloaden mit AltStore.
+# Ergebnis: GitHub-Release mit PULS.ipa, immer erreichbar unter /releases/latest/download/PULS.ipa
+name: iOS app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - 'icons/purple.svg'
+      - '.github/workflows/ios-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-app
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Werkzeuge
+        run: brew install xcodegen librsvg
+
+      - name: App-Icon
+        run: rsvg-convert -w 1024 -h 1024 --background-color '#15121b' icons/purple.svg -o ios/PULS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+
+      - name: Xcode-Projekt erzeugen
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Bauen
+        working-directory: ios
+        run: >
+          xcodebuild -project PULS.xcodeproj -scheme PULS -configuration Release
+          -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build
+          CURRENT_PROJECT_VERSION=${{ github.run_number }}
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          build
+
+      - name: IPA packen
+        working-directory: ios
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/PULS.app Payload/
+          zip -qry PULS.ipa Payload
+
+      - name: Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "ios-build-${{ github.run_number }}" ios/PULS.ipa
+          --target "${{ github.sha }}" --latest
+          --title "PULS iOS-App · Build ${{ github.run_number }}"
+          --notes "Unsignierte App zum Installieren mit AltStore. Anleitung: docs/IOS-APP.md"
