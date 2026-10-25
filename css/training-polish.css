@@ -3,9 +3,12 @@
 /* Standardpause: sichtbar als Pille, ohne eingrenzende Linien. */
 body[data-current-page=workout] #content .trainingutilities {
   justify-content: flex-start !important;
-  margin: 2px 0 14px;
+  margin: 14px 0 !important;
+  padding: 0 !important;
   border: 0 !important;
 }
+/* Tabs Workout/Routinen/Kalender/Fortschritt näher an die obere Leiste. */
+body[data-current-page=workout] main > .datebar { margin-bottom: 0 !important; }
 body[data-current-page=workout] #content .trainingutilities .restglobal {
   display: inline-flex;
   flex: 0 0 auto;

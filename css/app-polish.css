@@ -77,6 +77,10 @@ body[data-current-page=food] #content .nutritionslide:first-child .slideprogress
 body[data-current-page=food] #content .nutritionslide:first-child .slideprogress span { font-size: 11px; color: var(--muted); }
 body[data-current-page=food] #content .nutritionslide:first-child .slideprogress strong { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 body[data-current-page=food] #content .nutritionslide:first-child .slideprogress > small { display: none; }
+/* Alle drei Makro-Boxen gleich hoch: keine Sonderabstände aus älteren Regeln für die letzte Box. */
+body[data-current-page=food] #content .nutritionslide:first-child .combinedbars { align-items: stretch; }
+body[data-current-page=food] #content .nutritionslide:first-child .slideprogress { align-content: start; margin: 0 !important; }
+body[data-current-page=food] #content .nutritionslide:first-child .slideprogress > div:first-child > * { margin: 0 !important; padding: 0 !important; border: 0 !important; line-height: 1.4 !important; }
 
 /* Essen „Heute gegessen“: Karte wächst mit dem Inhalt statt innen zu scrollen; übrige kcal rechts in der Zeile. */
 body[data-current-page=food] #content .nutritiondeck .nutritiontrack,
@@ -87,6 +91,14 @@ body[data-current-page=food] #content .nutritionslide:first-child .caloriedial >
 #content .nutritionslide .dialcolumn { display: grid; justify-items: center; align-content: start; gap: 10px; }
 #content .nutritionslide .dialcolumn > .kcalleft { font-size: 15px; font-weight: 800; color: var(--lime); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #content .nutritionslide .kcalleft.over { color: var(--danger, #ff8a8a) !important; }
+
+/* „Erfassung abschließen“: Knopf in voller Breite unter der Überschrift – er ändert beim Umschalten weder Größe noch Lage. */
+body[data-current-page=food] #content .compacttoolcard > .cardhead { display: grid !important; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+body[data-current-page=food] #content .compacttoolcard > .cardhead > .btn { box-sizing: border-box; width: 100%; height: 48px; min-height: 48px; margin: 0; border: 1px solid var(--lime) !important; transition: none; }
+
+/* Fenster-X: kein Kasten beim Antippen; Tastatur-Fokus bleibt sichtbar. */
+#modal .modalhead button.quiet { background: transparent !important; border: 0 !important; box-shadow: none !important; -webkit-tap-highlight-color: transparent; }
+#modal .modalhead button.quiet:focus:not(:focus-visible) { outline: none !important; }
 
 /* iPad/breite Ansicht: kein „P · Mein Fortschritt · Ein Tag nach dem anderen“ unten in der Seitenleiste. */
 aside .sidefoot, aside > small { display: none !important; }
