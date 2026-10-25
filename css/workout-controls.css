@@ -1,0 +1,137 @@
+/* Linien-Symbole, Abschluss-Fenster, Pausen-Bedienung im Workout, Scroll-Rad. Alle Designs. */
+.hasicon { display: inline-grid !important; place-items: center; line-height: 0; }
+button .controlicon, a .controlicon, .controlicon {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+button.hasicon, .hasicon > .controlicon { transition: transform .16s ease, opacity .16s ease; }
+button.hasicon:active, button:active > .hasicon { transform: scale(.9); }
+
+/* Workout abschließen */
+#mb .finishform { display: grid; gap: 12px; }
+#mb .finishform > h3 { margin: 0; font-size: 22px; font-weight: 850; letter-spacing: -.03em; }
+#mb .finishform > p { margin: -6px 0 4px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#mb .finishform .finishwarn { color: var(--danger, #ff8a8a); font-size: 13px; }
+#mb .finishform label { margin: 0; }
+#mb .finishform .btn { margin: 0; min-height: 48px; }
+
+/* Pausenleiste: −30 s / +30 s / Beenden gleichmäßig */
+.restpanel > div { display: flex; gap: 2px; align-items: center; }
+.restpanel > div .textbtn { min-height: 44px; min-width: 52px; padding: 6px 8px; font-variant-numeric: tabular-nums; }
+#session-root .sessionrestsetting {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: -6px 0 6px;
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+#session-root .sessionrestsetting::before { content: '◷'; color: var(--lime); }
+
+/* Scroll-Rad für die Standardpause */
+#mb .restsettingsform { display: grid; gap: 14px; }
+#mb .restsettingsform > p { margin: 0; color: var(--muted); }
+#mb .timewheel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 96px 28px 96px;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  margin: 4px 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--bg);
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* Auswahlband in der Mitte, oben/unten ausblenden */
+#mb .timewheel::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 80px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--theme-tint, rgb(255 255 255 / .07));
+  pointer-events: none;
+}
+#mb .timewheel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(var(--bg), transparent 32%, transparent 68%, var(--bg));
+  pointer-events: none;
+}
+#mb .wheelcol {
+  position: relative;
+  z-index: 1;
+  height: 200px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: 80px 0;
+  box-sizing: border-box;
+  outline: none;
+}
+#mb .wheelcol::-webkit-scrollbar { display: none; }
+#mb .wheelitem {
+  height: 40px;
+  display: grid;
+  place-items: center;
+  scroll-snap-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s ease, transform .15s ease;
+}
+#mb .wheelitem.selected { color: var(--app-ink, inherit); font-size: 28px; font-weight: 800; }
+#mb .wheelcolon { position: relative; z-index: 1; text-align: center; font-size: 26px; font-weight: 800; color: var(--app-ink, inherit); }
+#mb .wheellabels {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 80px;
+  width: 220px;
+  height: 40px;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+#mb .wheelcol:focus-visible { outline: 2px solid var(--lime); outline-offset: -2px; border-radius: 10px; }
+
+/* Datumsfeld: auf dem iPhone mittig und groß statt an den Rand gedrückt */
+input[type=date] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  text-align: center;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+input[type=date]::-webkit-date-and-time-value { text-align: center; margin: 0 auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  button.hasicon, .hasicon > .controlicon, #mb .wheelitem { transition: none; }
+}
