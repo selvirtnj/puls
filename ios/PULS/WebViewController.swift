@@ -22,7 +22,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // Gegenstück: native-bridge.js (window.webkit.messageHandlers.pulsNative).
         config.userContentController.add(self, name: "pulsNative")
         // Kennzeichen für native-bridge.js: diese App-Version zeigt die Workout-Zeit in der Live-Aktivität.
-        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
@@ -101,8 +101,23 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             RestCoordinator.shared.cancel()
         case "setAppIcon":
             setAppIcon(body["icon"] as? String ?? "purple")
+        case "haptic":
+            playHaptic(body["style"] as? String ?? "light")
         default:
             break
+        }
+    }
+
+    /// iPhone-Haptik für Aktionen der Web-App (haptics.js); WebKit selbst kennt keine Web-Vibration.
+    private func playHaptic(_ style: String) {
+        switch style {
+        case "success": UINotificationFeedbackGenerator().notificationOccurred(.success)
+        case "warning": UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        case "error": UINotificationFeedbackGenerator().notificationOccurred(.error)
+        case "selection": UISelectionFeedbackGenerator().selectionChanged()
+        case "medium": UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        case "heavy": UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        default: UIImpactFeedbackGenerator(style: .light).impactOccurred()
         }
     }
 

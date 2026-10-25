@@ -1,0 +1,9 @@
+/* Reuses the recap's rows and theme colours, with room for long muscle labels. */
+.exercise-muscle-chart{min-width:0;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.exercise-muscle-chart h3{font-size:15px;line-height:1.4;margin:0 0 12px;overflow-wrap:anywhere}
+.exercise-muscle-chart .musclerow{display:grid;grid-template-columns:minmax(0,112px) minmax(0,1fr) minmax(24px,auto);gap:10px;align-items:center}
+.exercise-muscle-chart .musclerow>span{overflow-wrap:anywhere;font-size:12px}
+.exercise-muscle-chart .musclerow>div{min-width:0;background:var(--panel)}
+.exercise-muscle-chart .musclerow i{background:var(--lime)}
+.exercise-muscle-chart .musclerow strong{text-align:right;font-variant-numeric:tabular-nums}
+.exercise-muscle-chart .note{color:var(--muted);font-size:11px;line-height:1.5}

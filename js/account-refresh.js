@@ -4,27 +4,33 @@ const accountSections=[
  {key:'plan',title:'Dein Plan',note:'Ziele, Kalorien & Makros',selector:'.compactplan',mark:'01'},
  {key:'body',title:'Körper & Entwicklung',note:'Gewichtstrend, Wochenmittel & Maße',selector:'.compactbody',mark:'02'},
  {key:'adaptive',title:'Adaptiver Erhalt',note:'Verlauf & Kalibrierung',heading:'Adaptiver Erhalt',mark:'03'},
- {key:'design',title:'Dein Design',note:'Aussehen, Sprache & App-Icon',selector:'.designchooser'},
+ {key:'design',title:'Sprache & App-Icon',note:'Deine Darstellung',selector:'.designchooser'},
  {key:'sounds',title:'Klänge & Feedback',note:'Töne & Lautstärke',selector:'.soundsettings'},
- {key:'data',title:'Deine Daten',note:'Konto, Synchronisierung & Sicherung',heading:'Deine Daten'},
- {key:'manage',title:'Konto verwalten',note:'Zurücksetzen & Löschen',selector:'.accountdanger'}
+ {key:'manage',title:'Konto verwalten',note:'Anmeldung, Sicherung & Löschen',selector:'.accountdanger'}
 ];
+// „Konto verwalten“ bündelt Anmeldung/Synchronisierung, Sicherung und Zurücksetzen/Löschen ohne doppelte Überschriften.
+function accountManageBody(root){
+ let sync=root.querySelector('.cloudaccount'),data=[...root.children].find(node=>node.querySelector('h2,h3')?.textContent==='Deine Daten'),danger=root.querySelector('.accountdanger');
+ data?.querySelector('h2,h3')?.replaceChildren('Sicherung & Export');data?.querySelectorAll(':scope > .note').forEach(note=>note.remove());
+ if(danger){danger.querySelector('h3')?.replaceChildren('Zurücksetzen & Löschen');danger.querySelectorAll('.note').forEach(note=>note.remove())}
+ return [sync,data,danger].filter(Boolean).map(node=>node.outerHTML).join('');
+}
 function accountSectionNode(root,entry){return entry.selector?root.querySelector(entry.selector):[...root.children].find(node=>node.querySelector('h2,h3')?.textContent===entry.heading)}
 function accountMenuRow(entry){return `<button type="button" class="accountmenulink" id="account-link-${entry.key}" onclick="openAccountSection('${entry.key}')"><span class="accountrowmark" aria-hidden="true">${entry.mark||'·'}</span><span class="accountrowcopy"><strong>${esc(entry.title)}</strong><small>${esc(entry.note)}</small></span><span class="accountrowarrow" aria-hidden="true">↗</span></button>`}
 function accountGoalSummary(){let manual=state.plan.mode==='manual',hasProfile=!!state.profile&&!profileError(state.profile),direction=({lose:'Fett abnehmen',gain:'Muskeln aufbauen',maintain:'Gewicht halten'})[state.plan.direction]||'Dein Ziel',target=state.profile?.target;return `<section class="accountgoal" aria-labelledby="account-goal-title"><div class="accountsectionlabel"><span>DEIN ZIEL</span><button type="button" class="textbtn" onclick="settings()">Anpassen ↗</button></div><h2 id="account-goal-title">${manual?'Selbst festgelegt':hasProfile?esc(direction):'Dein Ziel festlegen'}</h2><div class="accountgoalnumbers"><strong>${n(state.goals.kcal)} <small>kcal / Tag</small></strong>${!manual&&hasProfile&&Number.isFinite(target)?`<span>${n(target)} <small>kg Zielgewicht</small></span>`:''}</div><p class="accountcaption">${manual?'Kalorien und Makros selbst eingestellt':hasProfile?'Tagesziel aus deinem Profil':'Profil für dein Tagesziel ergänzen'}</p></section>`}
 function accountBodySummary(){let weights=state.weights.filter(item=>item.date<=today()).sort((a,b)=>b.date.localeCompare(a.date)),latest=weights[0],weight=currentWeight(),weekRows=latest?weights.filter(item=>weekStart(item.date)===weekStart(latest.date)):[],mean=weekRows.length?weekRows.reduce((sum,item)=>sum+item.kg,0)/weekRows.length:null;return `<section class="accountbody compactbody" aria-labelledby="account-body-title"><div class="accountsectionlabel"><h2 id="account-body-title">Körper & Entwicklung</h2><button type="button" class="textbtn" onclick="weightForm()">＋ Gewicht</button></div><div class="accountbodyvalues"><div><strong>${weight===null?'–':n(weight)} <small>kg</small></strong><span>${latest?'Zuletzt erfasst':'Profilgewicht'}</span></div><div><strong>${mean===null?'–':n(round(mean))} <small>kg</small></strong><span>Wochenmittel</span></div></div><p class="accountcaption">${latest?esc(fmtDate(latest.date))+' · <span>Woche ab</span> '+esc(fmtDate(weekStart(latest.date)))+' · '+weekRows.length+' <span>'+(weekRows.length===1?'Messung':'Messungen')+'</span>':'Noch kein Gewichtseintrag'}</p></section>`}
 const accountRefreshBase=accountPage;
 accountPage=function(){
- let template=document.createElement('template');template.innerHTML=accountRefreshBase().replace(/Version 35/g,'Version 52');let root=template.content.querySelector('.accountcompact');if(!root)return template.innerHTML;
+ let template=document.createElement('template');template.innerHTML=accountRefreshBase().replace(/Version 35/g,'Version 53');let root=template.content.querySelector('.accountcompact');if(!root)return template.innerHTML;
  let available=accountSections.filter(entry=>accountSectionNode(root,entry)),entry=available.find(item=>item.key===accountSection);
  if(entry){
-  // Sprache & App-Icon gehören zu „Dein Design“, Konto & Synchronisierung zu „Deine Daten“.
-  let section=accountSectionNode(root,entry),sync=root.querySelector('.cloudaccount'),body=entry.key==='design'?section.outerHTML+accountAppearanceCard():entry.key==='data'?(sync?.outerHTML||'')+section.outerHTML:section.outerHTML;
-  return `<div class="accountcompact accountrefresh accountdetail"><div class="accountdetailhead"><button type="button" class="accountback" onclick="closeAccountSection()"><span aria-hidden="true">←</span> Konto</button><span class="accountsectionlabel">DEIN BEREICH</span></div><h1 id="account-section-title" tabindex="-1">${esc(entry.title)}</h1><div class="accountdetailcontent">${body}</div></div>`}
+  // Nur noch das Original-Design: der Bereich zeigt Sprache & App-Icon; „Konto verwalten“ bündelt Konto und Daten.
+  let section=accountSectionNode(root,entry),body=entry.key==='design'?accountAppearanceCard():entry.key==='manage'?accountManageBody(root):section.outerHTML;
+  return `<div class="accountcompact accountrefresh accountdetail"><div class="accountdetailhead"><button type="button" class="accountback" onclick="closeAccountSection()"><span aria-hidden="true">←</span> Konto</button></div><h1 id="account-section-title" tabindex="-1">${esc(entry.title)}</h1><div class="accountdetailcontent">${body}</div></div>`}
  accountSection='';let identity=root.querySelector('.accountprofileheader'),version=root.querySelector('.versionstamp');
  return `<div class="accountcompact accountrefresh accountoverview"><div class="accountmasthead"><span class="accountsectionlabel">DEIN KONTO</span><span class="accountwordmark" aria-hidden="true">PULS<span>●</span></span></div>${identity?.outerHTML||''}${accountGoalSummary()}${accountBodySummary()}<nav class="accountmenugroup" aria-label="Plan und Entwicklung">${available.filter(item=>item.mark).map(accountMenuRow).join('')}</nav><nav class="accountmenugroup" aria-label="Einstellungen und Daten"><h2 class="accountsectionlabel">EINSTELLUNGEN</h2>${available.filter(item=>!item.mark).map(accountMenuRow).join('')}</nav>${version?.outerHTML||''}</div>`;
 };
-function openAccountSection(key){if(!accountSections.some(entry=>entry.key===key))return;accountOverviewScroll=window.scrollY||0;accountSection=key;render();window.scrollTo(0,0);document.getElementById('account-section-title')?.focus({preventScroll:true})}
+function openAccountSection(key){if(key==='data'||key==='sync')key='manage';if(!accountSections.some(entry=>entry.key===key))return;accountOverviewScroll=window.scrollY||0;accountSection=key;render();window.scrollTo(0,0);document.getElementById('account-section-title')?.focus({preventScroll:true})}
 function closeAccountSection(){let previous=accountSection;accountSection='';render();window.scrollTo(0,accountOverviewScroll);document.getElementById('account-link-'+previous)?.focus({preventScroll:true})}
 function accountAppearanceCard(){
  let en=state.language==='en',icon=state.iconColor||'purple';
