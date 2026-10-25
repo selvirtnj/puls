@@ -29,7 +29,7 @@ function parseLabelText(text,column=0){
  const out={},lines=String(text).split(/\r?\n/),patterns={p:/(?:eiwei(?:ß|ss)|proteins?)(?=\s|:|$)/i,c:/\b(?:kohlenhydrate|carbohydrates?|carbs)\b/i,f:/\b(?:fett|fat|total fat)\b/i,fiber:/\b(?:ballaststoffe|fibre|fiber)\b/i};
  for(let line of lines){
   if(/davon|of which|saturated|gesättigt|zucker|sugars/i.test(line))continue;
-  const kcals=[...line.matchAll(/(\d+(?:[.,]\d+)?)\s*kcal\b/gi)];if(kcals[column]&&out.kcal===undefined)out.kcal=Number(kcals[column][1].replace(',','.'));
+  const kcals=[...line.matchAll(/((?:[<>]=?|[≤≥-])?\s*)(\d+(?:[.,]\d+)?)\s*kcal\b/gi)];if(kcals[column]&&!kcals[column][1].trim()&&out.kcal===undefined)out.kcal=Number(kcals[column][2].replace(',','.'));
   for(let [key,regex] of Object.entries(patterns)){let match=regex.exec(line);if(!match||out[key]!==undefined)continue;let tail=line.slice(match.index+match[0].length);if(/[<>≤≥]|-\s*\d/.test(tail))continue;tail=tail.replace(/\d+(?:[.,]\d+)?\s*%/g,'');let nums=[...tail.matchAll(/(?<![\d.,])(\d+(?:[.,]\d+)?)\s*(?:g\b)?/gi)];if(nums[column])out[key]=Number(nums[column][1].replace(',','.'))}
  }
  return out;

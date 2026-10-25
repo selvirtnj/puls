@@ -16,5 +16,7 @@ function pulsHaptic(kind='light'){
 }
 const hapticSound=pulsSound;pulsSound=function(kind='tap',...args){if(hapticForSound[kind])pulsHaptic(hapticForSound[kind]);return hapticSound.call(this,kind,...args)};
 // Kleine Rückmeldungen: Schalter, Scroll-Rad und Wischen zum Löschen.
-document.addEventListener('click',event=>{if(event.target.closest('.segmented button,.langswitch button,.iconchoices button,.designoption,.restpanel .textbtn,.swipedelete,input[type=checkbox]:not([switch])'))pulsHaptic(event.target.closest('.swipedelete')?'medium':'selection')},true);
+document.addEventListener('click',event=>{if(event.target.closest('.segmented button,.langswitch button,.iconchoices button,.designoption,.restpanel .textbtn,.swipedelete'))pulsHaptic(event.target.closest('.swipedelete')?'medium':'selection')},true);
+// Nach dem onchange am Feld: Satz-Abhaken darf zuerst seine stärkere Rückmeldung auslösen.
+document.addEventListener('change',event=>{if(event.target.matches('input[type=checkbox]:not([switch])'))pulsHaptic('selection')});
 if(typeof buildTimeWheel==='function'){const hapticWheel=buildTimeWheel;buildTimeWheel=function(input,...args){let column=hapticWheel.call(this,input,...args),last=input.value;input.addEventListener('input',()=>{if(input.value!==last){last=input.value;pulsHaptic('selection')}});return column}}

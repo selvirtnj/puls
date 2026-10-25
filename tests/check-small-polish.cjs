@@ -76,3 +76,40 @@ async function ingredientSearchFixture(){
   console.log('PASS: DE/EN recipe delete confirmation, cancellation and preserved diary snapshots.');
 }
 ingredientSearchFixture().catch(error=>{console.error(error);process.exitCode=1});
+
+function hapticCheckboxFixture(){
+  let now=1000;const listeners={},vibrations=[],sounds=[];
+  const ctx={Date:{now:()=>now},window:{},navigator:{vibrate(pattern){vibrations.push(pattern);return true}},
+    pulsSound:kind=>sounds.push(kind),document:{hidden:false,addEventListener(type,handler){listeners[type]=handler}}};
+  vm.runInNewContext(fs.readFileSync('js/haptics.js','utf8'),ctx);
+  const checkbox={matches:selector=>selector.includes('input[type=checkbox]'),
+    closest:selector=>selector.includes('input[type=checkbox]')?checkbox:null};
+  const completeSet=()=>{listeners.click({target:checkbox});ctx.pulsSound('set');listeners.change?.({target:checkbox})};
+  completeSet();assert.deepEqual(vibrations,[18],'Set completion must retain medium haptic, not selection');
+  assert.deepEqual(sounds,['set']);
+  now+=100;listeners.click({target:checkbox});listeners.change?.({target:checkbox});
+  assert.deepEqual(vibrations,[18,6],'Ordinary checkboxes/unchecking keep selection feedback');
+  now+=100;ctx.document.hidden=true;completeSet();assert.deepEqual(vibrations,[18,6]);
+  console.log('PASS: checkbox event order preserves set haptics, ordinary selection feedback and hidden-page suppression.');
+}
+hapticCheckboxFixture();
+
+function labelEnergyFixture(){
+  const ctx={modal:{addEventListener(){}},searchAliases:{},navigator:{},location:{protocol:'file:'}};
+  for(const name of ['productReview','confirmProduct','customFood','addCustom','foodForm','foodTab',
+    'mapOffProduct','selectFood','chooseCatalogueFood','addFood','showSearch','searchFoodDatabase',
+    'validData','parseFoodLine','logTextFood'])ctx[name]=()=>{};
+  vm.runInNewContext(fs.readFileSync('js/food-upgrade.js','utf8'),ctx);
+  for(const sign of ['<','>','≤','≥','<=','>=','-']){
+    assert.equal(ctx.parseLabelText('Energie '+sign+' 1 kcal').kcal,undefined,sign+' is not an exact value');
+  }
+  assert.equal(ctx.parseLabelText('Energie 840 kJ / 200 kcal').kcal,200);
+  assert.equal(ctx.parseLabelText('Energy 0 kcal').kcal,0);
+  assert.equal(ctx.parseLabelText('Energy 0,5 kcal').kcal,.5);
+  assert.equal(ctx.parseLabelText('Energy < 1 kcal / 20 kcal',0).kcal,undefined);
+  assert.equal(ctx.parseLabelText('Energy < 1 kcal / 20 kcal',1).kcal,20);
+  assert.equal(ctx.parseLabelText('Energy 20 kcal / ≤ 1 kcal',0).kcal,20);
+  assert.equal(ctx.parseLabelText('Energy 20 kcal / ≤ 1 kcal',1).kcal,undefined);
+  console.log('PASS: OCR calorie bounds/negative values stay unknown; exact values and column positions remain intact.');
+}
+labelEnergyFixture();
