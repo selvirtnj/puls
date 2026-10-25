@@ -50,6 +50,17 @@ Der Koordinator wählt selbst; Selvir hat dies ausdrücklich freigegeben. Keine 
 
 Verfügbare Gemini-Modelle: `agy models`.
 
+### Sparsam arbeiten (Nutzung schonen)
+
+- **Standard ist `low`/`medium`.** `high` nur für Sync, Migration, Sicherheit und große Reviews; `xhigh` nur nach wiederholtem Scheitern.
+- **Kleinigkeiten macht der Koordinator selbst:** Texte, CSS-Abstände und Ein-Zeilen-Fixes ohne Agent und ohne Review.
+- **Reviews nur bei größeren oder riskanten Änderungen**, und dann mit einem gezielten Auftrag: Diff plus „worauf achten“, nicht „prüfe alles“.
+- **Codex-Aufträge eng fassen:** erlaubte Dateien, maximale Anzahl Korrekturen, „kein Browser-Test“, wenn er nicht nötig ist. `-Resume` nur für Rückfragen zum selben Thema; ein neues Thema bekommt einen neuen Thread, damit der alte Kontext nicht jedes Mal mitbezahlt wird.
+- **Browser-Prüfung:** Text mit `get_page_text`/`read_page` oder per JavaScript lesen, Screenshots nur für echte Layoutfragen und klein (`scale` 0.5).
+- **Veröffentlichen:** `node scripts/bump-version.cjs` erhöht die Version überall, danach `node scripts/check.cjs`, Commit, Push und ein kurzer Live-Check. Keine Einzel-Edits pro Versionsstelle.
+- **Lange Chats** kosten bei jeder Nachricht mehr. Pro größerem Thema einen neuen Chat beginnen; die Übergabe steht in `docs/CURRENT-STATE.md`.
+- **Selvir bündelt Wünsche** möglichst in einer Nachricht; der Koordinator setzt sie gesammelt um und veröffentlicht einmal statt mehrmals.
+
 ## Codex und Gemini aufrufen
 
 ```powershell
