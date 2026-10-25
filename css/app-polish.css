@@ -78,6 +78,16 @@ body[data-current-page=food] #content .nutritionslide:first-child .slideprogress
 body[data-current-page=food] #content .nutritionslide:first-child .slideprogress strong { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 body[data-current-page=food] #content .nutritionslide:first-child .slideprogress > small { display: none; }
 
+/* Essen „Heute gegessen“: Karte wächst mit dem Inhalt statt innen zu scrollen; übrige kcal rechts in der Zeile. */
+body[data-current-page=food] #content .nutritiondeck .nutritiontrack,
+body[data-current-page=food] #content .nutritiondeck .nutritionslide { height: auto !important; max-height: none !important; overflow-y: visible !important; }
+body[data-current-page=food] #content .nutritiondeck .nutritiontrack { align-items: start; }
+body[data-current-page=food] #content .nutritionslide:first-child .caloriedial > div .kcalleft { margin-left: auto; font-size: 17px !important; letter-spacing: -.02em !important; color: var(--lime); }
+/* Übersicht: nur die übrige kcal-Zahl unter dem Ring. */
+#content .nutritionslide .dialcolumn { display: grid; justify-items: center; align-content: start; gap: 10px; }
+#content .nutritionslide .dialcolumn > .kcalleft { font-size: 15px; font-weight: 800; color: var(--lime); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#content .nutritionslide .kcalleft.over { color: var(--danger, #ff8a8a) !important; }
+
 /* iPad/breite Ansicht: kein „P · Mein Fortschritt · Ein Tag nach dem anderen“ unten in der Seitenleiste. */
 aside .sidefoot, aside > small { display: none !important; }
 
