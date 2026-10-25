@@ -33,7 +33,7 @@ const polishRender=render;render=function(...args){
   if(page==='food')document.querySelectorAll('#content details.card').forEach(card=>{if(/Nährstoffwerte|Nutrient values/.test(card.querySelector('summary')?.textContent||''))card.remove()});
   // Übrige Kalorien nur als Zahl: Essen rechts neben „0 von 2.200 kcal“, Übersicht direkt unter dem Ring.
   document.querySelectorAll('#content .nutritionslide .combinedallowance').forEach(line=>{
-    let strong=line.querySelector('strong'),over=/([\d.,]+)\s*kcal über Ziel/.exec(line.textContent)?.[1];if(!strong)return;
+    let strong=line.querySelector('strong'),excess=totals().kcal-state.goals.kcal,over=excess>0?n(Math.round(excess)):null;if(!strong)return;
     let value=document.createElement('strong');value.className='kcalleft'+(over?' over':'');value.textContent=over?'+'+over+' kcal':strong.textContent;
     let dial=line.closest('.nutritionslide').querySelector('.caloriedial');
     if(page==='food'&&dial?.firstElementChild){dial.firstElementChild.append(value);line.remove();return}
