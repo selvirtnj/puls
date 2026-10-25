@@ -1,0 +1,26 @@
+/* Tab-Wechsel: Wischen nach links oder rechts. Alle Designs. */
+main { overflow-x: clip; }
+#content.pageslideghost {
+  position: fixed;
+  z-index: 1;
+  margin: 0;
+  max-width: none;
+  pointer-events: none;
+  animation: page-slide-out .3s cubic-bezier(.4, 0, .2, 1) both;
+}
+#content.pageslide.pagearriving { animation: page-slide-in .38s cubic-bezier(.2, .8, .2, 1) both; }
+/* Die alte Seite ist schon fast weg, wenn die neue sichtbar wird: kein unruhiges Überlagern. */
+@keyframes page-slide-out {
+  0% { opacity: 1; transform: none; }
+  55% { opacity: 0; }
+  100% { opacity: 0; transform: translateX(calc(var(--page-direction, 1) * -28%)); }
+}
+@keyframes page-slide-in {
+  0% { opacity: 0; transform: translateX(calc(var(--page-direction, 1) * 34%)); }
+  30% { opacity: .1; }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #content.pageslideghost { display: none; }
+  #content.pageslide.pagearriving { animation: none; }
+}
