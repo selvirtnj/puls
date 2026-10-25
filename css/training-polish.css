@@ -29,6 +29,9 @@ body[data-current-page=workout] #content .trainingutilities .restglobal {
 #content .designworkouts .workoutbody > h3.donehead { border-top: 0 !important; padding-top: 0; margin-top: 36px !important; }
 #content .designworkouts[data-train-tab=current] .workoutbody > .card.empty { border-bottom: 0 !important; }
 
+/* Keine Linie unter der letzten Routine – Trennlinien nur zwischen Routinen. */
+#content .designworkouts .workoutbody > section.routinepreview:not(:has(~ section.routinepreview)) { border-bottom: 0 !important; }
+
 /* Eigene Übung in der Suche: dezent abgesetzt. */
 #mb .searchitem.ownexercise { border-style: dashed; }
 #mb .searchitem.ownexercise small { color: var(--lime); }
