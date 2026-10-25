@@ -1,4 +1,5 @@
-/* Pure activity metrics; load after running.js. No profile mutations or DOM access.
+/* Shared activity metrics; load after running.js. Estimators and aggregations do
+   not mutate data; the explicit goal setter and final render are integration hooks.
    MET source: 2024 Adult Compendium of Physical Activities (ages 19–59):
    https://pacompendium.com/running/ (12020), /walking/ (17160,17080,17035),
    /bicycling/ (01014), /sports/ (15660,15610,15591),
@@ -15,11 +16,16 @@ const RUN_ACTIVITIES=Object.freeze([
   {id:'ride',de:'Radfahren',en:'Cycling',icon:'ride',gps:true,category:'ride',met:7},
   {id:'tabletennis',de:'Tischtennis',en:'Table tennis',icon:'tabletennis',gps:false,category:'other',met:4},
   {id:'soccer',de:'Fußball',en:'Soccer',icon:'soccer',gps:false,category:'other',met:7},
+  // https://pacompendium.com/sports/ (2024): 15120 boxing sparring;
+  // MMA proxy, not an MMA-specific measurement. 15680 tennis doubles: Padel proxy.
+  {id:'mma',de:'MMA',en:'MMA',icon:'mma',gps:false,category:'other',met:7.8},
+  {id:'padel',de:'Padel',en:'Padel',icon:'padel',gps:false,category:'other',met:6},
   {id:'inline',de:'Inlineskaten',en:'Inline skating',icon:'inline',gps:true,category:'other',met:7.5},
   {id:'other',de:'Sonstiges',en:'Other',icon:'other',gps:false,category:'other',met:3.8}
-].map(Object.freeze));
+].map(a=>Object.freeze({...a,pick:!['trail','ride','inline','other'].includes(a.id)})));
 
-function runActivityType(id){return RUN_ACTIVITIES.find(a=>a.id===id)||RUN_ACTIVITIES[0]}
+function runActivityType(id){return RUN_ACTIVITIES.find(a=>a.id===(id==null?'run':id))||RUN_ACTIVITIES.find(a=>a.id==='other')}
+function runPickableActivities(){return RUN_ACTIVITIES.filter(a=>a.pick)}
 
 /* Gross energy, including resting expenditure: MET × kg × hours (conventional
    approximation 1 MET ≈ 1 kcal/kg/h). Running: interpolate Compendium 2024
@@ -30,8 +36,8 @@ function runActivityType(id){return RUN_ACTIVITIES.find(a=>a.id===id)||RUN_ACTIV
    is a route-average proxy, not a measured constant gradient. Hiking uses
    17081/17082/17080 by pace, taking the larger uphill estimate if applicable.
    No downhill correction or guessed ascent, no additional trail multiplier. */
-function runCaloriesEstimate({type,movingSeconds,distanceKm,weightKg,ascentM}={}){
-  if(!Number.isFinite(weightKg)||weightKg<30||weightKg>300||!Number.isFinite(movingSeconds)||movingSeconds<=0)return null;
+function runActivityMet({type,movingSeconds,distanceKm,ascentM}={}){
+  if(!Number.isFinite(movingSeconds)||movingSeconds<=0)return null;
   let activity=runActivityType(type),met=activity.met;
   if(activity.id==='other')return null;
   const speed=Number.isFinite(distanceKm)&&distanceKm>0?distanceKm*3600/movingSeconds:null;
@@ -50,8 +56,61 @@ function runCaloriesEstimate({type,movingSeconds,distanceKm,weightKg,ascentM}={}
       if(grade>=.01&&grade<=.2)met=Math.max(met,grade<=.05?5.3:grade<=.1?7:8.8);
     }
   }
-  const kcal=met*weightKg*movingSeconds/3600;
-  return Number.isFinite(kcal)?Math.round(kcal):null;
+  return met;
+}
+function runCaloriesEstimate(options={}){let {weightKg,movingSeconds}=options,met=runActivityMet(options);return Number.isFinite(weightKg)&&weightKg>=30&&weightKg<=300&&met!==null?Math.round(met*weightKg*movingSeconds/3600):null}
+
+// 2024 Compendium https://pacompendium.com/conditioning-exercise/, 02054:
+// multiple resistance exercises, 8–15 reps, varied resistance (3.5 MET).
+// Session duration includes ordinary between-set rests; no calories from volume.
+const WORKOUT_MET=3.5;
+function workoutKcalEstimate(workout){
+  if(!workout?.finished||workout.autoFinished||!(workout.durationSeconds>0)||!Number.isFinite(workout.durationSeconds))return null;
+  let kg=runLatestWeight(state,workout.date);return kg>=30&&kg<=300?Math.round(WORKOUT_MET*kg*workout.durationSeconds/3600):null;
+}
+// Uses the same speed/ascent MET as gross estimates; never subtract resting energy
+// from an already rounded or edited historical kcal snapshot. Does not mutate it.
+function activityNetKcal(entry){
+  if(!entry||('finished' in entry&&entry.finished!==true)||!Number.isFinite(entry.durationSeconds)||entry.durationSeconds<=0||entry.autoFinished)return null;
+  let kg=runLatestWeight(state,entry.date),met=entry.finished===true?WORKOUT_MET:runActivityMet({type:entry.type,movingSeconds:entry.durationSeconds,distanceKm:entry.distanceKm,ascentM:entry.elevationGain});
+  return kg>=30&&kg<=300&&met!==null?Math.round(Math.max(0,met-1)*kg*entry.durationSeconds/3600):null;
+}
+function dayActivityKcal(dateKey){return activityEntries(dateKey,dateKey).reduce((sum,x)=>sum+(activityNetKcal(x.entry)??0),0)}
+
+// Shared, non-mutating overview input. Unknown durations stay null, not invented.
+function activityEntries(start,end){
+  let inRange=x=>x.date>=start&&x.date<=end&&x.date<=today();
+  return [...(state.runs||[]).filter(inRange).map(entry=>({kind:'activity',type:entry.type??'run',entry})),
+    ...(state.workouts||[]).filter(w=>w.finished&&inRange(w)).map(entry=>({kind:'workout',type:'gym',entry}))]
+    .sort((a,b)=>a.entry.date.localeCompare(b.entry.date)||(a.entry.startedAt||a.entry.finishedAt||a.entry.createdAt||0)-(b.entry.startedAt||b.entry.finishedAt||b.entry.createdAt||0)||String(a.entry.id).localeCompare(String(b.entry.id)));
+}
+function activityPeriodRange(mode='week',dateKey=today(),offset=0){
+  let d=new Date(dateKey+'T12:00:00');
+  if(mode==='month'){d.setDate(1);d.setMonth(d.getMonth()+offset);let start=localISO(d);d.setMonth(d.getMonth()+1);d.setDate(0);return {start,end:localISO(d)}}
+  d.setDate(d.getDate()-(d.getDay()+6)%7+offset*7);let start=localISO(d);d.setDate(d.getDate()+6);return {start,end:localISO(d)};
+}
+function activityStatsBetween(start,end){
+  let rows=activityEntries(start,end),byType={},days=new Set();
+  const empty=()=>({count:0,durationSeconds:0,unknownDurationCount:0,distanceKm:0,kcal:0,netKcal:0,unknownKcalCount:0});let total=empty();
+  for(let x of rows){let e=x.entry,gross=x.kind==='workout'?workoutKcalEstimate(e):Number.isFinite(e.kcal)?e.kcal:runCaloriesEstimate({type:e.type,movingSeconds:e.durationSeconds,distanceKm:e.distanceKm,weightKg:runLatestWeight(state,e.date),ascentM:e.elevationGain}),net=activityNetKcal(e);
+    days.add(e.date);let group=byType[x.type]??=empty();
+    for(let s of [total,group]){s.count++;if(Number.isFinite(e.durationSeconds)&&e.durationSeconds>0&&!e.autoFinished)s.durationSeconds+=e.durationSeconds;else s.unknownDurationCount++;s.distanceKm+=x.kind==='activity'&&Number.isFinite(e.distanceKm)?e.distanceKm:0;s.kcal+=gross??0;s.netKcal+=net??0;if(gross===null)s.unknownKcalCount++}
+  }
+  return {...total,minutes:total.durationSeconds/60,byType,activeDays:[...days].sort(),entries:rows};
+}
+function activityPeriodStats(mode='week',dateKey=today(),offset=0){let range=activityPeriodRange(mode,dateKey,offset);return {...range,...activityStatsBetween(range.start,range.end)}}
+function activeMinutesWeek(dateKey=today()){return activityPeriodStats('week',dateKey).minutes}
+function activeMinutesGoal(){return state.runSettings?.weekMinutesGoal??150}
+function setActiveMinutesGoal(minutes){if(!Number.isFinite(minutes)||minutes<0||minutes>10080)return false;state.runSettings={...state.runSettings,weekMinutesGoal:minutes};save();return true}
+
+// Only sessions explicitly created by this version qualify. Editing/reopening an
+// old entry never adds this marker. Deterministic date/start/id order shares the
+// 100 XP daily cap across gym and activities; record XP remain separate.
+function activityDurationAwards(){
+  let used={},awards={};for(let x of activityEntries('0000-01-01',today())){let e=x.entry;if(e.durationXpVersion!==1||e.autoFinished||!Number.isFinite(e.durationSeconds)||e.durationSeconds<=0)continue;
+    let met=x.kind==='workout'?WORKOUT_MET:runActivityMet({type:e.type,movingSeconds:e.durationSeconds,distanceKm:e.distanceKm,ascentM:e.elevationGain});
+    if(met===null)continue;let xp=Math.min(Math.max(0,100-(used[e.date]||0)),Math.round(e.durationSeconds/60*met/5));used[e.date]=(used[e.date]||0)+xp;awards[e.id]={xp,durationXp:xp,wins:[],run:x.kind==='activity'};
+  }return awards;
 }
 
 // Last recorded weight on/before an ISO calendar date; never substitute a future
@@ -133,3 +192,7 @@ function runMovingStats(points){
   }
   return {movingSeconds,distanceKm:meters/1000};
 }
+
+// Baseline goals wait for this complete activity module; earlier render calls
+// must not persist a temporary target without sport. Later renders are idempotent.
+if(state.profile?.kcalMode==='baseline')render();

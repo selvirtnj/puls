@@ -3,7 +3,8 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 // Synthetic fixtures only; same wrapper stubs as check-running.cjs. Both files
 // share a VM lexical scope, matching classic script loading in index.html.
 const state={workouts:[],weights:[]};
-const c={state,today:()=>'2026-10-25',localISO:()=>'',weekStart:()=>'',
+const localISO=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const c={state,today:()=>'2026-10-25',localISO,weekStart:()=>'2026-10-19',
   appLocale:()=>'de-DE',formatClock:String,esc:String,n:String,uid:()=>'new',
   completedWorkouts:()=>[],loggedSets:()=>[],workoutAwards:()=>({}),
   dailyWorkoutStreak:()=>0,trainingStreak:()=>0,validData:()=>true,
@@ -23,7 +24,10 @@ for(const a of activities){
   assert.ok(Number.isFinite(a.met)&&a.met>0);assert.equal(c.runActivityType(a.id),a);
   assert.ok(Object.isFrozen(a));
 }
-assert.equal(c.runActivityType('unknown').id,'run');assert.equal(c.runActivityType(null).id,'run');
+assert.equal(c.runActivityType('unknown').id,'other');assert.equal(c.runActivityType(null).id,'run');
+assert.deepEqual(plain(c.runPickableActivities().map(a=>a.id)),['run','walk','hike','mountain','tabletennis','soccer','mma','padel']);
+assert.equal(c.runActivityType('unknown').gps,false);assert.equal(c.runIsRun({type:'unknown'}),false);assert.equal(c.runIsRun({}),true);
+assert.equal(c.runActivityType('mma').met,7.8);assert.equal(c.runActivityType('padel').met,6);
 console.log('PASS: activity catalogue, required types, valid MET/labels/icons, immutable entries and fallback.');
 
 const kcal=opts=>c.runCaloriesEstimate({type:'run',movingSeconds:3000,distanceKm:10,weightKg:70,...opts});
@@ -34,6 +38,7 @@ const pingpong=kcal({type:'tabletennis',movingSeconds:3600});assert.equal(pingpo
 for(const weightKg of [undefined,null,0,29,301,'70',NaN,Infinity])assert.equal(kcal({weightKg}),null);
 for(const movingSeconds of [undefined,null,0,-1,NaN,Infinity,'3000'])assert.equal(kcal({movingSeconds}),null);
 assert.equal(c.runCaloriesEstimate(),null);assert.equal(kcal({type:'other'}),null);
+assert.equal(kcal({type:'unknown'}),null);
 assert.equal(kcal({type:'run',distanceKm:null}),438,'missing distance uses general jogging, never coerces null');
 assert.equal(kcal({type:'tabletennis',distanceKm:100,ascentM:1000}),233,'non-GPS activity ignores distance/ascent');
 const walk=opts=>kcal({type:'walk',movingSeconds:3600,distanceKm:5,...opts});
@@ -54,6 +59,82 @@ assert.equal(c.runLatestWeight({weights},null),null);
 assert.equal(c.runLatestWeight({weights:[{date:'2026-10-23',kg:null}]},'2026-10-24'),null);
 assert.equal(c.runLatestWeight({weights:[{date:'2026-10-23',kg:350}]},'2026-10-24'),350,'recorded weight preserved; calorie function enforces its own range');
 console.log('PASS: latest historical weight, unsorted/duplicate days, missing/future/invalid measurements.');
+
+// New optional data must round-trip, and malformed future-watch fields fail.
+const entry={id:'new',date:'2026-10-25',type:'mma',durationSeconds:3600,distanceKm:0,source:'watch',avgHr:130,maxHr:180,laps:[180,420],durationXpVersion:1,kcal:546};
+const backup={workouts:[],runs:[entry],profile:{kcalMode:'baseline',baselineFactor:1.3},runSettings:{weekMinutesGoal:150,rounds:{work:180,rest:60,count:5}},activeRun:{startedAt:1,type:'mma',laps:[180],rounds:{work:180,rest:60,count:5},durationXpVersion:1}};
+let serial=JSON.stringify(backup);assert.equal(c.validData(backup),true);assert.equal(JSON.stringify(backup),serial);
+assert.equal(c.validData({workouts:[]}),true);
+for(const patch of [{source:'import'},{avgHr:NaN},{maxHr:251},{avgHr:181,maxHr:180},{laps:[20,10]},{laps:[10,10]},{laps:[3601]},{laps:[-1]},{durationXpVersion:2}])assert.equal(c.validData({...backup,runs:[{...entry,...patch}]}),false,JSON.stringify(patch));
+for(const patch of [{weekMinutesGoal:-1},{weekMinutesGoal:Infinity},{rounds:{work:0,rest:60,count:5}},{rounds:{work:180,rest:-1,count:5}},{rounds:{work:180,rest:60,count:1.5}}])assert.equal(c.validData({...backup,runSettings:patch}),false);
+assert.equal(c.validData({...backup,activeRun:{...backup.activeRun,laps:[NaN]}}),false);
+assert.equal(c.validData({...backup,activeRun:{...backup.activeRun,rounds:{work:180,rest:60,count:0}}}),false);
+assert.equal(c.validData({...backup,profile:{kcalMode:'new'}}),false);
+assert.equal(c.validData({...backup,profile:{baselineFactor:1.5}}),false);
+assert.equal(c.validData({...backup,workouts:[{durationXpVersion:'1'}]}),false);
+for(const source of ['gps','manual','watch'])assert.equal(c.validData({...backup,runs:[{...entry,source}]}),true);
+console.log('PASS: optional watch/lap/round/profile fields, non-mutating legacy validation and invalid bounds.');
+
+state.weights=[{date:'2026-10-24',kg:70},{date:'2026-10-26',kg:90}];
+const workout={id:'gym',date:'2026-10-25',durationSeconds:3600,finished:true,exercises:[],durationXpVersion:1};
+assert.equal(c.workoutKcalEstimate(workout),245);assert.equal(c.activityNetKcal(workout),175);
+assert.equal(c.activityNetKcal(entry),476);assert.equal(c.activityNetKcal({...entry,kcal:9999}),476,'net never derives from edited/rounded gross snapshot');
+assert.equal(c.activityNetKcal({...entry,type:'mystery'}),null);
+assert.equal(c.workoutKcalEstimate({...workout,autoFinished:true}),null);assert.equal(c.activityNetKcal({...workout,autoFinished:true}),null);
+for(const w of [{...workout,finished:false},{...workout,durationSeconds:undefined},{...workout,date:'2026-10-01'}])assert.equal(c.workoutKcalEstimate(w),null);
+assert.equal(c.activityNetKcal({...workout,finished:false}),null);
+state.runs=[entry];state.workouts=[workout];
+assert.equal(c.dayActivityKcal('2026-10-25'),651);assert.equal(c.dayActivityKcal('2026-10-24'),0);
+assert.equal(c.activeMinutesWeek('2026-10-25'),120);assert.equal(c.activeMinutesGoal(),150);
+let periodStats=c.activityPeriodStats('month','2026-10-25');assert.equal(periodStats.count,2);assert.equal(periodStats.kcal,791);assert.equal(periodStats.netKcal,651);assert.equal(periodStats.byType.gym.durationSeconds,3600);
+assert.deepEqual(plain(periodStats.activeDays),['2026-10-25']);assert.deepEqual(plain(c.activityPeriodRange('week','2026-01-01')),{start:'2025-12-29',end:'2026-01-04'});
+assert.deepEqual(plain(c.activityPeriodRange('month','2026-03-31',-1)),{start:'2026-02-01',end:'2026-02-28'});
+state.workouts.push({...workout,id:'auto',autoFinished:true},{...workout,id:'missing',durationSeconds:undefined});
+assert.equal(c.activeMinutesWeek('2026-10-25'),120);assert.equal(c.activityPeriodStats('week','2026-10-25').unknownDurationCount,2);
+state.runs.push({...entry,id:'future',date:'2026-10-26'});assert.equal(c.dayActivityKcal('2026-10-26'),0,'future sessions excluded');
+console.log('PASS: gross/net kcal, historical weight, auto-finish/unknown gates, daily/week/month aggregation including gym.');
+
+state.runs=[{...entry,id:'a',startedAt:1}];state.workouts=[{...workout,id:'b',startedAt:2}];
+let awards=c.activityDurationAwards();assert.equal(awards.a.xp,94);assert.equal(awards.b.xp,6);assert.equal(Object.values(c.workoutAwards()).reduce((s,a)=>s+a.xp,0),100);
+state.runs.reverse();state.workouts.reverse();assert.deepEqual(plain(c.activityDurationAwards()),plain(awards));
+state.runs=[{...entry,id:'legacy',durationXpVersion:undefined,startedAt:Date.now(),finishedAt:Date.now()}];state.workouts=[{...workout,durationXpVersion:undefined}];assert.deepEqual(plain(c.activityDurationAwards()),{});
+state.runs=[{...entry,id:'new',date:'2026-10-24',startedAt:1}];state.workouts=[{...workout,id:'newgym',startedAt:2}];assert.equal(c.activityDurationAwards().new.xp,94);assert.equal(c.activityDurationAwards().newgym.xp,42);
+state.workouts[0].autoFinished=true;assert.equal(c.activityDurationAwards().newgym,undefined);
+state.workouts=[];state.runs=[{id:'oldrun',date:'2026-10-24',distanceKm:5,durationSeconds:3600},{...entry,type:'tabletennis',id:'first',startedAt:1,durationSeconds:7200},{id:'pr',type:'run',date:'2026-10-25',distanceKm:6,durationSeconds:3600,startedAt:2,durationXpVersion:1}];
+assert.equal(c.workoutAwards().pr.xp,29,'PR 25 XP are additional to the remaining 4 daily duration XP');assert.equal(Object.values(c.workoutAwards()).reduce((s,a)=>s+a.xp,0),125);
+state.runs=[];state.workouts=[];
+assert.deepEqual(plain(c.runRoundsSettings()),{work:180,rest:60,count:5});assert.equal(c.runSetRounds({work:120,rest:0,count:3}),true);assert.equal(c.runSetRounds({work:0,rest:0,count:3}),false);
+const mma={rounds:{work:180,rest:60,count:5}};assert.equal(c.runRoundState(mma,180).phase,'rest');assert.equal(c.runRoundState(mma,240).round,2);assert.equal(c.runRoundState(mma,1140).phase,'done');assert.equal(c.runRoundState(mma,1140).remainingSeconds,0);
+state.activeRun={startedAt:Date.now()-20000,pausedAt:Date.now()-10000,laps:[]};assert.equal(c.runAddLap(),10);assert.equal(c.runAddLap(),null);assert.equal(state.activeRun.laps.length,1);state.activeRun=null;
+assert.equal(c.setActiveMinutesGoal(180),true);assert.equal(c.activeMinutesGoal(),180);assert.equal(c.setActiveMinutesGoal(-1),false);assert.equal(c.activeMinutesGoal(),180);
+console.log('PASS: shared daily duration XP cap, stable order, no retroactive XP, separate days, MMA phases and active-time laps.');
+
+// Exercise actual edit functions with hidden and unknown stored IDs. No layout mock
+// can prove the visual dropdown, but its selected value and saved data must survive.
+let editHtml='';const controls={};c.openModal=(title,html)=>{editHtml=html};c.runTypeList=()=>c.runPickableActivities();c.runTypeInfo=c.runActivityType;c.runTypeName=t=>t.de;c.$=id=>controls[id];c.runDetail=()=>{};c.toast=()=>{};
+vm.runInContext('const RUN_FEELINGS=[],RUN_TERRAINS=[];',c);
+const sessionSource=fs.readFileSync('js/run-session.js','utf8');
+vm.runInContext(sessionSource.slice(sessionSource.indexOf('function runMmaState('),sessionSource.indexOf('// Ton (WebAudio')),c);
+const markedMma={startedAt:1,type:'mma',rounds:{work:180,rest:60,count:5},laps:[10,20,30,40,50]};
+assert.equal(c.runMmaState(markedMma,20).round,3);assert.equal(c.runMmaState(markedMma,20).phase,'work');assert.equal(c.runMmaState(markedMma,50).phase,'done');
+assert.equal(c.validData({workouts:[],activeRun:markedMma}),true,'manual MMA round marks use valid cumulative active seconds');
+assert.equal(c.validData({workouts:[],runs:[{...entry,durationSeconds:50,laps:markedMma.laps}]}),true,'final MMA mark may equal duration');
+assert.equal(c.validData({workouts:[],runs:[{...entry,durationSeconds:49,laps:markedMma.laps}]}),false,'no future lap beyond saved duration');
+assert.equal(c.validData({workouts:[],activeRun:{...markedMma,laps:[10,10]}}),false,'same-second duplicate remains invalid');
+vm.runInContext(sessionSource.slice(sessionSource.indexOf('function runEditForm('),sessionSource.indexOf('// Andere Vollbilder')),c);
+for(const type of ['trail','ride','inline','other','mystery']){
+  state.runs=[{...entry,type,kcal:123}];c.runEditForm('new');assert.ok(editHtml.includes('value="'+type+'" selected'),type);
+  Object.assign(controls,{'runedit-type':{value:type},'runedit-feel':{value:''},'runedit-terrain':{value:''},'runedit-note':{value:'kept'}});
+  c.runEditSave({preventDefault(){}},'new');assert.equal(state.runs[0].type,type);assert.equal(state.runs[0].kcal,123);assert.equal(state.runs[0].source,'watch');assert.deepEqual(state.runs[0].laps,[180,420]);
+}
+state.runs=[];state.runSettings={rounds:{work:180,rest:60,count:5}};
+c.startRunTimer(true,null,'mma');assert.equal(state.activeRun.gps,false);assert.equal(state.activeRun.durationXpVersion,1);assert.deepEqual(plain(state.activeRun.rounds),{work:180,rest:60,count:5});
+state.activeRun.laps=[10,20];const saved=c.commitRunActivity({distanceKm:0,durationSeconds:30});assert.equal(saved.durationXpVersion,1);assert.deepEqual(plain(saved.laps),[10,20]);assert.equal(state.activeRun,null);
+state.activeRun={startedAt:Date.now(),type:'mma',pausedAt:Date.now()};const legacy=c.commitRunActivity({distanceKm:0,durationSeconds:30});assert.equal(legacy.durationXpVersion,undefined,'old active sessions do not acquire marker when finishing');
+c.startRunTimer(true,null,'mystery');assert.equal(state.activeRun.gps,false);assert.equal(state.activeRun.type,'mystery');state.activeRun=null;
+c.startRunTimer(true,null,'INVALID!');assert.equal(state.activeRun.gps,false);assert.equal(state.activeRun.type,'other');state.activeRun=null;
+state.runs=[];state.runSettings={};
+console.log('PASS: edit/save preserves hidden/unknown types and snapshots; new session marker/laps/rounds persist, legacy sessions and unknown GPS stay safe.');
 
 // 5 m per 2 s: accepted by existing distance filters, with altitude independent
 // of horizontal coordinates. Keep every synthetic point well above the 4 m gate.

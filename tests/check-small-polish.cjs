@@ -9,7 +9,7 @@ function calorieFixture(language,consumed,goal,page='food'){
     querySelector:()=>({textContent:Math.max(0,goal-consumed)+' kcal'}),
     closest:()=>({querySelector:()=>dial}),remove(){removed=true}
   };
-  const ctx={state:{language,goals:{kcal:goal}},page,totals:()=>({kcal:consumed}),n:String,
+  const ctx={state:{language,goals:{kcal:goal}},page,date:'2026-10-25',dayGoals:()=>({kcal:goal}),totals:()=>({kcal:consumed}),n:String,
     render(){},save(){},quickAddMenu(){},openModal(){},markFoodDayComplete(){},nutrientTotals(){},waterCard(){},
     modal:{addEventListener(){}},document:{addEventListener(){},
       querySelectorAll:selector=>selector.includes('combinedallowance')?[line]:[],querySelector:()=>null,

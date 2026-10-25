@@ -18,6 +18,13 @@ const RUN_ICON_PATHS={
   soccer:'<circle cx="12" cy="12" r="9"/><path d="m12 7 4 3-1.5 4.5h-5L8 10Z"/><path d="M12 3v4M21 10l-5 0M17.5 19l-3-4.5M6.5 19l3-4.5M3 10h5"/>',
   inline:'<path d="M4 16h14a2 2 0 0 0 2-2v-1l-6-2-2-5H8v8H4Z"/><circle cx="7" cy="19" r="1.5"/><circle cx="12" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>',
   swim:'<circle cx="16" cy="6" r="2"/><path d="m4 13 5-4 4 3 2-2M2 18c2 1.5 4 1.5 6 0s4-1.5 6 0 4 1.5 6 0"/>',
+  mma:'<path d="M7 11V7.5A4.5 4.5 0 0 1 11.5 3h2A4.5 4.5 0 0 1 18 7.5V13a5 5 0 0 1-5 5h-2a4 4 0 0 1-4-4Z"/><path d="M7 11h3.5a2 2 0 0 1 0 4H7M8.5 18v3h7.5v-3.5M11 7h4"/>',
+  padel:'<path d="M11 2.5c3.6 0 6 2.6 6 6.3 0 3.4-2.3 5.9-6 5.9s-6-2.5-6-5.9c0-3.7 2.4-6.3 6-6.3Z"/><path d="M11 14.7V21M9.4 21h3.2"/><path d="M9 6.5h.01M13 6.5h.01M11 9h.01M9 11.2h.01M13 11.2h.01" stroke-width="2.2"/><circle cx="19" cy="18" r="2.2"/>',
+  gym:'<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+  lock:'<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  stop:'<rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor"/>',
+  lap:'<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 2.5h4M18.5 6l1.5-1.5"/>',
+  layers:'<path d="m12 3 9 5-9 5-9-5Z"/><path d="m3 13 9 5 9-5"/>',
   other:'<circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/>',
   route:'<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/>',
   play:'<path d="M8 5v14l11-7Z" fill="currentColor"/>',
@@ -31,7 +38,7 @@ function runTypeInfo(id){
   return {id:'run',de:'Laufen',en:'Run',icon:'run',gps:true,category:'run'};
 }
 function runTypeName(t){return state.language==='en'?t.en:t.de}
-function runTypeList(){return typeof RUN_ACTIVITIES!=='undefined'&&Array.isArray(RUN_ACTIVITIES)?RUN_ACTIVITIES:[runTypeInfo('run')]}
+function runTypeList(){if(typeof runPickableActivities==='function')return runPickableActivities();return typeof RUN_ACTIVITIES!=='undefined'&&Array.isArray(RUN_ACTIVITIES)?RUN_ACTIVITIES:[runTypeInfo('run')]}
 function runCurrentType(){return runTypeInfo(state.activeRun?.type||runViewType||state.runSettings?.lastType||'run')}
 function runWeight(){return typeof runLatestWeight==='function'?runLatestWeight(state,today()):null}
 function runKcal(type,movingSeconds,distanceKm,ascentM){if(typeof runCaloriesEstimate!=='function')return null;try{let v=runCaloriesEstimate({type,movingSeconds,distanceKm,weightKg:runWeight(),ascentM});return Number.isFinite(v)?Math.min(20000,Math.max(0,Math.round(v))):null}catch{return null}}
@@ -55,8 +62,12 @@ function renderRunView(){
   // Karte nur neu aufbauen, wenn sich Ansicht oder Route ändern (sonst flackert sie bei Pause/Weiter).
   let mapKey=runView+':'+(state.activeRun?.routeId||runViewRouteId||'')+':'+runCurrentType().gps,keepMap=runViewMapKey===mapKey&&root.querySelector('#runviewmap')&&runView!=='summary';
   let map=keepMap?root.querySelector('#runviewmap'):null;
-  root.className='runview '+runView+(state.activeRun?.pausedAt?' paused':'');root.innerHTML=html;
-  if(map){let slot=root.querySelector('#runviewmap');slot?.replaceWith(map)}else{runViewMapKey=mapKey;runMountViewMap()}
+  if(runView!=='live')runLocked=false;
+  // Neuaufbau (Pause/Weiter, Sperre, Sync) zeigt wieder „Beenden“ – die Bestätigung beginnt dann neu.
+  runFinishArm=0;clearTimeout(runFinishTimer);
+  root.className='runview '+runView+(state.activeRun?.pausedAt?' paused':'')+(runView==='live'&&state.activeRun?' kind-'+runLiveKind(state.activeRun):'')+(runLocked?' locked':'');root.innerHTML=html;
+  if(map){let slot=root.querySelector('#runviewmap');slot?.replaceWith(map);map.inert=false;map.removeAttribute('aria-hidden')}else{runViewMapKey=mapKey;runMountViewMap()}
+  if(runView==='live'){runSheetBind();runLockBind()}
   updateRunLive();runViewTick();
 }
 function runMountViewMap(){
@@ -65,9 +76,9 @@ function runMountViewMap(){
   if(runView==='summary'){runMountSummaryMap();return}
   if(typeof runMountMap!=='function')return;
   runMountMap('runviewmap',map=>{
-    runPreviewMap=map;let route=runRouteById(runViewRouteId);
+    runPreviewMap=map;map.attributionControl.setPosition('topleft');let route=runRouteById(runViewRouteId);
     if(route){let line=L.polyline(runLineLatLngs(route.line),{color:runAccent(),weight:5,opacity:.9}).addTo(map);map.fitBounds(line.getBounds(),{padding:[30,30]})}
-    else{let v=runDefaultView();map.setView(runPreviewPos?[runPreviewPos.lat,runPreviewPos.lon]:v.center,runPreviewPos?16:v.zoom)}
+    else{let v=runDefaultView(),here=Number.isFinite(runPreviewPos?.lat);map.setView(here?[runPreviewPos.lat,runPreviewPos.lon]:v.center,here?16:v.zoom)}
     runPreviewDraw();
   });
 }
@@ -99,9 +110,9 @@ function runReadyHtml(){
   let t=runCurrentType(),route=runRouteById(runViewRouteId);
   return `<div class="runviewmap ${t.gps?'':'nomap'}" id="${t.gps?'runviewmap':'runnomap'}">${t.gps?'':`<span class="runbigicon">${runIcon(t.icon)}</span>`}</div>
   <header class="runviewtop"><button type="button" class="runround" onclick="closeRunView()" aria-label="${runText('Schließen','Close')}">${runIcon('down')}</button><span data-rungpschip>${runGpsChip()}</span></header>
-  ${t.gps?`<button type="button" class="runround runlocate" onclick="runPreviewRecenter()" aria-label="${runText('Auf mich zentrieren','Centre on me')}">${runIcon('locate')}</button>`:''}
+  ${t.gps?`<div class="runmaptools"><button type="button" class="runround runlocate" onclick="runPreviewRecenter()" aria-label="${runText('Auf mich zentrieren','Centre on me')}">${runIcon('locate')}</button>${runTrailsButton()}</div>`:''}
   <section class="runpanel">
-    <div class="runpanelstats"><div><strong>00:00</strong><small>${runText('Zeit','Time')}</small></div><div><strong>–</strong><small>${runText('Ø Pace','Avg pace')}</small></div><div><strong>${t.gps?'0,00':'–'}</strong><small>${runText('Distanz (km)','Distance (km)')}</small></div></div>
+    ${t.id==='mma'?runRoundsPanel():`<div class="runpanelstats"><div><strong>00:00</strong><small>${runText('Zeit','Time')}</small></div>${t.gps?`<div><strong>–</strong><small>${t.category==='run'?runText('Ø Pace','Avg pace'):runText('Ø km/h','Avg km/h')}</small></div><div><strong>${new Intl.NumberFormat(appLocale(),{minimumFractionDigits:2}).format(0)}</strong><small>${runText('Distanz (km)','Distance (km)')}</small></div>`:`<div><strong>–</strong><small>${runText('Kalorien','Calories')}</small></div>`}</div>`}
     ${route?`<div class="runroutechip">${runIcon('route')}<span>${esc(route.name)} · ${runKm(route.distanceKm)} km</span><button type="button" onclick="runSelectRoute(null)" aria-label="${runText('Route entfernen','Remove route')}">✕</button></div>`:''}
     <div class="runcontrols">
       <button type="button" class="runside" onclick="runTypePicker()"><span class="runsideicon">${runIcon(t.icon)}</span><small>${esc(runTypeName(t))}</small></button>
@@ -126,27 +137,184 @@ function runCountdownAdd(){if(!runCountdown)return;runCountdown.endsAt+=10000;ru
 function runCountdownCancel(){clearInterval(runCountdown?.timer);runCountdown=null}
 function runCountdownLeft(){return runCountdown?Math.max(0,Math.ceil((runCountdown.endsAt-Date.now())/1000)):0}
 function runCountdownTick(){let left=runCountdownLeft(),el=document.querySelector('[data-runcount]');if(el&&el.textContent!==String(left)){el.textContent=left;el.classList.remove('tick');void el.offsetWidth;el.classList.add('tick');if(left<=3&&left>0&&typeof pulsHaptic==='function')pulsHaptic('light')}if(left<=0)runCountdownGo()}
-function runCountdownGo(){runCountdownCancel();runPreviewStop();let t=runCurrentType();runView='live';startRunTimer(!!t.gps,t.gps?runViewRouteId:null,t.id);if(typeof pulsHaptic==='function')pulsHaptic('success')}
+function runCountdownGo(){runCountdownCancel();runPreviewStop();let t=runCurrentType();runView='live';runSheetOpen=false;runLocked=false;startRunTimer(!!t.gps,t.gps?runViewRouteId:null,t.id);if(t.id==='mma')runBeep('work');else if(typeof pulsHaptic==='function')pulsHaptic('success')}
 function runCountdownHtml(){
   return `<div class="runviewmap blur" id="runviewmap"></div><div class="runcountdown"><small>${esc(runTypeName(runCurrentType()))}</small><strong data-runcount class="tick">${runCountdownLeft()}</strong><div class="runcountactions"><button type="button" class="btn secondary" onclick="runCountdownAdd()">＋10 ${runText('Sekunden','seconds')}</button><button type="button" class="btn" onclick="runCountdownGo()">${runText('Jetzt starten','Start now')} →</button></div><button type="button" class="textbtn" onclick="runCountdownCancel();runView='ready';renderRunView()">${runText('Abbrechen','Cancel')}</button></div>`;
 }
 
-// Live
-function runLiveHtml(){
-  let run=state.activeRun,t=runTypeInfo(run.type),paused=!!run.pausedAt,route=runRouteById(run.routeId);
-  return `<header class="runviewtop solid"><button type="button" class="runround" onclick="closeRunView()" aria-label="${runText('Minimieren','Minimise')}">${runIcon('down')}</button><span class="runlivetitle">${runIcon(t.icon)}${esc(runTypeName(t))}${route?' · '+esc(route.name):''}</span><span class="runlivestate">${paused?runText('Pausiert','Paused'):runText('Läuft','Live')}</span></header>
-  <div class="runliveclock"><strong data-runclock>${formatClock(runElapsed())}</strong><small>${runText('Dauer','Duration')}</small></div>
-  <div class="runlivegrid">${t.gps?`<div><strong data-rundistnum>0,00</strong><small>${runText('Distanz (km)','Distance (km)')}</small></div>`:''}<div><strong data-runkcal>–</strong><small>${runText('Kalorien','Calories')}*</small></div>${t.gps?`<div><strong data-runpacenum>–</strong><small>${runText('Ø Pace (min/km)','Avg pace (min/km)')}</small></div>`:''}</div>
-  ${t.gps?`<div class="runviewmap" id="runviewmap"><button type="button" class="runround runlocate" onclick="runLiveRecenter()" aria-label="${runText('Auf mich zentrieren','Centre on me')}">${runIcon('locate')}</button></div><p class="rungpsline" data-rungps></p>`:`<div class="runviewmap nomap"><span class="runbigicon">${runIcon(t.icon)}</span></div>`}
-  <footer class="runlivebar">${run.gps&&!runOwnedHere(run)?`<p class="note">${runText('Diese Aktivität zeichnet ein anderes Gerät auf – beende sie dort.','Another device is recording this activity – finish it there.')}</p>`:paused?`<button type="button" class="btn secondary" onclick="finishRunTimer()">${runText('Beenden','Finish')}</button><button type="button" class="btn" onclick="toggleRunPause()">${runText('Weiter','Resume')}</button>`:`<button type="button" class="runpausebtn" onclick="toggleRunPause()" aria-label="${runText('Pause','Pause')}">${runIcon('pause')}</button>`}</footer>`;
+// MMA: Runden vor dem Start einstellen (runRoundsSettings/runSetRounds in running.js).
+function runShortClock(seconds){seconds=Math.max(0,Math.round(seconds));let h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),s=seconds%60;return h?h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'):m+':'+String(s).padStart(2,'0')}
+function runRoundsPanel(){
+  let r=runRoundsSettings();
+  return `<button type="button" class="runpanelstats runroundset" onclick="runRoundsForm()" aria-label="${runText('Runden einstellen','Set rounds')}"><div><strong>${r.count}</strong><small>${runText('Runden','Rounds')}</small></div><div><strong>${runShortClock(r.work)}</strong><small>${runText('Rundenlänge','Round length')}</small></div><div><strong>${runShortClock(r.rest)}</strong><small>${runText('Pause','Rest')}</small></div><span class="runroundedit">${runText('Ändern','Edit')}</span></button>`;
 }
-// Jede Sekunde (running.js updateRunLive): Zahlen ohne Neuaufbau aktualisieren.
+function runRoundsForm(){
+  let r=runRoundsSettings(),opt=(values,current,label)=>values.map(v=>`<option value="${v}" ${v===current?'selected':''}>${label(v)}</option>`).join('');
+  let works=[...new Set([30,60,90,120,150,180,240,300,360,420,480,600,r.work])].sort((a,b)=>a-b),rests=[...new Set([0,15,30,45,60,90,120,180,r.rest])].sort((a,b)=>a-b),counts=[...new Set([...Array.from({length:12},(_,i)=>i+1),15,20,r.count])].sort((a,b)=>a-b);
+  openModal(runText('Runden','Rounds'),`<form onsubmit="runRoundsSave(event)"><label>${runText('Rundenlänge','Round length')}<select id="runround-work">${opt(works,r.work,v=>runShortClock(v)+' min')}</select></label><label>${runText('Pause zwischen Runden','Rest between rounds')}<select id="runround-rest">${opt(rests,r.rest,v=>v?runShortClock(v)+' min':runText('Keine','None'))}</select></label><label>${runText('Anzahl Runden','Number of rounds')}<select id="runround-count">${opt(counts,r.count,v=>String(v))}</select></label><p class="note">${runText('Beim Wechsel zwischen Runde und Pause gibt es Ton und Vibration. „Nächste Runde“ springt sofort weiter.','Sound and vibration mark each switch between round and rest. “Next round” skips ahead immediately.')}</p><button class="btn full">${runText('Übernehmen','Apply')}</button></form>`);
+}
+function runRoundsSave(event){
+  event.preventDefault();let rounds={work:Number($('runround-work').value),rest:Number($('runround-rest').value),count:Number($('runround-count').value)};
+  if(!runSetRounds(rounds)){toast(runText('Bitte gültige Werte wählen','Please choose valid values'));return}
+  modal.close();renderRunView();
+}
+// Rundenstand inkl. „Nächste Runde“: Jede Runde-Markierung (laps) startet sofort die nächste Runde; ohne Markierungen identisch mit runRoundState.
+function runMmaState(run=state.activeRun,elapsed=runElapsed(run)){
+  let {work,rest,count}=run?.rounds||runRoundsSettings(),round=1,start=0,doneAt=null;
+  const settle=t=>{while(round<count&&t>=start+work+rest){start+=work+rest;round++}if(round===count&&t>=start+work&&doneAt===null)doneAt=start+work};
+  for(let lap of run?.laps||[]){if(lap>elapsed)break;settle(lap);if(doneAt!==null)break;if(round<count){round++;start=lap}else{doneAt=lap;break}}
+  if(doneAt===null)settle(elapsed);
+  if(doneAt!==null&&elapsed>=doneAt)return {round:count,count,phase:'done',remainingSeconds:0,phaseSeconds:0};
+  let within=elapsed-start;
+  return within<work?{round,count,phase:'work',remainingSeconds:Math.ceil(work-within),phaseSeconds:work}:{round,count,phase:'rest',remainingSeconds:Math.ceil(work+rest-within),phaseSeconds:rest};
+}
+// Ton (WebAudio, kurz) + Vibration beim Phasenwechsel. Respektiert die Ton-Einstellung der App.
+let runAudio=null;
+function runBeep(kind){
+  if(typeof pulsHaptic==='function')pulsHaptic(kind==='rest'?'warning':kind==='done'?'success':'heavy');
+  if(state.soundEnabled===false)return;
+  try{
+    let A=window.AudioContext||window.webkitAudioContext;if(!A)return;
+    let ctx=typeof pulsAudio!=='undefined'&&pulsAudio?pulsAudio:(runAudio??=new A());if(ctx.state!=='running')ctx.resume?.();
+    let notes=kind==='work'?[[880,0,.16],[880,.22,.16],[1320,.44,.32]]:kind==='rest'?[[660,0,.22],[520,.28,.4]]:[[880,0,.18],[1100,.22,.18],[1320,.44,.5]],now=ctx.currentTime,vol=Math.max(.06,Math.min(1,(state.soundVolume??35)/100))*.32;
+    for(let [hz,delay,duration] of notes){let osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='triangle';osc.frequency.value=hz;gain.gain.setValueAtTime(0,now+delay);gain.gain.linearRampToValueAtTime(vol,now+delay+.01);gain.gain.exponentialRampToValueAtTime(.0001,now+delay+duration);osc.connect(gain);gain.connect(ctx.destination);osc.start(now+delay);osc.stop(now+delay+duration+.03)}
+  }catch{}
+}
+let runRoundSignal='';
+function runRoundWatch(run){
+  if(run?.type!=='mma'){runRoundSignal='';return}
+  let s=runMmaState(run),key=run.startedAt+'|'+s.round+':'+s.phase,prefix=run.startedAt+'|';
+  if(runRoundSignal.startsWith(prefix)&&runRoundSignal!==key&&!run.pausedAt)runBeep(s.phase);
+  runRoundSignal=key;
+}
+
+// Live: Werte je Art. Laufen: Zeit, Distanz, Tempo, Ø-Tempo, kcal. Gehen/Wandern/Berg: Zeit, Distanz, Höhenmeter, Höhe, Ø km/h, kcal.
+// Ohne GPS: große Zeit, kcal, Uhrzeit (MMA zusätzlich Runden). GPS-Arten: Vollbild-Karte mit hochziehbarer Wertekarte.
+let runSheetOpen=false,runLocked=false,runFinishArm=0,runFinishTimer=null,runElevCache={key:'',gain:null,alt:null};
+function runLiveKind(run){let t=runTypeInfo(run?.type);if(t.id==='mma')return 'mma';if(!run?.gps)return 'plain';return t.category==='run'?'run':'walk'}
+function runLiveFields(kind){
+  const f={time:runText('Zeit','Time'),dist:runText('Distanz (km)','Distance (km)'),pace:runText('Tempo (/km)','Pace (/km)'),avgpace:runText('Ø Tempo (/km)','Avg pace (/km)'),gain:runText('Höhenmeter ↑','Elevation gain'),alt:runText('Höhe','Altitude'),speed:runText('Ø km/h','Avg km/h'),kcal:runText('kcal*','kcal*'),clock:runText('Uhrzeit','Time of day')};
+  let keys=kind==='run'?['time','dist','pace','avgpace','kcal']:kind==='walk'?['time','dist','gain','alt','speed','kcal']:['kcal','clock'];
+  return keys.map(k=>[k,f[k]]);
+}
+// Aktuelles Tempo: Strecke der letzten ~30 s im aktuellen Abschnitt; veraltete oder zu kurze Daten → keine Angabe.
+function runCurrentPace(accepted){
+  let last=accepted.at(-1);if(!last||Date.now()-last[0]>20000)return null;let i=accepted.length-1,m=0;
+  while(i>0&&accepted[i-1][4]===last[4]&&last[0]-accepted[i-1][0]<=30000){m+=runMeters(accepted[i-1],accepted[i]);i--}
+  let dt=(last[0]-accepted[i][0])/1000;return dt>=8&&m>=15?dt/(m/1000):null;
+}
+function runLiveData(run){
+  let elapsed=runElapsed(run),kind=runLiveKind(run),d={time:formatClock(elapsed),clock:new Date().toLocaleTimeString(appLocale(),{hour:'2-digit',minute:'2-digit'})},km=0,gain=null;
+  if(run.gps){
+    let points=runTrackFor(run).points,accepted=runAcceptedPoints(points);
+    for(let i=1;i<accepted.length;i++)if(accepted[i][4]===accepted[i-1][4])km+=runMeters(accepted[i-1],accepted[i])/1000;
+    let ck=run.startedAt+':'+points.length;if(runElevCache.key!==ck){let e=typeof runElevation==='function'?runElevation(points):null,lastAlt=[...accepted].reverse().find(p=>Number.isFinite(p[5])&&p[6]>=0);runElevCache={key:ck,gain:e?.gain??null,alt:lastAlt?Math.round(lastAlt[5]):null}}
+    gain=runElevCache.gain;
+    let pace=run.pausedAt?null:runCurrentPace(accepted);
+    d.dist=runKm(Math.round(km*100)/100);d.pace=pace?runPaceText(pace).replace(' /km',''):'–';d.avgpace=km>=.05?runPaceText(elapsed/km).replace(' /km',''):'–';
+    d.gain=Number.isFinite(gain)?gain+' m':'–';d.alt=Number.isFinite(runElevCache.alt)?runElevCache.alt+' m':'–';d.speed=km>=.05&&elapsed>0?n(Math.round(km/(elapsed/3600)*10)/10):'–';
+  }
+  let kcal=runKcal(run.type,elapsed,km,gain);d.kcal=kcal===null?'–':String(kcal);
+  if(kind==='mma'){let s=runMmaState(run,elapsed);d.roundleft=s.phase==='done'?runText('Fertig','Done'):runShortClock(s.remainingSeconds);d.phase=s.phase==='done'?runText(`Alle ${s.count} Runden geschafft`,`All ${s.count} rounds done`):runText(`Runde ${s.round} / ${s.count}`,`Round ${s.round} / ${s.count}`)+' · '+(s.phase==='work'?runText('Kampf','Fight'):runText('Pause','Rest'));d._round=s}
+  else if(run.laps){let laps=run.laps,since=laps.at(-1)||0;d.lap=runText('Runde','Lap')+' '+(laps.length+1)+' · '+formatClock(Math.max(0,elapsed-since))}
+  return d;
+}
+function runLiveTitle(run,t,route){return `<span class="runlivetitle">${runIcon(t.icon)}${esc(runTypeName(t))}${route?' · '+esc(route.name):''}</span>`}
+function runLiveBar(run){
+  let paused=!!run.pausedAt;
+  if(run.gps&&!runOwnedHere(run))return `<footer class="runlivebar"><p class="note">${runText('Diese Aktivität zeichnet ein anderes Gerät auf – beende sie dort.','Another device is recording this activity – finish it there.')}</p></footer>`;
+  return `<footer class="runlivebar"><button type="button" class="runbarbtn" onclick="runLockOn()"><span class="runbaricon">${runIcon('lock')}</span><small>${runText('Sperren','Lock')}</small></button><button type="button" class="runpausebtn ${paused?'resume':''}" onclick="toggleRunPause()" aria-label="${paused?runText('Weiter','Resume'):runText('Pause','Pause')}">${runIcon(paused?'play':'pause')}</button><button type="button" class="runbarbtn stop" data-runfinish onclick="runFinishTap()"><span class="runbaricon">${runIcon('stop')}</span><small data-runfinishlabel>${runText('Beenden','Finish')}</small></button></footer>`;
+}
+function runLockHtml(){
+  if(!runLocked)return '';
+  return `<div class="runlock" role="dialog" aria-modal="true" aria-label="${runText('Bildschirm gesperrt','Screen locked')}"><div class="runlocktime"><small>${runText('Gesperrt','Locked')}</small><strong data-runclock>${formatClock(runElapsed())}</strong></div><button type="button" class="rununlock" data-rununlock aria-label="${runText('Zum Entsperren 1 Sekunde halten','Hold for 1 second to unlock')}"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="44"/><circle class="prog" cx="50" cy="50" r="44"/></svg><span>${runIcon('lock')}</span></button><p>${runText('Zum Entsperren 1 s halten','Hold 1 s to unlock')}</p></div>`;
+}
+function runLiveHtml(){
+  let run=state.activeRun,t=runTypeInfo(run.type),paused=!!run.pausedAt,route=runRouteById(run.routeId),kind=runLiveKind(run),data=runLiveData(run);
+  let top=`<header class="runviewtop ${run.gps?'floating':'solid'}"><button type="button" class="runround" onclick="closeRunView()" aria-label="${runText('Minimieren','Minimise')}">${runIcon('down')}</button>${runLiveTitle(run,t,route)}<span class="runlivestate">${paused?runText('Pausiert','Paused'):runText('Läuft','Live')}</span></header>`;
+  let val=([k,label],cls='')=>`<div class="runval ${cls}"><strong data-runval="${k}">${esc(data[k]??'–')}</strong><small>${esc(label)}</small></div>`;
+  if(run.gps){
+    let fields=runLiveFields(kind),more=fields.slice(2);
+    return `<div class="runviewmap livemap" id="runviewmap"></div>${top}
+    <div class="runmaptools"><button type="button" class="runround runlocate" onclick="runLiveRecenter()" aria-label="${runText('Auf mich zentrieren','Centre on me')}">${runIcon('locate')}</button>${runTrailsButton()}</div>
+    <section class="runsheet ${runSheetOpen?'open':''}" id="runsheet">
+      <button type="button" class="runsheetgrip" data-runsheetgrip aria-expanded="${runSheetOpen}" aria-controls="runsheetmore" aria-label="${runSheetOpen?runText('Werte einklappen','Collapse values'):runText('Alle Werte zeigen','Show all values')}"><i></i></button>
+      <div class="runsheetmain">${fields.slice(0,2).map(f=>val(f,'primary')).join('')}</div>
+      <div class="runsheetmore" id="runsheetmore"><div class="runsheetmoreinner m${more.length}">${more.map(f=>val(f)).join('')}</div></div>
+      <div class="runsheetfoot"><p class="rungpsline" data-rungps></p>${runOwnedHere(run)?`<button type="button" class="runlapbtn" onclick="runLiveLap()" aria-label="${runText('Runde markieren','Mark lap')}">${runIcon('lap')}<span data-runval="lap">${esc(data.lap||runText('Runde','Lap'))}</span></button>`:''}</div>
+      ${runLiveBar(run)}
+    </section>${runLockHtml()}`;
+  }
+  let mma=kind==='mma'?`<div class="runroundbox ${data._round.phase}" data-runroundbox><small data-runval="phase">${esc(data.phase)}</small><strong data-runval="roundleft">${esc(data.roundleft)}</strong><div class="runroundbar"><i data-runroundbar></i></div></div>`:'';
+  return `${top}<div class="runplain ${kind}">${kind==='plain'?`<span class="runplainicon">${runIcon(t.icon)}</span>`:''}${mma}
+    <div class="runliveclock"><strong data-runclock>${formatClock(runElapsed())}</strong><small>${runText('Dauer','Duration')}</small></div>
+    <div class="runplainvals">${runLiveFields(kind).map(f=>val(f)).join('')}</div>
+    ${kind==='mma'&&data._round.phase!=='done'?`<button type="button" class="runlapbtn big" onclick="runLiveLap()">${runText('Nächste Runde','Next round')} →</button>`:''}
+  </div>${runLiveBar(run)}${runLockHtml()}`;
+}
+// Jede Sekunde (running.js updateRunLive): Zahlen ohne Neuaufbau aktualisieren; MMA-Signale auch bei minimierter Ansicht.
 function runViewTick(){
   let chip=document.querySelector('[data-rungpschip]');if(chip){let html=runGpsChip();if(chip.innerHTML!==html)chip.innerHTML=html}
-  let run=state.activeRun;if(!run||runView!=='live')return;
-  let elapsed=runElapsed(),km=run.gps?runGpsKm():0,kcal=runKcal(run.type,elapsed,km);
-  let set=(sel,v)=>document.querySelectorAll(sel).forEach(x=>{if(x.textContent!==v)x.textContent=v});
-  set('[data-rundistnum]',runKm(Math.round(km*100)/100));set('[data-runpacenum]',km>=.05?runPaceText(elapsed/km).replace(' /km',''):'–');set('[data-runkcal]',kcal===null?'–':String(kcal));
+  let run=state.activeRun;if(!run)return;
+  runRoundWatch(run);
+  if(runView!=='live')return;
+  let data=runLiveData(run);
+  document.querySelectorAll('#run-root [data-runval]').forEach(x=>{let v=data[x.dataset.runval];if(v!==undefined&&x.textContent!==v)x.textContent=v});
+  let s=data._round,box=document.querySelector('[data-runroundbox]');
+  if(s&&box){if(!box.classList.contains(s.phase)){box.classList.remove('work','rest','done');box.classList.add(s.phase);if(s.phase==='done')document.querySelector('#run-root .runlapbtn.big')?.remove()}let bar=box.querySelector('[data-runroundbar]'),w=s.phaseSeconds?Math.round((1-s.remainingSeconds/s.phaseSeconds)*1000)/10+'%':'100%';if(bar&&bar.style.width!==w)bar.style.width=w}
+}
+// Runde / Zwischenzeit (GPS) bzw. nächste Runde (MMA): kumulative aktive Sekunden in activeRun.laps.
+function runLiveLap(){
+  let run=state.activeRun;if(!run)return;
+  if(run.type==='mma'&&runMmaState(run).phase==='done')return;
+  let before=run.laps?.length||0,at=runAddLap();if(at===null){toast(runText('Gerade eben schon markiert','Just marked'));return}
+  if(run.type==='mma'){runViewTick();return}
+  let prev=run.laps[before-1]||0;if(typeof pulsHaptic==='function')pulsHaptic('medium');
+  toast(runText('Runde','Lap')+' '+(before+1)+' · '+formatClock(at-prev));
+  if(!document.querySelector('#run-root .runlapbtn'))renderRunView();else runViewTick();
+}
+// Beenden mit Bestätigung: erstes Tippen fragt nach, zweites Tippen (innerhalb 3 s) beendet.
+function runFinishTap(){
+  let button=document.querySelector('[data-runfinish]'),label=document.querySelector('[data-runfinishlabel]');
+  if(Date.now()-runFinishArm<3000){clearTimeout(runFinishTimer);runFinishArm=0;if(label&&state.activeRun?.gps)label.textContent=runText('GPS wird abgeschlossen …','Finishing GPS …');if(button)button.disabled=true;finishRunTimer();return}
+  runFinishArm=Date.now();button?.classList.add('armed');if(label)label.textContent=runText('Nochmal tippen','Tap again');if(typeof pulsHaptic==='function')pulsHaptic('warning');
+  clearTimeout(runFinishTimer);runFinishTimer=setTimeout(()=>{runFinishArm=0;let b=document.querySelector('[data-runfinish]'),l=document.querySelector('[data-runfinishlabel]');b?.classList.remove('armed');if(l&&!b?.disabled)l.textContent=runText('Beenden','Finish')},3000);
+}
+// Hochziehbare Wertekarte: Ziehen am Griff (nach oben = ausklappen, nach unten = einklappen) oder Antippen.
+function runSheetSet(open){
+  runSheetOpen=open;let sheet=$('runsheet');if(!sheet)return;sheet.classList.toggle('open',open);sheet.style.transform='';
+  let grip=sheet.querySelector('[data-runsheetgrip]');if(grip){grip.setAttribute('aria-expanded',String(open));grip.setAttribute('aria-label',open?runText('Werte einklappen','Collapse values'):runText('Alle Werte zeigen','Show all values'))}
+}
+function runSheetBind(){
+  let sheet=$('runsheet'),grip=sheet?.querySelector('[data-runsheetgrip]');if(!sheet||!grip)return;
+  let startY=null,dy=0,moved=false,onGrip=false;
+  const down=e=>{if(e.target.closest('button:not([data-runsheetgrip])'))return;startY=e.clientY;dy=0;moved=false;onGrip=!!e.target.closest('[data-runsheetgrip]');sheet.classList.add('dragging');try{sheet.setPointerCapture(e.pointerId)}catch{}};
+  const move=e=>{if(startY===null)return;dy=e.clientY-startY;if(Math.abs(dy)>6)moved=true;if(moved){let limit=runSheetOpen?Math.max(0,Math.min(160,dy)):Math.min(0,Math.max(-120,dy))*.6;sheet.style.transform=limit?`translateY(${limit}px)`:''}};
+  const up=()=>{if(startY===null)return;sheet.classList.remove('dragging');let wasTap=!moved;startY=null;
+    if(wasTap){if(onGrip)runSheetSet(!runSheetOpen);else sheet.style.transform='';return}
+    if(dy<-30)runSheetSet(true);else if(dy>30)runSheetSet(false);else runSheetSet(runSheetOpen)};
+  sheet.addEventListener('pointerdown',down);sheet.addEventListener('pointermove',move);sheet.addEventListener('pointerup',up);sheet.addEventListener('pointercancel',()=>{startY=null;sheet.classList.remove('dragging');runSheetSet(runSheetOpen)});
+  // Tastatur: Griff ist ein normaler Button (Enter/Leertaste lösen click aus, Zeiger-Tippen wird oben behandelt).
+  grip.addEventListener('click',e=>{if(e.detail===0)runSheetSet(!runSheetOpen)});
+}
+// Sperre: Overlay fängt alle Berührungen ab; Entsperren durch 1 s Halten (Fortschrittsring).
+function runLockOn(){runLocked=true;runFinishArm=0;if(typeof pulsHaptic==='function')pulsHaptic('medium');renderRunView()}
+function runLockBind(){
+  let button=document.querySelector('[data-rununlock]');if(!button)return;let timer=null,lock=button.closest('.runlock');
+  // Gesperrt: alles hinter dem Overlay unerreichbar (auch per Tastatur/Bildschirmleser), Fokus bleibt im Overlay.
+  [...($('run-root')?.children||[])].forEach(el=>{if(el!==lock){el.inert=true;el.setAttribute('aria-hidden','true')}});
+  lock?.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();button.focus({preventScroll:true})}});
+  const start=e=>{e.preventDefault();if(timer)return;button.classList.add('holding');timer=setTimeout(()=>{timer=null;runLocked=false;if(typeof pulsHaptic==='function')pulsHaptic('success');renderRunView()},1000)};
+  const stop=()=>{clearTimeout(timer);timer=null;button.classList.remove('holding')};
+  button.addEventListener('pointerdown',start);['pointerup','pointerleave','pointercancel'].forEach(t=>button.addEventListener(t,stop));
+  button.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat)start(e)});button.addEventListener('keyup',stop);
+  button.addEventListener('contextmenu',e=>e.preventDefault());
+  button.closest('.runlock')?.addEventListener('pointerdown',e=>{if(!e.target.closest('[data-rununlock]'))e.preventDefault()});
+  setTimeout(()=>button.focus({preventScroll:true}),50);
+}
+function runLapsHtml(laps,duration){
+  if(!Array.isArray(laps)||!laps.length)return '';let marks=[...laps.filter(t=>t>0&&t<duration),duration],parts=marks.map((t,i)=>t-(marks[i-1]||0)).filter(x=>x>0);if(parts.length<2)return '';let fastest=Math.min(...parts);
+  return `<h3>${runText('Runden','Laps')}</h3><div class="runsplits">${parts.map((s,i)=>`<div class="runsplit ${s===fastest?'best':''}"><span>${i+1}</span><div><i style="width:${Math.max(18,fastest/s*100)}%"></i></div><strong>${formatClock(s)}</strong></div>`).join('')}</div>`;
 }
 
 // Zusammenfassung
@@ -191,6 +359,7 @@ function runSummaryHtml(){
     <h3>${runText('Details','Details')}</h3>
     ${runDetailRows({km:x.km,moving:x.moving,maxSpeed:x.maxSpeed,gain:x.elev?.gain,max:x.elev?.max,pause:x.pause,kcal:x.kcal})}
     ${runSplitsHtml(splits?.splits,splits?.restMeters?[splits.restMeters,splits.restSeconds]:null)}
+    ${x.type!=='mma'?runLapsHtml(run.laps,x.moving):''}
     <p class="note">* ${runText('Kalorien sind eine Schätzung aus Aktivität, Zeit, Tempo und deinem letzten Gewicht.','Calories are an estimate from activity, time, pace and your latest body weight.')}</p>
   </div>
   <footer class="runlivebar stacked"><button type="button" class="btn full" onclick="runSummarySave()">${runText('Aktivität speichern','Save activity')}</button><button type="button" class="textbtn rundiscard" onclick="runSummaryDiscard()">${runText('Verwerfen','Discard')}</button></footer>`;
@@ -217,12 +386,14 @@ function runDetail(id){
   let r=runList().find(x=>x.id===id);if(!r)return;let t=runTypeInfo(r.type),start=r.startedAt?new Date(r.startedAt):new Date(r.date+'T12:00:00');
   let when=start.toLocaleDateString(appLocale(),{weekday:'long',day:'numeric',month:'long'})+(r.startedAt?' · '+start.toLocaleTimeString(appLocale(),{hour:'2-digit',minute:'2-digit'}):'');
   let feel=RUN_FEELINGS.find(f=>f[0]===r.feeling),terrain=RUN_TERRAINS.find(x=>x[0]===r.terrain);
-  openModal(runTypeName(t),`${r.route?`<div class="runmap detail" id="rundetailmap"></div>`:''}<p class="rundetaildate">${esc(when)}${feel?' · '+feel[1]+' '+(state.language==='en'?feel[3]:feel[2]):''}${terrain?' · '+(state.language==='en'?terrain[2]:terrain[1]):''}</p><div class="runsumbig compact">${r.distanceKm>0?`<div><strong>${runKm(r.distanceKm)}</strong><small>km</small></div>`:''}<div><strong>${formatClock(r.durationSeconds)}</strong><small>${runText('Dauer','Duration')}</small></div><div><strong>${Number.isFinite(r.kcal)?r.kcal:'–'}</strong><small>kcal*</small></div></div>${r.note?`<p class="note">${esc(r.note)}</p>`:''}${runDetailRows({km:r.distanceKm,moving:r.durationSeconds,maxSpeed:r.maxSpeed,gain:r.elevationGain,max:r.elevationMax,pause:r.pauseSeconds,kcal:r.kcal})}${runSplitsHtml(r.splits,r.splitRest)}<div class="runactions"><button type="button" class="btn secondary" onclick="runEditForm('${esc(r.id)}')">${runText('Bearbeiten','Edit')}</button>${r.route?`<button type="button" class="btn secondary" onclick="runSaveRouteFromRun('${esc(r.id)}')">${runText('Als Route sichern','Save as route')}</button>`:''}</div><p class="note">* ${runText('Kalorien geschätzt.','Calories estimated.')}</p>`);
+  openModal(runTypeName(t),`${r.route?`<div class="runmap detail" id="rundetailmap"></div>`:''}<p class="rundetaildate">${esc(when)}${feel?' · '+feel[1]+' '+(state.language==='en'?feel[3]:feel[2]):''}${terrain?' · '+(state.language==='en'?terrain[2]:terrain[1]):''}</p><div class="runsumbig compact">${r.distanceKm>0?`<div><strong>${runKm(r.distanceKm)}</strong><small>km</small></div>`:''}<div><strong>${formatClock(r.durationSeconds)}</strong><small>${runText('Dauer','Duration')}</small></div><div><strong>${Number.isFinite(r.kcal)?r.kcal:'–'}</strong><small>kcal*</small></div></div>${r.note?`<p class="note">${esc(r.note)}</p>`:''}${runDetailRows({km:r.distanceKm,moving:r.durationSeconds,maxSpeed:r.maxSpeed,gain:r.elevationGain,max:r.elevationMax,pause:r.pauseSeconds,kcal:r.kcal})}${runSplitsHtml(r.splits,r.splitRest)}${r.type!=='mma'?runLapsHtml(r.laps,r.durationSeconds):''}<div class="runactions"><button type="button" class="btn secondary" onclick="runEditForm('${esc(r.id)}')">${runText('Bearbeiten','Edit')}</button>${r.route?`<button type="button" class="btn secondary" onclick="runSaveRouteFromRun('${esc(r.id)}')">${runText('Als Route sichern','Save as route')}</button>`:''}</div><p class="note">* ${runText('Kalorien geschätzt.','Calories estimated.')}</p>`);
   if(r.route&&typeof runMountMap==='function')runMountMap('rundetailmap',map=>{let segs=runRoutePoints(r.route),line=L.polyline(segs,{color:runAccent(),weight:5}).addTo(map);L.circleMarker(segs[0][0],{radius:6,color:'#fff',weight:2,fillColor:'#3ddc84',fillOpacity:1}).addTo(map);L.circleMarker(segs.at(-1).at(-1),{radius:6,color:'#fff',weight:2,fillColor:'#ff5c6c',fillOpacity:1}).addTo(map);map.fitBounds(line.getBounds(),{padding:[18,18]})});
 }
 function runEditForm(id){
   let r=runList().find(x=>x.id===id);if(!r)return;
-  openModal(runText('Bearbeiten','Edit'),`<form onsubmit="runEditSave(event,'${esc(r.id)}')"><label>${runText('Aktivität','Activity')}<select id="runedit-type">${runTypeList().map(t=>`<option value="${esc(t.id)}" ${t.id===(r.type||'run')?'selected':''}>${esc(runTypeName(t))}</option>`).join('')}</select></label><label>${runText('Gefühl','Feeling')}<select id="runedit-feel"><option value="">–</option>${RUN_FEELINGS.map(([v,e,de,en])=>`<option value="${v}" ${r.feeling===v?'selected':''}>${e} ${state.language==='en'?en:de}</option>`).join('')}</select></label><label>${runText('Untergrund','Terrain')}<select id="runedit-terrain"><option value="">–</option>${RUN_TERRAINS.map(([k,de,en])=>`<option value="${k}" ${r.terrain===k?'selected':''}>${state.language==='en'?en:de}</option>`).join('')}</select></label><label>${runText('Notiz','Note')}<input id="runedit-note" maxlength="200" value="${esc(r.note||'')}"></label><button class="btn full">${runText('Speichern','Save')}</button><button type="button" class="textbtn rundiscard" onclick="deleteRun('${esc(r.id)}')">${runText('Aktivität löschen','Delete activity')}</button></form>`);
+  let types=typeof runPickableActivities==='function'?runPickableActivities():runTypeList(),savedType=r.type??'run';
+  if(!types.some(t=>t.id===savedType))types=[...types,{...runTypeInfo(savedType),id:savedType}];
+  openModal(runText('Bearbeiten','Edit'),`<form onsubmit="runEditSave(event,'${esc(r.id)}')"><label>${runText('Aktivität','Activity')}<select id="runedit-type">${types.map(t=>`<option value="${esc(t.id)}" ${t.id===savedType?'selected':''}>${esc(runTypeName(t))}</option>`).join('')}</select></label><label>${runText('Gefühl','Feeling')}<select id="runedit-feel"><option value="">–</option>${RUN_FEELINGS.map(([v,e,de,en])=>`<option value="${v}" ${r.feeling===v?'selected':''}>${e} ${state.language==='en'?en:de}</option>`).join('')}</select></label><label>${runText('Untergrund','Terrain')}<select id="runedit-terrain"><option value="">–</option>${RUN_TERRAINS.map(([k,de,en])=>`<option value="${k}" ${r.terrain===k?'selected':''}>${state.language==='en'?en:de}</option>`).join('')}</select></label><label>${runText('Notiz','Note')}<input id="runedit-note" maxlength="200" value="${esc(r.note||'')}"></label><button class="btn full">${runText('Speichern','Save')}</button><button type="button" class="textbtn rundiscard" onclick="deleteRun('${esc(r.id)}')">${runText('Aktivität löschen','Delete activity')}</button></form>`);
 }
 function runEditSave(event,id){
   event.preventDefault();let r=runList().find(x=>x.id===id);if(!r)return;

@@ -5,11 +5,15 @@ const profileSegments={
   'pl-direction':{lose:'Abnehmen',maintain:'Halten',gain:'Aufbauen'},
   'pl-pace':{low:'Wenig',medium:'Mittel',high:'Viel',extreme:'Extrem'},
   'pl-macros':{auto:'Pro kg',manual:'Selbst'},
-  'pr-method':{mifflin:'Formel',measured:'Gemessen'}
+  'pr-method':{mifflin:'Formel',measured:'Gemessen'},
+  'pr-kcal-mode':{classic:'Klassisch',baseline:'Grundbedarf + Sport'},
+  'pr-baseline-factor':{'1.2':'Sitzend','1.3':'Leicht','1.4':'Aktiv'}
 };
+// Kurze Erklärung der Kalorienberechnung (ersetzt den längeren Text aus enhancements.js nach jeder Vorschau).
+const profileKcalModeText={classic:'Sport steckt im Aktivitätsfaktor. Trainings erhöhen das Tagesziel nicht zusätzlich.',baseline:'Tagesziel = Grundbedarf (Ruheumsatz × Alltag) + geschätzte Sport-kcal des Tages. Erhalt-Lernen ist in diesem Modus aus.'};
 const profileLabelText={
   'pr-age':'Alter','pr-height':'Größe (cm)','pr-weight':'Gewicht (kg)','pr-target':'Zielgewicht (kg)',
-  'pr-activity':'Aktivität','pr-method':'Ruheumsatz','pr-rmr':'Gemessener Ruheumsatz (kcal)',
+  'pr-activity':'Aktivität','pr-method':'Ruheumsatz','pr-kcal-mode':'Kalorienberechnung','pr-baseline-factor':'Alltag ohne Sport','pr-rmr':'Gemessener Ruheumsatz (kcal)',
   'pl-mode':'Kalorienziel','pl-direction':'Richtung','pl-pace':'Tempo','manual-kcal':'Kalorien (kcal/Tag)',
   'pl-macros':'Makros','pl-protein':'Protein (g/kg)','pl-fat':'Fett (g/kg)',
   'manual-p':'Protein (g)','manual-c':'Kohlenhydrate (g)','manual-f':'Fett (g)',
@@ -66,7 +70,7 @@ function refineProfileForm(){
 function refinePlannerTabs(){let tabs=document.querySelectorAll('#mb .plannertabs button');if(tabs[1])tabs[1].textContent='Sicherung'}
 
 const profileRefreshForm=profileForm;profileForm=function(...args){let result=profileRefreshForm.apply(this,args);refinePlannerTabs();refineProfileForm();return result};
-const profileRefreshPreview=updatePlanPreview;updatePlanPreview=function(...args){let result=profileRefreshPreview.apply(this,args);syncProfileSegments();return result};
+const profileRefreshPreview=updatePlanPreview;updatePlanPreview=function(...args){let result=profileRefreshPreview.apply(this,args);let info=$('kcal-mode-info'),mode=$('pr-kcal-mode')?.value;if(info&&profileKcalModeText[mode]&&info.textContent!==profileKcalModeText[mode])info.textContent=profileKcalModeText[mode];syncProfileSegments();return result};
 // Sicherung: nur Export, Wiederherstellen und CSV; Methoden- und Quellentexte entfallen.
 const profileRefreshData=dataSettings;dataSettings=function(...args){
   let result=profileRefreshData.apply(this,args);refinePlannerTabs();
@@ -77,4 +81,4 @@ const profileRefreshData=dataSettings;dataSettings=function(...args){
   if(csv&&restore)restore.insertAdjacentElement('afterend',csv);
   return result
 };
-if(typeof englishUI==='object')Object.assign(englishUI,{'Selbst':'Manual','Berechnet':'Calculated','Abnehmen':'Lose','Halten':'Maintain','Aufbauen':'Build','Wenig':'Low','Mittel':'Medium','Viel':'High','Extrem':'Extreme','Pro kg':'Per kg','Formel':'Formula','Gemessen':'Measured','Körper':'Body','Ziel':'Goal','Makros':'Macros','Automatik':'Automation','Ergebnis':'Result','Sicherung':'Backup','Alter':'Age','Größe (cm)':'Height (cm)','Gewicht (kg)':'Weight (kg)','Zielgewicht (kg)':'Target weight (kg)','Aktivität':'Activity','Ruheumsatz':'Resting energy','Gemessener Ruheumsatz (kcal)':'Measured resting energy (kcal)','Kalorienziel':'Calorie target','Richtung':'Direction','Tempo':'Pace','Kalorien (kcal/Tag)':'Calories (kcal/day)','Protein (g/kg)':'Protein (g/kg)','Fett (g/kg)':'Fat (g/kg)','Protein (g)':'Protein (g)','Kohlenhydrate (g)':'Carbs (g)','Fett (g)':'Fat (g)','Ziele bei neuen Gewichtseinträgen anpassen':'Adjust targets with new weigh-ins','Erhalt aus Tagebuch und Gewicht lernen':'Learn maintenance from diary and weight','Sitzend · kaum Sport':'Sedentary · little exercise','Leicht aktiv · 1–3 Trainings/Woche':'Lightly active · 1–3 workouts/week','Moderat · 3–5 Trainings/Woche':'Moderate · 3–5 workouts/week','Sehr aktiv · viel Training':'Very active · lots of training','Extrem aktiv · körperliche Arbeit':'Extremely active · physical work'});
+if(typeof englishUI==='object')Object.assign(englishUI,{'Selbst':'Manual','Berechnet':'Calculated','Abnehmen':'Lose','Halten':'Maintain','Aufbauen':'Build','Wenig':'Low','Mittel':'Medium','Viel':'High','Extrem':'Extreme','Pro kg':'Per kg','Formel':'Formula','Gemessen':'Measured','Körper':'Body','Ziel':'Goal','Makros':'Macros','Automatik':'Automation','Ergebnis':'Result','Sicherung':'Backup','Alter':'Age','Größe (cm)':'Height (cm)','Gewicht (kg)':'Weight (kg)','Zielgewicht (kg)':'Target weight (kg)','Aktivität':'Activity','Ruheumsatz':'Resting energy','Gemessener Ruheumsatz (kcal)':'Measured resting energy (kcal)','Kalorienziel':'Calorie target','Richtung':'Direction','Tempo':'Pace','Kalorien (kcal/Tag)':'Calories (kcal/day)','Protein (g/kg)':'Protein (g/kg)','Fett (g/kg)':'Fat (g/kg)','Protein (g)':'Protein (g)','Kohlenhydrate (g)':'Carbs (g)','Fett (g)':'Fat (g)','Ziele bei neuen Gewichtseinträgen anpassen':'Adjust targets with new weigh-ins','Erhalt aus Tagebuch und Gewicht lernen':'Learn maintenance from diary and weight','Sitzend · kaum Sport':'Sedentary · little exercise','Leicht aktiv · 1–3 Trainings/Woche':'Lightly active · 1–3 workouts/week','Moderat · 3–5 Trainings/Woche':'Moderate · 3–5 workouts/week','Sehr aktiv · viel Training':'Very active · lots of training','Extrem aktiv · körperliche Arbeit':'Extremely active · physical work','Klassisch':'Classic','Grundbedarf + Sport':'Baseline + exercise','Kalorienberechnung':'Calorie calculation','Alltag ohne Sport':'Daily life without exercise','Sitzend':'Sedentary','Leicht':'Light','Aktiv':'Active',[profileKcalModeText.classic]:'Exercise is part of the activity factor. Workouts do not add to the daily target.',[profileKcalModeText.baseline]:'Daily target = baseline (resting energy × daily life) + estimated exercise kcal of the day. Learning maintenance is off in this mode.'});

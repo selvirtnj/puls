@@ -19,8 +19,24 @@ function runBaseMap(el,options={}){
   // OSM-Standardkacheln (kostenlos, ohne Schlüssel); dunkle Darstellung per CSS-Filter (.runtiles).
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'runtiles',attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
   map.attributionControl.setPrefix(false);
+  runTrailMaps.add(map);if(runTrailsOn())runTrailLayer(map).addTo(map);
   setTimeout(()=>map.invalidateSize(),320);
   return map;
+}
+// Einschaltbare Ebene markierter Wander- und Bergwege (Waymarked Trails, kostenlos, Daten OpenStreetMap, CC BY-SA).
+// Einstellung pro Gerät (localStorage), nicht im synchronisierten Profil. Die Ebene bleibt farbig (kein Dunkel-Filter).
+const runTrailMaps=new Set();
+// Zustand im Arbeitsspeicher; localStorage nur best effort (privates Surfen o. ä. darf das Ausschalten nicht verhindern).
+let runTrailsState=null;
+function runTrailsOn(){if(runTrailsState===null){try{runTrailsState=localStorage.getItem('puls-map-trails')==='1'}catch{runTrailsState=false}}return runTrailsState}
+function runTrailLayer(map){return map._pulsTrails??=L.tileLayer('https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png',{maxZoom:18,opacity:.95,className:'runtrails',attribution:runText('Wanderwege','Hiking trails')+' © <a href="https://hiking.waymarkedtrails.org">Waymarked Trails</a> (CC BY-SA)'})}
+function runTrailsButton(){let on=runTrailsOn();return `<button type="button" class="runround runtrailsbtn ${on?'on':''}" data-runtrails onclick="event.stopPropagation();runToggleTrails()" aria-pressed="${on}" aria-label="${runText('Wanderwege einblenden','Show hiking trails')}">${typeof runIcon==='function'?runIcon('layers'):'≋'}</button>`}
+function runToggleTrails(){
+  let on=!runTrailsOn();runTrailsState=on;try{localStorage.setItem('puls-map-trails',on?'1':'0')}catch{}
+  for(let map of [...runTrailMaps]){if(!document.body.contains(map.getContainer())){runTrailMaps.delete(map);continue}let layer=runTrailLayer(map);if(on)layer.addTo(map);else map.removeLayer(layer)}
+  document.querySelectorAll('[data-runtrails]').forEach(b=>{b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
+  if(typeof pulsHaptic==='function')pulsHaptic('selection');
+  toast(on?runText('Wanderwege eingeblendet','Hiking trails shown'):runText('Wanderwege ausgeblendet','Hiking trails hidden'));
 }
 async function runMountMap(id,setup){
   let el=$(id);if(!el)return null;
@@ -43,6 +59,8 @@ async function runLiveMapMount(id='runlivemap'){
   if(runLive.map&&!document.body.contains(runLive.map.getContainer())){runLive.map.remove();runLive.map=null}
   runLive.map=await runMountMap(id,map=>{
     let accent=runAccent(),view=runDefaultView(),route=runRouteById(state.activeRun?.routeId);
+    // Vollbild: unten liegt die Wertekarte, daher Quellenangabe oben.
+    if(id==='runviewmap')map.attributionControl.setPosition('topleft');
     if(route){let plan=L.polyline(runLineLatLngs(route.line),{color:'#ffffff',opacity:.45,weight:4,dashArray:'6 8'}).addTo(map);map.fitBounds(plan.getBounds(),{padding:[20,20]})}else map.setView(view.center,view.zoom);
     runLive.line=L.polyline([],{color:accent,weight:5,lineCap:'round',lineJoin:'round'}).addTo(map);
     runLive.dot=L.circleMarker([0,0],{radius:7,color:'#fff',weight:3,fillColor:accent,fillOpacity:1,className:'runlivedot'});
@@ -83,7 +101,7 @@ function runDeleteRoute(id){if(!confirm(runText('Diese Route löschen?','Delete 
 function runPlanner(id=null){
   let existing=id?runRouteById(id):null;
   runPlan={id:existing?.id||null,waypoints:existing?runLineLatLngs(existing.waypoints):[],line:existing?runLineLatLngs(existing.line):[],distanceKm:existing?.distanceKm||0,ascentM:existing?.ascentM,snap:true,serial:0,busy:false,map:null};
-  openModal(existing?runText('Route bearbeiten','Edit route'):runText('Route planen','Plan route'),`<div class="runmap planner" id="runplannermap"><button type="button" class="runmapbtn" onclick="runPlannerLocate()" aria-label="${runText('Mein Standort','My location')}">◎</button></div><div class="runplanstats"><div><strong id="runplan-km">0 km</strong><small>${runText('Distanz','Distance')}</small></div><div><strong id="runplan-up">–</strong><small>${runText('Anstieg','Climb')}</small></div><div><strong id="runplan-time">–</strong><small>${runText('bei deiner Pace','at your pace')}</small></div></div><p class="note" id="runplan-hint">${runText('Tippe auf die Karte, um Punkte zu setzen.','Tap the map to add points.')}</p><div class="runplantools"><button type="button" class="btn secondary" id="runplan-snap" aria-pressed="true" onclick="runPlannerSnap()">${runText('Wegen folgen','Follow paths')}</button><button type="button" class="btn secondary" onclick="runPlannerUndo()">↶ ${runText('Zurück','Undo')}</button><button type="button" class="btn secondary" onclick="runPlannerLoop()">⟲ ${runText('Rundkurs','Loop')}</button><button type="button" class="btn secondary" onclick="runPlannerClear()">${runText('Leeren','Clear')}</button></div><form onsubmit="runPlannerSave(event)"><label>${runText('Name','Name')}<input id="runplan-name" maxlength="60" value="${esc(existing?.name||'')}" placeholder="${runText('z. B. Stadtpark-Runde','e.g. City park loop')}"></label><button class="btn full">${runText('Route speichern','Save route')}</button></form>`);
+  openModal(existing?runText('Route bearbeiten','Edit route'):runText('Route planen','Plan route'),`<div class="runmap planner" id="runplannermap"><button type="button" class="runmapbtn" onclick="runPlannerLocate()" aria-label="${runText('Mein Standort','My location')}">◎</button><span class="runmaptrails">${runTrailsButton()}</span></div><div class="runplanstats"><div><strong id="runplan-km">0 km</strong><small>${runText('Distanz','Distance')}</small></div><div><strong id="runplan-up">–</strong><small>${runText('Anstieg','Climb')}</small></div><div><strong id="runplan-time">–</strong><small>${runText('bei deiner Pace','at your pace')}</small></div></div><p class="note" id="runplan-hint">${runText('Tippe auf die Karte, um Punkte zu setzen.','Tap the map to add points.')}</p><div class="runplantools"><button type="button" class="btn secondary" id="runplan-snap" aria-pressed="true" onclick="runPlannerSnap()">${runText('Wegen folgen','Follow paths')}</button><button type="button" class="btn secondary" onclick="runPlannerUndo()">↶ ${runText('Zurück','Undo')}</button><button type="button" class="btn secondary" onclick="runPlannerLoop()">⟲ ${runText('Rundkurs','Loop')}</button><button type="button" class="btn secondary" onclick="runPlannerClear()">${runText('Leeren','Clear')}</button></div><form onsubmit="runPlannerSave(event)"><label>${runText('Name','Name')}<input id="runplan-name" maxlength="60" value="${esc(existing?.name||'')}" placeholder="${runText('z. B. Stadtpark-Runde','e.g. City park loop')}"></label><button class="btn full">${runText('Route speichern','Save route')}</button></form>`);
   modal.classList.add('runplannersheet');modal.addEventListener('close',()=>modal.classList.remove('runplannersheet'),{once:true});
   runMountMap('runplannermap',map=>{
     runPlan.map=map;runPlan.layer=L.polyline([],{color:runAccent(),weight:5,lineCap:'round',lineJoin:'round'}).addTo(map);runPlan.marks=L.layerGroup().addTo(map);

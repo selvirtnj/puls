@@ -97,5 +97,68 @@ test=seeded(profilePlan,{...autoPlan,pace:'extreme'});let extreme=test.run('plan
 // An extreme plan's 1500 kcal floor must never turn requested weight loss into a calorie surplus.
 test=seeded({...profilePlan,age:100,height:160,weight:60,target:50,activity:1.2},{...autoPlan,pace:'extreme'});assertUnchanged(test);before=test.run('JSON.stringify(state.goals)');test.run('adaptiveGoals()');assert.equal(test.run('JSON.stringify(state.goals)'),before);
 console.log('PASS: complete profile wrapper chain, conditional validation, legacy round trips, real weight/history preservation, calibration preview/save/failure, adaptive exclusions and target bounds');
+
+// Include the late-loaded activity backend in the real planner/adaptation chain.
+function withActivities(test){test.run(fs.readFileSync('js/running.js','utf8'));test.run(fs.readFileSync('js/run-metrics.js','utf8'));return test}
+// Match the real script order: several renders occur before run-metrics is ready.
+// A stale target gets exactly one corrected save; an already correct target none.
+for(const correct of [false,true]){
+  let boot=seeded({...profilePlan,kcalMode:'baseline',baselineFactor:1.2});
+  boot.run("state.weights=[{id:'kg',date:today(),kg:80}];state.runs=[{id:'ping',date:today(),type:'tabletennis',distanceKm:0,durationSeconds:3600}];state.workouts=[];globalThis.bootSaves=[];const bootSave=save;save=function(){bootSaves.push(JSON.parse(JSON.stringify(state.goals)));bootSave()};render=function(){adaptiveGoals()}");
+  if(correct)boot.run('state.goals={kcal:2056,p:144,c:226,f:64}');
+  let previous=boot.run('JSON.stringify(state.goals)');
+  boot.run(fs.readFileSync('js/running.js','utf8'));boot.run('render();adaptiveGoals()');
+  assert.equal(boot.run('JSON.stringify(state.goals)'),previous);assert.equal(boot.run('bootSaves.length'),0);assert(boot.run('dayGoals()===state.goals'));assert.equal(boot.run('baselineEnergyLine()'),'');assert.equal(boot.run('state.goalHistory.length'),0);
+  boot.run(fs.readFileSync('js/run-metrics.js','utf8'));
+  assert.equal(boot.run('state.goals.kcal'),2056);assert.equal(boot.run('bootSaves.length'),correct?0:1);assert(boot.run('bootSaves.every(g=>g.kcal===2056)'));
+  boot.run('render();render()');assert.equal(boot.run('bootSaves.length'),correct?0:1);
+}
+test=withActivities(seeded({...profilePlan,kcalMode:'baseline',baselineFactor:1.2}));
+test.run("state.weights=[{id:'kg',date:daysBefore(today(),1),kg:80}];state.runs=[{id:'ping',date:today(),type:'tabletennis',distanceKm:0,durationSeconds:3600,kcal:320}];state.workouts=[{id:'gym',date:today(),name:'Gym',durationSeconds:3600,finished:true,exercises:[]}]");
+let baseline=test.run('planNumbers(state.profile,state.plan)');assert.equal(baseline.baseline,2136);assert.equal(baseline.sport,440);assert.equal(baseline.tdee,2576);assert.equal(baseline.kcal,2256);
+assert.equal(test.run("planNumbers(state.profile,{...state.plan,direction:'gain',pace:'high'}).kcal"),2896);
+assert.equal(test.run("planNumbers(state.profile,{...state.plan,pace:'extreme'}).kcal"),2042,'extreme deficit and floor only apply to baseline');
+assert.equal(test.run("planNumbers(state.profile,{...state.plan,mode:'manual'},{kcal:2345,p:150,c:250,f:70}).kcal"),2345,'manual target unchanged');
+assert.equal(test.run("planNumbers({...state.profile,kcalMode:'classic'},state.plan).kcal"),2080,'classic has no sport allowance');
+test.run('state.plan.learnTdee=true;state.tdeeCalibration={date:today(),value:3000,base:2136,activity:state.profile.activity}');
+assert.equal(test.run('energyFor(state.profile).tdee'),2576);assert.equal(test.run('tdeeObservation().eligible'),false);assert.equal(test.run('updateTdeeCalibration(true)'),false);assert(test.run('tdeeObservation().reason').includes('deaktiviert'));
+test.run('settings()');assert.equal(test.el('pl-learn-tdee').disabled,true);assert.equal(test.el('pr-kcal-mode').value,'baseline');assert.equal(test.el('pr-baseline-factor').value,'1.2');
+fill(test,{'pr-baseline-factor':1.3});savedPlan=savePlan(test);assert.equal(savedPlan.profile.baselineFactor,1.3);assert.equal(savedPlan.profile.kcalMode,'baseline');
+// Day selection is pure, uses that day's entries, and never changes persisted goals.
+before=test.run('JSON.stringify(state)');let present=test.run('dayGoals(today())'),prior=test.run('dayGoals(daysBefore(today(),1))');assert.equal(present.kcal-prior.kcal,440);assert.equal(test.run('JSON.stringify(state)'),before);
+assert(test.run('combinedNutrition()').includes('Grundbedarf'));assert(test.run('combinedNutrition()').includes('Sport 440'));
+// Preserve and exercise Claude's presentation-only wrapper with the logic guard.
+const overviewSource=fs.readFileSync('js/activity-overview.js','utf8');test.run(overviewSource.slice(overviewSource.indexOf("if(typeof baselineEnergyLine==='function')")));
+assert(test.run('baselineEnergyLine().includes("baselineenergy")'));
+for(const change of ["state.plan.mode='manual'","state.profile.special=true","state.plan.protein=NaN","state.profile.target=50","state.weights=[{date:today(),kg:350}]"]){
+  let snapshot=test.run('JSON.stringify(state)');test.run(change);assert(test.run('dayGoals()===state.goals'),change);assert.equal(test.run('baselineEnergyLine()'),'',change);test.run('state='+snapshot);
+}
+// Every named consumer uses the selected diary date, including the final
+// suggestedFoods override and the account summary loaded later in index.html.
+{
+  let selected=withActivities(seeded({...profilePlan,kcalMode:'baseline',baselineFactor:1.2}));
+  selected.run("state.weights=[{id:'kg',date:daysBefore(today(),1),kg:80}];state.runs=[{id:'ping',date:today(),type:'tabletennis',distanceKm:0,durationSeconds:3600}];adaptiveGoals();date=daysBefore(today(),1);state.foods=[{id:'meal',date,meal:'Snacks',name:'Meal',grams:100,kcal:dayGoals(date).kcal+50,p:0,c:0,f:0}]");
+  for(const [file,prefix] of [['js/insights.js','function suggestedFoods('],['js/finish.js','suggestedFoods=function']]){
+    selected.run(fs.readFileSync(file,'utf8').split('\n').find(line=>line.startsWith(prefix)));assert.equal(selected.run('suggestedFoods().length'),0,file);
+  }
+  selected.run(fs.readFileSync('js/account-refresh.js','utf8').split('\n').find(line=>line.startsWith('function accountGoalSummary(')));
+  const shown=selected.run('n(dayGoals(date).kcal)');assert.notEqual(selected.run('dayGoals(date).kcal'),selected.run('state.goals.kcal'));
+  assert(selected.run('accountGoalSummary()').includes(shown+' <small>kcal / Tag'));
+  selected.run(fs.readFileSync('js/flows.js','utf8').split('\n').find(line=>line.startsWith('accountPage=function')));
+  assert(selected.run('accountPage()').includes(shown+' kcal</dd>'));
+  assert(selected.run('goalCard()').includes(shown+' KCAL'));
+  selected.run('forecastDays=function(weight,target,tdee,intake){globalThis.projectedIntake=intake;return null};planTargetDate()');assert.equal(selected.run('projectedIntake'),selected.run('dayGoals(date).kcal'));
+}
+test.run('state.language="en"');assert(test.run('combinedNutrition()').includes('exercise 440'));test.run('state.language="de"');
+test.run('state.plan.adaptive=false;state.runs=[];state.workouts=[];adaptiveGoals()');let resting=test.run('dayGoals(today()).kcal');
+test.run("state.runs=[{id:'new',date:today(),type:'tabletennis',distanceKm:0,durationSeconds:3600}];adaptiveGoals()");assert.equal(test.run('state.goals.kcal'),resting+240,'sport updates with weight adaptation disabled');
+assert.equal(test.run('dayGoals(today()).kcal'),resting+240);
+test.run('state.runs=[];adaptiveGoals()');assert.equal(test.run('state.goals.kcal'),resting,'deletion removes allowance');
+test.run('settings()');fill(test,{'pr-kcal-mode':'classic'});savedPlan=savePlan(test);assert.equal(savedPlan.profile.kcalMode,'classic');assert.equal(test.run('baselineEnergyLine()'),'');
+test.run("state.workouts=[{id:'old',date:daysBefore(today(),1),name:'Gym',finished:true,exercises:[{id:'e1',name:'Bench',sets:[{kg:40,reps:8,done:true}]}]},{id:'new',date:today(),startedAt:2,name:'Gym',finished:true,durationSeconds:3600,durationXpVersion:1,exercises:[{id:'e2',name:'Bench',sets:[{kg:45,reps:8,done:true}]}]}];state.runs=[{id:'first',date:today(),startedAt:1,type:'tabletennis',distanceKm:0,durationSeconds:7200,durationXpVersion:1}]");
+assert.equal(test.run('workoutAwards().new.xp'),29,'gym exercise PR keeps 25 XP on top of remaining duration XP');assert.equal(test.run('totalWorkoutXP()'),125);
+test.run('state.workouts=[];state.runs=[];state.routines=[{id:"routine",name:"Gym",exercises:[]}];startRoutine("routine")');assert.equal(test.run('state.workouts[0].durationXpVersion'),1,'routine creation marks only new workouts');
+test.run('state.workouts=[];$("empty-workout-name").value="Gym";startEmptyWorkout({preventDefault(){}})');assert.equal(test.run('state.workouts[0].durationXpVersion'),1,'free workout creation also marked');
+console.log('PASS: late activity/planner/adaptation chain, baseline/gain/extreme/manual/classic, calibration gate, form round-trip, pure day navigation and live sport allowance.');
 `;
 vmPlan.runInNewContext(harnessPlan+casesPlan,{require,console,process},{filename:'profile-planning-harness.cjs'});

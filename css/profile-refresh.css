@@ -169,3 +169,6 @@
 @media (prefers-reduced-motion: reduce) {
   #mb.profilemodal #planner-form .segmented button { transition: none; }
 }
+
+/* Kalorienberechnung: kurze Erklärung unter der Auswahl (Version 64). */
+#mb.profilemodal #planner-form #kcal-mode-info { margin: -4px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }

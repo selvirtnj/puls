@@ -27,7 +27,7 @@ function load(state,now='2026-10-25'){
   assert.equal(c.validData({workouts:[],runs:[{...run,id:"');alert(1);//"}]}),false,'run ids are safe for inline handlers');
   assert.equal(c.validData({workouts:[],runs:[{...run,source:'gps',route:'52.52000,13.40500;52.52100,13.40600|52.53000,13.41000;52.53100,13.41100'}],activeRun:{startedAt:1,gps:true,segment:2}}),true);
   assert.equal(c.validData({workouts:[],runs:[{...run,route:'<svg>'}]}),false);
-  assert.equal(c.validData({workouts:[],runs:[{...run,source:'watch'}]}),false);
+  assert.equal(c.validData({workouts:[],runs:[{...run,source:'watch'}]}),true);
   assert.equal(c.validData({workouts:[],activeRun:{startedAt:1,gps:'yes'}}),false);
   assert.equal(c.validData({workouts:[],runs:[{...run,distanceKm:0,type:'tabletennis',kcal:280,feeling:4,terrain:'road',pauseSeconds:30,startedAt:1,elevationGain:12,elevationMax:470,maxSpeed:14.2}],activeRun:{startedAt:1,type:'walk'},runSettings:{lastType:'hike'}}),true,'activity without distance and summary fields');
   assert.equal(c.validData({workouts:[],runs:{}}),false);
