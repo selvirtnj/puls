@@ -90,8 +90,27 @@ const ffChooseCatalogueBase=chooseCatalogueFood;chooseCatalogueFood=function(id)
 chooseRecipe=function(id){let r=(state.recipes||[]).find(x=>x.id===id);if(!r)return;stopBarcode();cancelLookup();foodSelection={id:r.id,recipeId:r.id,name:r.name,unit:'g',...recipeNutrients(r)};$('foodbody').innerHTML='<label hidden><input id="grams" type="hidden" value="250"></label>';ffNav.from='recipes';ffRenderDetail()};
 
 /* Barcode: Kamera als ruhiges Sucherfeld, Eintippen als zweite Zeile. */
-barcodePanel=function(){$('foodbody').innerHTML=`<div class="ffbarcode"><div id="barcode-camera" class="ffcamera" hidden><video id="barcode-video" playsinline muted></video><span class="ffscanframe" aria-hidden="true"></span><button type="button" class="ffcamstop" onclick="stopBarcode()">Kamera aus</button></div><button type="button" id="ff-camera-start" class="btn full ffcambtn" onclick="startBarcodeCamera()">${ffIcon('barcode')}<span>Mit Kamera scannen</span></button><form class="ffbarcodeform" onsubmit="this.querySelector('input').blur();lookupBarcode(event)"><input id="barcode-input" type="text" inputmode="numeric" maxlength="20" autocomplete="off" enterkeyhint="search" placeholder="Barcode eintippen" aria-label="Barcode-Nummer" required><button id="barcode-find" class="btn">Suchen</button></form><p id="barcode-status" class="ffstatus" role="status" aria-live="polite"></p><p class="ffprivacy">EAN/UPC. Barcode und IP-Adresse gehen an Open Food Facts, das Kamerabild bleibt auf dem Gerät. ${ffAttribution}</p></div>`;if(location.protocol==='file:')$('barcode-status').textContent='Lokale Datei: Kamera und Online-Abfrage sind eingeschränkt.'};
-const ffStopBarcodeBase=stopBarcode;stopBarcode=function(){ffStopBarcodeBase();let camera=$('barcode-camera');if(camera?.classList.contains('ffcamera'))camera.hidden=true};
+barcodePanel=function(){$('foodbody').innerHTML=`<div class="ffbarcode"><div id="barcode-camera" class="ffcamera" hidden><video id="barcode-video" playsinline muted></video><span class="ffscanframe" aria-hidden="true"></span><button type="button" id="ff-torch" class="fftorch" onclick="toggleBarcodeTorch()" aria-pressed="false" hidden>${state.language==='en'?'Flash':'Blitz'}</button><button type="button" class="ffcamstop" onclick="stopBarcode()">Kamera aus</button></div><button type="button" id="ff-camera-start" class="btn full ffcambtn" onclick="startBarcodeCamera()">${ffIcon('barcode')}<span>Mit Kamera scannen</span></button><form class="ffbarcodeform" onsubmit="this.querySelector('input').blur();lookupBarcode(event)"><input id="barcode-input" type="text" inputmode="numeric" maxlength="20" autocomplete="off" enterkeyhint="search" placeholder="Barcode eintippen" aria-label="Barcode-Nummer" required><button id="barcode-find" class="btn">Suchen</button></form><p id="barcode-status" class="ffstatus" role="status" aria-live="polite"></p><p class="ffprivacy">EAN/UPC. Barcode und IP-Adresse gehen an Open Food Facts, das Kamerabild bleibt auf dem Gerät. ${ffAttribution}</p></div>`;if(location.protocol==='file:')$('barcode-status').textContent='Lokale Datei: Kamera und Online-Abfrage sind eingeschränkt.'};
+const ffStopBarcodeBase=stopBarcode;stopBarcode=function(){ffStopBarcodeBase();let camera=$('barcode-camera');if(camera?.classList.contains('ffcamera'))camera.hidden=true;let torch=$('ff-torch');if(torch){torch.hidden=true;torch.setAttribute('aria-pressed','false')}};
+// Blitz: nur anbieten, wenn die Kamera „torch“ meldet (Gerät/Browser abhängig); er geht mit der Kamera wieder aus.
+function ffBarcodeTrack(){return $('barcode-video')?.srcObject?.getVideoTracks?.()[0]||null}
+const ffStartBarcodeCamera=startBarcodeCamera;startBarcodeCamera=async function(...args){
+  let result=await ffStartBarcodeCamera.apply(this,args);
+  for(let attempt=0;attempt<15;attempt++){
+    let track=ffBarcodeTrack(),torch=$('ff-torch');if(!torch)break;
+    if(track?.readyState==='live'){try{torch.hidden=!track.getCapabilities?.().torch}catch{torch.hidden=true}break}
+    await new Promise(resolve=>setTimeout(resolve,200));
+  }
+  return result;
+};
+async function toggleBarcodeTorch(){
+  let track=ffBarcodeTrack(),button=$('ff-torch');if(!track||!button)return;
+  let on=button.getAttribute('aria-pressed')!=='true';
+  // Nur übernehmen, wenn noch dieselbe Kamera läuft (sonst wurde sie inzwischen gestoppt oder neu gestartet).
+  let current=()=>ffBarcodeTrack()===track&&track.readyState==='live';
+  try{await track.applyConstraints({advanced:[{torch:on}]});if(current())button.setAttribute('aria-pressed',String(on))}
+  catch{if(!current())return;button.hidden=true;let status=$('barcode-status');if(status)status.textContent=state.language==='en'?'Flash is not available on this camera.':'Blitz ist bei dieser Kamera nicht verfügbar.'}
+}
 
 /* Produkt prüfen (Barcode und Open Food Facts): gleiche Felder, kompakter. */
 function ffSetOffUnit(unit){let input=$('off-unit'),pack=$('off-package');if(!input)return;input.value=unit;ffMarkSegment('ff-off-unit',unit);if($('ff-off-package-unit'))$('ff-off-package-unit').textContent=unit;if(pack&&productDraft){if(productDraft.packageUnit&&unit!==productDraft.packageUnit)pack.value='';else if(productDraft.packageAmount&&pack.value==='')pack.value=productDraft.packageAmount}if($('off-error'))$('off-error').textContent=''}

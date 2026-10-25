@@ -418,6 +418,25 @@ body dialog.ffsheet .ffcamstop {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
+body dialog.ffsheet .fftorch {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 22px;
+  background: rgb(0 0 0 / .55);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 650;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: background-color .16s ease, color .16s ease;
+}
+body dialog.ffsheet .fftorch::before { content: '⚡ '; }
+body dialog.ffsheet .fftorch[aria-pressed=true] { background: #ffd54a; color: #1a1500; }
+body dialog.ffsheet .fftorch[hidden] { display: none; }
 body dialog.ffsheet #barcode-camera:not([hidden]) + #ff-camera-start { display: none; }
 body dialog.ffsheet .ffcambtn {
   position: relative;
