@@ -1,5 +1,5 @@
 /* Swipeable diary rows keep a full-size tap target and an undo path. */
-.swipediary{position:relative;overflow:hidden;border-radius:0;border-top:1px solid var(--line);isolation:isolate;background:#a53038}.swipediary .diaryrow{position:relative;z-index:1;margin:0!important;border-top:0!important;width:100%;background:var(--panel)!important;touch-action:pan-y;transition:transform .2s ease;will-change:transform}.swipediary .swipedelete{position:absolute;inset:0 0 0 auto;width:80px;border:0;background:#a53038;color:white;font-weight:600;font-size:12px;padding:8px;display:grid;place-items:center;z-index:0}.swipedragging .diaryrow{transition:none!important}.swiperevealed .diaryrow{transform:translateX(-80px)}.swipediary .diaryrow:active{transform:none}.swipedragging .tapwave,.swiperevealed .tapwave{display:none}#diary-undo{position:fixed;bottom:calc(98px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:101;display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--panel);border:1px solid var(--lime);color:var(--app-ink,#f0edf5);box-shadow:0 6px 25px #0005;border-radius:12px;padding:8px 14px;font-size:12px;max-width:calc(100vw - 28px);width:330px;animation:dock-rise .2s ease}#diary-undo button{background:none;border:0;color:var(--lime);font-size:12px;font-weight:700;min-height:36px}.hasworkoutdock #diary-undo{bottom:calc(175px + env(safe-area-inset-bottom))}
+.swipediary{position:relative;overflow:hidden;border-radius:0;border-top:1px solid var(--line);isolation:isolate;background:var(--ds-surface)}.swipediary .diaryrow{position:relative;z-index:1;margin:0!important;border-top:0!important;width:100%;background:var(--panel)!important;touch-action:pan-y;will-change:transform}.swipediary .swipedelete{position:absolute;inset:0 0 0 auto;width:80px;border:0;background:var(--ds-surface);color:white;font-weight:600;font-size:12px;padding:8px;display:grid;place-items:center;z-index:0}.swiperevealed .diaryrow{transform:translateX(-80px)}.swipediary .diaryrow:active{transform:none}.swipedragging .tapwave,.swiperevealed .tapwave{display:none}#diary-undo{position:fixed;bottom:calc(98px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:101;display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--panel);border:1px solid var(--lime);color:var(--app-ink,var(--ds-label));border-radius:12px;padding:8px 14px;font-size:12px;max-width:calc(100vw - 28px);width:330px;}#diary-undo button{background:none;border:0;color:var(--lime);font-size:12px;font-weight:700;min-height:36px}.hasworkoutdock #diary-undo{bottom:calc(175px + env(safe-area-inset-bottom))}
 /* Fixed shell: changing food tabs only scrolls the body, never moves the sheet. */
 body dialog.foodsheet[open]{display:flex!important;flex-direction:column;height:min(720px,88dvh);min-height:min(720px,88dvh);max-height:88dvh;overflow:hidden;box-sizing:border-box}
 body dialog.foodsheet>.modalhead{position:relative;top:auto;flex:0 0 auto;margin:0 0 10px;padding-top:12px;padding-bottom:6px}
@@ -9,27 +9,22 @@ body dialog.foodsheet .foodtabs .btn{min-width:0;font-size:11px;padding:9px 3px;
 body dialog.foodsheet #foodbody{flex:1;overflow-y:auto;overscroll-behavior-y:contain;min-height:0;padding:0 2px 12px;scrollbar-gutter:stable}
 @media(max-width:760px){body dialog.foodsheet[open]{height:88dvh!important;min-height:88dvh!important;max-height:88dvh!important;bottom:0!important;top:auto!important;margin:0!important}}
 /* All three food actions always occupy the same row, in every design. */
-body[data-app-design] #content .foodtools{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;margin:0!important;padding:0!important}
-body[data-app-design] #content .foodtools>.btn{grid-column:auto!important;min-width:0!important;width:100%;min-height:44px!important;height:44px;display:flex;align-items:center;justify-content:center;text-align:center;padding:7px 4px!important;font-size:11px!important;line-height:1.2!important;letter-spacing:0!important;white-space:normal;box-sizing:border-box}
+body #content .foodtools{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;margin:0!important;padding:0!important}
+body #content .foodtools>.btn{grid-column:auto!important;min-width:0!important;width:100%;min-height:44px!important;height:44px;display:flex;align-items:center;justify-content:center;text-align:center;padding:7px 4px!important;font-size:11px!important;line-height:1.2!important;letter-spacing:0!important;white-space:normal;box-sizing:border-box}
 /* A modest density reduction, while preserving each design's own proportions. */
-body{--compact-padding:16px}body[data-app-design=apple]{--compact-padding:18px}body[data-app-design=cronometer]{--compact-padding:12px}body[data-app-design=liftoff]{--compact-padding:16px}body[data-app-design=aurora]{--compact-padding:18px}body[data-app-design=mono]{--compact-padding:14px}
-body[data-app-design] #content .card:not(.watercompact):not(.designchooser):not(.compactdiary){padding:var(--compact-padding)!important}
-body[data-app-design] #content :is(.dashboardstack,.designhome,.foodscreen,.analyticsstack){gap:16px}
-body[data-app-design] #content .cardhead{margin-bottom:13px}
-body[data-app-design] #content .sectionhead{margin-top:16px;margin-bottom:10px}
-body[data-app-design] #content .routinepreviewrow{padding-top:9px;padding-bottom:9px}
-body[data-app-design] #content .routinepreview{margin-bottom:14px!important}
-body[data-app-design] #content .card .empty{padding:18px 8px;font-size:12px}
-body[data-app-design] #content .compactdiary{padding:12px 14px!important}
-body[data-app-design] #content .compactdiary .cardhead{padding:0 0 7px!important;margin:0!important;background:none!important}
-body[data-app-design] #content .swipediary .diaryrow{min-height:53px;padding:9px 0!important}
-body[data-app-design] #content .card .full{margin-top:11px}
-body[data-app-design] #content .card .note{margin-top:6px;margin-bottom:6px}
-body[data-app-design=classic] .nutritiontrack,body[data-app-design=classic] .nutritionslide,body[data-app-design=apple] .nutritiontrack,body[data-app-design=apple] .nutritionslide,body[data-app-design=mono] .nutritiontrack,body[data-app-design=mono] .nutritionslide{height:220px!important}
-body[data-app-design=cronometer] .nutritiontrack,body[data-app-design=cronometer] .nutritionslide{height:195px!important}
-body[data-app-design=liftoff] .nutritiontrack,body[data-app-design=liftoff] .nutritionslide{height:235px!important}
-body[data-app-design=aurora] .nutritiontrack,body[data-app-design=aurora] .nutritionslide{height:292px!important}
-body[data-app-design=aurora] .combinednutrition .caloriedial{height:130px;width:130px}
-body[data-app-design=mono] .swipediary .diaryrow{background:#f5f1e8!important}body[data-app-design=apple] .swipediary .diaryrow{background:white!important}body[data-app-design=aurora] .swipediary .diaryrow{border-radius:0}
-@media(max-width:359px){body[data-app-design] #content .foodtools{gap:5px!important}body[data-app-design] #content .foodtools>.btn{font-size:10px!important;padding:6px 3px!important}body dialog.foodsheet .foodtabs .btn{font-size:10px}}
-@media(prefers-reduced-motion:reduce){.swipediary .diaryrow,#diary-undo{transition:none!important;animation:none!important}}
+body{--compact-padding:16px}
+body #content .card:not(.watercompact):not(.designchooser):not(.compactdiary){padding:var(--compact-padding)!important}
+body #content :is(.dashboardstack,.designhome,.foodscreen,.analyticsstack){gap:16px}
+body #content .cardhead{margin-bottom:13px}
+body #content .sectionhead{margin-top:16px;margin-bottom:10px}
+body #content .routinepreviewrow{padding-top:9px;padding-bottom:9px}
+body #content .routinepreview{margin-bottom:14px!important}
+body #content .card .empty{padding:18px 8px;font-size:12px}
+body #content .compactdiary{padding:12px 14px!important}
+body #content .compactdiary .cardhead{padding:0 0 7px!important;margin:0!important;background:none!important}
+body #content .swipediary .diaryrow{min-height:53px;padding:9px 0!important}
+body #content .card .full{margin-top:11px}
+body #content .card .note{margin-top:6px;margin-bottom:6px}
+body .nutritiontrack,body .nutritionslide{height:220px!important}
+
+@media(max-width:359px){body #content .foodtools{gap:5px!important}body #content .foodtools>.btn{font-size:10px!important;padding:6px 3px!important}body dialog.foodsheet .foodtabs .btn{font-size:10px}}

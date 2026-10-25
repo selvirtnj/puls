@@ -1,210 +1,21 @@
 /* Shared functionality; distinct visual systems across all screens. */
-body[data-app-design]:not([data-app-design=classic]){transition:background-color .3s,color .25s}
-body[data-app-design]:not([data-app-design=classic]) :is(#workout-identity,.datebar,aside,.accountidentity){background:var(--bg);color:var(--app-ink);transition:background .3s,border-color .3s,color .3s}
-body[data-app-design]:not([data-app-design=classic]) :is(.daylabel,.quiet,.identityprofile,.accountstreak){color:var(--app-ink)}
-body[data-app-design]:not([data-app-design=classic]) nav button{color:var(--muted);transition:background .25s,color .25s,box-shadow .25s}
-body[data-app-design]:not([data-app-design=classic]) nav button.active{color:var(--lime)}
-body[data-app-design]:not([data-app-design=classic]) .centraladd .ico{color:var(--bg);background:var(--lime)}
-body[data-app-design]:not([data-app-design=classic]) .accountname{color:var(--lime)!important}
-body[data-app-design]:not([data-app-design=classic]) :is(.identitystreak,.accountstreak){color:var(--app-ink)}
-body[data-app-design]:not([data-app-design=classic]) .profileavatar{color:var(--lime);background:var(--theme-tint);border-color:var(--line)}
-body[data-app-design]:not([data-app-design=classic]) .btn{letter-spacing:inherit}
+
 .foodscreen{display:grid;gap:22px}.foodtools{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}.foodtools .btn{min-width:0;font-size:11px;padding:12px 5px}.foodtools span{font-size:16px}.foodscreen :is(.waterregion,.diaryregion,.ideasregion){min-width:0}.foodscreen .card{margin:0!important}.foodscreen .datasource{font-size:10px}.foodscreen .card :is(h2,h3){color:var(--design-ink)}
 .foodscreen .card :is(.diaryrow,.searchitem,.compactfood){color:var(--design-ink);border-color:var(--line)}
 .foodscreen .diaryrow small{color:var(--design-muted)}
 .foodscreen .waterregion .watercompact{padding:12px 16px!important}
-.designswitch #content>.designhome,.designswitch #content>.foodscreen{animation:visual-enter .4s ease both}
-@keyframes visual-enter{from{opacity:.6;transform:translateY(7px)}to{opacity:1;transform:none}}
+
 /* STUDIO / soft grouped interface, open lists, green dock, large rounded tiles. */
-body[data-app-design=apple] :is(#workout-identity,.datebar,.accountidentity){background:#f2f0e9!important}
-body[data-app-design=apple] .identityprofile strong{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-body[data-app-design=apple] #content{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-body[data-app-design=apple] #content :is(h2,h3){font-family:inherit;font-weight:650}
-body[data-app-design=apple] .applehome{gap:32px}
-body[data-app-design=apple] .applegroup>.card{border-radius:26px!important}
-body[data-app-design=apple] .applegroup .designsectionlabel{font-size:24px;margin-bottom:14px}
-body[data-app-design=apple] .applegroup>.card>.cardhead>h2{font-size:17px!important}
-body[data-app-design=apple] #content .recommendedroutine{margin-top:18px}
-body[data-app-design=apple] #content .recommendedroutine .cardhead{margin-bottom:4px}
-body[data-app-design=apple] #content .recommendedroutine .cardhead h2{font-size:32px!important;font-weight:700}
-body[data-app-design=apple] .nutritiondeck{border-radius:30px;box-shadow:0 8px 32px #244a3610}
-body[data-app-design=apple] .nutritiondeck .combinedallowance{border-top:1px solid #dde5df;padding-top:12px;margin-top:12px}
-body[data-app-design=apple] .nutritiondeck .caloriedial{box-shadow:0 0 0 5px #eaf1eb}
-body[data-app-design=apple] #content .routinepreview{padding:24px!important;position:relative}
-body[data-app-design=apple] #content .routinepreview>.cardhead{display:block}
-body[data-app-design=apple] #content .routinepreview>.cardhead h2{font-size:29px}
-body[data-app-design=apple] .routinepreview>.cardhead>.textbtn{position:absolute;top:24px;right:18px}
-body[data-app-design=apple] .routinepreview .actionrow{border-top:1px solid #dce3dc;padding-top:14px;margin-top:8px}
-body[data-app-design=apple] .studioscreen .compactdiary{background:white;border:0;overflow:hidden;padding:0!important;border-radius:22px}
-body[data-app-design=apple] .studioscreen .compactdiary .cardhead{padding:20px 20px 8px;margin:0}
-body[data-app-design=apple] .studioscreen .diaryrow{padding:16px 20px;border-color:#e3e8e2}
-body[data-app-design=apple] .studioscreen .diaryrow>span:last-child{font-size:17px;font-weight:650}
-body[data-app-design=apple] .foodtools{padding:6px;background:white;border-radius:24px;gap:4px}
-body[data-app-design=apple] .foodtools .btn{border:0;background:#edf2ed!important;color:#285e50!important;border-radius:18px;min-height:52px}
-body[data-app-design=apple] .foodtools .btn:first-child{background:#285e50!important;color:white!important}
-body[data-app-design=apple] .accountcompact>.compactbody .bodystrip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-body[data-app-design=apple] .bodystrip>span{background:#eff4ee;border-radius:18px;padding:14px 9px}
-body[data-app-design=apple] .bodystrip strong{font-size:23px}
-body[data-app-design=apple] #session-root .exercise{border:0!important;background:white;border-radius:26px;margin-top:18px}
-body[data-app-design=apple] #session-root .liveset{padding:6px 0;border-bottom:1px solid #dce3dc}
+
 /* LEDGER / terminal-like data journal, rows, edge labels, squared tools. */
-body[data-app-design=cronometer] #content{font-family:'Segoe UI',Arial,sans-serif}
-body[data-app-design=cronometer] #content :is(h2,h3,.badge,.designsectionlabel){font-family:ui-monospace,Consolas,monospace;letter-spacing:.3px}
-body[data-app-design=cronometer] #content>.designhome{gap:14px}
-body[data-app-design=cronometer] #content .card{border-radius:3px!important;border:1px solid #3a4b62!important;box-shadow:none!important}
-body[data-app-design=cronometer] #content .cardhead{padding-bottom:10px;border-bottom:1px solid #3a4b62;margin-bottom:12px}
-body[data-app-design=cronometer] #content .recommendedroutine{border-left:0;padding-left:0}
-body[data-app-design=cronometer] #content .routinepreviewrow{font-size:12px;padding:9px 0;border-bottom:1px dashed #3a4b62}
-body[data-app-design=cronometer] .nutritiondeck{border-radius:3px;border:1px solid #526783;box-shadow:inset 4px 0 0 #f5ba73}
-body[data-app-design=cronometer] .nutritiondeck h2{font:600 12px ui-monospace,Consolas,monospace;letter-spacing:1px;text-transform:uppercase}
-body[data-app-design=cronometer] .nutritiondeck .combinedallowance{text-align:right;border-top:1px solid #3a4b62;padding-top:8px;margin-top:10px}
-body[data-app-design=cronometer] .nutritiondeck .compactmicros>div{border-bottom:1px dashed #3a4b62;padding-bottom:5px}
-body[data-app-design=cronometer] .ledgerscreen{gap:12px}
-body[data-app-design=cronometer] .foodtools{gap:1px;background:#526783;border:1px solid #526783}
-body[data-app-design=cronometer] .foodtools .btn{background:#232d3d!important;color:#f5ba73!important;border:0;border-radius:0;min-height:42px;font-size:10px}
-body[data-app-design=cronometer] .foodtools .btn:first-child{background:#f5ba73!important;color:#171d28!important}
-body[data-app-design=cronometer] .ledgerscreen .compactdiary{padding:0!important}
-body[data-app-design=cronometer] .ledgerscreen .compactdiary .cardhead{border:0;padding:11px 14px;background:#344050;margin:0}
-body[data-app-design=cronometer] .diaryrow{display:grid;grid-template-columns:minmax(0,1fr) 64px;min-height:50px;padding:10px 14px}
-body[data-app-design=cronometer] .diaryrow strong{font-size:12px}
-body[data-app-design=cronometer] .diaryrow>span:last-child{font-family:ui-monospace,Consolas,monospace;border-left:1px solid #3a4b62}
-body[data-app-design=cronometer] .ledgerextras{display:grid;gap:12px}
-body[data-app-design=cronometer] .accountcompact :is(dl,.weekweight,.bodystrip){font-family:ui-monospace,Consolas,monospace}
-body[data-app-design=cronometer] .analyticsstack .metrictiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:1px!important;background:#3a4b62;border:1px solid #3a4b62}
-body[data-app-design=cronometer] .metrictiles>div{background:#1d2635;padding:16px 10px;border:0;border-radius:0}
-body[data-app-design=cronometer] #session-root :is(.sessionhead,.exercise){border-radius:0;border-color:#3a4b62}
-body[data-app-design=cronometer] #session-root .liveset{font-family:ui-monospace,Consolas,monospace;border-bottom:1px dashed #3a4b62;padding:7px 0}
+
 /* FORGE / heavy typography, asymmetric corners, session-console hierarchy. */
-body[data-app-design=liftoff]{background:#140d0b!important}
-body[data-app-design=liftoff] #content :is(h2,h3){font-family:'Arial Black','Segoe UI',sans-serif;font-weight:850;letter-spacing:-.7px}
-body[data-app-design=liftoff] #content .card{border-radius:2px 22px 2px 22px!important;border-color:#66392a!important;box-shadow:5px 5px 0 #0004!important}
-body[data-app-design=liftoff] .trainingstage{border-radius:0;border:0;border-left:5px solid #ff975d;padding:18px 8px 8px;background:linear-gradient(135deg,#3b2013,#1b110d)}
-body[data-app-design=liftoff] .trainingstage>.designsectionlabel{text-align:left;color:#ff975d;font-family:ui-monospace,monospace;letter-spacing:2px}
-body[data-app-design=liftoff] .trainingstage>.card{border-radius:0!important;box-shadow:none!important}
-body[data-app-design=liftoff] #content .recommendedroutine{border:0;border-radius:0;background:none;padding:10px 0}
-body[data-app-design=liftoff] .recommendedroutine>.cardhead{text-align:left!important}
-body[data-app-design=liftoff] #content .recommendedroutine .cardhead h2{font-size:42px!important;text-transform:uppercase;line-height:1.05;overflow-wrap:anywhere}
-body[data-app-design=liftoff] #content .recommendedroutine .routinepreviewrow{border:1px solid #5a3423!important;border-radius:0;background:#24160f;margin-top:6px}
-body[data-app-design=liftoff] #content .btn{border-radius:0!important;text-transform:uppercase;font-size:11px;letter-spacing:.6px;box-shadow:3px 3px 0 #7c3b21!important}
-body[data-app-design=liftoff] .nutritiondeck{border-radius:0 24px 0 24px;border:0;border-top:3px solid #ff975d;box-shadow:5px 5px 0 #0004}
-body[data-app-design=liftoff] .nutritiondeck h2{text-transform:uppercase;letter-spacing:1px;font-size:13px}
-body[data-app-design=liftoff] .combinednutrition .caloriedial{border-radius:35%;transform:rotate(-5deg)}
-body[data-app-design=liftoff] .caloriedial>div{border-radius:35%;transform:none}
-body[data-app-design=liftoff] .caloriedial>div>*{transform:rotate(5deg)}
-body[data-app-design=liftoff] .nutritiondeck .combinedallowance{font-family:ui-monospace,Consolas,monospace;color:#cdaa8d}
-body[data-app-design=liftoff] .combinedallowance strong{font-size:20px}
-body[data-app-design=liftoff] .foodtools{grid-template-columns:1fr 1fr;gap:10px}
-body[data-app-design=liftoff] .foodtools .btn:first-child{grid-column:1/-1;font-size:15px;min-height:50px}
-body[data-app-design=liftoff] .forgedailypanel{border:1px solid #66392a;background:#1c100c;padding:12px;display:grid;gap:14px}
-body[data-app-design=liftoff] .forgedailypanel .card{border:0!important;box-shadow:none!important;background:none!important;padding:10px!important}
-body[data-app-design=liftoff] .diaryrow>span:last-child{font-size:19px;font-weight:800}
-body[data-app-design=liftoff] .bodystrip>span{border-radius:0!important;border-left:3px solid #ff975d}
-body[data-app-design=liftoff] #session-root .exercise{border-left:4px solid #ff975d!important;border-radius:0;padding:18px}
-body[data-app-design=liftoff] #session-root .sessionhead>strong{font-size:32px;font-family:'Arial Black',sans-serif}
+
 /* ORBIT / seamless glass dashboard, floating controls and spatial rhythm. */
-body[data-app-design=aurora] #content{font-family:'Segoe UI',sans-serif;font-weight:400}
-body[data-app-design=aurora] #content :is(h2,h3){font-family:inherit;font-weight:500;letter-spacing:-.5px}
-body[data-app-design=aurora] .aurorahome{gap:30px}
-body[data-app-design=aurora] #content .card{border-radius:30px!important;background:linear-gradient(135deg,#25485199,#102b33b3)!important;backdrop-filter:blur(20px);box-shadow:0 20px 45px #00101466,inset 0 1px 0 #b8fff31a!important}
-body[data-app-design=aurora] .nutritiondeck{border:1px solid #89ded133;border-radius:32px;background:radial-gradient(ellipse at 50% 35%,#1d555c,#102b33 75%);box-shadow:0 20px 55px #0004}
-body[data-app-design=aurora] .caloriedial{box-shadow:0 0 30px #74e4d225,0 0 0 8px #74e4d208}
-body[data-app-design=aurora] .combinedbars .slideprogress strong{font-size:13px}
-body[data-app-design=aurora] .designactionstrip{gap:12px}
-body[data-app-design=aurora] .designactionstrip button{border-radius:50px;background:#18434b66;border-color:#74e4d24d}
-body[data-app-design=aurora] .foodtools{padding:7px;background:#0a242dcc;border:1px solid #74e4d233;border-radius:30px;backdrop-filter:blur(20px)}
-body[data-app-design=aurora] .foodtools .btn{border-radius:24px;background:none;border:0;color:#a2f4e5}
-body[data-app-design=aurora] .foodtools .btn:first-child{background:#74e4d2;color:#07191e}
-body[data-app-design=aurora] .orbitfoodgrid{display:grid;gap:20px}
-body[data-app-design=aurora] .diaryrow{border:0;padding:15px;margin-top:9px;border-radius:17px;background:#ffffff06}
-body[data-app-design=aurora] .diaryrow>span:last-child{font-size:19px;font-weight:300}
-body[data-app-design=aurora] #content .routinepreview>.cardhead h2{font-size:31px;font-weight:400}
-body[data-app-design=aurora] #content .recommendedroutine .cardhead h2{font-size:36px!important;font-weight:300!important}
-body[data-app-design=aurora] .accountcompact .compactplan dl{gap:16px}
-body[data-app-design=aurora] #session-root{background:radial-gradient(ellipse at top,#173f47,#07191e)!important}
-body[data-app-design=aurora] #session-root .exercise{border-radius:28px;background:#15333cb3;border-color:#74e4d233}
+
 /* EDITION / paper, oversized serif chapter titles, small-cap tools and ruled lists. */
-body[data-app-design=mono]{background:#f5f1e8!important;color:#25231e}
-body[data-app-design=mono] #content{font-family:Georgia,'Times New Roman',serif;color:#25231e}
-body[data-app-design=mono] #content .card{background:transparent!important;color:#25231e!important;border-color:#bdb5a6!important;box-shadow:none!important}
-body[data-app-design=mono] #content .card :is(h2,h3,strong,dt,dd){color:#25231e}
-body[data-app-design=mono] #content .card :is(.note,small,p){color:#686259}
-body[data-app-design=mono] #content :is(button,input,select,.note,small,.badge){font-family:'Segoe UI',Arial,sans-serif}
-body[data-app-design=mono] .editorialhome{gap:38px}
-body[data-app-design=mono] .chapterlabel{border-color:#25231e;padding-top:15px;align-items:baseline}
-body[data-app-design=mono] .chapterlabel>span{font:13px 'Segoe UI',sans-serif;color:#686259}
-body[data-app-design=mono] .chapterlabel h2{font:400 36px Georgia,serif;letter-spacing:-1.5px;color:#25231e}
-body[data-app-design=mono] #content .designchapter>.card>.cardhead>h2{font:italic 22px Georgia,serif;letter-spacing:-.5px}
-body[data-app-design=mono] .designactionstrip{border-color:#25231e}
-body[data-app-design=mono] .designactionstrip button{border-color:#bdb5a6;color:#25231e}
-body[data-app-design=mono] .designactionstrip button:first-child{background:#25231e;color:#f5f1e8}
-body[data-app-design=mono] .nutritiondeck{background:transparent;border-color:#25231e;box-shadow:none}
-body[data-app-design=mono] .nutritiondeck h2{font:italic 24px Georgia,serif}
-body[data-app-design=mono] .nutritiondeck .combinednutrition .caloriedial{background:conic-gradient(#25231e var(--fill),#ded7c8 0)}
-body[data-app-design=mono] .nutritiondeck .caloriedial>div{background:#f5f1e8}
-body[data-app-design=mono] .nutritiondeck .caloriedial strong{font:400 32px Georgia,serif}
-body[data-app-design=mono] .nutritiondeck .bar{background:#ddd6c8}
-body[data-app-design=mono] .nutritiondeck .combinedbars{border-color:#bdb5a6}
-body[data-app-design=mono] .nutritiondeck .combinedallowance{border-color:#bdb5a6}
-body[data-app-design=mono] .compactfood{border-bottom:1px solid #bdb5a6;padding:17px 0;font-size:16px}
-body[data-app-design=mono] .recommendedroutine{border-color:#25231e}
-body[data-app-design=mono] .routinepreviewrow{border-color:#bdb5a6;font-size:15px}
-body[data-app-design=mono] .foodtools{border:1px solid #25231e;gap:0;margin-bottom:18px}
-body[data-app-design=mono] .foodtools .btn{border-radius:0;background:none;color:#25231e;border:0;border-right:1px solid #bdb5a6;box-shadow:none;font-size:10px;letter-spacing:1px;text-transform:uppercase}
-body[data-app-design=mono] .foodtools .btn:first-child{background:#25231e;color:#f5f1e8}
-body[data-app-design=mono] .editionscreen .diaryrow{border-color:#bdb5a6;padding:17px 0;min-height:66px}
-body[data-app-design=mono] .editionscreen .diaryrow strong{font:400 17px Georgia,serif;white-space:normal}
-body[data-app-design=mono] .editionscreen .compactdiary{border:0!important;padding:0!important}
-body[data-app-design=mono] .editionscreen .compactdiary .cardhead{display:none}
-body[data-app-design=mono] #content .designworkouts .routinepreview{border-color:#25231e!important;background:none!important}
-body[data-app-design=mono] #content .routinepreview h2{font:400 32px Georgia,serif!important}
-body[data-app-design=mono] .designworkouts .workouttabs{border-bottom:1px solid #25231e;padding-bottom:5px}
-body[data-app-design=mono] .designworkouts .workouttabs .btn{border:0;border-radius:0;background:none!important;color:#686259}
-body[data-app-design=mono] .designworkouts .workouttabs .btn:not(.secondary){border-bottom:2px solid #25231e;color:#25231e}
-body[data-app-design=mono] .accountcompact>.card:not(.designchooser){border-color:#bdb5a6!important}
-body[data-app-design=mono] .weekweight{border-color:#bdb5a6}
-body[data-app-design=mono] .analyticsstack .metrictiles>div{border-color:#bdb5a6;background:none}
-body[data-app-design=mono] :is(dialog,#session-root){background:#f5f1e8!important;color:#25231e}
-body[data-app-design=mono] :is(dialog,#session-root) :is(label,.note,small,p){color:#686259}
-body[data-app-design=mono] :is(dialog,#session-root) :is(h2,h3,strong,.searchitem){color:#25231e}
-body[data-app-design=mono] :is(dialog,#session-root) .searchitem{background:none;border-color:#bdb5a6}
-body[data-app-design=mono] :is(dialog,#session-root) :is(.exerciseinsight,.restpanel,.previewbox,.foodlive){background:#e8e1d4;color:#25231e}
-body[data-app-design=mono] #session-root .exercise{border:1px solid #bdb5a6;border-radius:0;background:#fcfaf4}
-body[data-app-design=mono] #session-root .sessionhead{background:#f5f1e8;border-color:#bdb5a6}
+
 /* Chrome identities: same controls, coordinated surfaces and transitions. */
-@media(max-width:760px){
-body[data-app-design=apple] aside{background:#f9faf7eF!important;backdrop-filter:blur(25px);border-top:1px solid #d8e0d5;box-shadow:0 -12px 28px #f2f0e966}
-body[data-app-design=apple] nav button.active{background:#dfece2!important;border-radius:16px;color:#285e50}
-body[data-app-design=apple] .centraladd .ico{border-radius:18px;box-shadow:0 4px 10px #285e5025;background:#285e50;color:#fff}
-body[data-app-design=cronometer] aside{background:#171d28f5!important;border-top:2px solid #3a4b62;box-shadow:0 -5px 0 #10172340}
-body[data-app-design=cronometer] nav button{border-radius:0}
-body[data-app-design=cronometer] nav button.active{background:#344050!important;border-radius:0;box-shadow:inset 0 2px 0 #f5ba73}
-body[data-app-design=cronometer] .centraladd .ico{border-radius:5px;box-shadow:none}
-body[data-app-design=liftoff] aside{background:#21130ef5!important;border-top:2px solid #ff975d;box-shadow:0 -10px 25px #140d0b80}
-body[data-app-design=liftoff] nav button.active{background:#4b2719!important;border-radius:2px 12px 2px 12px}
-body[data-app-design=liftoff] .centraladd .ico{border-radius:6px;box-shadow:3px 3px 0 #7c3b21}
-body[data-app-design=aurora] aside{background:linear-gradient(180deg,#183d45bb,#07191ef0)!important;border-color:#74e4d238;backdrop-filter:blur(28px);box-shadow:0 -12px 35px #07191e66}
-body[data-app-design=aurora] nav button.active{background:#74e4d218!important;border-radius:22px;box-shadow:inset 0 0 0 1px #74e4d233}
-body[data-app-design=aurora] .centraladd .ico{box-shadow:0 0 24px #74e4d250;border-radius:50%}
-body[data-app-design=mono] aside{background:#f5f1e8f5!important;border-top:1px solid #25231e;box-shadow:0 -7px 0 #f5f1e8}
-body[data-app-design=mono] nav button{border-radius:0}
-body[data-app-design=mono] nav button.active{background:none!important;color:#25231e;box-shadow:inset 0 -2px 0 #25231e;border-radius:0}
-body[data-app-design=mono] .centraladd .ico{border-radius:0;box-shadow:3px 3px 0 #bdb5a6;background:#25231e;color:#f5f1e8}
-}
-body[data-app-design=apple] :is(#workout-identity,.datebar,.accountidentity){background:#f2f0e9!important}
-body[data-app-design=cronometer] :is(#workout-identity,.datebar,.accountidentity){background:#171d28!important}
-body[data-app-design=liftoff] :is(#workout-identity,.datebar,.accountidentity){background:#140d0b!important}
-body[data-app-design=aurora] :is(#workout-identity,.datebar,.accountidentity){background:transparent!important}
-body[data-app-design=mono] :is(#workout-identity,.datebar,.accountidentity){background:#f5f1e8!important}
-body[data-app-design=cronometer] #workout-identity{border-bottom:1px solid #3a4b62}
-body[data-app-design=liftoff] .xpfill{border-radius:0;height:6px;background:#4b2719}
-body[data-app-design=aurora] .xpfill i{box-shadow:0 0 10px #74e4d2}
-body[data-app-design=mono] .xpfill{border-radius:0;background:#ded7c8}
-body[data-app-design=mono] .profileavatar{border-radius:4px}
-body[data-app-design=apple] .identitylevels strong,body[data-app-design=apple] .daylabel{color:#20332c}
-body[data-app-design=mono] .identitylevels strong,body[data-app-design=mono] .daylabel{color:#25231e}
-body[data-app-design=apple] #toast{color:#fff}
-body[data-app-design=mono] #toast{color:#f5f1e8}
+
 @media(min-width:900px){.orbitfoodgrid{grid-template-columns:1fr 1.4fr;align-items:start}.ledgerscreen .ledgerextras{grid-template-columns:1fr 1fr;align-items:start}}
-@media(max-width:359px){.foodtools .btn{font-size:9px}.foodtools span{font-size:13px}body[data-app-design=liftoff] #content .recommendedroutine .cardhead h2{font-size:34px!important}body[data-app-design=mono] .chapterlabel h2{font-size:30px}}
-@media(prefers-reduced-motion:reduce){.designswitch #content>*{animation:none!important}body[data-app-design],body[data-app-design] *{transition:none!important}}
-body[data-app-design=liftoff] .combinednutrition .caloriedial,body[data-app-design=liftoff] .caloriedial>div{border-radius:50%;transform:none}body[data-app-design=liftoff] .caloriedial>div>*{transform:none}
+@media(max-width:359px){.foodtools .btn{font-size:9px}.foodtools span{font-size:13px}}

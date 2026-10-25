@@ -1,0 +1,391 @@
+/* PULS Designsystem (Redesign Schritt 1, siehe docs/DESIGN-SYSTEM.md).
+   Letzte Schicht: Tokens für Hell/Dunkel über <html data-scheme>, System-Schrift, globale Verbote
+   (keine Schatten, Verläufe, Unschärfe, Deko-Animationen) und die neuen Grundbausteine.
+   Ältere Dateien behalten ihre Struktur; hier werden ihre Variablen auf die Tokens umgelegt. */
+
+:root,
+:root[data-scheme=light] {
+  color-scheme: light;
+  --font: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --ds-bg: #F2F2F7;
+  --ds-surface: #FBFBFD;
+  --ds-surface-2: #F2F2F7;
+  --ds-field: #EBEBF0;
+  --ds-fill: #E3E3E8;
+  --ds-selected: #FBFBFD;
+  --ds-sheet: #F2F2F7;
+  --ds-bar: #F7F7FA;
+  --ds-label: #111114;
+  --ds-label-2: #636366;
+  --ds-label-3: #8A8A8E;
+  --ds-separator: #C6C6C8;
+  --ds-accent: #007AFF;
+  --ds-accent-text: #0062CC;
+  --ds-on-accent: #FFFFFF;
+  --ds-green: #34C759;
+  --ds-green-text: #248A3D;
+  --ds-orange: #FF9500;
+  --ds-orange-text: #C93400;
+  --ds-red: #FF3B30;
+  --ds-red-text: #D70015;
+  --ds-scrim: rgba(0, 0, 0, .32);
+}
+:root[data-scheme=dark] {
+  color-scheme: dark;
+  --ds-bg: #000000;
+  --ds-surface: #1C1C1E;
+  --ds-surface-2: #2C2C2E;
+  --ds-field: #2C2C2E;
+  --ds-fill: #3A3A3C;
+  --ds-selected: #636366;
+  --ds-sheet: #1C1C1E;
+  --ds-bar: #121214;
+  --ds-label: #FFFFFF;
+  --ds-label-2: #AEAEB2;
+  --ds-label-3: #8E8E93;
+  --ds-separator: #38383A;
+  --ds-accent: #0A84FF;
+  --ds-accent-text: #409CFF;
+  --ds-on-accent: #FFFFFF;
+  --ds-green: #30D158;
+  --ds-green-text: #30D158;
+  --ds-orange: #FF9F0A;
+  --ds-orange-text: #FF9F0A;
+  --ds-red: #FF453A;
+  --ds-red-text: #FF6961;
+  --ds-scrim: rgba(0, 0, 0, .55);
+}
+/* In Fenstern (Sheets) liegen Karten eine Ebene höher. */
+:root[data-scheme=dark] dialog { --ds-surface: #2C2C2E; --ds-field: #3A3A3C; --ds-fill: #48484A; }
+:root[data-scheme=light] dialog { --ds-surface: #FBFBFD; --ds-field: #E9E9EE; }
+
+/* Variablen der älteren Schichten auf die Tokens umlegen. */
+:root[data-scheme], :root[data-scheme] body, :root[data-scheme] dialog, :root[data-scheme] body dialog.ffsheet {
+  --bg: var(--ds-bg);
+  --panel: var(--ds-surface);
+  --line: var(--ds-separator);
+  --muted: var(--ds-label-2);
+  --lime: var(--ds-accent);
+  --blue: var(--ds-accent);
+  --orange: var(--ds-orange);
+  --danger: var(--ds-red);
+  --ink: var(--ds-label);
+  --text: var(--ds-label);
+  --app-ink: var(--ds-label);
+  --design-ink: var(--ds-label);
+  --design-muted: var(--ds-label-2);
+  --theme-tint: var(--ds-fill);
+  --tint: var(--ds-fill);
+  --border: var(--ds-separator);
+  --radius: 12px;
+  --design-radius: 12px;
+  --ff-ink: var(--ds-label);
+  --ff-muted: var(--ds-label-2);
+  --ff-soft: var(--ds-fill);
+  --ff-field: var(--ds-field);
+  --ff-radius: 8px;
+}
+
+/* Globale Regeln aus der Verbotsliste. */
+*, *::before, *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+/* Verläufe überall aus; die Kartenbibliothek (nur online) behält ihre Bild-Icons. */
+*:not(.leaflet-container, .leaflet-container *), *::before, *::after { background-image: none !important; }
+html, body, button, input, select, textarea, h1, h2, h3, h4, strong, small, p, span, label, a, summary {
+  font-family: var(--font) !important;
+}
+html { background: var(--ds-bg); -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--ds-bg) !important;
+  color: var(--ds-label) !important;
+  font-size: 17px;
+  line-height: 1.35;
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+strong, b, .big, input[type=number] { font-variant-numeric: tabular-nums; }
+p, .note { color: var(--ds-label-2); }
+a { color: var(--ds-accent-text); }
+small { color: var(--ds-label-2); letter-spacing: normal; }
+h1, h2, h3 { color: var(--ds-label); letter-spacing: normal; }
+::selection { background: var(--ds-fill); }
+:focus-visible { outline: 2px solid var(--ds-accent) !important; outline-offset: 2px !important; }
+:focus:not(:focus-visible) { outline: none; }
+button { -webkit-tap-highlight-color: transparent; }
+button:active:not(:disabled) { opacity: .6; }
+.tapwave, .pageslideghost { display: none !important; }
+#content, #content.pageslide, #content.pagearriving { transform: none !important; opacity: 1 !important; }
+
+/* Erlaubte Bewegung 1: Fenster gleitet von unten herein (und wieder hinaus). */
+@keyframes dsSheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes dsSheetOut { from { transform: translateY(0); } to { transform: translateY(100%); } }
+html body dialog#modal.sheetarriving[open] { animation: dsSheetIn .32s cubic-bezier(.2, .8, .2, 1) both !important; }
+html body dialog#modal.sheetclosing[open] { animation: dsSheetOut .26s ease-in both !important; opacity: 1 !important; }
+/* Erlaubte Bewegung 2: Fortschrittsring füllt sich einmal. */
+@keyframes dsRingFill { from { stroke-dasharray: 0 100; } }
+html body .dsring.dsringanimate .dsringvalue { animation: dsRingFill .7s cubic-bezier(.2, .8, .2, 1) both !important; }
+@media (prefers-reduced-motion: reduce) {
+  html body dialog#modal.sheetarriving[open],
+  html body dialog#modal.sheetclosing[open],
+  html body .dsring.dsringanimate .dsringvalue { animation: none !important; }
+}
+
+/* ---------- Rahmen: Kopf, Datum, Inhalt ---------- */
+main { background: transparent !important; }
+main > header .eyebrow, main > header > button.quiet, .titleline .live, #subtitle:empty { display: none !important; }
+main > header { min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+.titleline { display: block !important; margin: 8px 0 4px !important; padding: 0 !important; background: transparent !important; border: 0 !important; }
+#title { font-size: 34px !important; font-weight: 700 !important; line-height: 41px !important; letter-spacing: .01em !important; color: var(--ds-label) !important; margin: 0 !important; }
+#subtitle { margin: 2px 0 0 !important; font-size: 15px !important; color: var(--ds-label-2) !important; }
+html body main .datebar { position: static !important; display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 0 !important; width: auto !important; max-width: none !important; height: auto !important; min-height: 44px !important; margin: 0 0 12px -12px !important; padding: 0 !important; background: transparent !important; border: 0 !important; }
+html body main .datebar[hidden] { display: none !important; }
+html body main .datebar .chevronback { transform: none !important; }
+html body main .datebar .daylabel { flex: 0 0 auto !important; width: auto !important; }
+html body main .datebar .quiet { display: grid !important; place-items: center !important; width: 44px !important; height: 44px !important; min-width: 44px !important; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-accent) !important; }
+html body main .datebar .quiet svg { width: 20px !important; height: 20px !important; }
+html body main .datebar .daylabel { min-height: 44px !important; padding: 0 8px !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-label) !important; font-size: 17px !important; font-weight: 600 !important; }
+.datebar .daylabel .daystack { display: inline-flex !important; gap: 6px !important; flex-direction: row !important; }
+.datebar .today { min-height: 32px; border: 0 !important; border-radius: 8px !important; background: var(--ds-fill) !important; color: var(--ds-accent-text) !important; font-size: 15px !important; }
+#workout-identity { background: transparent !important; border: 0 !important; color: var(--ds-label) !important; }
+#workout-identity .xpfill, .xpfill { background: var(--ds-fill) !important; border-radius: 2px !important; }
+#workout-identity .xpfill i, .xpfill i { background: var(--ds-accent) !important; border-radius: 2px !important; }
+.dsinlineicon { display: inline-block; width: 1em; height: 1em; vertical-align: -.125em; }
+html body .dsinlineicon > svg { display: block; width: 1em !important; height: 1em !important; }
+/* Satz abgehakt (session-focus.css): das Häkchen ist ein SVG-Bild und kein Verlauf, daher von der globalen Sperre ausgenommen. */
+html body #session-root .liveset input[type=checkbox]:checked::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.4 5.6 10.4 11.5 3.8' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important; transform: none !important; }
+.pulsicon { width: 24px; height: 24px; flex-shrink: 0; }
+.pulsicon.dsfill { fill: currentColor; }
+
+/* ---------- Tab-Leiste ---------- */
+aside { background: var(--ds-bar) !important; border-color: var(--ds-separator) !important; color: var(--ds-label) !important; }
+aside .brand, aside > small, aside .sidefoot { color: var(--ds-label) !important; }
+aside .brand span { color: var(--ds-accent) !important; }
+#nav button {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  color: var(--ds-label-2) !important;
+  font-weight: 500 !important;
+  transform: none !important;
+}
+#nav button.active, #nav button[aria-current=page] { color: var(--ds-accent) !important; background: transparent !important; }
+#nav button .ico { display: grid !important; place-items: center !important; width: 28px !important; height: 28px !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; color: inherit !important; transform: none !important; font-size: 0 !important; }
+#nav button .ico svg { width: 26px !important; height: 26px !important; transform: none !important; }
+#nav .navlabel { display: block !important; color: inherit !important; }
+#nav .centraladd { background: transparent !important; color: var(--ds-label-2) !important; width: auto !important; height: auto !important; margin: 0 !important; border-radius: 8px !important; }
+#nav .centraladd .ico { background: transparent !important; width: 28px !important; height: 28px !important; }
+@media (min-width: 761px) {
+  #nav button { flex-direction: row !important; gap: 12px !important; min-height: 44px !important; padding: 10px 12px !important; font-size: 17px !important; }
+  #nav button.active, #nav button[aria-current=page] { background: var(--ds-fill) !important; }
+}
+@media (max-width: 760px) {
+  aside {
+    position: fixed !important; left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important;
+    width: 100% !important; height: auto !important; z-index: 20 !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 max(4px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(4px, env(safe-area-inset-left)) !important;
+    border: 0 !important; border-top: .5px solid var(--ds-separator) !important; border-radius: 0 !important;
+    background: var(--ds-bar) !important;
+  }
+  aside .brand, aside > small, aside .sidefoot { display: none !important; }
+  #nav { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 0 !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; position: static !important; width: auto !important; transform: none !important; }
+  #nav button {
+    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
+    gap: 2px !important; min-width: 44px !important; min-height: 49px !important; height: 49px !important; padding: 4px 0 2px !important; margin: 0 !important;
+    font-size: 10px !important; line-height: 12px !important; letter-spacing: .01em !important; text-align: center !important;
+  }
+  #nav button .ico, #nav .centraladd .ico { width: 26px !important; height: 26px !important; }
+  #nav button .ico svg { width: 25px !important; height: 25px !important; }
+  #nav .navlabel { max-width: 100% !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+  main { margin-left: 0 !important; padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) calc(49px + env(safe-area-inset-bottom) + 28px) max(16px, env(safe-area-inset-left)) !important; }
+}
+
+/* ---------- Karten, gruppierte Listen ---------- */
+.card, details.card, section.card {
+  background: var(--ds-surface) !important;
+  color: var(--ds-label) !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+}
+.card .cardhead h2, .card > h2 { font-size: 20px; font-weight: 600; }
+.card h3 { font-size: 17px; font-weight: 600; }
+.badge { background: var(--ds-fill) !important; color: var(--ds-label-2) !important; border: 0 !important; border-radius: 6px !important; letter-spacing: normal !important; text-transform: none !important; }
+.chip { background: var(--ds-fill) !important; color: var(--ds-label) !important; border: 0 !important; border-radius: 8px !important; }
+hr { border-top: .5px solid var(--ds-separator) !important; }
+
+/* ---------- Bedienelemente ---------- */
+.btn, a.btn {
+  min-height: 44px;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: var(--ds-accent) !important;
+  color: var(--ds-on-accent) !important;
+  font-size: 17px;
+  font-weight: 600 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+.btn.secondary, a.btn.secondary {
+  background: var(--ds-fill) !important;
+  color: var(--ds-accent-text) !important;
+}
+.btn:disabled { opacity: .4; }
+/* Trainingsbereiche (Workout, Routinen, Kalender, Fortschritt): Reiter mit Unterstrich, aktiver in Akzentfarbe. */
+html body #content .workouttabs > .btn { background: transparent !important; color: var(--ds-label-2) !important; border: 0 !important; border-bottom: 2px solid transparent !important; border-radius: 0 !important; font-size: 15px !important; font-weight: 500 !important; }
+html body #content .workouttabs > .btn[aria-pressed=true] { color: var(--ds-accent-text) !important; border-bottom-color: var(--ds-accent) !important; font-weight: 600 !important; }
+.textbtn { background: transparent !important; border: 0 !important; color: var(--ds-accent-text) !important; min-height: 44px; border-radius: 8px !important; letter-spacing: normal !important; text-transform: none !important; }
+.quiet { color: var(--ds-accent) !important; }
+.delete { color: var(--ds-red-text) !important; }
+.error { color: var(--ds-red-text) !important; }
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea {
+  background-color: var(--ds-field) !important;
+  color: var(--ds-label) !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  min-height: 44px;
+  font-size: 17px !important;
+}
+input::placeholder, textarea::placeholder { color: var(--ds-label-3) !important; opacity: 1; }
+input[type=file] { color: var(--ds-label-2) !important; font-size: 15px !important; }
+input[type=file]::file-selector-button { border: 0; border-radius: 8px; background: var(--ds-fill); color: var(--ds-accent-text); font: 600 15px var(--font); padding: 10px 14px; margin-right: 10px; }
+input[type=checkbox], input[type=radio], input[type=range] { accent-color: var(--ds-accent); }
+label { color: var(--ds-label-2); }
+.bar { background: var(--ds-fill) !important; border-radius: 3px !important; }
+.bar i { background: var(--ds-accent) !important; border-radius: 3px !important; }
+.segmented, .langswitch, .actmode {
+  display: grid !important; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+  gap: 2px !important; padding: 2px !important;
+  background: var(--ds-fill) !important; border: 0 !important; border-radius: 8px !important;
+}
+.segmented button, .langswitch button, .actmode button {
+  min-height: 32px; margin: 0 !important; padding: 4px 8px !important;
+  border: 0 !important; border-radius: 7px !important;
+  background: transparent !important; color: var(--ds-label) !important;
+  font-size: 15px !important; font-weight: 500 !important;
+}
+.segmented button[aria-pressed=true], .langswitch button[aria-pressed=true], .actmode button[aria-pressed=true] {
+  background: var(--ds-selected) !important; font-weight: 600 !important;
+}
+/* Kreise bleiben Kreise. */
+.profileavatar, .avatar, .addcircle, .slidedots button, .actday, .dsring { border-radius: 50% !important; }
+
+/* ---------- Fenster (Sheets) ---------- */
+dialog, dialog#modal {
+  background: var(--ds-sheet) !important;
+  color: var(--ds-label) !important;
+  border: 0 !important;
+}
+@media (max-width: 760px) {
+  dialog#modal { border-radius: 12px 12px 0 0 !important; }
+}
+dialog::backdrop { background: var(--ds-scrim) !important; }
+#modal .modalhead { background: var(--ds-sheet) !important; border: 0 !important; }
+#modal .modalhead h2 { font-size: 20px !important; font-weight: 600 !important; letter-spacing: normal !important; color: var(--ds-label) !important; }
+#modal .modalhead button.quiet { display: grid !important; place-items: center !important; width: 44px !important; height: 44px !important; min-width: 44px !important; padding: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-label-2) !important; font-size: 0 !important; }
+#modal .modalhead button.quiet svg { width: 22px; height: 22px; }
+#modal label { display: block; color: var(--ds-label-2); font-size: 13px; font-weight: 500; }
+#modal label > input:not([type=checkbox]):not([type=radio]), #modal label > select, #modal label > textarea { display: block; width: 100%; margin-top: 6px; }
+#modal .searchitem { background: var(--ds-surface) !important; color: var(--ds-label) !important; border: 0 !important; border-radius: 12px !important; }
+#toast { background: var(--ds-label) !important; color: var(--ds-bg) !important; border: 0 !important; border-radius: 12px !important; }
+
+/* ---------- Passwortfeld mit Anzeigen/Verbergen ---------- */
+.dspassword { position: relative; display: block; margin-top: 6px; }
+#modal label > .dspassword > input, .dspassword > input { display: block; width: 100%; margin: 0 !important; padding-right: 52px !important; }
+.dspasswordtoggle {
+  position: absolute; top: 0; right: 0;
+  display: grid; place-items: center;
+  width: 44px; height: 44px; min-height: 44px; padding: 0; margin: 0;
+  border: 0 !important; border-radius: 8px !important; background: transparent !important;
+  color: var(--ds-label-2) !important;
+}
+.dspasswordtoggle svg { width: 22px; height: 22px; }
+
+/* ---------- Anmeldung (Sheet) ---------- */
+#modal .dsauth { display: grid; gap: 14px; }
+#modal .dsauth .note { margin: 0; font-size: 13px; line-height: 1.4; }
+#modal .dsauth .btn.full { width: 100%; margin-top: 4px; }
+#modal .dsauth .textbtn.full { width: 100%; font-size: 17px; }
+
+/* ---------- Offline-Hinweis ---------- */
+.dsofflinestatus { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--ds-surface); color: var(--ds-label-2); font-size: 15px; line-height: 20px; }
+.dsofflinestatus:empty { display: none; }
+.dsofflinestatus svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--ds-label-2); }
+
+/* ---------- Darstellung (Konto) ---------- */
+.dsappearance { padding: 16px !important; margin-bottom: 16px; }
+.dsappearance h3 { margin: 0 0 10px !important; font-size: 17px !important; }
+.dsappearance .segmented button { min-height: 36px; }
+.dsappearance .note { margin: 10px 0 0; font-size: 13px; }
+
+/* ---------- Übersicht ---------- */
+.dshome { display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+.avatarpicker > span { color: var(--ds-label) !important; background: var(--ds-surface) !important; }
+.dshome .dsgrouptitle {
+  margin: 22px 16px 6px; font-size: 13px; font-weight: 400; line-height: 18px;
+  color: var(--ds-label-2); text-transform: uppercase; letter-spacing: .02em;
+}
+.dshome .dsgroup { margin: 0; padding: 0; border-radius: 12px; background: var(--ds-surface); overflow: hidden; }
+.dshome .dsgroupfoot { margin: 6px 16px 0; font-size: 13px; line-height: 18px; color: var(--ds-label-2); }
+.dshome .dsrow {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  width: 100%; min-height: 44px; margin: 0; padding: 11px 16px;
+  border: 0; border-radius: 0; background: transparent; color: var(--ds-label);
+  font: 400 17px/22px var(--font); text-align: left;
+}
+.dshome button.dsrow { cursor: pointer; }
+.dshome .dsrow + .dsrow::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--ds-separator); }
+.dshome .dsrow.dsiconrow + .dsrow::before, .dshome .dsrow + .dsrow.dsiconrow::before { left: 56px; }
+.dshome .dsrowicon { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; color: var(--ds-accent); }
+.dshome .dsrowicon svg { width: 24px; height: 24px; }
+.dshome .dsrowtext { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.dshome .dsrowtext > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dshome .dsrowtext small { display: block; margin-top: 1px; font-size: 15px; line-height: 20px; color: var(--ds-label-2); letter-spacing: normal; }
+.dshome .dsrowvalue { flex-shrink: 0; color: var(--ds-label-2); font-size: 17px; font-variant-numeric: tabular-nums; text-align: right; }
+.dshome .dsrowchevron { display: grid; place-items: center; width: 14px; flex-shrink: 0; color: var(--ds-label-3); }
+.dshome .dsrowchevron svg { width: 14px; height: 14px; }
+.dshome .dsrow.dsaction { color: var(--ds-accent-text); }
+.dshome .dsrow.dsempty { color: var(--ds-label-2); font-size: 15px; }
+
+.dshome .dsenergy { padding: 16px; }
+.dshome .dsenergytop { display: flex; align-items: center; gap: 18px; }
+.dshome .dsringwrap { position: relative; width: 112px; height: 112px; flex-shrink: 0; }
+.dsring { display: block; width: 100%; height: 100%; }
+.dsring circle { fill: none; stroke-width: 9; }
+.dsring .dsringtrack { stroke: var(--ds-fill); }
+.dsring .dsringvalue { stroke: var(--ds-accent); stroke-linecap: round; }
+.dsring.dsover .dsringvalue { stroke: var(--ds-orange); }
+.dshome .dsringlabel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.dshome .dsringlabel strong { font-size: 22px; font-weight: 700; line-height: 26px; color: var(--ds-label); }
+.dshome .dsringlabel small { font-size: 12px; line-height: 16px; color: var(--ds-label-2); }
+.dshome .dsenergyfacts { flex: 1; min-width: 0; }
+.dshome .dsenergyfacts .dsbig { display: block; font-size: 28px; font-weight: 700; line-height: 34px; font-variant-numeric: tabular-nums; color: var(--ds-label); }
+.dshome .dsenergyfacts .dsbig.dsover { color: var(--ds-orange-text); }
+.dshome .dsenergyfacts .dscaption { display: block; margin-top: 2px; font-size: 15px; line-height: 20px; color: var(--ds-label-2); }
+.dshome .dsmacros { display: grid; gap: 12px; margin-top: 18px; }
+.dshome .dsmacro { display: grid; grid-template-columns: 1fr auto; row-gap: 6px; align-items: baseline; }
+.dshome .dsmacro span { font-size: 15px; color: var(--ds-label); }
+.dshome .dsmacro strong { font-size: 15px; font-weight: 400; color: var(--ds-label-2); font-variant-numeric: tabular-nums; }
+.dshome .dsmeter { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--ds-fill); overflow: hidden; }
+.dshome .dsmeter i { display: block; height: 100%; border-radius: 3px; background: var(--ds-accent); }
+.dshome .dsmeter i.dsover { background: var(--ds-orange); }
+.dshome .dsprimary { width: 100%; margin-top: 18px; }
+.dshome .dschart { margin-top: 0; }
+.dshome .dschart .card { padding: 16px !important; }
+.dshome .dschart .cardhead h2 { font-size: 17px !important; font-weight: 600 !important; line-height: 22px !important; }
+.charttoggles button { min-height: 32px; border: 0 !important; border-radius: 8px !important; background: var(--ds-fill) !important; color: var(--ds-label) !important; font-size: 13px !important; }
+.charttoggles button[aria-pressed=false] { color: var(--ds-label-2) !important; }
+.chartperiod { color: var(--ds-label-2) !important; font-size: 13px !important; }
+.empty { color: var(--ds-label-2) !important; background: transparent !important; border: 0 !important; }
+
+/* Kalorienring auf anderen Seiten (bisher ein Verlauf): als SVG-Ring dargestellt. */
+.caloriedial { position: relative; background: transparent !important; border: 0 !important; }
+.caloriedial > .dsring { position: absolute; inset: 0; }
+.caloriedial > div { position: relative; z-index: 1; background: transparent !important; }
+.caloriedial::before, .caloriedial::after { display: none !important; }

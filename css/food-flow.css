@@ -1,10 +1,6 @@
 /* Essen hinzufügen: ruhige Bottom-Sheet-Gestaltung für Suche, Portion, Barcode, Rezepte, eigene Werte und Foto. */
 body dialog.ffsheet {
-  --ff-ink: var(--app-ink, #f0edf5);
-  --ff-muted: color-mix(in srgb, var(--ff-ink) 60%, transparent);
-  --ff-soft: color-mix(in srgb, var(--ff-ink) 7%, transparent);
-  --ff-field: var(--bg, #121015);
-  --ff-radius: 14px;
+
   color: var(--ff-ink);
 }
 body dialog.ffsheet [hidden] { display: none !important; }
@@ -19,7 +15,7 @@ body dialog.ffsheet .foodtabs.fftabs {
   gap: 2px;
   margin: 0 0 14px;
   padding: 3px;
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--ff-field);
   border: 1px solid var(--line);
 }
@@ -34,10 +30,9 @@ body dialog.ffsheet .foodtabs.fftabs .btn {
   margin: 0;
   padding: 6px 2px !important;
   border: 0 !important;
-  border-radius: 13px;
+  border-radius: 12px;
   background: transparent !important;
   color: var(--ff-muted) !important;
-  box-shadow: none !important;
   font-size: 11px !important;
   font-weight: 650;
   line-height: 1.15;
@@ -114,14 +109,13 @@ body dialog.ffsheet .ffchip {
   max-width: 180px;
   padding: 6px 15px;
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 12px;
   background: transparent;
   color: var(--ff-ink);
   font-size: 13px;
   font-weight: 650;
   line-height: 1.2;
   white-space: nowrap;
-  transition: background .15s, border-color .15s, color .15s, transform .12s;
 }
 body dialog.ffsheet .ffchip > span { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
 body dialog.ffsheet .ffchip small { margin-top: 1px; font-size: 11px; font-weight: 500; color: var(--ff-muted); font-variant-numeric: tabular-nums; }
@@ -148,8 +142,6 @@ body dialog.ffsheet .searchitem.ffrow {
   background: transparent;
   color: var(--ff-ink);
   text-align: left;
-  box-shadow: none;
-  transition: background .15s;
 }
 body dialog.ffsheet .searchitem.ffrow:active { background: var(--ff-soft); }
 body dialog.ffsheet .ffrowtext { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -209,7 +201,6 @@ body dialog.ffsheet .ffonline[data-loading] .ffonlinestatus::before {
   border: 2px solid var(--line);
   border-top-color: var(--lime);
   border-radius: 50%;
-  animation: ff-spin .8s linear infinite;
 }
 body dialog.ffsheet .ffonline[data-loading] #food-online-results { opacity: .45; }
 body dialog.ffsheet .ffonlineerror { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; font-size: 13px; color: var(--ff-muted); }
@@ -269,7 +260,6 @@ body dialog.ffsheet .ffamount select {
   text-overflow: ellipsis;
   -webkit-appearance: none;
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
   background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
   background-size: 5px 5px;
   background-repeat: no-repeat;
@@ -295,7 +285,7 @@ body dialog.ffsheet .ffpreview {
   gap: 14px;
   margin: 14px 0;
   padding: 14px 16px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--theme-tint);
 }
 body dialog.ffsheet .ffkcal { display: flex; flex-direction: column; min-width: 76px; }
@@ -324,7 +314,7 @@ body dialog.ffsheet .ffmore > summary {
   list-style: none;
 }
 body dialog.ffsheet .ffmore > summary::-webkit-details-marker { display: none; }
-body dialog.ffsheet .ffmore > summary::after { content: '＋'; margin-left: auto; transition: transform .2s; }
+body dialog.ffsheet .ffmore > summary::after { content: '＋'; margin-left: auto; }
 body dialog.ffsheet .ffmore[open] > summary::after { transform: rotate(45deg); }
 body dialog.ffsheet .ffmore .textbtn { min-height: 44px; }
 body dialog.ffsheet .ffinline { display: grid; grid-template-columns: minmax(0, 1fr) 96px auto; gap: 6px; align-items: center; margin-bottom: 12px; }
@@ -390,17 +380,16 @@ body dialog.ffsheet .ffcamera {
   position: relative;
   overflow: hidden;
   margin: 0 0 12px;
-  border-radius: 20px;
-  background: #000;
+  border-radius: 12px;
+  background: var(--ds-surface);
   aspect-ratio: 4 / 3;
 }
 body dialog.ffsheet .ffcamera video { display: block; width: 100%; height: 100%; object-fit: cover; }
 body dialog.ffsheet .ffscanframe {
   position: absolute;
   inset: 26% 12%;
-  border: 2px solid color-mix(in srgb, #fff 85%, transparent);
-  border-radius: 14px;
-  box-shadow: 0 0 0 999px rgb(0 0 0 / .28);
+  border: 2px solid color-mix(in srgb, var(--ds-separator) 85%, transparent);
+  border-radius: 12px;
   pointer-events: none;
 }
 body dialog.ffsheet .ffcamstop {
@@ -410,13 +399,11 @@ body dialog.ffsheet .ffcamstop {
   min-height: 44px;
   padding: 0 16px;
   border: 0;
-  border-radius: 22px;
-  background: rgb(0 0 0 / .55);
-  color: #fff;
+  border-radius: 12px;
+  background: var(--ds-surface);
+  color: var(--ds-label);
   font-size: 13px;
   font-weight: 650;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
 }
 body dialog.ffsheet .fftorch {
   position: absolute;
@@ -425,17 +412,14 @@ body dialog.ffsheet .fftorch {
   min-height: 44px;
   padding: 0 16px;
   border: 0;
-  border-radius: 22px;
-  background: rgb(0 0 0 / .55);
-  color: #fff;
+  border-radius: 12px;
+  background: var(--ds-surface);
+  color: var(--ds-label);
   font-size: 13px;
   font-weight: 650;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition: background-color .16s ease, color .16s ease;
 }
 body dialog.ffsheet .fftorch::before { content: '⚡ '; }
-body dialog.ffsheet .fftorch[aria-pressed=true] { background: #ffd54a; color: #1a1500; }
+body dialog.ffsheet .fftorch[aria-pressed=true] { background: var(--ds-orange); color: var(--ds-on-accent); }
 body dialog.ffsheet .fftorch[hidden] { display: none; }
 body dialog.ffsheet #barcode-camera:not([hidden]) + #ff-camera-start { display: none; }
 body dialog.ffsheet .ffcambtn {
@@ -470,7 +454,7 @@ body dialog.ffsheet .ffbarcode .ffstatus { margin-top: 10px; }
 /* Foto */
 body dialog.ffsheet .ffphotoactions { display: grid; gap: 0; }
 body dialog.ffsheet .ffphotoactions .btn.secondary { background: transparent; border: 1px solid var(--line); color: var(--ff-ink); }
-body dialog.ffsheet .labelpreview { max-height: 180px; margin: 4px auto 12px; border-radius: 14px; }
+body dialog.ffsheet .labelpreview { max-height: 180px; margin: 4px auto 12px; border-radius: 12px; }
 body dialog.ffsheet .ffocrstatus { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 6px; }
 body dialog.ffsheet .ffocrstatus .textbtn { min-height: 44px; flex-shrink: 0; }
 body dialog.ffsheet .ffocrstatus:has(.ffstatus:empty) { display: none; }
@@ -500,23 +484,18 @@ body dialog.ffsheet .ffingredientamount input { min-height: 46px; padding: 8px 3
 body dialog.ffsheet .ffingredientamount > span { right: 10px; }
 body dialog.ffsheet .fficonbtn { background: transparent; color: var(--ff-muted); }
 body dialog.ffsheet .ffadd { min-height: 48px; margin: 10px 0 0; border-radius: var(--ff-radius); background: transparent; border: 1px dashed var(--line); color: var(--lime); }
-body dialog.ffsheet .ffsummary { display: grid; gap: 8px; margin: 0 0 12px; padding: 12px 14px; border-radius: 16px; background: var(--theme-tint); }
+body dialog.ffsheet .ffsummary { display: grid; gap: 8px; margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; background: var(--theme-tint); }
 body dialog.ffsheet .ffsumrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; }
 body dialog.ffsheet .ffsumrow span { font-size: 12px; color: var(--ff-muted); }
 body dialog.ffsheet .ffsumrow strong { font-size: 16px; font-weight: 800; color: var(--lime); font-variant-numeric: tabular-nums; }
 body dialog.ffsheet .ffsumrow small { grid-column: 1 / -1; font-size: 11px; color: var(--ff-muted); font-variant-numeric: tabular-nums; }
 body dialog.ffsheet .ffsecondary { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 18px; margin: 10px 0 0; }
 body dialog.ffsheet .ffsecondary .textbtn { min-height: 44px; }
-body dialog.ffsheet .ffdanger { color: #ff8f8f; }
+body dialog.ffsheet .ffdanger { color: var(--ds-red-text); }
 
-@keyframes ff-spin { to { transform: rotate(360deg); } }
 @media (max-width: 359px) {
   body dialog.ffsheet .foodtabs.fftabs .btn { font-size: 10px !important; }
   body dialog.ffsheet .ffamount { grid-template-columns: 44px minmax(0, 1fr) minmax(58px, 92px) 44px; }
   body dialog.ffsheet .ffstep { width: 44px; }
   body dialog.ffsheet .ffkcal strong { font-size: 27px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  body dialog.ffsheet * { transition: none !important; }
-  body dialog.ffsheet .ffonline[data-loading] .ffonlinestatus::before { animation-duration: 2s; }
 }

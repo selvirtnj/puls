@@ -1,7 +1,6 @@
 /* Nur noch das Original-Design, ruhigeres Öffnen/Schließen der Fenster (Plus-Menü), eigene Optik für die Essen-Seite. */
 
-// Original-Design: andere Designs sind vorerst aus der App genommen.
-if(state.appDesign&&state.appDesign!=='classic'){state.appDesign='classic';save();render()}
+// Legacy design selection stays inert; saved backup fields remain untouched.
 chooseAppDesign=function(){};
 
 // Fenster schließen mit derselben Gleitbewegung wie beim Wischen (X oben rechts statt hartem Schließen).
@@ -26,8 +25,6 @@ const polishOpenSheet=openModal;openModal=function(...args){let quick=document.b
 
 // Essen-Seite: eigene Überschrift, damit sie sich beim Wechsel von der Übersicht sofort unterscheidet.
 const polishRender=render;render=function(...args){
-  // Auch nach Backup-Import oder Cloud-Übernahme bleibt es beim Original-Design (wird beim nächsten Speichern übernommen).
-  if(state.appDesign&&state.appDesign!=='classic')state.appDesign='classic';
   let result=polishRender.apply(this,args);
   // „Nährstoffwerte & Ziele im Detail“ entfällt auf der Essen-Seite.
   if(page==='food')document.querySelectorAll('#content details.card').forEach(card=>{if(/Nährstoffwerte|Nutrient values/.test(card.querySelector('summary')?.textContent||''))card.remove()});

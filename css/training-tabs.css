@@ -8,7 +8,6 @@
   border-bottom: 1px solid var(--line) !important;
   border-radius: 0 !important;
   background: transparent !important;
-  box-shadow: none !important;
 }
 #content .designworkouts[data-train-tab=current] .routinepreview.quickstart > :not(.cardhead) { display: none !important; }
 #content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead {

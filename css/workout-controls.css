@@ -9,14 +9,14 @@ button .controlicon, a .controlicon, .controlicon {
   stroke-linejoin: round;
   pointer-events: none;
 }
-button.hasicon, .hasicon > .controlicon { transition: transform .16s ease, opacity .16s ease; }
+
 button.hasicon:active, button:active > .hasicon { transform: scale(.9); }
 
 /* Workout abschließen */
 #mb .finishform { display: grid; gap: 12px; }
 #mb .finishform > h3 { margin: 0; font-size: 22px; font-weight: 850; letter-spacing: -.03em; }
 #mb .finishform > p { margin: -6px 0 4px; color: var(--muted); font-variant-numeric: tabular-nums; }
-#mb .finishform .finishwarn { color: var(--danger, #ff8a8a); font-size: 13px; }
+#mb .finishform .finishwarn { color: var(--danger, var(--ds-red-text)); font-size: 13px; }
 #mb .finishform label { margin: 0; }
 #mb .finishform .btn { margin: 0; min-height: 48px; }
 
@@ -48,7 +48,7 @@ button.hasicon:active, button:active > .hasicon { transform: scale(.9); }
   height: 200px;
   margin: 4px 0;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--bg);
   overflow: hidden;
   -webkit-user-select: none;
@@ -63,14 +63,13 @@ button.hasicon:active, button:active > .hasicon { transform: scale(.9); }
   top: 80px;
   height: 40px;
   border-radius: 10px;
-  background: var(--theme-tint, rgb(255 255 255 / .07));
+  background: var(--theme-tint, var(--ds-fill));
   pointer-events: none;
 }
 #mb .timewheel::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(var(--bg), transparent 32%, transparent 68%, var(--bg));
   pointer-events: none;
 }
 #mb .wheelcol {
@@ -96,7 +95,6 @@ button.hasicon:active, button:active > .hasicon { transform: scale(.9); }
   font-variant-numeric: tabular-nums;
   color: var(--muted);
   cursor: pointer;
-  transition: color .15s ease, transform .15s ease;
 }
 #mb .wheelitem.selected { color: var(--app-ink, inherit); font-size: 28px; font-weight: 800; }
 #mb .wheelcolon { position: relative; z-index: 1; text-align: center; font-size: 26px; font-weight: 800; color: var(--app-ink, inherit); }
@@ -131,7 +129,3 @@ input[type=date] {
   font-variant-numeric: tabular-nums;
 }
 input[type=date]::-webkit-date-and-time-value { text-align: center; margin: 0 auto; }
-
-@media (prefers-reduced-motion: reduce) {
-  button.hasicon, .hasicon > .controlicon, #mb .wheelitem { transition: none; }
-}

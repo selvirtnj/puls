@@ -80,7 +80,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
-  transition: background-color .16s ease, color .16s ease, transform .16s ease;
 }
 #mb.profilemodal #planner-form .segmented button[aria-pressed=true] {
   background: var(--lime);
@@ -126,7 +125,6 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  box-shadow: none;
 }
 #mb.profilemodal #planner-form .previewbox > .label { display: none; }
 #mb.profilemodal #planner-form .previewbox h3 {
@@ -165,10 +163,6 @@
 #mb #profile-form.backuppane .btn { min-height: 44px; height: auto; margin: 0; padding: 10px 14px; border-radius: 12px; font-size: 14px; }
 #mb #profile-form.backuppane label { display: grid; gap: 6px; margin: 6px 0 0 !important; font-size: 12px; }
 #mb #profile-form.backuppane label input[type=file] { min-height: 44px; padding: 6px; font-size: 13px; }
-
-@media (prefers-reduced-motion: reduce) {
-  #mb.profilemodal #planner-form .segmented button { transition: none; }
-}
 
 /* Kalorienberechnung: kurze Erklärung unter der Auswahl (Version 64). */
 #mb.profilemodal #planner-form #kcal-mode-info { margin: -4px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }

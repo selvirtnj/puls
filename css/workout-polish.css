@@ -1,23 +1,23 @@
 /* One aligned grid, smaller cards and separate breathing room between exercises. */
-body[data-app-design] #session-root .sessioncontent{padding:14px 12px 24px;max-width:680px}
-body[data-app-design] #session-root .sessioncontent>.compactexercise{padding:10px 12px!important;margin:0 0 16px!important;border-radius:14px;overflow:hidden}
+body #session-root .sessioncontent{padding:14px 12px 24px;max-width:680px}
+body #session-root .sessioncontent>.compactexercise{padding:10px 12px!important;margin:0 0 16px!important;border-radius:12px;overflow:hidden}
 .exercisehead{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0!important;min-height:38px}
 .exercisename{display:flex;align-items:center;gap:8px;flex:1;min-width:0;text-align:left;border:0;background:none;color:inherit;padding:0;min-height:44px;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer}
 .exercisename strong{font-size:14px;line-height:1.3;overflow-wrap:anywhere;font-weight:650;color:inherit}
 .exercisenumber{display:grid;place-items:center;flex:0 0 25px;height:25px;border-radius:8px;background:var(--theme-tint);color:var(--lime);font-size:11px;font-variant-numeric:tabular-nums}
 .exerciseoptions{display:grid;place-items:center;border:0;background:none;color:var(--muted);font-size:25px;line-height:1;width:36px;min-height:44px;flex:0 0 36px;padding:0}
 .exercisehistory{font-size:10px!important;line-height:1.4;margin:0 0 6px!important;color:var(--muted)}
-body[data-app-design] .compactexercise .liveset{display:grid;grid-template-columns:20px 62px minmax(50px,1fr) minmax(48px,1fr) 36px;align-items:center;gap:6px;padding:0!important;margin:0 0 4px!important;min-height:44px;border:0!important;border-radius:8px;font-variant-numeric:tabular-nums}
-body[data-app-design] .compactexercise .setlabels{min-height:22px;margin-bottom:2px!important;text-align:center;font-size:9px}
-body[data-app-design] .compactexercise .setlabels>span:first-child{text-align:center}
-body[data-app-design] .compactexercise .liveset input:not([type=checkbox]){margin:0!important;min-height:40px!important;height:40px!important;padding:4px!important;border-radius:8px;font-size:16px;line-height:1.2;width:100%;box-sizing:border-box}
-body[data-app-design] .compactexercise .liveset input[type=checkbox]{width:28px;height:28px;min-height:28px;margin:0!important;justify-self:center;box-shadow:0 0 0 7px transparent;cursor:pointer}
+body .compactexercise .liveset{display:grid;grid-template-columns:20px 62px minmax(50px,1fr) minmax(48px,1fr) 36px;align-items:center;gap:6px;padding:0!important;margin:0 0 4px!important;min-height:44px;border:0!important;border-radius:8px;font-variant-numeric:tabular-nums}
+body .compactexercise .setlabels{min-height:22px;margin-bottom:2px!important;text-align:center;font-size:9px}
+body .compactexercise .setlabels>span:first-child{text-align:center}
+body .compactexercise .liveset input:not([type=checkbox]){margin:0!important;min-height:40px!important;height:40px!important;padding:4px!important;border-radius:8px;font-size:16px;line-height:1.2;width:100%;box-sizing:border-box}
+body .compactexercise .liveset input[type=checkbox]{width:28px;height:28px;min-height:28px;margin:0!important;justify-self:center;cursor:pointer}
 .compactexercise .setnumber{text-align:center;font-size:12px;color:var(--muted)}
 .compactexercise button.previousset{background:none;border:0;color:var(--muted);font-size:11px;padding:3px 0;min-height:44px;width:100%;border-radius:6px;text-align:center;white-space:nowrap;letter-spacing:0}
 .compactexercise .previousset:focus-visible,.exercisename:focus-visible,.exerciseoptions:focus-visible{outline:2px solid var(--lime);outline-offset:1px}
-body[data-app-design] #session-root .compactexercise .addsetwide{width:100%;margin:7px 0 0!important;min-height:40px!important;height:40px;padding:6px;font-size:12px}
-body[data-app-design] #session-root .compactexercise .removeset{display:block;min-height:32px;font-size:10px;margin:0 auto;padding:4px 8px;color:var(--muted)}
-body[data-app-design] #session-root .sessioncontent>.restpanel{margin-bottom:16px;padding:8px 10px;gap:8px;flex-wrap:nowrap;border-color:var(--line);background:var(--theme-tint)}
+body #session-root .compactexercise .addsetwide{width:100%;margin:7px 0 0!important;min-height:40px!important;height:40px;padding:6px;font-size:12px}
+body #session-root .compactexercise .removeset{display:block;min-height:32px;font-size:10px;margin:0 auto;padding:4px 8px;color:var(--muted)}
+body #session-root .sessioncontent>.restpanel{margin-bottom:16px;padding:8px 10px;gap:8px;flex-wrap:nowrap;border-color:var(--line);background:var(--theme-tint)}
 .sessioncontent>.restpanel>div{display:flex;align-items:center}.sessioncontent>.restpanel strong{font-size:19px}.sessioncontent>.restpanel .textbtn{min-height:40px;white-space:nowrap}
 .compactroutine{padding:10px 12px!important;margin:0 0 12px!important;border:1px solid var(--line);border-radius:12px}
 .routinecounts{display:flex;align-items:center;gap:12px;margin-top:4px;font-size:12px}.routinecounts>.btn{min-height:40px;padding:5px 12px;margin:0!important}
@@ -29,4 +29,4 @@ body dialog.planningsheet>#mb{display:flex;flex-direction:column;min-height:0;fl
 body dialog.planningsheet .plannertabs{flex:0 0 auto;margin:0 0 12px}
 body dialog.planningsheet #profile-form{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding:0 2px 16px}
 @media(max-width:760px){body dialog.planningsheet[open]{height:88dvh!important;min-height:88dvh!important;max-height:88dvh!important;bottom:0!important;top:auto!important;margin:0!important}}
-@media(max-width:359px){body[data-app-design] .compactexercise .liveset{grid-template-columns:16px 52px minmax(40px,1fr) minmax(40px,1fr) 30px;gap:4px}.exercisename strong{font-size:13px}body[data-app-design] #session-root .sessioncontent>.compactexercise{padding:8px!important}}
+@media(max-width:359px){body .compactexercise .liveset{grid-template-columns:16px 52px minmax(40px,1fr) minmax(40px,1fr) 30px;gap:4px}.exercisename strong{font-size:13px}body #session-root .sessioncontent>.compactexercise{padding:8px!important}}

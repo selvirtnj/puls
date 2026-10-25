@@ -2,36 +2,32 @@
    Satzzeilen ohne Trennlinien mit ruhigem Abstand, kleinere sichtbare Abhak-Box bei 44 px Tippfläche.
    --session-head-h setzt session-focus.js aus der echten Kopfzeilenhöhe (inkl. Safe Area/Dynamic Island). */
 #session-root { --session-head-h: calc(69px + env(safe-area-inset-top, 0px)); }
-body[data-app-design] #session-root .sessioncontent > .restpanel {
+body #session-root .sessioncontent > .restpanel {
   position: sticky;
   top: calc(var(--session-head-h) + 8px);
   z-index: 3;
   margin-bottom: 14px;
-  box-shadow: 0 10px 22px -12px #000a;
 }
 /* Original-Design: der getönte Hintergrund war halb durchsichtig; beim Kleben schimmerten Sätze durch. */
-body[data-app-design=classic] #session-root .sessioncontent > .restpanel {
-  background: linear-gradient(var(--theme-tint), var(--theme-tint)), var(--bg);
-}
 
-body[data-app-design] #session-root :is(.compactexercise,.exercise) .liveset {
+body #session-root :is(.compactexercise,.exercise) .liveset {
   grid-template-columns: 20px 62px minmax(48px,1fr) minmax(48px,1fr) 44px;
   border-bottom: 0 !important;
 }
 @media (max-width: 359px) {
-  body[data-app-design] #session-root :is(.compactexercise,.exercise) .liveset {
+  body #session-root :is(.compactexercise,.exercise) .liveset {
     grid-template-columns: 16px 52px minmax(44px,1fr) minmax(44px,1fr) 44px;
     gap: 4px;
   }
 }
-body[data-app-design] #session-root :is(.compactexercise,.exercise) .liveset:not(.setlabels) {
+body #session-root :is(.compactexercise,.exercise) .liveset:not(.setlabels) {
   margin: 0 0 8px !important;
   padding-block: 2px !important;
   border-radius: 10px;
 }
-body[data-app-design] #session-root :is(.compactexercise,.exercise) .setlabels { margin-bottom: 4px !important; }
+body #session-root :is(.compactexercise,.exercise) .setlabels { margin-bottom: 4px !important; }
 
-body[data-app-design] #session-root .liveset input[type=checkbox] {
+body #session-root .liveset input[type=checkbox] {
   -webkit-appearance: none;
   appearance: none;
   display: grid;
@@ -46,33 +42,26 @@ body[data-app-design] #session-root .liveset input[type=checkbox] {
   border: 0;
   border-radius: 10px;
   background: transparent;
-  box-shadow: none;
   cursor: pointer;
 }
-body[data-app-design] #session-root .liveset input[type=checkbox]::before {
+body #session-root .liveset input[type=checkbox]::before {
   content: "";
   box-sizing: border-box;
   width: 24px;
   height: 24px;
-  border: 2px solid color-mix(in srgb, var(--app-ink, #fff) 38%, transparent);
+  border: 2px solid color-mix(in srgb, var(--app-ink, var(--ds-separator)) 38%, transparent);
   border-radius: 7px;
   background: transparent center / 14px no-repeat;
-  transition: background-color .15s ease, border-color .15s ease, transform .15s ease;
 }
-body[data-app-design] #session-root .liveset input[type=checkbox]:checked::before {
+body #session-root .liveset input[type=checkbox]:checked::before {
   border-color: var(--lime);
   background-color: var(--lime);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.4 5.6 10.4 11.5 3.8' fill='none' stroke='%23111' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.4 5.6 10.4 11.5 3.8' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   transform: scale(1.04);
 }
 /* Dunkle Akzentfarben: helles Häkchen. */
-body:is([data-app-design=apple],[data-app-design=mono],[data-app-design=terra],[data-app-design=blueprint]) #session-root .liveset input[type=checkbox]:checked::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.4 5.6 10.4 11.5 3.8' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-}
-body[data-app-design] #session-root .liveset input[type=checkbox]:focus-visible {
+
+body #session-root .liveset input[type=checkbox]:focus-visible {
   outline: 2px solid var(--lime);
   outline-offset: -2px;
-}
-@media (prefers-reduced-motion: reduce) {
-  body[data-app-design] #session-root .liveset input[type=checkbox]::before { transition: none; }
 }
