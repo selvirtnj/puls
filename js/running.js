@@ -11,12 +11,14 @@ function runPace(r){return r.durationSeconds/r.distanceKm}
 function runPaceText(seconds){if(!(Number.isFinite(seconds)&&seconds>0))return '–';let total=Math.round(seconds);return Math.floor(total/60)+':'+String(total%60).padStart(2,'0')+' /km'}
 function runGoalKm(){let goal=state.runSettings?.weeklyGoalKm;return typeof goal==='number'&&goal>0?goal:null}
 function pastRuns(){let now=today();return runList().map((r,i)=>({r,i})).filter(x=>x.r.date<=now).sort((a,b)=>a.r.date.localeCompare(b.r.date)||(a.r.createdAt||a.i)-(b.r.createdAt||b.i)).map(x=>x.r)}
-function runKmBetween(start,end){return runList().filter(r=>r.date>=start&&r.date<=end).reduce((a,r)=>a+r.distanceKm,0)}
+// Laufen im engeren Sinn (Laufen, Trailrun): Wochenziel, Bestzeiten, XP. Andere Aktivitäten zählen für die Serie.
+function runIsRun(r){let type=r?.type||'run';return typeof runActivityType==='function'?runActivityType(type).category==='run':type==='run'||type==='trail'}
+function runKmBetween(start,end){return runList().filter(r=>runIsRun(r)&&r.date>=start&&r.date<=end).reduce((a,r)=>a+r.distanceKm,0)}
 function runWeekRange(offset=0){let d=new Date(weekStart(today())+'T12:00:00');d.setDate(d.getDate()+offset*7);let start=localISO(d);d.setDate(d.getDate()+6);return {start,end:localISO(d)}}
 function runElapsed(run=state.activeRun){if(!run)return 0;return Math.max(0,Math.floor(((run.pausedAt??Date.now())-run.startedAt)/1000-(run.pausedSeconds||0)))}
 
 // Bestleistung: kein bisheriger Lauf war mindestens genauso weit und mindestens genauso schnell.
-function runAwards(){let previous=[],awards={};for(let r of pastRuns()){let pace=runPace(r),best=r.distanceKm>=1&&previous.length&&!previous.some(p=>p.distanceKm>=r.distanceKm&&runPace(p)<=pace);awards[r.id]={xp:best?25:0,wins:best?[runText('Lauf','Run')+' · '+runKm(r.distanceKm)+' km']:[],run:true};previous.push(r)}return awards}
+function runAwards(){let previous=[],awards={};for(let r of pastRuns().filter(x=>runIsRun(x)&&x.distanceKm>0)){let pace=runPace(r),best=r.distanceKm>=1&&previous.length&&!previous.some(p=>p.distanceKm>=r.distanceKm&&runPace(p)<=pace);awards[r.id]={xp:best?25:0,wins:best?[runText('Lauf','Run')+' · '+runKm(r.distanceKm)+' km']:[],run:true};previous.push(r)}return awards}
 const runningAwardsBase=workoutAwards;workoutAwards=function(...args){return Object.assign(runAwards(),runningAwardsBase.apply(this,args))};
 
 // Trainingsserie: Lauftage zählen wie Trainingstage (drei volle Tage Pause unterbrechen weiterhin).
@@ -35,12 +37,12 @@ const runningWeekStreakBase=trainingStreak;trainingStreak=function(...args){
 // Persistenz: neue Felder optional und streng geprüft.
 const runningValid=validData;validData=function(s){
   if(!runningValid(s))return false;
-  const finite=(x,min,max)=>typeof x==='number'&&Number.isFinite(x)&&x>=min&&x<=max,day=x=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x);
-  let runsOk=s.runs===undefined||(Array.isArray(s.runs)&&s.runs.every(r=>r&&typeof r.id==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(r.id)&&day(r.date)&&finite(r.distanceKm,.01,1000)&&finite(r.durationSeconds,1,172800)&&(r.note===undefined||(typeof r.note==='string'&&r.note.length<=200))&&(r.createdAt===undefined||finite(r.createdAt,0,1e15))&&(r.source===undefined||r.source==='gps')&&(r.route===undefined||(typeof r.route==='string'&&r.route.length<=8000&&/^[-0-9.,;|]*$/.test(r.route)))&&(r.splits===undefined||(Array.isArray(r.splits)&&r.splits.length<=1000&&r.splits.every(x=>Number.isInteger(x)&&finite(x,1,86400))))&&(r.splitRest===undefined||(Array.isArray(r.splitRest)&&r.splitRest.length===2&&finite(r.splitRest[0],1,999)&&finite(r.splitRest[1],1,86400)))));
-  let a=s.activeRun,activeOk=a===undefined||a===null||(typeof a==='object'&&finite(a.startedAt,0,1e15)&&(a.pausedAt===undefined||a.pausedAt===null||finite(a.pausedAt,0,1e15))&&(a.pausedSeconds===undefined||finite(a.pausedSeconds,0,1e10))&&(a.gps===undefined||typeof a.gps==='boolean')&&(a.segment===undefined||(Number.isInteger(a.segment)&&finite(a.segment,0,10000)))&&(a.segmentStartedAt===undefined||finite(a.segmentStartedAt,0,1e15))&&(a.routeId===undefined||(typeof a.routeId==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(a.routeId))));
+  const finite=(x,min,max)=>typeof x==='number'&&Number.isFinite(x)&&x>=min&&x<=max,day=x=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x),opt=(x,ok)=>x===undefined||ok(x),typeId=x=>typeof x==='string'&&/^[a-z]{2,20}$/.test(x);
+  let runsOk=s.runs===undefined||(Array.isArray(s.runs)&&s.runs.every(r=>r&&typeof r.id==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(r.id)&&day(r.date)&&finite(r.distanceKm,0,1000)&&finite(r.durationSeconds,1,172800)&&opt(r.type,typeId)&&opt(r.startedAt,x=>finite(x,0,1e15))&&opt(r.pauseSeconds,x=>finite(x,0,172800))&&opt(r.kcal,x=>Number.isInteger(x)&&finite(x,0,20000))&&opt(r.feeling,x=>Number.isInteger(x)&&finite(x,1,5))&&opt(r.terrain,typeId)&&opt(r.elevationGain,x=>finite(x,0,20000))&&opt(r.elevationMax,x=>finite(x,-500,9000))&&opt(r.maxSpeed,x=>finite(x,0,150))&&(r.note===undefined||(typeof r.note==='string'&&r.note.length<=200))&&(r.createdAt===undefined||finite(r.createdAt,0,1e15))&&(r.source===undefined||r.source==='gps')&&(r.route===undefined||(typeof r.route==='string'&&r.route.length<=8000&&/^[-0-9.,;|]*$/.test(r.route)))&&(r.splits===undefined||(Array.isArray(r.splits)&&r.splits.length<=1000&&r.splits.every(x=>Number.isInteger(x)&&finite(x,1,86400))))&&(r.splitRest===undefined||(Array.isArray(r.splitRest)&&r.splitRest.length===2&&finite(r.splitRest[0],1,999)&&finite(r.splitRest[1],1,86400)))));
+  let a=s.activeRun,activeOk=a===undefined||a===null||(typeof a==='object'&&finite(a.startedAt,0,1e15)&&(a.pausedAt===undefined||a.pausedAt===null||finite(a.pausedAt,0,1e15))&&(a.pausedSeconds===undefined||finite(a.pausedSeconds,0,1e10))&&(a.gps===undefined||typeof a.gps==='boolean')&&(a.segment===undefined||(Number.isInteger(a.segment)&&finite(a.segment,0,10000)))&&(a.segmentStartedAt===undefined||finite(a.segmentStartedAt,0,1e15))&&(a.routeId===undefined||(typeof a.routeId==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(a.routeId)))&&opt(a.type,typeId));
   const coords=(x,max)=>typeof x==='string'&&x.length<=max&&/^[-0-9.,;]*$/.test(x);
   let routesOk=s.runRoutes===undefined||(Array.isArray(s.runRoutes)&&s.runRoutes.length<=200&&s.runRoutes.every(r=>r&&typeof r.id==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(r.id)&&typeof r.name==='string'&&r.name.length<=60&&coords(r.line,20000)&&(r.waypoints===undefined||coords(r.waypoints,2000))&&finite(r.distanceKm,0,1000)&&(r.ascentM===undefined||finite(r.ascentM,0,100000))&&(r.createdAt===undefined||finite(r.createdAt,0,1e15))));
-  let g=s.runSettings,settingsOk=g===undefined||(g&&typeof g==='object'&&(g.weeklyGoalKm===undefined||g.weeklyGoalKm===null||finite(g.weeklyGoalKm,.1,1000)));
+  let g=s.runSettings,settingsOk=g===undefined||(g&&typeof g==='object'&&(g.weeklyGoalKm===undefined||g.weeklyGoalKm===null||finite(g.weeklyGoalKm,.1,1000))&&opt(g.lastType,typeId));
   return runsOk&&activeOk&&settingsOk&&routesOk;
 };
 
@@ -64,7 +66,7 @@ function syncRunActivity(force=false,finished=false,finalValues=null){
   if(!owned){if(runActivitySent!=='off'){bridge.postMessage({type:'runActivity',active:false,finished,...(finished&&finalValues?{finalKm:finalValues.distanceKm,finalSeconds:finalValues.durationSeconds}:{})});runActivitySent='off'}return}
   let key=[run.startedAt,run.pausedAt,run.pausedSeconds,run.gps].join(':');if(!force&&key===runActivitySent&&Date.now()-runActivityAt<10000)return;
   let route=typeof runRouteById==='function'?runRouteById(run.routeId):null;
-  bridge.postMessage({type:'runActivity',active:true,runKey:String(run.startedAt),startedAt:run.startedAt,pausedSeconds:run.pausedSeconds||0,pausedAt:run.pausedAt||null,gps:!!run.gps,distanceKm:Math.round(runGpsKm()*1000)/1000,title:route?.name||runText('Lauf','Run'),...(route?{routeKm:route.distanceKm}:{})});
+  bridge.postMessage({type:'runActivity',active:true,runKey:String(run.startedAt),startedAt:run.startedAt,pausedSeconds:run.pausedSeconds||0,pausedAt:run.pausedAt||null,gps:!!run.gps,distanceKm:Math.round(runGpsKm()*1000)/1000,title:route?.name||(typeof runTypeInfo==='function'?runTypeName(runTypeInfo(run.type)):runText('Lauf','Run')),...(route?{routeKm:route.distanceKm}:{})});
   runActivitySent=key;runActivityAt=Date.now();
 }
 function claimRunGps(run){runOwnedKey=String(run.startedAt);runDeviceKey(runOwnedKey)}
@@ -105,16 +107,18 @@ function runRouteSvg(route){
   return `<svg class="runroute" viewBox="0 0 200 200" role="img" aria-label="${runText('Strecke','Route')}">${segs.map(s=>`<polyline points="${s.map(pt).join(' ')}"/>`).join('')}<circle cx="${pt(segs[0][0]).split(',')[0]}" cy="${pt(segs[0][0]).split(',')[1]}" r="4"/></svg>`;
 }
 // Zwischengespeicherte Positionen von vor dem Lauf- bzw. Abschnittsbeginn werden verworfen.
-function addRunPoint(t,lat,lon,acc,seg){
+// Höhe (run-metrics.js): alt in m, altAcc in m; altAcc -1 = unbekannt (gleiche Konvention wie RunTracker.swift).
+function addRunPoint(t,lat,lon,acc,seg,alt,altAcc){
   let run=state.activeRun;if(!run?.gps||![t,lat,lon,acc].every(Number.isFinite))return;
   let segment=seg??run.segment??0,start=segment===(run.segment||0)?(run.segmentStartedAt||run.startedAt):run.startedAt;if(t<start-1000)return;
   let track=runTrackFor(run);if(track.points.length>=30000)return;
-  track.points.push([Math.round(t),Math.round(lat*1e6)/1e6,Math.round(lon*1e6)/1e6,Math.round(acc),segment]);runGpsAccuracy=acc;runGpsState='on';
+  let hasAlt=Number.isFinite(alt)&&Number.isFinite(altAcc)&&altAcc>=0;
+  track.points.push([Math.round(t),Math.round(lat*1e6)/1e6,Math.round(lon*1e6)/1e6,Math.round(acc),segment,hasAlt?Math.round(alt*10)/10:0,hasAlt?Math.round(altAcc):-1]);runGpsAccuracy=acc;runGpsState='on';
 }
 window.pulsRunGpsReceive=function(data){
   let run=state.activeRun;if(!run?.gps||!data||String(data.runKey)!==String(run.startedAt))return;
   let track=runTrackFor(run);
-  if(data.from===track.native&&Array.isArray(data.points)){for(let p of data.points)addRunPoint(p[0],p[1],p[2],p[3],p[4]);track.native+=data.points.length;storeRunTrack()}
+  if(data.from===track.native&&Array.isArray(data.points)){for(let p of data.points)addRunPoint(p[0],p[1],p[2],p[3],p[4],p[5],p[6]);track.native+=data.points.length;storeRunTrack()}
   if(Number.isInteger(data.total))runNativeTotal=data.total;
   // Größerer Rückstand (z. B. nach langer Sperre): sofort weiter abholen.
   if(data.points?.length&&track.native<runNativeTotal)runNativeBridge()?.postMessage({type:'runGpsSync',runKey:String(run.startedAt),since:track.native});
@@ -132,7 +136,7 @@ function syncRunGps(){
     return;
   }
   if(live&&document.visibilityState==='visible'){
-    if(runGpsWatch===null&&navigator.geolocation){if(!runGpsState)runGpsState='pending';runGpsWatch=navigator.geolocation.watchPosition(pos=>{addRunPoint(pos.timestamp||Date.now(),pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);storeRunTrack();updateRunLive()},error=>{runGpsState=error.code===1?'denied':'weak';updateRunLive()},{enableHighAccuracy:true,maximumAge:0,timeout:30000})}
+    if(runGpsWatch===null&&navigator.geolocation){if(!runGpsState)runGpsState='pending';runGpsWatch=navigator.geolocation.watchPosition(pos=>{addRunPoint(pos.timestamp||Date.now(),pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy,undefined,pos.coords.altitude??NaN,pos.coords.altitudeAccuracy??NaN);storeRunTrack();updateRunLive()},error=>{runGpsState=error.code===1?'denied':'weak';updateRunLive()},{enableHighAccuracy:true,maximumAge:0,timeout:30000})}
     else if(!navigator.geolocation)runGpsState='unsupported';
     runKeepAwake(true);
   }else{if(runGpsWatch!==null){navigator.geolocation.clearWatch(runGpsWatch);runGpsWatch=null}runKeepAwake(false)}
@@ -161,82 +165,71 @@ function updateRunLive(){
   document.querySelectorAll('[data-runpace]').forEach(x=>{let value=km>=.05?runPaceText(elapsed/km):'–';if(x.textContent!==value)x.textContent=value});
   document.querySelectorAll('[data-rungps]').forEach(x=>{let value=runGpsLabel();if(x.textContent!==value)x.textContent=value});
   if(typeof runLiveMapUpdate==='function')runLiveMapUpdate();
+  if(typeof runViewTick==='function')runViewTick();
 }
 
-// Timer
-function startRunTimer(gps=false,routeId=null){if(!state.activeRun){clearRunTrack();runGpsState='';runGpsAccuracy=null;state.activeRun={startedAt:Date.now(),pausedAt:null,pausedSeconds:0,gps:!!gps,segment:0};if(routeId&&/^[A-Za-z0-9_-]{1,100}$/.test(routeId))state.activeRun.routeId=routeId;claimRunGps(state.activeRun);save()}syncRunGps();syncRunActivity(true);runTimerSheet();render()}
-function toggleRunPause(){let run=state.activeRun;if(!run)return;if(run.pausedAt){run.pausedSeconds=(run.pausedSeconds||0)+Math.max(0,(Date.now()-run.pausedAt)/1000);run.pausedAt=null;run.segment=(run.segment||0)+1;run.segmentStartedAt=Date.now()}else run.pausedAt=Date.now();save();syncRunGps();syncRunActivity(true);runTimerSheet();render()}
-function runTimerSheet(){
-  let run=state.activeRun;if(!run){runChooser();return}let paused=!!run.pausedAt;
-  let gps=run.gps?`${typeof runLiveMapHtml==='function'?runLiveMapHtml():''}<div class="runlivestats"><div><strong data-rundist>${runKm(Math.round(runGpsKm()*100)/100)} km</strong><small>${runText('Distanz','Distance')}</small></div><div><strong data-runpace>–</strong><small>${runText('Ø Pace','Avg pace')}</small></div></div><p class="rungps" data-rungps>${esc(runGpsLabel())}</p>`:'';
-  let note=run.gps?(runNativeGps()?runText('GPS läuft auch weiter, wenn du das iPhone sperrst oder die App wechselst.','GPS keeps tracking when you lock the iPhone or switch apps.'):runText('Im Browser misst GPS nur, solange PULS offen ist; der Bildschirm bleibt dafür an. Im Hintergrund fehlende Stücke werden als gerade Linie gezählt. Mit der iOS-App läuft GPS auch gesperrt.','In the browser GPS only measures while PULS is open; the screen stays on. Gaps in the background count as a straight line. The iOS app keeps tracking when locked.')):runText('Die Zeit läuft über die Uhr weiter, auch wenn die App im Hintergrund ist. Ohne GPS trägst du die Distanz beim Beenden ein.','Time keeps counting by the clock, even in the background. Without GPS you enter the distance when you finish.');
-  openModal(runText('Lauf','Run'),`<div class="runtimer ${paused?'paused':''}"><strong data-runclock>${formatClock(runElapsed())}</strong><small>${paused?runText('Pausiert','Paused'):runText('Läuft','Running')}</small></div>${gps}<div class="runactions"><button type="button" class="btn secondary" onclick="toggleRunPause()">${paused?runText('Weiter','Resume'):runText('Pause','Pause')}</button><button type="button" class="btn" onclick="finishRunTimer()">${runText('Beenden','Finish')}</button></div><button type="button" class="textbtn rundiscard" onclick="discardRunTimer()">${runText('Lauf verwerfen','Discard run')}</button><p class="note">${note}</p>`);
-  updateRunLive();if(typeof runLiveMapMount==='function')runLiveMapMount();
+// Aufzeichnung: Start, Pause, Abschluss. Die Oberfläche (Vollbild mit Karte, Countdown, Zusammenfassung) liegt in run-session.js.
+const runViewRefresh=()=>{if(typeof renderRunView==='function')renderRunView()};
+function startRunTimer(gps=true,routeId=null,type='run'){
+  if(!state.activeRun){
+    clearRunTrack();runGpsState='';runGpsAccuracy=null;
+    state.activeRun={startedAt:Date.now(),pausedAt:null,pausedSeconds:0,gps:!!gps,segment:0,type:/^[a-z]{2,20}$/.test(type)?type:'run'};
+    if(routeId&&/^[A-Za-z0-9_-]{1,100}$/.test(routeId))state.activeRun.routeId=routeId;
+    claimRunGps(state.activeRun);save();
+  }
+  syncRunGps();syncRunActivity(true);runViewRefresh();render();
 }
+function toggleRunPause(){let run=state.activeRun;if(!run)return;if(run.pausedAt){run.pausedSeconds=(run.pausedSeconds||0)+Math.max(0,(Date.now()-run.pausedAt)/1000);run.pausedAt=null;run.segment=(run.segment||0)+1;run.segmentStartedAt=Date.now()}else run.pausedAt=Date.now();save();syncRunGps();syncRunActivity(true);runViewRefresh();render()}
+// Beenden: pausieren, alle GPS-Punkte abholen, dann die Zusammenfassung öffnen (Speichern erst dort).
 async function finishRunTimer(){
-  let run=state.activeRun;if(!run)return;if(!run.pausedAt){run.pausedAt=Date.now();save();syncRunGps()}
+  let run=state.activeRun;if(!run)return;
+  // GPS-Rohpunkte gibt es nur auf dem aufzeichnenden Gerät; hier beenden würde die Strecke verlieren.
+  if(run.gps&&!runOwnedHere(run)){toast(runText('Beende die Aktivität auf dem Gerät, das sie aufzeichnet.','Finish the activity on the recording device.'));return}
+  if(!run.pausedAt){run.pausedAt=Date.now();save();syncRunGps()}
   syncRunActivity(true);
   if(run.gps&&runOwnsGps(run)){
-    let button=document.querySelector('#mb [onclick="finishRunTimer()"]');if(button){button.disabled=true;button.textContent=runText('GPS wird abgeschlossen …','Finishing GPS …')}
-    if(!await drainRunGps(run)){if(state.activeRun===run){runTimerSheet();toast(runText('GPS-Daten kommen noch – tippe gleich nochmal auf Beenden.','GPS data still arriving – tap Finish again in a moment.'))}return}
+    document.querySelectorAll('[onclick="finishRunTimer()"]').forEach(b=>{b.disabled=true;b.textContent=runText('GPS wird abgeschlossen …','Finishing GPS …')});
+    if(!await drainRunGps(run)){if(state.activeRun===run){runViewRefresh();toast(runText('GPS-Daten kommen noch – tippe gleich nochmal auf Beenden.','GPS data still arriving – tap Finish again in a moment.'))}return}
   }
   if(state.activeRun!==run)return;
   let points=run.gps?runTrackFor(run).points:[],km=run.gps?Math.round(runTrackKm(points)*100)/100:0;
   runPendingRoute=run.gps&&km>=.01?runRouteString(points):null;runPendingSplits=run.gps&&km>=1?runSplits(points):null;
-  runForm(null,{date:localISO(new Date(run.startedAt)),durationSeconds:Math.max(1,runElapsed(run)),fromTimer:true,distanceKm:km>=.01?km:null});
+  if(typeof runOpenSummary==='function')runOpenSummary(run,points,km);
 }
-function discardRunTimer(){if(!state.activeRun)return;if(!confirm(runText('Laufenden Lauf verwerfen? Zeit und Strecke werden nicht gespeichert.','Discard this run? Time and route will not be saved.')))return;let owned=runOwnsGps();state.activeRun=null;if(owned)runNativeStop(true);clearRunTrack();save();syncRunGps();syncRunActivity(true);modal.close();render();toast(runText('Lauf verworfen','Run discarded'))}
+// Gespeicherte Aktivität aus der Zusammenfassung übernehmen; räumt Aufzeichnung, natives GPS und Live-Aktivität auf.
+function commitRunActivity(fields){
+  let run=state.activeRun;if(!run)return null;
+  let before=Object.values(runAwards()).reduce((a,x)=>a+x.xp,0),owned=runOwnsGps(run);
+  let r={id:uid(),createdAt:Date.now(),startedAt:run.startedAt,date:localISO(new Date(run.startedAt)),type:run.type||'run',...fields};
+  if(run.gps&&owned){r.source='gps';if(runPendingRoute)r.route=runPendingRoute;if(runPendingSplits?.splits.length){r.splits=runPendingSplits.splits;if(runPendingSplits.restMeters)r.splitRest=[runPendingSplits.restMeters,runPendingSplits.restSeconds]}}
+  for(let key of Object.keys(r))if(r[key]===undefined||r[key]===null||r[key]==='')delete r[key];
+  runList().push(r);
+  state.activeRun=null;if(owned)runNativeStop(true);clearRunTrack();syncRunGps();syncRunActivity(true,true,{distanceKm:r.distanceKm,durationSeconds:r.durationSeconds});
+  save();render();
+  let gained=Object.values(runAwards()).reduce((a,x)=>a+x.xp,0)-before;
+  toast(gained>0?runText('Gespeichert · Bestleistung ＋25 XP','Saved · personal best ＋25 XP'):runText('Aktivität gespeichert','Activity saved'));
+  return r;
+}
+function discardRunTimer(){if(!state.activeRun)return false;if(!confirm(runText('Aktivität verwerfen? Zeit und Strecke werden nicht gespeichert.','Discard this activity? Time and route will not be saved.')))return false;let owned=runOwnsGps();state.activeRun=null;if(owned)runNativeStop(true);clearRunTrack();save();syncRunGps();syncRunActivity(true);modal.close();render();toast(runText('Aktivität verworfen','Activity discarded'));return true}
 setInterval(()=>{if(state.activeRun?.gps||runNativeStarted||runGpsWatch!==null)syncRunGps();updateRunLive();syncRunActivity()},1000);
 document.addEventListener('visibilitychange',()=>{syncRunGps();updateRunLive();syncRunActivity(true)});
-
-// Eintragen / Bearbeiten
-function runChooser(){if(state.activeRun){runTimerSheet();return}openModal(runText('Laufen','Running'),`<div class="runactions stacked"><button type="button" class="btn" onclick="startRunTimer(true)">▶ ${runText('Lauf mit GPS','Run with GPS')}<small>${runNativeGps()?runText('Distanz und Pace live, auch gesperrt','Live distance and pace, even when locked'):runText('Distanz live, App bleibt offen','Live distance, keep the app open')}</small></button><button type="button" class="btn secondary" onclick="startRunTimer(false)">◷ ${runText('Nur Timer','Timer only')}<small>${runText('Distanz am Ende eintragen','Enter the distance at the end')}</small></button><button type="button" class="btn secondary" onclick="runForm()">＋ ${runText('Lauf eintragen','Log a run')}<small>${runText('Distanz und Dauer','Distance and duration')}</small></button></div>`)}
-function runForm(id=null,preset={}){
-  let r=id?runList().find(x=>x.id===id):null;if(id&&!r)return;
-  // Vergessener Timer: Vorschlag auf 48 h begrenzen, damit der Lauf speicherbar bleibt.
-  let seconds=Math.min(172800,r?.durationSeconds??preset.durationSeconds??0),route=r?r.route:preset.fromTimer?runPendingRoute:null,kmValue=r?r.distanceKm:preset.distanceKm??'',h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),s=Math.round(seconds%60);
-  let field=(key,label,value,max)=>`<label>${label}<input id="run-${key}" type="number" inputmode="numeric" min="0" max="${max}" step="1" value="${seconds?value:''}" placeholder="0" oninput="runPreview()"></label>`;
-  openModal(r?runText('Lauf bearbeiten','Edit run'):runText('Lauf eintragen','Log a run'),`${route?runRouteSvg(route):''}<form onsubmit="saveRun(event,${r?`'${esc(r.id)}'`:'null'},${preset.fromTimer?'true':'false'})"><label>${runText('Datum','Date')}<input id="run-date" type="date" value="${esc(r?.date||preset.date||date)}" max="${today()}" required></label><label>${runText('Distanz in km','Distance in km')}<input id="run-km" type="number" inputmode="decimal" min="0.01" max="1000" step="0.01" value="${kmValue}" placeholder="${runText('z. B. 5,2','e.g. 5.2')}" required oninput="runPreview()"></label><div class="rundur"><span>${runText('Dauer','Duration')}</span>${field('h',runText('Std','h'),h,48)}${field('m','Min',m,59)}${field('s',runText('Sek','s'),s,59)}</div><p class="note" id="run-preview"></p><label>${runText('Notiz (optional)','Note (optional)')}<input id="run-note" maxlength="200" value="${esc(r?.note||'')}" placeholder="${runText('z. B. Intervalle, Strecke','e.g. intervals, route')}"></label><button class="btn full">${runText('Lauf speichern','Save run')}</button>${r?`<button type="button" class="textbtn rundiscard" onclick="deleteRun('${esc(r.id)}')">${runText('Lauf löschen','Delete run')}</button>`:''}${preset.fromTimer?`<button type="button" class="textbtn" onclick="runTimerSheet()">${runText('Zurück zum Timer','Back to timer')}</button>`:''}</form>`);
-  runPreview();
-}
-function runFormSeconds(){let v=k=>Number($('run-'+k)?.value||0);let h=v('h'),m=v('m'),s=v('s');if(![h,m,s].every(x=>Number.isFinite(x)&&x>=0))return NaN;return Math.round(h*3600+m*60+s)}
-function runPreview(){let box=$('run-preview');if(!box)return;let km=Number($('run-km')?.value),sec=runFormSeconds();box.textContent=km>0&&sec>0?runText('Pace','Pace')+' '+runPaceText(sec/km)+' · '+formatClock(sec):runText('Pace wird aus Distanz und Dauer berechnet.','Pace is calculated from distance and duration.')}
-function saveRun(event,id,fromTimer){
-  event.preventDefault();
-  let day=$('run-date').value,km=Number($('run-km').value),sec=runFormSeconds(),note=$('run-note').value.trim().slice(0,200);
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||day>today()){toast(runText('Bitte ein Datum bis heute wählen','Please choose a date up to today'));return}
-  if(!(km>=.01&&km<=1000)){toast(runText('Bitte eine Distanz in km eingeben','Please enter a distance in km'));return}
-  if(!(sec>=1&&sec<=172800)){toast(runText('Bitte eine gültige Dauer eingeben','Please enter a valid duration'));return}
-  let before=Object.values(runAwards()).reduce((a,x)=>a+x.xp,0),runs=runList(),r=id?runs.find(x=>x.id===id):null;
-  if(id&&!r)return;
-  if(!r){r={id:uid(),createdAt:Date.now()};runs.push(r)}
-  Object.assign(r,{date:day,distanceKm:Math.round(km*100)/100,durationSeconds:sec});if(note)r.note=note;else delete r.note;
-  if(fromTimer&&state.activeRun){
-    let owned=runOwnsGps();
-    if(state.activeRun.gps&&owned){r.source='gps';if(runPendingRoute)r.route=runPendingRoute;if(runPendingSplits?.splits.length){r.splits=runPendingSplits.splits;if(runPendingSplits.restMeters)r.splitRest=[runPendingSplits.restMeters,runPendingSplits.restSeconds]}}
-    state.activeRun=null;if(owned)runNativeStop(true);clearRunTrack();syncRunGps();syncRunActivity(true,true,{distanceKm:r.distanceKm,durationSeconds:r.durationSeconds});
-  }
-  save();modal.close();render();
-  let gained=Object.values(runAwards()).reduce((a,x)=>a+x.xp,0)-before;
-  toast(gained>0?runText('Lauf gespeichert · Bestleistung ＋25 XP','Run saved · personal best ＋25 XP'):runText('Lauf gespeichert','Run saved'));
-}
 function deleteRun(id){if(!confirm(runText('Diesen Lauf löschen?','Delete this run?')))return;state.runs=runList().filter(x=>x.id!==id);save();modal.close();render();toast(runText('Lauf gelöscht','Run deleted'))}
 function runGoalForm(){let goal=runGoalKm();openModal(runText('Wochenziel Laufen','Weekly running goal'),`<form onsubmit="saveRunGoal(event)"><label>${runText('Kilometer pro Woche','Kilometres per week')}<input id="run-goal" type="number" inputmode="decimal" min="0.1" max="1000" step="0.1" value="${goal??''}" placeholder="${runText('z. B. 20','e.g. 20')}"></label><p class="note">${runText('Leer lassen für kein Ziel. Die Woche beginnt am Montag.','Leave empty for no goal. Weeks start on Monday.')}</p><button class="btn full">${runText('Ziel speichern','Save goal')}</button></form>`)}
 function saveRunGoal(event){event.preventDefault();let raw=$('run-goal').value,goal=raw===''?null:Number(raw);if(goal!==null&&!(goal>=.1&&goal<=1000)){toast(runText('Bitte 0,1 bis 1000 km eingeben','Please enter 0.1 to 1000 km'));return}state.runSettings={...(state.runSettings||{}),weeklyGoalKm:goal===null?null:Math.round(goal*10)/10};save();modal.close();render();toast(runText('Wochenziel gespeichert','Weekly goal saved'))}
 
 // Darstellung
 function runWeekLine(){let {start,end}=runWeekRange(),km=runKmBetween(start,end),goal=runGoalKm();return goal?`<div class="runweek"><div><strong>${runKm(km)} / ${runKm(goal)} km</strong><small>${runText('diese Woche','this week')}</small></div><div class="runbar" role="progressbar" aria-label="${runText('Wochenziel','Weekly goal')}" aria-valuemin="0" aria-valuemax="${goal}" aria-valuenow="${Math.round(km*100)/100}"><i style="width:${Math.min(100,km/goal*100)}%"></i></div></div>`:`<div class="runweek"><div><strong>${runKm(km)} km</strong><small>${runText('diese Woche','this week')}</small></div></div>`}
-function runRow(r){return `<button type="button" class="searchitem runrow" onclick="${typeof runDetail==='function'?'runDetail':'runForm'}('${esc(r.id)}')"><div>${runKm(r.distanceKm)} km · ${formatClock(r.durationSeconds)}<small>${runPaceText(runPace(r))}${r.source==='gps'?' · GPS':''}${r.note?' · '+esc(r.note):''}</small></div><span aria-hidden="true">›</span></button>`}
+function runRow(r){let t=typeof runTypeInfo==='function'?runTypeInfo(r.type):null,name=t?(state.language==='en'?t.en:t.de):runText('Lauf','Run');return `<button type="button" class="searchitem runrow" onclick="runDetail('${esc(r.id)}')">${t&&typeof runIcon==='function'?`<span class="runrowicon">${runIcon(t.icon)}</span>`:''}<div>${esc(name)} · ${r.distanceKm>0?runKm(r.distanceKm)+' km · ':''}${formatClock(r.durationSeconds)}<small>${r.distanceKm>0?runPaceText(runPace(r)):''}${Number.isFinite(r.kcal)?(r.distanceKm>0?' · ':'')+r.kcal+' kcal':''}${r.note?' · '+esc(r.note):''}</small></div><span aria-hidden="true">›</span></button>`}
 function runCard(){
   let active=state.activeRun,dayRuns=runList().filter(r=>r.date===date);
-  let actions=active?`<button type="button" class="runlive" onclick="runTimerSheet()"><span class="badge runningbadge"><i aria-hidden="true"></i>${active.pausedAt?runText('Pausiert','Paused'):runText('Läuft','Running')}</span><strong data-runclock>${formatClock(runElapsed())}</strong>${active.gps?`<small data-rundist>${runKm(Math.round(runGpsKm()*100)/100)} km</small>`:''}<span>${runText('Öffnen','Open')} ›</span></button>`:`<div class="runactions"><button type="button" class="btn" onclick="runChooser()">▶ ${runText('Lauf starten','Start run')}</button><button type="button" class="btn secondary" onclick="runForm()">＋ ${runText('Eintragen','Log')}</button></div>`;
-  return `<section class="card runcard"><div class="cardhead"><h2>${runText('Laufen','Running')}</h2><span class="runheadactions">${typeof runRoutesSheet==='function'?`<button type="button" class="textbtn" onclick="runRoutesSheet()">${runText('Routen','Routes')}</button>`:''}<button type="button" class="textbtn" onclick="runGoalForm()">${runGoalKm()?runText('Ziel','Goal'):runText('Wochenziel','Weekly goal')}</button></span></div>${runWeekLine()}${actions}${dayRuns.length?`<div class="runlist">${dayRuns.map(runRow).join('')}</div>`:''}</section>`;
+  let actions=active?`<button type="button" class="runlive" onclick="openRunView()"><span class="badge runningbadge"><i aria-hidden="true"></i>${active.pausedAt?runText('Pausiert','Paused'):runText('Läuft','Running')}</span><strong data-runclock>${formatClock(runElapsed())}</strong>${active.gps?`<small data-rundist>${runKm(Math.round(runGpsKm()*100)/100)} km</small>`:''}<span>${runText('Öffnen','Open')} ›</span></button>`:`<button type="button" class="btn full runopen" onclick="openRunView()">▶ ${runText('Aktivität starten','Start activity')}</button>`;
+  return `<section class="card runcard"><div class="cardhead"><h2>${runText('Aktivitäten','Activities')}</h2><span class="runheadactions">${typeof runRoutesSheet==='function'?`<button type="button" class="textbtn" onclick="runRoutesSheet()">${runText('Routen','Routes')}</button>`:''}<button type="button" class="textbtn" onclick="runGoalForm()">${runGoalKm()?runText('Ziel','Goal'):runText('Wochenziel','Weekly goal')}</button></span></div>${runWeekLine()}${actions}${dayRuns.length?`<div class="runlist">${dayRuns.map(runRow).join('')}</div>`:''}</section>`;
 }
 // Bestzeiten aus GPS-Kilometerzeiten: schnellste zusammenhängende 1, 5, 10 und 21 km innerhalb eines Laufs.
-function runBestEfforts(){let best={};for(let r of pastRuns()){let s=r.splits||[];for(let k of [1,5,10,21]){for(let i=0;i+k<=s.length;i++){let sum=s.slice(i,i+k).reduce((a,x)=>a+x,0);if(!best[k]||sum<best[k].seconds)best[k]={seconds:sum,run:r}}}}return best}
+function runBestEfforts(){let best={};for(let r of pastRuns().filter(runIsRun)){let s=r.splits||[];for(let k of [1,5,10,21]){for(let i=0;i+k<=s.length;i++){let sum=s.slice(i,i+k).reduce((a,x)=>a+x,0);if(!best[k]||sum<best[k].seconds)best[k]={seconds:sum,run:r}}}}return best}
 function runBestEffortsHtml(){let best=runBestEfforts(),keys=[1,5,10,21].filter(k=>best[k]);if(!keys.length)return '';return `<h3>${runText('Bestzeiten · GPS','Best efforts · GPS')}</h3><div class="runbests">${keys.map(k=>`<button type="button" onclick="runDetail('${esc(best[k].run.id)}')"><small>${k===21?runText('Halbmarathon*','Half marathon*'):k+' km'}</small><strong>${formatClock(best[k].seconds)}</strong><span>${fmtDate(best[k].run.date)}</span></button>`).join('')}</div>${best[21]?`<p class="note">${runText('* 21 volle Kilometer, ohne die letzten 97,5 m.','* 21 full kilometres, without the last 97.5 m.')}</p>`:''}`}
 function runProgressCard(){
-  let runs=pastRuns();if(!runs.length)return `<section class="card runcard"><div class="cardhead"><h2>${runText('Laufen','Running')}</h2></div><p class="note">${runText('Noch kein Lauf erfasst. Starte einen Lauf oder trage ihn im Workout-Tab ein.','No run logged yet. Start or log one in the Workout tab.')}</p></section>`;
+  let runs=pastRuns().filter(runIsRun);if(!runs.length)return `<section class="card runcard"><div class="cardhead"><h2>${runText('Laufen','Running')}</h2></div><p class="note">${runText('Noch kein Lauf erfasst. Starte einen Lauf oder trage ihn im Workout-Tab ein.','No run logged yet. Start or log one in the Workout tab.')}</p></section>`;
   let week=runWeekRange(),d=new Date(today()+'T12:00:00'),monthStart=localISO(new Date(d.getFullYear(),d.getMonth(),1)),total=runs.reduce((a,r)=>a+r.distanceKm,0),longest=runs.reduce((a,r)=>r.distanceKm>a.distanceKm?r:a),eligible=runs.filter(r=>r.distanceKm>=1),fastest=eligible.length?eligible.reduce((a,r)=>runPace(r)<runPace(a)?r:a):null,month=runs.filter(r=>r.date>=monthStart),monthKm=month.reduce((a,r)=>a+r.distanceKm,0),monthSec=month.reduce((a,r)=>a+r.durationSeconds,0);
   let weeks=Array.from({length:8},(_,i)=>{let range=runWeekRange(i-7);return {label:new Date(range.start+'T12:00:00').toLocaleDateString(appLocale(),{day:'numeric',month:'numeric'}),km:runKmBetween(range.start,range.end)}}),max=Math.max(runGoalKm()||0,...weeks.map(w=>w.km),1);
   return `<section class="card runcard"><div class="cardhead"><h2>${runText('Laufen','Running')}</h2><span class="badge">${runs.length} ${runs.length===1?runText('Lauf','run'):runText('Läufe','runs')} · ${runKm(Math.round(total*10)/10)} km</span></div>${runWeekLine()}<div class="metrictiles"><div><strong>${runKm(Math.round(monthKm*10)/10)} km</strong><small>${runText('Dieser Monat','This month')}</small></div><div><strong>${monthKm>0?runPaceText(monthSec/monthKm):'–'}</strong><small>${runText('Ø Pace Monat','Avg pace month')}</small></div><div><strong>${runKm(longest.distanceKm)} km</strong><small>${runText('Längster Lauf','Longest run')}</small></div><div><strong>${fastest?runPaceText(runPace(fastest)):'–'}</strong><small>${runText('Beste Pace · ab 1 km','Best pace · 1 km+')}</small></div></div>${runBestEffortsHtml()}<h3>${runText('Kilometer pro Woche','Kilometres per week')}</h3><div class="runweeks">${weeks.map(w=>`<div><i style="height:${Math.max(w.km>0?4:0,w.km/max*100)}%" title="${runKm(w.km)} km"></i><small>${esc(w.label)}</small></div>`).join('')}</div><p class="note">${runText('Pace = Dauer ÷ Distanz, ohne GPS so genau wie deine Eingabe. 25 XP, wenn ein Lauf ab 1 km weiter bei mindestens gleicher Pace oder schneller bei mindestens gleicher Distanz ist als alle bisherigen; der erste Lauf setzt die Basis.','Pace = duration ÷ distance, as accurate as your input (no GPS). 25 XP when a run of 1 km or more is longer at equal or better pace, or faster at equal or longer distance than all previous runs; the first run sets the baseline.')}</p></section>`;
@@ -267,11 +260,11 @@ const runningAnalytics=analyticsPage;analyticsPage=function(...args){return runn
 const runningQuickTraining=quickTraining;quickTraining=function(...args){
   let html=runningQuickTraining.apply(this,args),i=html.lastIndexOf('</section>');if(i<0)return html;
   let active=state.activeRun,{start,end}=runWeekRange(),km=runKmBetween(start,end),goal=runGoalKm();
-  let line=active?`<button type="button" class="runline" onclick="runTimerSheet()"><span>${runText('Lauf läuft','Run in progress')}</span><strong data-runclock>${formatClock(runElapsed())}</strong></button>`:`<button type="button" class="runline" onclick="trainTab='current';go('workout')"><span>${runText('Laufen diese Woche','Running this week')}</span><strong>${runKm(km)}${goal?' / '+runKm(goal):''} km</strong></button>`;
+  let line=active?`<button type="button" class="runline" onclick="openRunView()"><span>${runText('Lauf läuft','Run in progress')}</span><strong data-runclock>${formatClock(runElapsed())}</strong></button>`:`<button type="button" class="runline" onclick="trainTab='current';go('workout')"><span>${runText('Laufen diese Woche','Running this week')}</span><strong>${runKm(km)}${goal?' / '+runKm(goal):''} km</strong></button>`;
   return html.slice(0,i)+line+html.slice(i);
 };
 // Plus-Menü
-function quickAddRun(){if(state.activeRun)runTimerSheet();else runChooser()}
+function quickAddRun(){openRunView()}
 if(typeof quickActionPaths==='object')quickActionPaths.run='<circle cx="14" cy="4" r="2"/><path d="m8 21 3-6 3 2v5M6 12l3-4 4 1 2 4 3 1M11 15l-1-4"/>';
 if(typeof quickAddActions!=='undefined'&&Array.isArray(quickAddActions)){let list=quickAddActions,at=list.findIndex(x=>x[0]==='workout');list.splice(at<0?list.length:at+1,0,['run','Lauf','Starten oder eintragen','quickAddRun()'])}
 if(typeof englishUI==='object')Object.assign(englishUI,{'Lauf':'Run','Starten oder eintragen':'Start or log'});

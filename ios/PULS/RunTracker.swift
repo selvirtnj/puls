@@ -100,12 +100,17 @@ final class RunTracker: NSObject, CLLocationManagerDelegate {
         guard active else { return }
         // Feste Obergrenze statt Kürzen: Die Web-App zählt Punkte per Index („since“).
         for location in locations where location.horizontalAccuracy >= 0 && location.timestamp >= segmentStart.addingTimeInterval(-1) && points.count < 30000 {
+            // Format wie run-metrics.js: [t,lat,lon,acc,seg,alt,altAcc].
+            // altAcc=-1 bedeutet unbekannt; alt=0 ist dann nur ein Platzhalter.
+            let hasAltitude = location.altitude.isFinite && location.verticalAccuracy.isFinite && location.verticalAccuracy >= 0
             let point = [
                 (location.timestamp.timeIntervalSince1970 * 1000).rounded(),
                 location.coordinate.latitude,
                 location.coordinate.longitude,
                 location.horizontalAccuracy.rounded(),
-                Double(segment)
+                Double(segment),
+                hasAltitude ? location.altitude : 0,
+                hasAltitude ? location.verticalAccuracy : -1
             ]
             points.append(point)
             accept(point)
@@ -154,7 +159,8 @@ final class RunTracker: NSObject, CLLocationManagerDelegate {
         guard let data = try? Data(contentsOf: fileURL),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         runKey = json["runKey"] as? String ?? ""
-        points = (json["points"] as? [[Double]] ?? []).filter { $0.count == 5 }
+        // Alte Aufzeichnungen ohne Höhe unverändert weiterverwenden.
+        points = (json["points"] as? [[Double]] ?? []).filter { $0.count == 5 || $0.count == 7 }
         recompute()
     }
 }

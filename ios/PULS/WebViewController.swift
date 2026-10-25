@@ -1,9 +1,10 @@
 import UIKit
 import WebKit
+import CoreLocation
 
 /// Native PULS-Hülle: lädt die veröffentlichte Web-App, damit Updates ohne neue App-Version ankommen.
 /// Daten liegen wie im Browser im WebView-Speicher; Cloud-Sync läuft über das PULS-Konto.
-final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, WKScriptMessageHandler {
+final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, WKScriptMessageHandler, CLLocationManagerDelegate {
     static let home = URL(string: "https://selvirtnj.github.io/puls/")!
     static let appHost = "selvirtnj.github.io"
     static let appPath = "/puls"
@@ -11,6 +12,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     private var webView: WKWebView!
     private var downloadTargets: [ObjectIdentifier: URL] = [:]
+    // Eigenständige Einmal-Ortung: verändert weder Manager noch Punkte von RunTracker.
+    private var locateManager: CLLocationManager?
+    private var locatePending = false
+    private var locateTimeout: DispatchWorkItem?
 
     override func loadView() {
         let config = WKWebViewConfiguration()
@@ -22,7 +27,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // Gegenstück: native-bridge.js (window.webkit.messageHandlers.pulsNative).
         config.userContentController.add(self, name: "pulsNative")
         // Kennzeichen für native-bridge.js: diese App-Version zeigt die Workout-Zeit in der Live-Aktivität.
-        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runLocate'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
@@ -107,6 +112,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             guard let runKey = body["runKey"] as? String else { return }
             let since = (body["since"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) } ?? Date()
             RunTracker.shared.start(runKey: runKey, segment: body["segment"] as? Int ?? 0, since: since)
+        case "runLocate":
+            locateRunMap()
         case "runGpsStop":
             RunTracker.shared.stop(clear: body["clear"] as? Bool ?? false)
         case "runActivity":
@@ -124,6 +131,74 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let json = String(data: data, encoding: .utf8) else { return }
         webView.evaluateJavaScript("window.pulsRunGpsReceive&&window.pulsRunGpsReceive(\(json))", completionHandler: nil)
+    }
+
+    /// Nur auf explizite Web-Nachricht; gleichzeitige Anfragen werden zusammengefasst.
+    private func locateRunMap() {
+        guard !locatePending else { return }
+        let manager = CLLocationManager()
+        locateManager = manager
+        locatePending = true
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+        continueRunLocate(manager)
+    }
+
+    private func continueRunLocate(_ manager: CLLocationManager) {
+        guard locatePending, manager === locateManager else { return }
+        switch manager.authorizationStatus {
+        case .notDetermined:
+            // Kein Timeout während des Systemdialogs: nach Zustimmung fortsetzen.
+            manager.requestWhenInUseAuthorization()
+        case .authorizedAlways, .authorizedWhenInUse:
+            guard locateTimeout == nil else { return }
+            let timeout = DispatchWorkItem { [weak self] in
+                self?.finishRunLocate(["status": "unavailable"])
+            }
+            locateTimeout = timeout
+            DispatchQueue.main.asyncAfter(deadline: .now() + 30, execute: timeout)
+            manager.requestLocation()
+        case .denied, .restricted:
+            finishRunLocate(["status": "denied"])
+        @unknown default:
+            finishRunLocate(["status": "unavailable"])
+        }
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        continueRunLocate(manager)
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard locatePending, manager === locateManager else { return }
+        guard let location = locations.last(where: {
+            $0.horizontalAccuracy.isFinite && $0.horizontalAccuracy >= 0 &&
+            CLLocationCoordinate2DIsValid($0.coordinate) && abs($0.timestamp.timeIntervalSinceNow) <= 30
+        }) else {
+            finishRunLocate(["status": "unavailable"])
+            return
+        }
+        finishRunLocate(["lat": location.coordinate.latitude, "lon": location.coordinate.longitude,
+                         "acc": location.horizontalAccuracy, "status": "on"])
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        guard locatePending, manager === locateManager else { return }
+        let denied = manager.authorizationStatus == .denied || manager.authorizationStatus == .restricted
+        finishRunLocate(["status": denied ? "denied" : "unavailable"])
+    }
+
+    private func finishRunLocate(_ payload: [String: Any]) {
+        guard locatePending else { return }
+        locatePending = false
+        locateTimeout?.cancel()
+        locateTimeout = nil
+        locateManager?.delegate = nil
+        locateManager = nil
+        guard let url = webView.url, url.host == Self.appHost, url.path.hasPrefix(Self.appPath),
+              let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.pulsRunLocateReceive&&window.pulsRunLocateReceive(\(json))", completionHandler: nil)
     }
 
     /// iPhone-Haptik für Aktionen der Web-App (haptics.js); WebKit selbst kennt keine Web-Vibration.

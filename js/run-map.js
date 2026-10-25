@@ -39,9 +39,9 @@ function runDefaultView(){let r=[...runList()].reverse().find(x=>x.route),p=r?ru
 
 // Live-Karte im Lauf-Fenster
 function runLiveMapHtml(){return `<div class="runmap live" id="runlivemap"><button type="button" class="runmapbtn" onclick="runLiveRecenter()" aria-label="${runText('Karte auf mich zentrieren','Centre map on me')}">◎</button></div>`}
-async function runLiveMapMount(){
+async function runLiveMapMount(id='runlivemap'){
   if(runLive.map&&!document.body.contains(runLive.map.getContainer())){runLive.map.remove();runLive.map=null}
-  runLive.map=await runMountMap('runlivemap',map=>{
+  runLive.map=await runMountMap(id,map=>{
     let accent=runAccent(),view=runDefaultView(),route=runRouteById(state.activeRun?.routeId);
     if(route){let plan=L.polyline(runLineLatLngs(route.line),{color:'#ffffff',opacity:.45,weight:4,dashArray:'6 8'}).addTo(map);map.fitBounds(plan.getBounds(),{padding:[20,20]})}else map.setView(view.center,view.zoom);
     runLive.line=L.polyline([],{color:accent,weight:5,lineCap:'round',lineJoin:'round'}).addTo(map);
@@ -61,19 +61,6 @@ function runLiveMapUpdate(){
   if(runLive.follow)map.setView([last[1],last[2]],Math.max(map.getZoom(),16),{animate:true});
 }
 
-// Detailansicht eines Laufs
-function runDetail(id){
-  let r=runList().find(x=>x.id===id);if(!r)return;
-  let speed=r.distanceKm/(r.durationSeconds/3600),splits=r.splits||[],fastest=splits.length?Math.min(...splits):null,slowest=splits.length?Math.max(...splits):null;
-  let rows=splits.map((s,i)=>`<div class="runsplit ${s===fastest&&splits.length>1?'best':''}"><span>${i+1}</span><div><i style="width:${Math.max(18,(fastest/s)*100)}%"></i></div><strong>${runPaceText(s)}</strong></div>`).join('')+(r.splitRest?`<div class="runsplit rest"><span>${runKm(r.splitRest[0]/1000)}</span><div><i style="width:${Math.max(18,(fastest||1)/(r.splitRest[1]/(r.splitRest[0]/1000))*100)}%"></i></div><strong>${runPaceText(r.splitRest[1]/(r.splitRest[0]/1000))}</strong></div>`:'');
-  let day=new Date(r.date+'T12:00:00').toLocaleDateString(appLocale(),{weekday:'long',day:'numeric',month:'long'});
-  openModal(runText('Lauf','Run'),`${r.route?`<div class="runmap detail" id="rundetailmap"></div>`:''}<p class="rundetaildate">${esc(day)}${r.source==='gps'?' · GPS':''}</p><div class="runstats"><div><strong>${runKm(r.distanceKm)}</strong><small>km</small></div><div><strong>${formatClock(r.durationSeconds)}</strong><small>${runText('Zeit','Time')}</small></div><div><strong>${runPaceText(runPace(r)).replace(' /km','')}</strong><small>${runText('Ø Pace /km','Avg pace /km')}</small></div><div><strong>${new Intl.NumberFormat(appLocale(),{maximumFractionDigits:1}).format(speed)}</strong><small>${runText('Ø km/h','Avg km/h')}</small></div></div>${r.note?`<p class="note">${esc(r.note)}</p>`:''}${splits.length?`<h3>${runText('Kilometerzeiten','Splits')}</h3><div class="runsplits">${rows}</div><p class="note">${runText('Schnellster km','Fastest km')} ${runPaceText(fastest)} · ${runText('langsamster','slowest')} ${runPaceText(slowest)}</p>`:''}<div class="runactions"><button type="button" class="btn secondary" onclick="runForm('${esc(r.id)}')">${runText('Bearbeiten','Edit')}</button>${r.route?`<button type="button" class="btn secondary" onclick="runSaveRouteFromRun('${esc(r.id)}')">${runText('Als Route sichern','Save as route')}</button>`:''}</div>`);
-  if(r.route)runMountMap('rundetailmap',map=>{
-    let accent=runAccent(),segs=runRoutePoints(r.route),line=L.polyline(segs,{color:accent,weight:5,lineCap:'round',lineJoin:'round'}).addTo(map),start=segs[0][0],end=segs.at(-1).at(-1);
-    L.circleMarker(start,{radius:6,color:'#fff',weight:2,fillColor:'#3ddc84',fillOpacity:1}).addTo(map);L.circleMarker(end,{radius:6,color:'#fff',weight:2,fillColor:'#ff5c6c',fillOpacity:1}).addTo(map);
-    map.fitBounds(line.getBounds(),{padding:[18,18]});
-  });
-}
 function runSaveRouteFromRun(id){
   let r=runList().find(x=>x.id===id);if(!r?.route)return;let pts=runRoutePoints(r.route).flat();
   let name=prompt(runText('Name der Route','Route name'),`${runText('Lauf','Run')} ${fmtDate(r.date)}`);if(name===null)return;
@@ -88,7 +75,7 @@ function runRoutesSheet(){
 }
 function runRouteSheet(id){
   let r=runRouteById(id);if(!r)return;
-  openModal(r.name,`<div class="runmap detail" id="runroutemap"></div><p class="rundetaildate">${runRouteMeta(r)}</p><button type="button" class="btn full" onclick="modal.close();startRunTimer(true,'${esc(r.id)}')">▶ ${runText('Mit dieser Route laufen','Run this route')}</button><div class="runactions">${r.waypoints?`<button type="button" class="btn secondary" onclick="runPlanner('${esc(r.id)}')">${runText('Bearbeiten','Edit')}</button>`:''}<button type="button" class="btn secondary" onclick="runDeleteRoute('${esc(r.id)}')">${runText('Löschen','Delete')}</button></div>`);
+  openModal(r.name,`<div class="runmap detail" id="runroutemap"></div><p class="rundetaildate">${runRouteMeta(r)}</p><button type="button" class="btn full" onclick="runSelectRoute('${esc(r.id)}')">${runText('Diese Route nehmen','Use this route')}</button><div class="runactions">${r.waypoints?`<button type="button" class="btn secondary" onclick="runPlanner('${esc(r.id)}')">${runText('Bearbeiten','Edit')}</button>`:''}<button type="button" class="btn secondary" onclick="runDeleteRoute('${esc(r.id)}')">${runText('Löschen','Delete')}</button></div>`);
   runMountMap('runroutemap',map=>{let line=L.polyline(runLineLatLngs(r.line),{color:runAccent(),weight:5}).addTo(map);if(line.getLatLngs().length)map.fitBounds(line.getBounds(),{padding:[18,18]});else map.setView(runDefaultView().center,runDefaultView().zoom)});
 }
 function runDeleteRoute(id){if(!confirm(runText('Diese Route löschen?','Delete this route?')))return;state.runRoutes=runRouteList().filter(r=>r.id!==id);save();runRoutesSheet()}
@@ -137,7 +124,7 @@ function runPlannerDraw(){
   if(time)time.textContent=pace&&plan.distanceKm>0?formatClock(pace*plan.distanceKm):'–';
 }
 // Typische Pace: Mittel der letzten fünf Läufe ab 1 km.
-function runTypicalPace(){let recent=pastRuns().filter(r=>r.distanceKm>=1).slice(-5);if(!recent.length)return null;return recent.reduce((a,r)=>a+r.durationSeconds,0)/recent.reduce((a,r)=>a+r.distanceKm,0)}
+function runTypicalPace(){let recent=pastRuns().filter(r=>runIsRun(r)&&r.distanceKm>=1).slice(-5);if(!recent.length)return null;return recent.reduce((a,r)=>a+r.durationSeconds,0)/recent.reduce((a,r)=>a+r.distanceKm,0)}
 function runPlannerSave(event){
   event.preventDefault();let plan=runPlan;if(plan?.busy){toast(runText('Route wird noch berechnet …','Route is still being calculated …'));return}if(!plan||plan.line.length<2){toast(runText('Setze mindestens zwei Punkte','Add at least two points'));return}
   let step=Math.max(1,Math.ceil(plan.line.length/800)),line=plan.line.filter((p,i)=>i%step===0||i===plan.line.length-1);
@@ -148,10 +135,4 @@ function runPlannerSave(event){
   save();toast(runText('Route gespeichert','Route saved'));runRouteSheet(route.id);render();
 }
 
-// Lauf-Auswahl: geplante Routen direkt anbieten.
-const runMapChooser=runChooser;runChooser=function(...args){
-  let result=runMapChooser.apply(this,args);if(state.activeRun)return result;
-  document.querySelector('#mb .runactions.stacked')?.insertAdjacentHTML('beforeend',`<button type="button" class="btn secondary" onclick="runRoutesSheet()">⌖ ${runText('Route wählen oder planen','Choose or plan a route')}<small>${runRouteList().length?runRouteList().length+' '+runText('gespeichert','saved'):runText('Karte mit Wegeführung','Map with path routing')}</small></button>`);
-  return result;
-};
 if(typeof englishUI==='object')Object.assign(englishUI,{'Routen':'Routes'});
