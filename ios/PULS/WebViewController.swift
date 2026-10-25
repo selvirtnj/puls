@@ -22,7 +22,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // Gegenstück: native-bridge.js (window.webkit.messageHandlers.pulsNative).
         config.userContentController.add(self, name: "pulsNative")
         // Kennzeichen für native-bridge.js: diese App-Version zeigt die Workout-Zeit in der Live-Aktivität.
-        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
@@ -103,9 +103,27 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             setAppIcon(body["icon"] as? String ?? "purple")
         case "haptic":
             playHaptic(body["style"] as? String ?? "light")
+        case "runGpsStart":
+            guard let runKey = body["runKey"] as? String else { return }
+            let since = (body["since"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) } ?? Date()
+            RunTracker.shared.start(runKey: runKey, segment: body["segment"] as? Int ?? 0, since: since)
+        case "runGpsStop":
+            RunTracker.shared.stop(clear: body["clear"] as? Bool ?? false)
+        case "runActivity":
+            RunActivityCoordinator.shared.update(body)
+        case "runGpsSync":
+            guard let runKey = body["runKey"] as? String else { return }
+            sendRunGps(RunTracker.shared.payload(runKey: runKey, since: body["since"] as? Int ?? 0))
         default:
             break
         }
+    }
+
+    /// GPS-Punkte an running.js (window.pulsRunGpsReceive) zurückgeben.
+    private func sendRunGps(_ payload: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.pulsRunGpsReceive&&window.pulsRunGpsReceive(\(json))", completionHandler: nil)
     }
 
     /// iPhone-Haptik für Aktionen der Web-App (haptics.js); WebKit selbst kennt keine Web-Vibration.

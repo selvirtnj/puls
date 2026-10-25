@@ -26,7 +26,7 @@ docs/                   Produktwissen, Stand, Team-Ablauf; docs/archive/ = histo
 | Training | exercise-catalog.js, machine-library.js, training.js, insights.js, finish.js, workout-polish.js, tracker-tools.js, progress-metrics.js |
 | Darstellung und Abläufe | navigation.js, flows.js, visuals.js, interactions.js, polish.js, compact.js, lifecycle.js, comfort.js, refinement.js, designs-extra.js, preview-mode.js |
 | Konto und Sync | cloud.js, cloud-config.js, account-guide.js, account-refresh.js |
-| Neuere Verfeinerungen (zuletzt geladen) | profile-refresh.js (Profil & Ziele), training-tabs.js (Workout/Routinen), session-focus.js (laufendes Workout), native-bridge.js (nur in der iOS-Hülle aktiv) |
+| Neuere Verfeinerungen (zuletzt geladen) | profile-refresh.js (Profil & Ziele), training-tabs.js (Workout/Routinen), session-focus.js (laufendes Workout), running.js (Laufen inkl. GPS), native-bridge.js (nur in der iOS-Hülle aktiv) |
 
 Die Originaldesign-Überarbeitungen liegen in `css/account-refresh.css`, `overview-refresh.css`, `training-refresh.css`, `food-refresh.css`; designübergreifend wirken `session-focus.css`, `profile-refresh.css`, `training-tabs.css`.
 

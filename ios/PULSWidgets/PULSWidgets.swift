@@ -6,6 +6,7 @@ import WidgetKit
 struct PULSWidgets: WidgetBundle {
     var body: some Widget {
         RestActivityWidget()
+        RunActivityWidget()
     }
 }
 

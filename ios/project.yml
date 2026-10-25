@@ -7,7 +7,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.4"
+    MARKETING_VERSION: "1.5"
     CURRENT_PROJECT_VERSION: "1"
     TARGETED_DEVICE_FAMILY: "1,2"
     CODE_SIGNING_ALLOWED: "NO"
@@ -54,6 +54,10 @@ targets:
         NSCameraUsageDescription: PULS nutzt die Kamera zum Scannen von Barcodes und für Fotos.
         NSMicrophoneUsageDescription: PULS nutzt das Mikrofon für die Spracheingabe.
         NSPhotoLibraryUsageDescription: PULS nutzt Fotos, wenn du ein Bild hinzufügst.
+        # GPS für Läufe (RunTracker.swift), auch bei gesperrtem iPhone; nur während eines GPS-Laufs aktiv.
+        NSLocationWhenInUseUsageDescription: PULS misst während eines Laufs mit GPS Distanz, Pace und Strecke.
+        UIBackgroundModes:
+          - location
   # Live-Aktivität für Pausen: Dynamic Island und Sperrbildschirm.
   PULSWidgets:
     type: app-extension
