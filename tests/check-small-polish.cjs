@@ -113,3 +113,47 @@ function labelEnergyFixture(){
   console.log('PASS: OCR calorie bounds/negative values stay unknown; exact values and column positions remain intact.');
 }
 labelEnergyFixture();
+
+function finishSummaryFixture(){
+  for(const language of ['de','en']){
+    const summary={innerHTML:''},workouts=[
+      {id:'work',exercises:[{sets:[{done:true}]}]},
+      {id:'work-extra',exercises:[{sets:[{done:true},{done:false},{done:false}]}]}
+    ];
+    const form={getAttribute:()=>"confirmWorkoutFinish(event,'work-extra')",classList:{add(){}},
+      querySelectorAll:()=>[],querySelector:()=>summary};
+    const ctx={state:{language,workouts},finishWorkout(){},restCard(){},renderWorkoutSession(){},globalRestSettings(){},
+      $:id=>id==='mb'?{querySelector:()=>form}:null,
+      document:{body:{},},MutationObserver:class{observe(){}}};
+    vm.runInNewContext(fs.readFileSync('js/workout-controls.js','utf8'),ctx);
+    const before=JSON.stringify(workouts);ctx.finishWorkout('work-extra');
+    assert(summary.innerHTML.includes(language==='en'?'1 of 3 sets done':'1 von 3 Sätzen erledigt'));
+    assert(summary.innerHTML.includes(language==='en'?'2 open sets are discarded':'2 offene Sätze werden verworfen'));
+    assert.equal(JSON.stringify(workouts),before);
+  }
+  console.log('PASS: finish confirmation uses exact workout ID for set counts and discard warning (DE/EN).');
+}
+finishSummaryFixture();
+
+function pendingRestFixture(){
+  for(const scenario of ['unchanged','removed','replaced','finished','new-rest']){
+    const events={},popups=[],w={id:'rest-workout',finished:false,rest:{endAt:1000,exerciseId:'e'},
+      exercises:[{id:'e',name:'Bench',sets:[{done:true},{done:false}]}]};
+    const ctx={state:{workouts:[w]},Date:{now:()=>2000},toast(){},$:()=>null,
+      document:{hidden:true,addEventListener(type,handler){events[type]=handler}},
+      tickWorkoutClocks(){for(const item of ctx.state.workouts)if(item.rest?.endAt<=2000)item.rest=null},
+      workoutTickHandle:1,clearInterval(){},setInterval:()=>2};
+    vm.runInNewContext(fs.readFileSync('js/rest-popup.js','utf8'),ctx);
+    ctx.showRestPopup=next=>popups.push(next);
+    ctx.tickWorkoutClocks();assert.equal(popups.length,0);
+    if(scenario==='removed')ctx.state.workouts=[];
+    if(scenario==='replaced')ctx.state.workouts=[{...w}]; // Profile pull/import replaces object identity.
+    if(scenario==='finished')w.finished=true;
+    if(scenario==='new-rest')w.rest={endAt:5000,exerciseId:'e'};
+    ctx.document.hidden=false;events.visibilitychange();
+    assert.equal(popups.length,scenario==='unchanged'?1:0,scenario);
+    events.visibilitychange();assert.equal(popups.length,scenario==='unchanged'?1:0,'Pending popup consumed once');
+  }
+  console.log('PASS: pending rest popup only resumes for the surviving, unfinished workout without a new rest.');
+}
+pendingRestFixture();

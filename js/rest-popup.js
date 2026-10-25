@@ -45,6 +45,6 @@ let restPopupPending=null;
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden||!restPopupPending)return;
   let pending=restPopupPending;restPopupPending=null;
-  if(Date.now()-pending.endAt<restPopupMaxAge&&!pending.w.finished&&!pending.w.rest)showRestPopup(restPopupNext(pending.w,pending.exerciseId));
+  if(Date.now()-pending.endAt<restPopupMaxAge&&state.workouts.includes(pending.w)&&!pending.w.finished&&!pending.w.rest)showRestPopup(restPopupNext(pending.w,pending.exerciseId));
 });
 clearInterval(workoutTickHandle);workoutTickHandle=setInterval(tickWorkoutClocks,1000);

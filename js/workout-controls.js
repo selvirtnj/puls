@@ -24,7 +24,7 @@ upgradeControlIcons(document.body);
 const controlsFinish=finishWorkout;finishWorkout=function(...args){
   let result=controlsFinish.apply(this,args),form=$('mb')?.querySelector('form[onsubmit^="confirmWorkoutFinish"]');
   if(!form)return result;
-  let en=state.language==='en',w=state.workouts.find(x=>form.getAttribute('onsubmit').includes(x.id));
+  let en=state.language==='en',w=state.workouts.find(x=>x.id===args[0]);
   form.classList.add('finishform');form.querySelectorAll('.note').forEach(n=>n.remove());
   if(w){
     let sets=w.exercises.flatMap(e=>e.sets||[]),done=sets.filter(s=>s.done).length,open=sets.length-done,summary=form.querySelector(':scope > p');
