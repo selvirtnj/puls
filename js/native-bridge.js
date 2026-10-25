@@ -20,12 +20,24 @@ function nextSetInfo(w,current){
 function activeRest(now=Date.now()){
   return (state.workouts||[]).filter(w=>!w.finished&&w.rest?.endAt>now).sort((a,b)=>a.rest.endAt-b.rest.endAt)[0]||null;
 }
+// Neuere iOS-App (window.pulsNativeFeatures): ohne Pause zeigt die Live-Aktivität die Workout-Zeit.
+const workoutTimer=(window.pulsNativeFeatures||[]).includes('workoutTimer');
+function runningWorkout(){
+  return (state.workouts||[]).filter(w=>!w.finished&&Number.isFinite(w.startedAt)).sort((a,b)=>b.startedAt-a.startedAt)[0]||null;
+}
 function syncNativeRest(){
   try{
-    let w=activeRest();
-    if(!w){if(sent!==null){sent=null;bridge.postMessage({type:'restCancel'})}return}
+    let w=activeRest(),running=workoutTimer?runningWorkout():null;
+    if(!w){
+      if(running){
+        let info={workoutStartsAt:running.startedAt,workout:running.name||'Workout',...nextSetInfo(running)},key='workout'+JSON.stringify(info);
+        // Mitteilung nur bei vorzeitig beendeter Pause zurückziehen, nie kurz vor dem regulären Pausenende.
+        if(sent?.key!==key){let cancelRest=sent?.endAt>Date.now();sent={key};bridge.postMessage({type:'workoutActive',cancelRest,...info})}
+        return;
+      }
+      if(sent!==null){sent=null;bridge.postMessage({type:'restCancel'})}return}
     let current=(w.exercises||[]).find(e=>e.id===w.rest.exerciseId);
-    let info={endsAt:w.rest.endAt,workout:w.name||'Workout',...nextSetInfo(w,current)},key=JSON.stringify(info);
+    let info={endsAt:w.rest.endAt,workout:w.name||'Workout',...nextSetInfo(w,current),...(workoutTimer&&Number.isFinite(w.startedAt)?{workoutStartsAt:w.startedAt}:{})},key=JSON.stringify(info);
     // Dieselbe Pause: „+30 s“ verlängert dasselbe rest-Objekt; ein Cloud-Abgleich ersetzt es mit gleicher Endzeit.
     // Ein neu abgehakter Satz legt ein neues Objekt mit neuer Endzeit an.
     let same=sent&&sent.workoutId===w.id&&sent.exerciseId===w.rest.exerciseId&&(sent.rest===w.rest||sent.endAt===w.rest.endAt);

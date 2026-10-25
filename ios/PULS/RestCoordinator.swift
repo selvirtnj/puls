@@ -9,9 +9,19 @@ final class RestCoordinator {
 
     private let notificationID = "puls-rest"
 
-    func start(workout: String, startsAt: Date, endsAt: Date, exercise: String, detail: String) {
+    func start(workout: String, startsAt: Date, endsAt: Date, exercise: String, detail: String, workoutStartsAt: Date?) {
         scheduleNotification(endsAt: endsAt, exercise: exercise, detail: detail)
-        let state = RestActivityAttributes.ContentState(startsAt: min(startsAt, endsAt), endsAt: endsAt, exercise: exercise, detail: detail)
+        let state = RestActivityAttributes.ContentState(startsAt: min(startsAt, endsAt), endsAt: endsAt, exercise: exercise, detail: detail, workoutStartsAt: workoutStartsAt)
+        showActivity(workout: workout, state: state)
+    }
+
+    /// Workout läuft ohne Pause: Live-Aktivität zeigt die Workout-Zeit. Eine vorzeitig beendete Pause meldet sich nicht mehr.
+    func showWorkout(workout: String, workoutStartsAt: Date, exercise: String, detail: String, cancelRest: Bool) {
+        if cancelRest {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationID])
+        }
+        let now = Date()
+        let state = RestActivityAttributes.ContentState(startsAt: now, endsAt: now, exercise: exercise, detail: detail, workoutStartsAt: workoutStartsAt)
         showActivity(workout: workout, state: state)
     }
 
@@ -47,7 +57,8 @@ final class RestCoordinator {
 
     private func showActivity(workout: String, state: RestActivityAttributes.ContentState) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        let content = ActivityContent(state: state, staleDate: state.endsAt)
+        // Nach Pausenende wird die Aktivität „stale“ und das Widget wechselt von selbst zur Workout-Zeit.
+        let content = ActivityContent(state: state, staleDate: state.endsAt > state.startsAt ? state.endsAt : nil)
         let running = Activity<RestActivityAttributes>.activities
         if let current = running.first, current.attributes.workout == workout {
             Task { await current.update(content) }

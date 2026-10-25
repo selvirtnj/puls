@@ -21,6 +21,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         config.websiteDataStore = .default()
         // Gegenstück: native-bridge.js (window.webkit.messageHandlers.pulsNative).
         config.userContentController.add(self, name: "pulsNative")
+        // Kennzeichen für native-bridge.js: diese App-Version zeigt die Workout-Zeit in der Live-Aktivität.
+        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
@@ -83,7 +85,17 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                 startsAt: Date(timeIntervalSince1970: startsAt / 1000),
                 endsAt: Date(timeIntervalSince1970: endsAt / 1000),
                 exercise: body["exercise"] as? String ?? "Nächster Satz",
-                detail: body["detail"] as? String ?? "Weiter geht's"
+                detail: body["detail"] as? String ?? "Weiter geht's",
+                workoutStartsAt: (body["workoutStartsAt"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) }
+            )
+        case "workoutActive":
+            guard let workoutStartsAt = body["workoutStartsAt"] as? Double else { return }
+            RestCoordinator.shared.showWorkout(
+                workout: body["workout"] as? String ?? "Workout",
+                workoutStartsAt: Date(timeIntervalSince1970: workoutStartsAt / 1000),
+                exercise: body["exercise"] as? String ?? "Workout",
+                detail: body["detail"] as? String ?? "",
+                cancelRest: body["cancelRest"] as? Bool ?? false
             )
         case "restCancel":
             RestCoordinator.shared.cancel()

@@ -15,9 +15,11 @@ private let surface = Color(red: 0x15 / 255, green: 0x12 / 255, blue: 0x1b / 255
 private extension RestActivityAttributes.ContentState {
     var range: ClosedRange<Date> { startsAt...max(startsAt, endsAt) }
     func isOver(_ stale: Bool) -> Bool { stale || endsAt <= Date() }
+    /// Keine laufende Pause (nie gestartet oder abgelaufen): dann zählt die Workout-Zeit.
+    func showsWorkout(_ stale: Bool) -> Bool { isOver(stale) && workoutStartsAt != nil }
 }
 
-/// Countdown, den iOS selbst weiterzählt. Feste Breite: ein laufender Timer-Text reserviert sonst Platz
+/// Pausen-Countdown oder Workout-Zeit, die iOS selbst weiterzählt. Feste Breite: ein laufender Timer-Text reserviert sonst Platz
 /// für „0:00:00“ und schiebt Inhalte in der Dynamic Island und auf dem Sperrbildschirm aus der Mitte.
 private struct RestClock: View {
     let state: RestActivityAttributes.ContentState
@@ -27,10 +29,12 @@ private struct RestClock: View {
 
     var body: some View {
         Group {
-            if state.isOver(isStale) {
-                Text("Los!")
-            } else {
+            if !state.isOver(isStale) {
                 Text(timerInterval: state.range, countsDown: true)
+            } else if let workoutStartsAt = state.workoutStartsAt {
+                Text(workoutStartsAt, style: .timer)
+            } else {
+                Text("Los!")
             }
         }
         .font(.system(size: size, weight: .bold, design: .rounded))
@@ -43,7 +47,7 @@ private struct RestClock: View {
     }
 }
 
-/// Ring, der sich mit der Pause leert.
+/// Ring, der sich mit der Pause leert; ohne Pause das Trainingssymbol.
 private struct RestRing: View {
     let state: RestActivityAttributes.ContentState
     let isStale: Bool
@@ -51,7 +55,11 @@ private struct RestRing: View {
 
     var body: some View {
         Group {
-            if state.isOver(isStale) {
+            if state.showsWorkout(isStale) {
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .resizable()
+                    .scaledToFit()
+            } else if state.isOver(isStale) {
                 Image(systemName: "checkmark.circle.fill")
                     .resizable()
                     .scaledToFit()
@@ -93,7 +101,7 @@ private struct RestLockScreen: View {
         VStack(spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(state.isOver(context.isStale) ? "PAUSE VORBEI" : "PAUSE · \(context.attributes.workout.uppercased())")
+                    Text(state.showsWorkout(context.isStale) ? "WORKOUT · \(context.attributes.workout.uppercased())" : state.isOver(context.isStale) ? "PAUSE VORBEI" : "PAUSE · \(context.attributes.workout.uppercased())")
                         .font(.caption2.weight(.bold))
                         .tracking(0.6)
                         .foregroundStyle(accent)
@@ -110,7 +118,9 @@ private struct RestLockScreen: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 RestClock(state: state, isStale: context.isStale, size: 40, width: 112)
             }
-            RestBar(state: state)
+            if !state.isOver(context.isStale) {
+                RestBar(state: state)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -129,7 +139,7 @@ struct RestActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 8) {
                         RestRing(state: state, isStale: context.isStale, size: 26)
-                        Text("Pause")
+                        Text(state.showsWorkout(context.isStale) ? "Workout" : "Pause")
                             .font(.headline)
                             .foregroundStyle(.white)
                     }
@@ -154,7 +164,9 @@ struct RestActivityWidget: Widget {
                                 .foregroundStyle(.white.opacity(0.6))
                                 .lineLimit(1)
                         }
-                        RestBar(state: state)
+                        if !state.isOver(context.isStale) {
+                            RestBar(state: state)
+                        }
                     }
                     .padding(.horizontal, 6)
                     .padding(.top, 4)
