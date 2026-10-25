@@ -157,3 +157,20 @@ function pendingRestFixture(){
   console.log('PASS: pending rest popup only resumes for the surviving, unfinished workout without a new rest.');
 }
 pendingRestFixture();
+
+function blankProductNutrientsFixture(){
+  const ctx={round:value=>Math.round(value*10)/10,today:()=>'2026-10-25',
+    openModal(){},addFood(){},validData(){},nutrition(){},
+    modal:{addEventListener(){}},document:{addEventListener(){}}};
+  vm.runInNewContext(fs.readFileSync('js/products.js','utf8'),ctx);
+  for(const blank of ['', ' ', '\t', '\n', '\u00a0'])assert.equal(ctx.nutrientNumber(blank,100),null);
+  for(const zero of [0,'0',' 0 '])assert.equal(ctx.nutrientNumber(zero,100),0);
+  assert.equal(ctx.nutrientNumber(' 12.5 ',100),12.5);
+  const product=ctx.mapOffProduct({product_name:'Fixture',nutriments:{
+    'energy-kcal_100g':' ',proteins_100g:'\t',carbohydrates_100g:'\u00a0',fat_100g:'0'
+  }},'fixture');
+  assert.equal(product.kcal,null);assert.equal(product.p,null);assert.equal(product.c,null);assert.equal(product.f,0);
+  assert.equal(ctx.mapOffProduct({nutriments:{'energy-kcal_100g':' ','energy-kj_100g':418.4}},'fixture').kcal,100);
+  console.log('PASS: blank product nutrients remain unknown, real zeros/numbers and known kJ fallback survive.');
+}
+blankProductNutrientsFixture();
