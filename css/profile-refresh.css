@@ -159,8 +159,12 @@
 #mb.profilemodal #planner-form .profilefooter .btn.full { min-height: 48px; margin: 0; border-radius: 8px; }
 
 /* Sicherung */
-#mb #profile-form.backuppane { display: grid; gap: 10px; }
-#mb #profile-form.backuppane :is(.btn,label) { min-height: 44px; margin: 0; }
+/* Oben anliegend statt über die Fensterhöhe verteilt; kompakte Knöpfe. */
+#mb #profile-form.backuppane { display: grid; gap: 8px; align-content: start; grid-auto-rows: max-content; }
+#mb #profile-form.backuppane > h3 { margin: 4px 0 2px; font-size: 15px; }
+#mb #profile-form.backuppane .btn { min-height: 44px; height: auto; margin: 0; padding: 10px 14px; border-radius: 12px; font-size: 14px; }
+#mb #profile-form.backuppane label { display: grid; gap: 6px; margin: 6px 0 0 !important; font-size: 12px; }
+#mb #profile-form.backuppane label input[type=file] { min-height: 44px; padding: 6px; font-size: 13px; }
 
 @media (prefers-reduced-motion: reduce) {
   #mb.profilemodal #planner-form .segmented button { transition: none; }
