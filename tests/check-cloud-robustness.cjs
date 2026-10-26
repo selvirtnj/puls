@@ -23,7 +23,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   let disk=new Map([['puls-v1','{"goals":{"kcal":21'],['puls-cloud-session',session],['puls-cloud-meta-user-1',JSON.stringify({revision:3,dirty:false,baseline:'x:1'})]]);
   let a=harness({disk,fetchImpl:async url=>url.includes('/rpc/')?json({revision:4}):json([{payload:remote,revision:3}])});
   await tick();await tick();
-  assert.equal(disk.get('puls-v1-corrupt'),'{"goals":{"kcal":21','Rohtext muss gesichert werden');
+  assert.equal(disk.get('puls-v1-corrupt'),'{"goals":{"kcal":21','Rohtext muss gesichert werden');assert.equal(disk.get('puls-cloud-upload-blocked'),'1');
   assert(a.run('stateLoadCorrupt'));
   assert(!a.log.requests.some(u=>u.includes('/rpc/')),'leerer Notstand darf nicht hochgeladen werden');
   assert(a.run('cloudConflict'),'Auswahl muss angeboten werden');
@@ -54,5 +54,34 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   assert.match(garbage.run('cloudMessage'),/Unerwartete Antwort/);
   // Befund 9: recipes.js mit Cache-Version.
   assert(/src="js\/recipes\.js\?v=\d+"/.test(fs.readFileSync('index.html','utf8')));
-  console.log('PASS: corrupt local backup, upload lock, storage quota, non-JSON responses, recipes version (local mocks only)');
+  // Review 1/2: Sperre ist persistiert und überlebt einen Neustart mit gültigem Ersatzstand.
+  assert.equal(a.disk.get('puls-cloud-upload-blocked'),undefined,'Sperre nach Cloud-Übernahme aufgehoben');
+  disk=new Map([['puls-v1',JSON.stringify(remote)],['puls-cloud-upload-blocked','1'],['puls-cloud-session',session],['puls-cloud-meta-user-1',JSON.stringify({revision:3,dirty:true,baseline:'x:1'})]]);
+  let restart=harness({disk,fetchImpl:async url=>url.includes('/rpc/')?json({revision:4}):json([{payload:remote,revision:3}])});
+  await tick();await tick();
+  assert(!restart.log.requests.some(u=>u.includes('/rpc/')),'Neustart darf Sperre nicht umgehen');assert(restart.run('cloudConflict'));
+  // Review 1/3: Import entsperrt nur bei Erfolg; echter Revisionskonflikt bleibt.
+  let file=text=>`({size:${text.length},text:async()=>${JSON.stringify(text)}})`;
+  await restart.run(`importData(${file('kaputt')})`);assert(restart.run('cloudUploadBlocked'));assert.equal(disk.get('puls-cloud-upload-blocked'),'1');
+  await restart.run(`importData(${file(JSON.stringify({...remote,goals:{...remote.goals,kcal:2050}}))})`);
+  assert.equal(restart.run('state.goals.kcal'),2050);assert(!restart.run('cloudUploadBlocked'));assert(!disk.has('puls-cloud-upload-blocked'));assert(!restart.run('cloudConflict'));
+  disk=new Map([['puls-v1',JSON.stringify(remote)],['puls-cloud-upload-blocked','1']]);
+  let real=harness({disk,fetchImpl:async()=>json(null)});real.run('cloudConflict=true;cloudBlockConflict=false');
+  await real.run(`importData(${file(JSON.stringify(remote))})`);assert(real.run('cloudConflict'),'echter Konflikt bleibt erhalten');
+  // Review 1/1: fehlgeschlagene Sicherung vor der Anmeldung bricht ab, bevor Daten ersetzt werden.
+  let login=harness({quota:k=>k==='puls-cloud-local-before-login',fetchImpl:async()=>json([{payload:remote,revision:5}])});
+  login.run('state.goals.kcal=2400');
+  await assert.rejects(login.run("activateCloudSession({access_token:'t',refresh_token:'r',expires_in:3600,user:{id:'user-1'}})"),/Anmeldung abgebrochen/);
+  assert.equal(login.run('state.goals.kcal'),2400);assert.equal(login.run('cloudSession'),null);assert.equal(login.log.requests.length,0);
+  // Review 1/4: Speicherfehler bei der zweiten Abmelde-Sicherung erhält den aktuellen Stand.
+  let pendingWrites=0,out;disk=new Map([['puls-cloud-local-before-login',JSON.stringify(remote)]]);
+  out=harness({disk,quota:k=>k==='puls-cloud-pending-user-1'&&++pendingWrites>1,fetchImpl:async()=>{out.run('state.goals.kcal=2300');return json({})}});
+  out.run(`cloudSession=${session};cloudDirty=true;state.goals.kcal=2100`);await out.run('signOutCloud()');
+  assert.equal(out.run('cloudSession'),null);assert.equal(out.run('state.goals.kcal'),2300,'Änderung während Abmeldung bleibt');
+  // Review 1/5: scheitert die Rohsicherung, bleibt puls-v1 unangetastet, bis die Sicherung gelingt.
+  let blockRaw=true;disk=new Map([['puls-v1','{kaputt']]);
+  let raw=harness({disk,quota:k=>blockRaw&&k==='puls-v1-corrupt',fetchImpl:async()=>json(null)});
+  raw.run('state.goals.kcal=2200;save()');assert.equal(disk.get('puls-v1'),'{kaputt');assert(!disk.has('puls-v1-corrupt'));
+  blockRaw=false;raw.run('save()');assert.equal(disk.get('puls-v1-corrupt'),'{kaputt');assert.notEqual(disk.get('puls-v1'),'{kaputt');
+  console.log('PASS: corrupt local backup, persisted upload lock, import unlock, login/logout backup failures, storage quota, non-JSON responses, recipes version (local mocks only)');
 })().catch(error=>{console.error(error);process.exitCode=1});
