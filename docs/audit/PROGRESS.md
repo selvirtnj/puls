@@ -42,6 +42,10 @@ Auftrag: Selvirs „Master Mission“ vom 26.10.2026 (Gesamt-Audit, Aufräumen, 
 - 26.10. 07:05 Korrekturen Befunde 2, 3, 9, 11 (puls-backend) → `c90c8de`, neuer Test `tests/check-cloud-robustness.cjs`, check.cjs PASS (vom Koordinator wiederholt). Keine Versionserhöhung (erst vor Veröffentlichung).
 - 26.10. 07:06 Codex-Review dieses Diffs geplant für 07:29 (Hintergrund-Lauf); Ergebnis → `docs/audit/codex-review-1.md`.
 
+- 26.10. 07:29 Codex-Review 1 **echt gelaufen** (Thread `01a176e5-…`): 5 Befunde (2× P1, 3× P2) zu `c90c8de`, siehe `codex-review-1.md`.
+- 26.10. 07:39 puls-backend hat alle 5 Codex-Befunde behoben (js/cloud.js, js/app.js, tests/check-cloud-robustness.cjs) — **nicht committet**. check.cjs auf dem Arbeitsbaum PASS.
+- 26.10. 07:39 **Achtung, parallele Arbeit:** Eine zweite Sitzung/Agent (vermutlich zweite Instanz dieses Audits) hat gleichzeitig `js/flows.js`, `js/design-system.js`, `js/workout-polish.js`, `js/app.js`, `tests/check-onboarding.cjs`, `scripts/check.cjs` geändert und `docs/audit/UI-AUDIT.md`, `tests/check-audit-ui.cjs` angelegt. `js/app.js` enthält beide Änderungen gemischt. Deshalb nichts davon committet. Nächste Sitzung: erst klären, welche Sitzung koordiniert; nur ein Koordinator pro Arbeitskopie. Danach Codex-Fixes (cloud.js, app.js-Teile, Test) von den UI-Änderungen getrennt committen und Codex per `-Resume 01a176e5-e6d8-79d2-a8d6-d00f7acf41a5` erneut prüfen lassen.
+
 ## Nächste Schritte
 1. Codex-Ergebnis einarbeiten (Befunde vom Entwickler beheben lassen, Prüfer prüft erneut).
 2. Offene Befunde 1, 4–8, 10, 12 aus `QUALITY-REPORT.md` bewerten; Befund 4/5 sind UI-Verhalten → Browser-Prüfung nötig.
