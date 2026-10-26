@@ -1,11 +1,11 @@
 // Regression: beschädigter lokaler Stand, voller Speicher und Nicht-JSON-Serverantworten (nur lokale Mocks, kein echter Server).
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const files=['js/app.js','js/enhancements.js','js/products.js','js/recipes.js','js/experience.js','js/exercise-catalog.js','js/training.js','js/portions.js','js/insights.js','js/finish.js','js/personal.js'];
-function harness({disk=new Map(),fetchImpl,quota=()=>false,preview=false}={}){
+function harness({disk=new Map(),fetchImpl,quota=()=>false,removeQuota=()=>false,preview=false}={}){
   let nodes=new Map(),log={requests:[],writes:[],alerts:[],downloads:[],blobs:new Map()};
   const element=id=>{if(!nodes.has(id))nodes.set(id,{value:'',dataset:{},style:{setProperty(){},removeProperty(){}},classList:{add(){},remove(){},toggle(){}},innerHTML:'',textContent:'',querySelector:()=>null,remove(){},addEventListener(){},setAttribute(){},insertAdjacentHTML(){},showModal(){this.open=true},close(){this.open=false}});return nodes.get(id)};
   const context={document:{getElementById:element,createElement:()=>({click(){log.downloads.push({filename:this.download,blob:log.blobs.get(this.href)})}}),querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},body:{dataset:{},classList:{add(){},remove(){},toggle(){}}},documentElement:{}},
-    localStorage:{getItem:k=>disk.has(k)?disk.get(k):null,setItem:(k,v)=>{if(quota(k))throw Error('QuotaExceededError');log.writes.push({key:k,value:String(v)});disk.set(k,String(v))},removeItem:k=>disk.delete(k)},
+    localStorage:{getItem:k=>disk.has(k)?disk.get(k):null,setItem:(k,v)=>{if(quota(k))throw Error('QuotaExceededError');log.writes.push({key:k,value:String(v)});disk.set(k,String(v))},removeItem:k=>{if(removeQuota(k))throw Error('Storage removal fixture');disk.delete(k)}},
     crypto:require('crypto').webcrypto,Date,Intl,console,TextEncoder,Blob,URL:{createObjectURL:blob=>{let id='blob:fixture-'+log.blobs.size;log.blobs.set(id,blob);return id},revokeObjectURL(){}},window:{scrollTo(){},addEventListener(){},PULS_CLOUD:{url:'https://unit-test.supabase.co',publicKey:'sb_publishable_abcdefghijklmnopqrstuvwxyz'}},
     location:{protocol:'file:',search:preview?'?erststart=1':''},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},navigator:{vibrate(){}},alert:message=>log.alerts.push(message),confirm:()=>true,AbortController,atob:s=>Buffer.from(s,'base64').toString(),
     fetch:async(url,options)=>{log.requests.push(url);return fetchImpl(url,options)}};
@@ -85,7 +85,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   assert.equal(raw.run('stateCorruptRaw'),'{kaputt');assert.equal(raw.log.alerts.length,1);assert.match(raw.log.alerts[0],/Beschädigte Rohdaten herunterladen/);
   raw.run('exportCorruptBackup()');assert.equal(raw.log.downloads.length,1);
   assert.equal(JSON.parse(await raw.log.downloads[0].blob.text()).backups[0].raw,'{kaputt');
-  blockRaw=false;raw.run('save()');assert.equal(disk.get('puls-v1-corrupt'),'{kaputt');assert.equal(raw.run('stateCorruptRaw'),null);
+  blockRaw=false;raw.run('save()');assert.equal(JSON.parse(disk.get('puls-v1')).goals.kcal,2200);assert.equal(raw.run('stateCorruptRaw'),null);
   // Failure of the separate upload marker also allows saves while preserving the lock in local metadata.
   for(let markerOnly of [false,true]){
     let blocked=true;disk=new Map([['puls-v1','{new-corrupt'],['puls-cloud-session',session],['puls-cloud-meta-user-1',JSON.stringify({revision:3,dirty:true})]]);
@@ -122,11 +122,12 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
     disk=new Map([['puls-v1','{unsaved-raw'],...['puls-v1-corrupt','puls-v1-corrupt-2','puls-v1-corrupt-3'].map((k,i)=>[k,'{old-'+i])]);
     const recover=harness({disk,quota:k=>/^puls-v1-corrupt(?:-[23])?$/.test(k),fetchImpl:async()=>json(null)});
     if(recovery==='import')await recover.run(`importData(${file(JSON.stringify(remote))})`);else recover.run(`applyCloudProfile({payload:${JSON.stringify(remote)},revision:8})`);
-    assert.equal(recover.run('state.goals.kcal'),1900);assert.equal(disk.get('puls-v1'),'{unsaved-raw');assert.equal(JSON.parse(disk.get('puls-v1-recovered')).goals.kcal,1900);assert.equal(recover.run('stateCorruptRaw'),'{unsaved-raw');
-    assert.equal(recover.log.alerts.length,1);assert(recover.run('cloudUploadBlocked'));
+    assert.equal(recover.run('state.goals.kcal'),1900);assert.equal(JSON.parse(disk.get('puls-v1')).goals.kcal,1900);assert(!disk.has('puls-v1-recovered'));assert.equal(recover.run('stateCorruptRaw'),null);
+    assert.equal(recover.log.alerts.length,1);assert(!recover.run('cloudUploadBlocked'));assert.equal(recover.log.downloads.length,1);
   }
   console.log('PASS: Review 3/1 rotating raw backups, memory download + one warning, nonblocking import/cloud/save and persistent upload lock');
   await checkRecoveredPersistence();
+  await checkRecoveryStandChoices();
   checkAccountCopyCleanup();
   // Q1 revision-first-poll: unchanged revision transfers no payload; changed revision pulls once.
   let poll,revision=7,payloadReads=0,revisionError=false,editDuringCheck=false;
@@ -302,6 +303,61 @@ async function checkRecoveredPersistence(){
   const selected=harness({disk:new Map([['puls-v1',JSON.stringify(remote)],['puls-v1-recovered',JSON.stringify(filled)]]),fetchImpl:async()=>json(null)});
   assert.equal(selected.run('state.foods[0].id'),'saved-snapshot');assert.equal(selected.run('state.foods[0].kcal'),50);assert(selected.run('cloudUploadBlocked'));
   console.log('PASS: N1 recovered-copy persistence, original raw retention, restart preference + upload lock, download/confirmation, failed promotion/download, quota/RAM and invalid recovery rejection');
+}
+
+async function checkRecoveryStandChoices(){
+  const original='{last-unsaved-raw',rawQuota=k=>/^puls-v1-corrupt(?:-[23])?$/.test(k);
+  const working={...remote,goals:{...remote.goals,kcal:2450},weights:[{id:'old-weight',date:'2026-10-01',kg:81}]};
+  const imported={...working,goals:{...remote.goals,kcal:2050}},pending={...working,goals:{...remote.goals,kcal:2250}};
+  function scenario(route,{cancel=false,rawProtected=false,failStorage=''}={}){
+    const disk=new Map([['puls-v1',original],['puls-v1-recovered',JSON.stringify(working)]]);
+    let server={payload:structuredClone(remote),revision:7},uploads=0,armed=false;
+    const fetchImpl=async(url,options)=>{
+      if(url.includes('/rpc/')){const body=JSON.parse(options.body);assert.equal(body.p_expected_revision,server.revision);server={payload:body.p_payload,revision:server.revision+1};uploads++;return json({revision:server.revision})}
+      return json(url.includes('select=revision&')?[{revision:server.revision}]:[server]);
+    };
+    const fixture=harness({disk,fetchImpl,quota:k=>!rawProtected&&rawQuota(k)||armed&&failStorage==='write'&&k==='puls-v1',removeQuota:k=>armed&&(failStorage==='sidecar'&&k==='puls-v1-recovered'||failStorage==='marker'&&k==='puls-cloud-upload-blocked')});
+    fixture.run(`var recoveryPrompts=[];confirm=message=>{recoveryPrompts.push(message);return ${!cancel}||!message.includes('beschädigten Rohdaten')}`);
+    if(route!=='login'&&route!=='pending')fixture.run(`cloudSession=${session};cloudRevision=${route==='import'?7:3};cloudConflict=true;cloudBlockConflict=true;cloudDirty=true`);
+    else disk.set('puls-cloud-meta-user-1',JSON.stringify({revision:route==='pending'?7:3,dirty:route==='pending'}));
+    if(route==='pending'){disk.set('puls-cloud-pending-user-1',JSON.stringify(pending));fixture.run('cloudRevision=3')}
+    fixture.run('save()');armed=true;
+    const choose=async()=>{
+      if(route==='local'||route==='remote')await fixture.run(`resolveCloudConflict('${route}')`);
+      else if(route==='login'||route==='pending')await fixture.run(`activateCloudSession({...${session},expires_in:3600})`);
+      else if(route==='initialize'){fixture.run('cloudRevision=7;cloudConflict=false');await fixture.run('initializeCloudProfile()')}
+      else await fixture.run(`importData({size:1000,text:async()=>${JSON.stringify(JSON.stringify(imported))}})`);
+    };
+    return {fixture,disk,choose,fetchImpl,uploads:()=>uploads,server:()=>server};
+  }
+  for(let route of ['local','remote','login','import','pending','initialize']){
+    for(let rawProtected of [false,true]){
+      const test=scenario(route,{rawProtected}),{fixture,disk}=test;await test.choose();
+      const expected=({local:2450,remote:1900,login:1900,import:2050,pending:2250,initialize:2450})[route];
+      assert.equal(fixture.run('state.goals.kcal'),expected,route);
+      assert.equal(fixture.run('cloudUploadBlocked'),false,route+' unlocks');
+      assert(fixture.run('!stateRecoveryPending&&!stateLoadCorrupt&&!stateUploadBlockPending&&!stateCorruptAcknowledged&&stateCorruptRaw===null'),route+' resets recovery flags');
+      assert(!disk.has('puls-v1-recovered'));assert(!disk.has('puls-cloud-upload-blocked'));assert.equal(JSON.parse(disk.get('puls-v1')).__pulsRecoveryUploadBlocked,undefined);
+      assert.equal(fixture.log.downloads.length,rawProtected?0:1,route+' downloads unsaved raw only');
+      if(!rawProtected)assert(JSON.parse(await fixture.log.downloads[0].blob.text()).backups.some(item=>item.raw===original));
+      // A normal save and CAS upload after the choice must remain free of recovery state.
+      fixture.run('state.goals.kcal+=10;save()');await fixture.run('syncCloud()');
+      assert.equal(fixture.run('cloudUploadBlocked'),false);assert(!fixture.run('cloudConflict'));assert.equal(test.server().payload.goals.kcal,expected+10);
+      const restarted=harness({disk,quota:rawProtected?()=>false:rawQuota,fetchImpl:test.fetchImpl});await tick();await tick();restarted.run('save()');
+      assert.equal(restarted.run('state.goals.kcal'),expected+10,route+' survives restart');assert(!restarted.run('cloudUploadBlocked'));assert(!restarted.run('stateRecoveryPending'));assert(!disk.has('puls-v1-recovered'));assert(!disk.has('puls-cloud-upload-blocked'));
+    }
+    const cancelled=scenario(route,{cancel:true});await cancelled.choose();
+    assert.equal(cancelled.fixture.run('state.goals.kcal'),2450,route+' abort preserves working profile');assert.equal(cancelled.disk.get('puls-v1'),original);
+    assert.equal(JSON.parse(cancelled.disk.get('puls-v1-recovered')).goals.kcal,2450);assert(cancelled.fixture.run('cloudUploadBlocked'));assert.equal(cancelled.uploads(),0);
+    cancelled.fixture.run('save()');const again=harness({disk:cancelled.disk,quota:rawQuota,fetchImpl:cancelled.fetchImpl});await tick();await tick();
+    assert.equal(again.run('state.goals.kcal'),2450);assert(again.run('cloudUploadBlocked'));assert.equal(cancelled.disk.get('puls-v1'),original);assert.equal(cancelled.uploads(),0);
+  }
+  // A failed durable commit/cleanup must not apply the remote choice or release the lock.
+  for(let failure of ['write','sidecar','marker']){
+    const test=scenario('remote',{failStorage:failure});await test.choose();
+    assert.equal(test.fixture.run('state.goals.kcal'),2450);assert.equal(test.disk.get('puls-v1'),original);assert(test.disk.has('puls-v1-recovered'));assert(test.fixture.run('cloudUploadBlocked'));assert.equal(test.uploads(),0);
+  }
+  console.log('PASS: recovery stand choices local/remote/login/import (+ pending login/initialize), each save + CAS upload + restart, raw download/confirmation, cancellation and durable cleanup failures');
 }
 
 function checkAccountCopyCleanup(){

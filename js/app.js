@@ -42,17 +42,39 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const n=x=>new Intl.NumberFormat(appLocale(),{maximumFractionDigits:1}).format(x),uid=()=>crypto.randomUUID(),round=x=>Math.round(x*10)/10;
 function save(){preserveCorruptState();try{writeLocalState(state)}catch{alert(stateRecoveryPending?'Speichern fehlgeschlagen. Dein Arbeitsstand ist nur im Arbeitsspeicher; das beschädigte Original bleibt erhalten. Bitte exportiere deine Daten.':'Speichern fehlgeschlagen. Bitte exportiere deine Daten.')}}
 function corruptBackups(){let backups=[];for(let key of stateCorruptKeys)try{let raw=appStore.getItem(key);if(raw!==null)backups.push({source:key,raw})}catch{}if(stateCorruptRaw!==null&&!backups.some(item=>item.raw===stateCorruptRaw))backups.push({source:'Arbeitsspeicher',raw:stateCorruptRaw});return backups}
-function confirmRecoveredState(){
- if(!stateRecoveryPending&&stateCorruptRaw===null)return false;
- if(!confirm('Sind die beschädigten Rohdaten als Datei gesichert? Wiederhergestellten Stand jetzt als Hauptstand übernehmen und das beschädigte Original ersetzen?'))return false;
- stateRecoveryPending=false;stateCorruptAcknowledged=true;
- try{writeLocalState(state);appStore.removeItem('puls-v1-recovered');return true}catch{
-  stateRecoveryPending=true;stateCorruptAcknowledged=false;
-  try{writeLocalState(state)}catch{}
-  alert('Übernahme fehlgeschlagen. Dein Arbeitsstand bleibt getrennt gespeichert oder im Arbeitsspeicher. Bitte exportiere deine Daten.');return false;
+// Persist the chosen profile before releasing recovery, regardless of the caller (cloud/import/download).
+function finishRecovery(data,{releaseUpload=true,rawAcknowledged=false}={}){
+ if(!validData(data))throw Error('Standwahl abgebrochen: ungültiges Profil. Deine Arbeitskopie bleibt erhalten.');
+ preserveCorruptState();
+ if(stateCorruptRaw!==null&&!stateCorruptAcknowledged&&!rawAcknowledged){
+  if(!downloadCorruptBackups()||!confirm('Sind die beschädigten Rohdaten als Datei gesichert? Den gewählten Stand jetzt übernehmen und das beschädigte Original ersetzen?'))return false;
  }
+ const previous=appStore.getItem('puls-v1'),recovered=appStore.getItem('puls-v1-recovered'),blocked=appStore.getItem('puls-cloud-upload-blocked');
+ let chosen={...data};delete chosen.__pulsRecoveryUploadBlocked;if(!releaseUpload)chosen.__pulsRecoveryUploadBlocked=true;
+ try{
+  appStore.setItem('puls-v1',JSON.stringify(chosen));
+  appStore.removeItem('puls-v1-recovered');
+  if(releaseUpload)appStore.removeItem('puls-cloud-upload-blocked');else try{appStore.setItem('puls-cloud-upload-blocked','1')}catch{}
+ }catch(error){
+  try{if(previous===null)appStore.removeItem('puls-v1');else appStore.setItem('puls-v1',previous)}catch{}
+  try{if(recovered!==null)appStore.setItem('puls-v1-recovered',recovered)}catch{}
+  try{if(blocked!==null)appStore.setItem('puls-cloud-upload-blocked',blocked)}catch{}
+  throw Error('Standwahl abgebrochen: Speichern nicht möglich. Deine Arbeitskopie bleibt erhalten.');
+ }
+ stateRecoveryPending=false;stateCorruptRaw=null;stateCorruptAcknowledged=false;stateLoadCorrupt=false;stateCorruptAlerted=false;stateUploadBlockPending=false;
+ try{if(typeof cloudUploadBlocked==='boolean')cloudUploadBlocked=!releaseUpload}catch{}
+ return true;
 }
-function exportCorruptBackup(){let backups=corruptBackups();if(!backups.length)return;let url=URL.createObjectURL(new Blob([JSON.stringify({format:'puls-corrupt-backups-v1',backups},null,2)],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download='puls-beschaedigte-rohdaten.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);if(stateRecoveryPending)confirmRecoveredState()}
+function confirmRecoveredState({rawDownloaded=false}={}){
+ if(!stateRecoveryPending&&stateCorruptRaw===null)return false;
+ try{
+  if(stateCorruptRaw!==null&&!rawDownloaded&&!downloadCorruptBackups())return false;
+  if(!confirm('Sind die beschädigten Rohdaten als Datei gesichert? Wiederhergestellten Stand jetzt als Hauptstand übernehmen und das beschädigte Original ersetzen?'))return false;
+  return finishRecovery(state,{releaseUpload:false,rawAcknowledged:true});
+ }catch{alert('Übernahme fehlgeschlagen. Dein Arbeitsstand bleibt getrennt gespeichert oder im Arbeitsspeicher. Bitte exportiere deine Daten.');return false}
+}
+function downloadCorruptBackups(){let backups=corruptBackups();if(!backups.length)return false;let url=URL.createObjectURL(new Blob([JSON.stringify({format:'puls-corrupt-backups-v1',backups},null,2)],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download='puls-beschaedigte-rohdaten.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return true}
+function exportCorruptBackup(){if(downloadCorruptBackups()&&stateRecoveryPending)confirmRecoveredState({rawDownloaded:true})}
 // Dezimalwert für Eingabefelder: deutsche Oberfläche zeigt Komma, gespeichert bleibt die Zahl (UI-9).
 // Zahl mit Einzahl/Mehrzahl („1 Übung“, „2 Übungen“, UI-8); i18n.js übersetzt beide Formen.
 function countText(count,one,many){return `${count} ${Number(count)===1?one:many}`}
@@ -108,7 +130,7 @@ function settings(){openModal('Ziele & Daten',`<form onsubmit="saveGoals(event)"
 function saveGoals(e){e.preventDefault();['kcal','p','c','f'].forEach(k=>state.goals[k]=Number($('goal-'+k).value));save();modal.close();render();toast('Ziele gespeichert')}
 function exportData(){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.href=u;a.download='puls-sicherung-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 function validData(s){const finite=(v,min=0)=>typeof v==='number'&&Number.isFinite(v)&&v>=min;const str=x=>typeof x==='string';const day=x=>str(x)&&/^\d{4}-\d{2}-\d{2}$/.test(x);const nutrients=x=>['kcal','p','c','f'].every(k=>finite(x[k]));return s&&s.goals&&nutrients(s.goals)&&finite(s.goals.kcal,1)&&['p','c','f'].every(k=>finite(s.goals[k]))&&['foods','weights','workouts','custom'].every(k=>Array.isArray(s[k]))&&s.foods.every(x=>str(x.id)&&str(x.name)&&day(x.date)&&meals.includes(x.meal)&&finite(x.grams,.1)&&nutrients(x))&&s.weights.every(x=>str(x.id)&&day(x.date)&&finite(x.kg,20)&&x.kg<=400)&&s.custom.every(x=>str(x.id)&&str(x.name)&&nutrients(x))&&s.workouts.every(w=>str(w.id)&&str(w.name)&&day(w.date)&&typeof w.finished==='boolean'&&Array.isArray(w.exercises)&&w.exercises.every(e=>str(e.id)&&str(e.name)&&Array.isArray(e.sets)&&e.sets.every(s=>(s.kg===''||finite(s.kg))&&(s.reps===''||finite(s.reps,1))&&typeof s.done==='boolean')))}
-async function importData(file){if(!file)return;try{if(file.size>5000000)throw Error();let s=JSON.parse(await file.text());if(!validData(s))throw Error();delete s.__pulsRecoveryUploadBlocked;if(typeof prepareImportedData==='function')s=prepareImportedData(s);if(!validData(s))throw Error();if(!confirm('Alle aktuellen Daten durch diese Sicherung ersetzen?'))return;preserveCorruptState();try{appStore.setItem('puls-local-before-import',JSON.stringify(state))}catch{try{exportData()}catch{toast('Export nicht möglich. Wiederherstellen abgebrochen.');return}if(!confirm('Gerätespeicher voll. Der bisherige Stand wurde als Datei zum Download angeboten. Bitte die Datei sichern. Trotzdem mit dem Import fortfahren?'))return}try{writeLocalState(s)}catch{toast('Wiederherstellen abgebrochen: Speichern nicht möglich. Bitte Gerätespeicher freigeben.');return}state=s;save();modal.close();render();toast('Sicherung wiederhergestellt')}catch{toast('Ungültige Sicherung. Daten bleiben erhalten.')}}
+async function importData(file){if(!file)return;try{if(file.size>5000000)throw Error();let s=JSON.parse(await file.text());if(!validData(s))throw Error();delete s.__pulsRecoveryUploadBlocked;if(typeof prepareImportedData==='function')s=prepareImportedData(s);if(!validData(s))throw Error();if(!confirm('Alle aktuellen Daten durch diese Sicherung ersetzen?'))return;preserveCorruptState();try{appStore.setItem('puls-local-before-import',JSON.stringify(state))}catch{try{exportData()}catch{toast('Export nicht möglich. Wiederherstellen abgebrochen.');return}if(!confirm('Gerätespeicher voll. Der bisherige Stand wurde als Datei zum Download angeboten. Bitte die Datei sichern. Trotzdem mit dem Import fortfahren?'))return}try{if(!finishRecovery(s)){toast('Wiederherstellen abgebrochen. Deine Arbeitskopie bleibt erhalten.');return}}catch{toast('Wiederherstellen abgebrochen: Speichern nicht möglich. Bitte Gerätespeicher freigeben.');return}state=s;save();modal.close();render();toast('Sicherung wiederhergestellt')}catch{toast('Ungültige Sicherung. Daten bleiben erhalten.')}}
 // Prefer the separately saved working copy only after the core validator and meal names are ready.
 try{let recovered=JSON.parse(appStore.getItem('puls-v1-recovered')||'null');if(recovered&&validData(recovered)){delete recovered.__pulsRecoveryUploadBlocked;state=recovered;stateRecoveryPending=true;stateLoadCorrupt=true;stateUploadBlockPending=true;preserveCorruptState()}}catch{}
 setDate(date);
