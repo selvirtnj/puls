@@ -18,6 +18,7 @@
   --ds-label: #111114;
   --ds-label-2: #636366;
   --ds-label-3: #8A8A8E;
+  --ds-placeholder: #68686C;
   --ds-separator: #C6C6C8;
   --ds-accent: #007AFF;
   --ds-accent-text: #0062CC;
@@ -47,6 +48,7 @@
   --ds-label: #FFFFFF;
   --ds-label-2: #AEAEB2;
   --ds-label-3: #8E8E93;
+  --ds-placeholder: #A4A4A9;
   --ds-separator: #38383A;
   --ds-accent: #0A84FF;
   --ds-accent-text: #409CFF;
@@ -257,7 +259,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
   min-height: 44px;
   font-size: 17px !important;
 }
-input::placeholder, textarea::placeholder { color: var(--ds-label-3) !important; opacity: 1; }
+input::placeholder, textarea::placeholder { color: var(--ds-placeholder) !important; opacity: 1; }
 input[type=file] { color: var(--ds-label-2) !important; font-size: 15px !important; }
 input[type=file]::file-selector-button { border: 0; border-radius: 8px; background: var(--ds-fill); color: var(--ds-accent-text); font: 600 15px var(--font); padding: 10px 14px; margin-right: 10px; }
 input[type=checkbox], input[type=radio], input[type=range] { accent-color: var(--ds-accent); }
@@ -531,7 +533,7 @@ html body .diaryrow > span:last-child small { margin-left: 3px; font-size: 15px 
 #modal .fftabs .btn, #modal .foodtabs .btn { color: var(--ds-label-2) !important; }
 #modal .fftabs .btn[aria-pressed=true], #modal .foodtabs .btn.foodtabactive { background: var(--ds-surface) !important; color: var(--ds-accent-text) !important; }
 #modal .fftabs .fftablabel { color: inherit !important; font-size: 12px !important; }
-#modal .ffchip { min-height: 36px; border: 0 !important; border-radius: 8px !important; background: var(--ds-fill) !important; color: var(--ds-label) !important; font-size: 15px !important; }
+#modal .ffchip { min-height: 44px; border: 0 !important; border-radius: 8px !important; background: var(--ds-fill) !important; color: var(--ds-label) !important; font-size: 15px !important; }
 #modal .ffchip.active, #modal .ffchip[aria-pressed=true] { background: var(--ds-label) !important; color: var(--ds-bg) !important; }
 #modal .ffstatus { font-size: 13px !important; color: var(--ds-label-2) !important; }
 .foodwarning { color: var(--ds-orange-text) !important; font-size: 13px !important; }
@@ -608,7 +610,7 @@ html body .calday.selected, html body .calday[aria-pressed=true] { outline: 2px 
 .metricmini strong { font-size: 20px; color: var(--ds-label); }
 .metricrange { font-size: 13px; color: var(--ds-label-2); }
 .charttoggles { display: flex; flex-wrap: wrap; gap: 8px; }
-.charttoggles button { display: inline-flex !important; align-items: center; gap: 6px; min-height: 36px !important; padding: 0 12px !important; }
+.charttoggles button { display: inline-flex !important; align-items: center; gap: 6px; min-height: 44px !important; padding: 0 12px !important; }
 .charttoggles .dsseriesdot { width: 8px; height: 8px; border-radius: 50%; background: var(--series, var(--ds-accent)); }
 .charttoggles button[aria-pressed=false] .dsseriesdot { background: var(--ds-label-3); }
 

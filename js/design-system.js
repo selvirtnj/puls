@@ -22,7 +22,7 @@ function dsDayGoals(){return (typeof dayGoals==='function'?dayGoals(date):state.
 function dsMacroRows(t,g){
   return `<div class="dsmacros">${[['p',dsText('Protein','Protein')],['c',dsText('Kohlenhydrate','Carbs')],['f',dsText('Fett','Fat')]].map(([k,label])=>{
     let target=Number(g[k])||0,value=t[k]||0,width=target>0?Math.min(100,value/target*100):0,isOver=target>0&&value>target;
-    return `<div class="dsmacro"><span>${label}</span><strong>${n(Math.round(value))}${target>0?' / '+n(target):''} g</strong><div class="dsmeter" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${target||0}" aria-valuenow="${Math.round(value)}"><i class="${isOver?'dsover':''}" style="width:${width}%"></i></div></div>`;
+    return `<div class="dsmacro"><span>${label}</span><strong>${n(Math.round(value))}${target>0?' / '+n(target):''} g</strong><div class="dsmeter" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${target||100}" aria-valuenow="${Math.min(target,Math.max(0,Math.round(value)))}" aria-valuetext="${n(Math.round(value))}${target>0?' / '+n(target):''} g"><i class="${isOver?'dsover':''}" style="width:${width}%"></i></div></div>`;
   }).join('')}</div>`;
 }
 function dsEnergyFacts(t,g){
