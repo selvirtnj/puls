@@ -1,5 +1,6 @@
 import ActivityKit
 import SwiftUI
+import UIKit
 import WidgetKit
 
 @main
@@ -10,8 +11,8 @@ struct PULSWidgets: WidgetBundle {
     }
 }
 
-private let accent = Color(red: 0xbd / 255, green: 0x91 / 255, blue: 0xff / 255)
-private let surface = Color(red: 0x15 / 255, green: 0x12 / 255, blue: 0x1b / 255)
+private let accent = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 10 / 255, green: 132 / 255, blue: 1, alpha: 1) : UIColor(red: 0, green: 122 / 255, blue: 1, alpha: 1) })
+private let surface = Color(uiColor: .secondarySystemBackground)
 
 private extension RestActivityAttributes.ContentState {
     var range: ClosedRange<Date> { startsAt...max(startsAt, endsAt) }
@@ -30,7 +31,9 @@ private struct RestClock: View {
 
     var body: some View {
         Group {
-            if !state.isOver(isStale) {
+            if state.ended == true {
+                Text("Beendet")
+            } else if !state.isOver(isStale) {
                 Text(timerInterval: state.range, countsDown: true)
             } else if let workoutStartsAt = state.workoutStartsAt {
                 Text(workoutStartsAt, style: .timer)
@@ -38,7 +41,7 @@ private struct RestClock: View {
                 Text("Los!")
             }
         }
-        .font(.system(size: size, weight: .bold, design: .rounded))
+        .font(.system(size: size, weight: .bold))
         .monospacedDigit()
         .multilineTextAlignment(.trailing)
         .lineLimit(1)
@@ -56,7 +59,9 @@ private struct RestRing: View {
 
     var body: some View {
         Group {
-            if state.showsWorkout(isStale) {
+            if state.ended == true {
+                Image(systemName: "checkmark.circle").resizable().scaledToFit()
+            } else if state.showsWorkout(isStale) {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .resizable()
                     .scaledToFit()
@@ -102,18 +107,18 @@ private struct RestLockScreen: View {
         VStack(spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(state.showsWorkout(context.isStale) ? "WORKOUT · \(context.attributes.workout.uppercased())" : state.isOver(context.isStale) ? "PAUSE VORBEI" : "PAUSE · \(context.attributes.workout.uppercased())")
+                    Text(state.ended == true ? "Beendet" : state.showsWorkout(context.isStale) ? "Workout · \(context.attributes.workout)" : state.isOver(context.isStale) ? "Pause vorbei" : "Pause · \(context.attributes.workout)")
                         .font(.caption2.weight(.bold))
-                        .tracking(0.6)
+
                         .foregroundStyle(accent)
                         .lineLimit(1)
                     Text(state.exercise)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
                     Text(state.detail)
                         .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -126,7 +131,7 @@ private struct RestLockScreen: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .activityBackgroundTint(surface)
-        .activitySystemActionForegroundColor(.white)
+        .activitySystemActionForegroundColor(.primary)
     }
 }
 
@@ -140,9 +145,9 @@ struct RestActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 8) {
                         RestRing(state: state, isStale: context.isStale, size: 26)
-                        Text(state.showsWorkout(context.isStale) ? "Workout" : "Pause")
+                        Text(state.ended == true ? "Beendet" : state.showsWorkout(context.isStale) ? "Workout" : "Pause")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                     }
                     .padding(.leading, 6)
                     .frame(maxHeight: .infinity, alignment: .center)
@@ -157,12 +162,12 @@ struct RestActivityWidget: Widget {
                         HStack(alignment: .firstTextBaseline) {
                             Text(state.exercise)
                                 .font(.headline)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.primary)
                                 .lineLimit(1)
                             Spacer(minLength: 8)
                             Text(state.detail)
                                 .font(.subheadline)
-                                .foregroundStyle(.white.opacity(0.6))
+                                .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
                         if !state.isOver(context.isStale) {

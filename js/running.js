@@ -79,11 +79,25 @@ function runOwnedHere(run=state.activeRun){if(!run)return false;let key=String(r
 function runOwnsGps(run=state.activeRun){return !!run?.gps&&runTypeUsesGps(run.type)&&runOwnedHere(run)}
 // iOS-App (pulsNativeFeatures 'runActivity'): Live-Aktivität und km-Mitteilungen. Nur das startende Gerät meldet.
 let runActivitySent='',runActivityAt=0;
+// Nur lokal: Abschlussformular bleibt fortsetzbar, die Live-Aktivität ist bereits beendet.
+let runActivityEndedKey='';
+function runActivityEnded(value){
+  if(value!==undefined)runActivityEndedKey=value||'';
+  try{
+    if(typeof firstRunPreview!=='undefined'&&firstRunPreview)return runActivityEndedKey;
+    if(value===undefined)return runActivityEndedKey||localStorage.getItem('puls-run-ended')||'';
+    if(value)localStorage.setItem('puls-run-ended',value);else localStorage.removeItem('puls-run-ended');
+  }catch{}
+  return runActivityEndedKey;
+}
 // finalValues: gespeicherter Endstand (Distanz/Zeit aus dem Formular), damit die Insel nicht weiterzählt.
 function syncRunActivity(force=false,finished=false,finalValues=null){
   let bridge=runNativeBridge();if(!bridge||!(window.pulsNativeFeatures||[]).includes('runActivity'))return;
   let run=state.activeRun,owned=runOwnedHere(run);
-  if(!owned){if(runActivitySent!=='off'){bridge.postMessage({type:'runActivity',active:false,finished,...(finished&&finalValues?{finalKm:finalValues.distanceKm,finalSeconds:finalValues.durationSeconds}:{})});runActivitySent='off'}return}
+  if(finished&&owned)runActivityEnded(String(run.startedAt));
+  if(!owned||finished||((window.pulsNativeFeatures||[]).includes('runActivityEndState')&&runActivityEnded()===String(run.startedAt))){
+    if(force||runActivitySent!=='off'){bridge.postMessage({type:'runActivity',active:false,finished,...(finished&&finalValues?{finalKm:finalValues.distanceKm,finalSeconds:finalValues.durationSeconds}:{})});runActivitySent='off'}return
+  }
   let key=[run.startedAt,run.pausedAt,run.pausedSeconds,run.gps].join(':');if(!force&&key===runActivitySent&&Date.now()-runActivityAt<10000)return;
   let route=typeof runRouteById==='function'?runRouteById(run.routeId):null;
   bridge.postMessage({type:'runActivity',active:true,runKey:String(run.startedAt),startedAt:run.startedAt,pausedSeconds:run.pausedSeconds||0,pausedAt:run.pausedAt||null,gps:!!run.gps,distanceKm:Math.round(runGpsKm()*1000)/1000,title:route?.name||(typeof runTypeInfo==='function'?runTypeName(runTypeInfo(run.type)):runText('Lauf','Run')),...(route?{routeKm:route.distanceKm}:{})});
@@ -201,7 +215,7 @@ function startRunTimer(gps=true,routeId=null,type='run'){
   }
   syncRunGps();syncRunActivity(true);runViewRefresh();render();
 }
-function toggleRunPause(){let run=state.activeRun;if(!run)return;if(run.pausedAt){run.pausedSeconds=(run.pausedSeconds||0)+Math.max(0,(Date.now()-run.pausedAt)/1000);run.pausedAt=null;run.segment=(run.segment||0)+1;run.segmentStartedAt=Date.now()}else run.pausedAt=Date.now();save();syncRunGps();syncRunActivity(true);runViewRefresh();render()}
+function toggleRunPause(){let run=state.activeRun;if(!run)return;if(run.pausedAt){runActivityEnded(null);run.pausedSeconds=(run.pausedSeconds||0)+Math.max(0,(Date.now()-run.pausedAt)/1000);run.pausedAt=null;run.segment=(run.segment||0)+1;run.segmentStartedAt=Date.now()}else run.pausedAt=Date.now();save();syncRunGps();syncRunActivity(true);runViewRefresh();render()}
 // Beenden: pausieren, alle GPS-Punkte abholen, dann die Zusammenfassung öffnen (Speichern erst dort).
 async function finishRunTimer(){
   let run=state.activeRun;if(!run)return;
@@ -216,6 +230,8 @@ async function finishRunTimer(){
   if(state.activeRun!==run)return;
   let points=run.gps?runTrackFor(run).points:[],km=run.gps?Math.round(runTrackKm(points)*100)/100:0;
   runPendingRoute=run.gps&&km>=.01?runRouteString(points):null;runPendingSplits=run.gps&&km>=1?runSplits(points):null;
+  // App 1.6 kann eine beendete Insel nach „Weiter“ nicht wieder anlegen: dort bis zum Speichern pausiert lassen.
+  if((window.pulsNativeFeatures||[]).includes('runActivityEndState'))syncRunActivity(true,true,{distanceKm:km,durationSeconds:runElapsed(run)});
   if(typeof runOpenSummary==='function')runOpenSummary(run,points,km);
 }
 // Gespeicherte Aktivität aus der Zusammenfassung übernehmen; räumt Aufzeichnung, natives GPS und Live-Aktivität auf.
@@ -226,13 +242,13 @@ function commitRunActivity(fields){
   if(run.gps&&owned){r.source='gps';if(runPendingRoute)r.route=runPendingRoute;if(runPendingSplits?.splits.length){r.splits=runPendingSplits.splits;if(runPendingSplits.restMeters)r.splitRest=[runPendingSplits.restMeters,runPendingSplits.restSeconds]}}
   for(let key of Object.keys(r))if(r[key]===undefined||r[key]===null||r[key]==='')delete r[key];
   runList().push(r);
-  state.activeRun=null;if(owned)runNativeStop(true);clearRunTrack();syncRunGps();syncRunActivity(true,true,{distanceKm:r.distanceKm,durationSeconds:r.durationSeconds});
+  state.activeRun=null;if(owned)runNativeStop(true);clearRunTrack();runActivityEnded(null);syncRunGps();syncRunActivity(true,true,{distanceKm:r.distanceKm,durationSeconds:r.durationSeconds});
   save();render();
   let gained=Object.values(runAwards()).reduce((a,x)=>a+x.xp,0)-before;
   toast(gained>0?runText('Gespeichert · Bestleistung +25 XP','Saved · personal best +25 XP'):runText('Aktivität gespeichert','Activity saved'));
   return r;
 }
-function discardRunTimer(){if(!state.activeRun)return false;if(!confirm(runText('Aktivität verwerfen? Zeit und Strecke werden nicht gespeichert.','Discard this activity? Time and route will not be saved.')))return false;let owned=runOwnsGps();state.activeRun=null;if(owned)runNativeStop(true);clearRunTrack();save();syncRunGps();syncRunActivity(true);modal.close();render();toast(runText('Aktivität verworfen','Activity discarded'));return true}
+function discardRunTimer(){if(!state.activeRun)return false;if(!confirm(runText('Aktivität verwerfen? Zeit und Strecke werden nicht gespeichert.','Discard this activity? Time and route will not be saved.')))return false;let owned=runOwnsGps();state.activeRun=null;if(owned)runNativeStop(true);clearRunTrack();runActivityEnded(null);save();syncRunGps();syncRunActivity(true);modal.close();render();toast(runText('Aktivität verworfen','Activity discarded'));return true}
 setInterval(()=>{if(state.activeRun?.gps||runNativeStarted||runGpsWatch!==null)syncRunGps();updateRunLive();syncRunActivity()},1000);
 document.addEventListener('visibilitychange',()=>{syncRunGps();updateRunLive();syncRunActivity(true)});
 function deleteRun(id){if(!confirm(runText('Diesen Lauf löschen?','Delete this run?')))return;state.runs=runList().filter(x=>x.id!==id);save();modal.close();render();toast(runText('Lauf gelöscht','Run deleted'))}

@@ -30,3 +30,13 @@ body dialog.planningsheet .plannertabs{flex:0 0 auto;margin:0 0 12px}
 body dialog.planningsheet #profile-form{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding:0 2px 16px}
 @media(max-width:760px){body dialog.planningsheet[open]{height:88dvh!important;min-height:88dvh!important;max-height:88dvh!important;bottom:0!important;top:auto!important;margin:0!important}}
 @media(max-width:359px){body .compactexercise .liveset{grid-template-columns:16px 52px minmax(40px,1fr) minmax(40px,1fr) 30px;gap:4px}.exercisename strong{font-size:13px}body #session-root .sessioncontent>.compactexercise{padding:8px!important}}
+
+/* Aktionsfenster der drei Punkte (iOS-Action-Sheet-Stil) und Namen ohne Textauswahl beim langen Drücken. */
+body #session-root .exercisename, body #session-root .exercisename * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+#modal .exerciseactions { display: grid; gap: 8px; }
+#modal .actiongroup { overflow: hidden; border-radius: 12px; background: var(--ds-surface, var(--card)); }
+#modal .actionrow, #modal .actioncancel { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 0 16px; border: 0; background: transparent; color: var(--ds-label, inherit); font-size: 17px; text-align: left; }
+#modal .actionrow + .actionrow { border-top: .5px solid var(--ds-separator, rgba(128,128,128,.3)); }
+#modal .actionrow .pulsicon { width: 22px; height: 22px; flex: 0 0 22px; }
+#modal .actiondanger { color: var(--ds-red-text, #ff453a); }
+#modal .actioncancel { justify-content: center; border-radius: 12px; background: var(--ds-surface, var(--card)); font-weight: 600; color: var(--ds-accent-text, inherit); }

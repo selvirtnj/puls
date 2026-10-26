@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 
 // Synthetic VM fixture for js/running.js: base functions are minimal stand-ins for the earlier wrapper chain.
-function load(state,now='2026-10-25'){
+function load(state,now='2026-10-25',storage=new Map()){
   const localISO=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const ctx={state,today:()=>now,localISO,
     weekStart(value){let d=new Date(value+'T12:00:00');d.setDate(d.getDate()-(d.getDay()+6)%7);return localISO(d)},
@@ -10,6 +10,8 @@ function load(state,now='2026-10-25'){
     workoutAwards:()=>({w1:{xp:25,wins:['Bank']}}),dailyWorkoutStreak:()=>-1,trainingStreak:()=>-1,
     validData:s=>!!s&&Array.isArray(s.workouts),workoutPage:()=>'',trainingCalendar:()=>'',analyticsPage:()=>'',quickTraining:()=>'',
     render(){},save(){},setInterval(){},window:{},navigator:{},appStore:{getItem:()=>null,setItem(){}},
+    localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
+    toast(){},confirm:()=>true,modal:{close(){}},
     document:{addEventListener(){},querySelectorAll:()=>[]},quickActionPaths:{},quickAddActions:[['workout']],englishUI:{},Intl,Date,Math,Number,String,Object,Array,Set};
   vm.runInNewContext(fs.readFileSync('js/running.js','utf8'),ctx);
   return ctx;
@@ -114,3 +116,40 @@ console.log('PASS: GPS distance filters, pause segments, compact valid route and
   assert.deepEqual(JSON.parse(JSON.stringify(msgs)),[{type:'runGpsStop',clear:true},{type:'runActivity',active:false,finished:true}]);
 }
 console.log('PASS: native bridge only on the starting device, live activity start/end and raw-point cleanup.');
+
+// Finish ends the island at the summary, while the unsaved run remains resumable.
+(async()=>{
+  const run={startedAt:Date.now()-60000,pausedAt:null,pausedSeconds:0,gps:false,type:'tabletennis'},storage=new Map(),messages=[];
+  const c=load({workouts:[],runs:[],activeRun:run},'2026-10-25',storage);
+  c.window.webkit={messageHandlers:{pulsNative:{postMessage:m=>messages.push(m)}}};c.window.pulsNativeFeatures=['runActivity','runActivityEndState'];
+  c.claimRunGps(run);c.syncRunActivity(true);assert.equal(messages.at(-1).active,true);
+  let summary=false;c.runOpenSummary=()=>{summary=true};await c.finishRunTimer();
+  assert(summary);assert.equal(c.state.activeRun,run,'summary preserves the unsaved session');
+  assert.equal(messages.at(-1).active,false);assert.equal(messages.at(-1).finished,true);
+  c.syncRunActivity(true);assert.equal(messages.at(-1).active,false,'timer/visibility cannot reopen the ended island');
+  const reloaded=load({workouts:[],activeRun:run},'2026-10-25',storage),reloadMessages=[];
+  reloaded.window.webkit={messageHandlers:{pulsNative:{postMessage:m=>reloadMessages.push(m)}}};reloaded.window.pulsNativeFeatures=['runActivity','runActivityEndState'];
+  reloaded.syncRunActivity();assert.equal(reloadMessages.at(-1).active,false,'end marker survives WebView reload');
+  reloaded.toggleRunPause();assert.equal(reloadMessages.at(-1).active,true,'explicit resume creates the live island again');
+  reloaded.discardRunTimer();assert.equal(reloadMessages.at(-1).active,false);assert.equal(reloaded.state.activeRun,null);
+  // Saving must resend the final end even when the summary already sent an off message.
+  c.commitRunActivity({distanceKm:0,durationSeconds:60});
+  assert.equal(messages.at(-1).active,false);assert.equal(messages.at(-1).finished,true);assert.equal(messages.at(-1).finalSeconds,60);
+  assert.equal(c.state.runs.length,1);assert.equal(storage.has('puls-run-ended'),false);
+  const preview=load({workouts:[],activeRun:{...run}},'2026-10-25',storage),previewMessages=[];
+  preview.firstRunPreview=true;preview.window.webkit={messageHandlers:{pulsNative:{postMessage:m=>previewMessages.push(m)}}};preview.window.pulsNativeFeatures=['runActivity','runActivityEndState'];
+  preview.claimRunGps(preview.state.activeRun);preview.syncRunActivity(true,true);preview.syncRunActivity(true);
+  assert.equal(previewMessages.at(-1).active,false,'preview retains only an in-memory end marker');
+  assert.equal(storage.has('puls-run-ended'),false,'preview never writes end marker to real device storage');
+  // App 1.6 has no terminal-state capability and retains ended activities for 240 seconds.
+  // Keep its activity active/paused at the summary so Continue can update the same island.
+  const oldRun={startedAt:Date.now()-120000,pausedAt:null,pausedSeconds:0,gps:false,type:'tabletennis'},oldStorage=new Map([['puls-run-ended',String(oldRun.startedAt)]]),oldMessages=[];
+  const legacy=load({workouts:[],runs:[],activeRun:oldRun},'2026-10-25',oldStorage);
+  legacy.window.webkit={messageHandlers:{pulsNative:{postMessage:m=>oldMessages.push(m)}}};legacy.window.pulsNativeFeatures=['runActivity'];
+  legacy.claimRunGps(oldRun);legacy.syncRunActivity(true);assert.equal(oldMessages.at(-1).active,true,'legacy ignores leftover terminal marker');
+  await legacy.finishRunTimer();
+  assert.equal(oldMessages.at(-1).active,true);assert(oldMessages.at(-1).pausedAt);assert(!oldMessages.some(m=>m.finished),'legacy summary does not end island');
+  legacy.toggleRunPause();assert.equal(oldMessages.at(-1).active,true);assert.equal(oldMessages.at(-1).pausedAt,null,'legacy Continue updates the still-active island');
+  legacy.commitRunActivity({distanceKm:0,durationSeconds:120});assert.equal(oldMessages.at(-1).active,false);assert.equal(oldMessages.at(-1).finished,true,'legacy ends only on actual save');
+  console.log('PASS: run finish/summary/reload/resume/discard/save sends explicit native end and keeps unsaved session data.');
+})().catch(error=>{console.error(error);process.exitCode=1});

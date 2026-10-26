@@ -23,6 +23,7 @@ final class RunActivityCoordinator {
     private var lastPush = Date.distantPast
     private var lastPushedKm = -1.0
     private let announcedKey = "puls-run-announced"
+    private let operations = ActivityOperations()
 
     private var distanceKm: Double { gps && RunTracker.shared.runKey == runKey ? max(nativeKm, webKm) : webKm }
 
@@ -30,7 +31,7 @@ final class RunActivityCoordinator {
         max(0, (pausedAt ?? date).timeIntervalSince(startedAt) - pausedSeconds)
     }
 
-    /// Nachricht der Web-App. active=false beendet die Aktivität (finished: kurz mit Endstand stehen lassen).
+    /// Nachricht der Web-App. active=false beendet und entfernt die Aktivität mit explizitem Endstand.
     func update(_ body: [String: Any]) {
         guard body["active"] as? Bool == true, let key = body["runKey"] as? String, let started = body["startedAt"] as? Double else {
             end(finished: body["finished"] as? Bool ?? false, finalKm: body["finalKm"] as? Double, finalSeconds: body["finalSeconds"] as? Double)
@@ -110,17 +111,22 @@ final class RunActivityCoordinator {
         lastPush = Date()
         lastPushedKm = km
         let state = ActivityContent(state: content(), staleDate: nil)
-        let running = Activity<RunActivityAttributes>.activities
-        if let current = running.first, current.attributes.title == title {
-            Task { await current.update(state) }
-            for extra in running.dropFirst() { Task { await extra.end(nil, dismissalPolicy: .immediate) } }
-            return
-        }
-        for old in running { Task { await old.end(nil, dismissalPolicy: .immediate) } }
-        do {
-            _ = try Activity.request(attributes: RunActivityAttributes(title: title), content: state, pushType: nil)
-        } catch {
-            NSLog("PULS: Lauf-Live-Aktivität nicht gestartet: \(error)")
+        let activityTitle = title
+        operations.enqueue {
+            let running = Activity<RunActivityAttributes>.activities.filter {
+                $0.activityState == .active || $0.activityState == .stale
+            }
+            if let current = running.first, current.attributes.title == activityTitle {
+                await current.update(state)
+                for extra in running.dropFirst() { await self.endActivity(extra) }
+                return
+            }
+            for old in running { await self.endActivity(old) }
+            do {
+                _ = try Activity.request(attributes: RunActivityAttributes(title: activityTitle), content: state, pushType: nil)
+            } catch {
+                NSLog("PULS: Lauf-Live-Aktivität nicht gestartet: \(error)")
+            }
         }
     }
 
@@ -133,17 +139,28 @@ final class RunActivityCoordinator {
             state.distanceKm = km
             state.paceSeconds = km >= 0.05 ? seconds / km : nil
         }
-        let finalContent = finished && !runKey.isEmpty ? ActivityContent(state: state, staleDate: nil) : nil
+        state.ended = true
+        let finalContent = !runKey.isEmpty ? ActivityContent(state: state, staleDate: nil) : nil
         UserDefaults.standard.removeObject(forKey: announcedKey)
         runKey = ""
         nativeKm = 0
         webKm = 0
-        for activity in Activity<RunActivityAttributes>.activities {
-            Task {
-                // Gespeicherter Lauf: Endstand noch 4 Minuten auf dem Sperrbildschirm, sonst sofort weg.
-                await activity.end(finalContent, dismissalPolicy: finalContent != nil ? .after(Date().addingTimeInterval(240)) : .immediate)
+        operations.enqueue(ending: true) {
+            for activity in Activity<RunActivityAttributes>.activities {
+                if let finalContent = finalContent {
+                    await activity.end(finalContent, dismissalPolicy: .immediate)
+                } else {
+                    await self.endActivity(activity)
+                }
             }
         }
+    }
+
+    private func endActivity(_ activity: Activity<RunActivityAttributes>) async {
+        var state = activity.content.state
+        state.pausedElapsed = state.pausedElapsed ?? max(0, Date().timeIntervalSince(state.timerStart))
+        state.ended = true
+        await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .immediate)
     }
 
     private func requestNotifications() {
@@ -152,7 +169,7 @@ final class RunActivityCoordinator {
 
     private func notifyKilometer(_ km: Int, split: Double, total: Double) {
         let content = UNMutableNotificationContent()
-        content.title = "Kilometer \(km) 🏃"
+        content.title = "Kilometer \(km)"
         let pace = RunActivityAttributes.ContentState.pace(split)
         let average = RunActivityAttributes.ContentState.pace(total / Double(km))
         content.body = "Letzter km \(pace) /km · Ø \(average) /km · \(RunActivityAttributes.ContentState.clock(total)) gesamt"

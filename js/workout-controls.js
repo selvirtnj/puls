@@ -51,6 +51,15 @@ const controlsSession=renderWorkoutSession;renderWorkoutSession=function(...args
     button.textContent=(state.language==='en'?'Rest timer ':'Pausenzeit ')+formatClock(seconds);
     content.querySelector(':scope > h2')?.insertAdjacentElement('afterend',button);
   }
+  // „Workout verwerfen“ oben rechts neben dem Routinennamen (bestehende requestDiscardWorkout mit Bestätigung).
+  if(content&&sessionWorkoutId&&!content.querySelector('.sessiontitlerow')){
+    let en=state.language==='en',title=content.querySelector(':scope > h2'),row=document.createElement('div'),discard=document.createElement('button');
+    content.querySelectorAll(':scope > .discardworkout').forEach(old=>old.remove());
+    discard.type='button';discard.className='textbtn discardworkout';discard.textContent=en?'Discard':'Verwerfen';
+    discard.setAttribute('aria-label',en?'Discard workout':'Workout verwerfen');discard.setAttribute('onclick',`requestDiscardWorkout('${sessionWorkoutId}')`);
+    row.className='sessiontitlerow';
+    if(title){title.insertAdjacentElement('beforebegin',row);row.append(title,discard)}
+  }
   return result;
 };
 

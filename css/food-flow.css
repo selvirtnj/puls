@@ -387,8 +387,14 @@ body dialog.ffsheet .ffcamera {
 body dialog.ffsheet .ffcamera video { display: block; width: 100%; height: 100%; object-fit: cover; }
 body dialog.ffsheet .ffscanframe {
   position: absolute;
-  inset: 26% 12%;
-  border: 2px solid color-mix(in srgb, var(--ds-separator) 85%, transparent);
+  /* quadratisch und mittig: gilt für jede Ausrichtung des Codes */
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  height: 66%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid rgba(255, 255, 255, .75);
   border-radius: 12px;
   pointer-events: none;
 }

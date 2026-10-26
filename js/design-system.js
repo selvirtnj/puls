@@ -37,7 +37,7 @@ function dsEnergyCard(){
 }
 function dsFoodGroup(){
   let entries=state.foods.filter(x=>x.date===date),shown=entries.slice(-5).reverse();
-  let rows=shown.map(x=>dsRow({label:esc(x.name),detail:`${n(x.grams)} ${x.unit==='ml'?'ml':'g'}`,value:dsKcal(x.kcal)+' kcal'})).join('');
+  let rows=shown.map(x=>typeof swipeDiaryEntry==='function'?swipeDiaryEntry(x):dsRow({label:esc(x.name),detail:`${n(x.grams)} ${x.unit==='ml'?'ml':'g'}`,value:dsKcal(x.kcal)+' kcal'})).join('');
   if(!rows)rows=dsRow({label:dsText('Noch nichts eingetragen.','Nothing logged yet.'),cls:'dsempty'});
   rows+=dsRow({label:entries.length>shown.length?dsText(`Alle ${entries.length} anzeigen`,`Show all ${entries.length}`):dsText('Zum Ernährungstagebuch','Open food diary'),action:"go('food')",chevron:true,cls:'dsaction'});
   return dsGroup(date===today()?dsText('Heute eingetragen','Logged today'):dsText('Eingetragen','Logged'),rows);
@@ -149,6 +149,51 @@ function dsDecorateFileInputs(root){
   });
 }
 
+/* ---------- Dezimalfelder: Komma oder Punkt ----------
+   Die iPhone-Tastatur liefert „78,5“; type=number lehnt das in Safari ab. Felder mit Dezimalstellen werden zu
+   type=text inputmode=decimal. Beim Tippen wird das Komma zum Punkt, damit alle bestehenden Handler weiter
+   eine gewöhnliche Zahl lesen. min/max prüft setCustomValidity, damit das Formular wie bisher blockiert.
+   Das laufende Workout (#session-root) und seine Satzfelder bleiben unverändert. */
+function dsDecimalCheck(input){
+  let value=String(input.value).trim(),message='';
+  if(value!==''){
+    let number=/^(\d+[.,]?\d*|[.,]\d+)$/.test(value)?Number(value.replace(',','.')):NaN,min=input.getAttribute('min'),max=input.getAttribute('max');
+    if(!Number.isFinite(number))message=dsText('Bitte eine Zahl eingeben.','Please enter a number.');
+    else if(min!==null&&min!==''&&number<Number(min))message=dsText(`Der Wert muss mindestens ${min} sein.`,`The value must be at least ${min}.`);
+    else if(max!==null&&max!==''&&number>Number(max))message=dsText(`Der Wert darf höchstens ${max} sein.`,`The value must be at most ${max}.`);
+  }
+  input.setCustomValidity(message);
+}
+function dsDecorateDecimals(root){
+  if(!root?.querySelectorAll)return;
+  root.querySelectorAll('input[type=number]:not([data-ds-decimal])').forEach(input=>{
+    if(input.closest('#session-root,.liveset'))return;
+    let step=input.getAttribute('step')||'1';
+    if(input.getAttribute('inputmode')!=='decimal'&&!/\.|any/.test(step))return;
+    input.dataset.dsDecimal='1';
+    input.type='text';
+    input.setAttribute('inputmode','decimal');
+    input.setAttribute('pattern','[0-9]*[.,]?[0-9]*');
+    input.setAttribute('autocomplete','off');
+    dsDecimalCheck(input);
+  });
+}
+document.addEventListener('input',event=>{
+  let input=event.target;
+  if(!input?.dataset?.dsDecimal)return;
+  // Nur eindeutige Dezimalnotation (Ziffern mit höchstens einem Komma oder Punkt) wird umgeschrieben; alles andere bleibt stehen und wird als ungültig gemeldet.
+  let raw=input.value;
+  if(/^\d*,\d*$/.test(raw)){let caret=input.selectionStart;input.value=raw.replace(',','.');try{if(caret!==null)input.setSelectionRange(caret,caret)}catch{}}
+  dsDecimalCheck(input);
+},true);
+// Wert per Code geändert (z. B. Feld geleert): vor dem Absenden alle Dezimalfelder des Formulars neu prüfen.
+function dsRecheckDecimals(target){
+  let scope=target?.closest?.('form')||document;
+  scope.querySelectorAll?.('[data-ds-decimal]').forEach(dsDecimalCheck);
+}
+document.addEventListener('click',event=>{if(event.target?.closest?.('button,input[type=submit]'))dsRecheckDecimals(event.target)},true);
+document.addEventListener('keydown',event=>{if(event.key==='Enter')dsRecheckDecimals(event.target)},true);
+
 /* ---------- Aktivitäts- und Steuersymbole aus Phosphor ---------- */
 const dsRunIcons={run:'person-simple-run',trail:'mountains',walk:'person-simple-walk',hike:'person-simple-hike',mountain:'mountains',ride:'bicycle',tabletennis:'ping-pong',soccer:'soccer-ball',mma:'boxing-glove',padel:'tennis-ball',inline:'sneaker-move',other:'dots-three-circle',route:'path',locate:'crosshair',lock:'lock-simple',play:'play',pause:'pause',stop:'stop',down:'caret-down',lap:'flag-checkered'};
 if(typeof runIcon==='function'){const dsRunIconBase=runIcon;runIcon=function(key){return dsRunIcons[key]?phIcon(dsRunIcons[key]):dsRunIconBase(key)}}
@@ -186,6 +231,7 @@ function dsChrome(){
   });
   if(dsLastPage!==page){dsLastPage=page;content?.querySelectorAll('.dsring').forEach(ring=>ring.classList.add('dsringanimate'))}
   dsDecorateFileInputs(content);
+  dsDecorateDecimals(content);
   dsDecoratePasswords(content||document);
   dsRenderConnectivity(window.pulsConnectivity);
 }
@@ -197,7 +243,7 @@ function dsDecorateSheet(){
   let close=document.querySelector('#modal .modalhead button.quiet');
   if(close&&!close.querySelector('.pulsicon')){close.innerHTML=phIcon('x');if(!close.getAttribute('aria-label'))close.setAttribute('aria-label',dsText('Schließen','Close'))}
   if($('cloud-email'))body.querySelector('form')?.classList.add('dsauth');
-  dsDecoratePasswords(body);dsDecorateFileInputs(body);
+  dsDecoratePasswords(body);dsDecorateFileInputs(body);dsDecorateDecimals(body);
 }
 const dsOpenModal=openModal;openModal=function(...args){let result=dsOpenModal.apply(this,args);dsDecorateSheet();return result};
 
@@ -221,7 +267,7 @@ if(typeof accountSections!=='undefined'){let entry=accountSections.find(x=>x.key
 designChooser=function(){return '<section class="card designchooser" hidden></section>'};
 
 // Spät hinzugefügte Fenster-Inhalte (Tabs, Suchergebnisse) bekommen ebenfalls den gestalteten Dateiknopf.
-if($('mb'))new MutationObserver(()=>dsDecorateFileInputs($('mb'))).observe($('mb'),{childList:true,subtree:true});
+if($('mb'))new MutationObserver(()=>{dsDecorateFileInputs($('mb'));dsDecorateDecimals($('mb'))}).observe($('mb'),{childList:true,subtree:true});
 // Das Erststart-Fenster öffnet sich schon vor diesem Skript.
 if(modal?.open)dsDecorateSheet();
 
@@ -236,7 +282,7 @@ if(typeof englishUI==='object'){
   }
   dsAddEnglish(derived);
 }
-dsAddEnglish({'Beenden':'Finish','Workout öffnen':'Open workout','Starten':'Start','Fertig':'Done','Abgeschlossen':'Completed','Bestleistung':'Personal best','Übung hinzufügen':'Add exercise','Satz hinzufügen':'Add set','Satz':'Set','Erledigt':'Done','Leeres Workout starten':'Start empty workout','Routine':'Routine','Routine erstellen':'Create routine','Alle Routinen':'All routines','Plan anpassen':'Adjust plan','Gesamtwasser':'Total water','250 ml Wasser hinzufügen':'Add 250 ml water','250 ml Wasser erfasst':'250 ml water logged','Essen hinzufügen':'Add food','Nährwertfoto':'Label photo','Dein Ziel':'Your goal','Körper':'Body','Plan & Entwicklung':'Plan & development','Einstellungen':'Settings','Ziele anpassen':'Edit goals','Zielgewicht':'Target weight','Gewicht erfassen':'Log weight','Angemeldet':'Signed in','Nicht angemeldet':'Not signed in','Nur auf diesem Gerät gespeichert':'Stored on this device only','Foto auswählen':'Choose photo','Datei auswählen':'Choose file','Sicherungsdatei auswählen':'Choose backup file','Anstieg':'Ascent','Höhenmeter':'Elevation gain','Gewicht':'Weight','Tag vollständig':'Day complete','Eingetragen':'Logged','Workout abgeschlossen':'Workout completed','Neue Leistung':'New best','Zum Workout':'Back to workout','Geglätteter Trend':'Smoothed trend','Messwerte':'Measurements','Konto zurücksetzen':'Reset account','Vorherige':'Previous','Weitere Produkte':'More products','Mit Kamera scannen':'Scan with camera','Originalprodukt ansehen':'View original product','Öffnen':'Open','Heute gegessen':'Eaten today','Mikronährstoffe':'Micronutrients'});
+dsAddEnglish({'Foto aufnehmen':'Take photo','Aus Fotos wählen':'Choose from photos','Bitte eine Zahl eingeben.':'Please enter a number.','Beenden':'Finish','Workout öffnen':'Open workout','Starten':'Start','Fertig':'Done','Abgeschlossen':'Completed','Bestleistung':'Personal best','Übung hinzufügen':'Add exercise','Satz hinzufügen':'Add set','Satz':'Set','Erledigt':'Done','Leeres Workout starten':'Start empty workout','Routine':'Routine','Routine erstellen':'Create routine','Alle Routinen':'All routines','Plan anpassen':'Adjust plan','Gesamtwasser':'Total water','250 ml Wasser hinzufügen':'Add 250 ml water','250 ml Wasser erfasst':'250 ml water logged','Essen hinzufügen':'Add food','Nährwertfoto':'Label photo','Dein Ziel':'Your goal','Körper':'Body','Plan & Entwicklung':'Plan & development','Einstellungen':'Settings','Ziele anpassen':'Edit goals','Zielgewicht':'Target weight','Gewicht erfassen':'Log weight','Angemeldet':'Signed in','Nicht angemeldet':'Not signed in','Nur auf diesem Gerät gespeichert':'Stored on this device only','Foto auswählen':'Choose photo','Datei auswählen':'Choose file','Sicherungsdatei auswählen':'Choose backup file','Anstieg':'Ascent','Höhenmeter':'Elevation gain','Gewicht':'Weight','Tag vollständig':'Day complete','Eingetragen':'Logged','Workout abgeschlossen':'Workout completed','Neue Leistung':'New best','Zum Workout':'Back to workout','Geglätteter Trend':'Smoothed trend','Messwerte':'Measurements','Konto zurücksetzen':'Reset account','Vorherige':'Previous','Weitere Produkte':'More products','Mit Kamera scannen':'Scan with camera','Originalprodukt ansehen':'View original product','Öffnen':'Open','Heute gegessen':'Eaten today','Mikronährstoffe':'Micronutrients'});
 if(typeof englishUI==='object')Object.assign(englishUI,{'Darstellung':'Appearance','Farbschema':'Colour scheme','Hell, Dunkel, Sprache & App-Icon':'Light, dark, language & app icon','Übersicht':'Overview','Essen':'Food','Konto':'Account','Hinzufügen':'Add'});
 
 render();

@@ -1,10 +1,10 @@
 import ActivityKit
 import SwiftUI
+import UIKit
 import WidgetKit
 
-private let runAccent = Color(red: 0xbd / 255, green: 0x91 / 255, blue: 0xff / 255)
-private let runSurface = Color(red: 0x15 / 255, green: 0x12 / 255, blue: 0x1b / 255)
-private let runGreen = Color(red: 0x3d / 255, green: 0xdc / 255, blue: 0x84 / 255)
+private let runAccent = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 10 / 255, green: 132 / 255, blue: 1, alpha: 1) : UIColor(red: 0, green: 122 / 255, blue: 1, alpha: 1) })
+private let runSurface = Color(uiColor: .secondarySystemBackground)
 
 /// Laufzeit: iOS zählt selbst weiter; pausiert fester Wert. Feste Breite, damit nichts springt.
 private struct RunClock: View {
@@ -20,36 +20,31 @@ private struct RunClock: View {
                 Text(state.timerStart, style: .timer)
             }
         }
-        .font(.system(size: size, weight: .bold, design: .rounded))
+        .font(.system(size: size, weight: .bold))
         .monospacedDigit()
         .multilineTextAlignment(.trailing)
         .lineLimit(1)
         .minimumScaleFactor(0.7)
         .frame(width: width, alignment: .trailing)
-        .foregroundStyle(state.isPaused ? Color.white.opacity(0.5) : runAccent)
+        .foregroundStyle(state.isPaused ? Color.secondary : runAccent)
     }
 }
 
-/// Laufsymbol; läuft der Lauf, pulsiert es (ab iOS 17).
+/// Ruhiges SF Symbol für laufend, pausiert oder beendet.
 private struct RunIcon: View {
-    let paused: Bool
+    let state: RunActivityAttributes.ContentState
     let size: CGFloat
 
     var body: some View {
-        let image = Image(systemName: paused ? "pause.circle.fill" : "figure.run")
+        Image(systemName: state.isEnded ? "checkmark.circle" : state.isPaused ? "pause.circle" : "figure.run")
             .resizable()
             .scaledToFit()
             .frame(width: size, height: size)
-            .foregroundStyle(paused ? Color.white.opacity(0.6) : runAccent)
-        if #available(iOSApplicationExtension 17.0, *), !paused {
-            image.symbolEffect(.pulse, options: .repeating)
-        } else {
-            image
-        }
+            .foregroundStyle(state.isPaused ? Color.secondary : runAccent)
     }
 }
 
-/// Zahl mit Beschriftung; Wertewechsel rollen animiert (numericText).
+/// Zahl mit ruhiger Beschriftung und gleich breiten Ziffern.
 private struct RunMetric: View {
     let value: String
     let unit: String
@@ -60,17 +55,16 @@ private struct RunMetric: View {
         VStack(alignment: alignment, spacing: 1) {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .font(.system(size: 22, weight: .bold))
                     .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                 Text(unit)
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(.secondary)
             }
             Text(label)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
     }
@@ -84,10 +78,11 @@ private struct RunProgress: View {
             VStack(alignment: .leading, spacing: 4) {
                 ProgressView(value: progress)
                     .progressViewStyle(.linear)
-                    .tint(progress >= 1 ? runGreen : runAccent)
+                    .tint(progress >= 1 ? Color.green : runAccent)
                 Text(progress >= 1 ? "Route geschafft" : "Route · noch \(String(format: "%.1f", max(0, total - state.distanceKm)).replacingOccurrences(of: ".", with: ",")) km")
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.55))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -100,15 +95,15 @@ private struct RunLockScreen: View {
         let state = context.state
         VStack(spacing: 12) {
             HStack(alignment: .center, spacing: 10) {
-                RunIcon(paused: state.isPaused, size: 26)
+                RunIcon(state: state, size: 26)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(state.isPaused ? "PAUSIERT" : "LAUF")
+                    Text(state.isEnded ? "Beendet" : state.isPaused ? "Pausiert" : "Aktivität")
                         .font(.caption2.weight(.bold))
-                        .tracking(0.8)
-                        .foregroundStyle(state.isPaused ? Color.white.opacity(0.6) : runAccent)
+
+                        .foregroundStyle(state.isPaused ? Color.secondary : runAccent)
                     Text(context.attributes.title)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 8)
@@ -122,9 +117,9 @@ private struct RunLockScreen: View {
                     Spacer()
                     RunMetric(value: RunActivityAttributes.ContentState.pace(state.lastSplitSeconds), unit: "/km", label: "Letzter km", alignment: .trailing)
                 } else {
-                    Text("Nur Timer · Distanz beim Beenden eintragen")
+                    Text("Aktivität ohne GPS")
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.55))
+                        .foregroundStyle(.secondary)
                 }
             }
             RunProgress(state: state)
@@ -132,7 +127,7 @@ private struct RunLockScreen: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .activityBackgroundTint(runSurface)
-        .activitySystemActionForegroundColor(.white)
+        .activitySystemActionForegroundColor(.primary)
     }
 }
 
@@ -145,10 +140,10 @@ struct RunActivityWidget: Widget {
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 8) {
-                        RunIcon(paused: state.isPaused, size: 24)
-                        Text(state.isPaused ? "Pause" : "Lauf")
+                        RunIcon(state: state, size: 24)
+                        Text(state.isEnded ? "Beendet" : state.isPaused ? "Pause" : "Aktivität")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                     }
                     .padding(.leading, 6)
                     .frame(maxHeight: .infinity, alignment: .center)
@@ -175,14 +170,13 @@ struct RunActivityWidget: Widget {
                     .padding(.top, 2)
                 }
             } compactLeading: {
-                RunIcon(paused: state.isPaused, size: 18)
+                RunIcon(state: state, size: 18)
                     .padding(.leading, 2)
             } compactTrailing: {
                 if state.gps {
                     Text("\(state.distanceText) km")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .font(.system(size: 14, weight: .bold))
                         .monospacedDigit()
-                        .contentTransition(.numericText())
                         .foregroundStyle(runAccent)
                         .frame(width: 66, alignment: .trailing)
                         .lineLimit(1)
@@ -191,7 +185,7 @@ struct RunActivityWidget: Widget {
                     RunClock(state: state, size: 15, width: 48)
                 }
             } minimal: {
-                RunIcon(paused: state.isPaused, size: 18)
+                RunIcon(state: state, size: 18)
             }
             .keylineTint(runAccent)
         }

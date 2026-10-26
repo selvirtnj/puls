@@ -10,6 +10,7 @@ struct RestActivityAttributes: ActivityAttributes {
         var exercise: String
         var detail: String
         var workoutStartsAt: Date?
+        var ended: Bool? = nil
     }
 
     var workout: String

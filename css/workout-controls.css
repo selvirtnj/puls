@@ -129,3 +129,8 @@ input[type=date] {
   font-variant-numeric: tabular-nums;
 }
 input[type=date]::-webkit-date-and-time-value { text-align: center; margin: 0 auto; }
+
+/* Kopfzeile des laufenden Workouts: Verwerfen rechts gegenüber dem Routinennamen. */
+body #session-root .sessiontitlerow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+body #session-root .sessiontitlerow > h2 { flex: 1; min-width: 0; }
+body #session-root .sessiontitlerow > .discardworkout { display: inline-flex; align-items: center; flex: 0 0 auto; min-height: 44px; margin: 0; padding: 0 4px; font-size: 15px; color: var(--ds-red-text, #ff453a); }

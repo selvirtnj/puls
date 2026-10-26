@@ -13,13 +13,15 @@ struct RunActivityAttributes: ActivityAttributes {
         var lastSplitSeconds: Double?
         var routeKm: Double?
         var gps: Bool
+        var ended: Bool? = nil
     }
 
     var title: String
 }
 
 extension RunActivityAttributes.ContentState {
-    var isPaused: Bool { pausedElapsed != nil }
+    var isEnded: Bool { ended == true }
+    var isPaused: Bool { !isEnded && pausedElapsed != nil }
 
     static func clock(_ seconds: Double) -> String {
         let total = max(0, Int(seconds.rounded()))
@@ -28,7 +30,7 @@ extension RunActivityAttributes.ContentState {
     }
 
     static func pace(_ seconds: Double?) -> String {
-        guard let seconds = seconds, seconds.isFinite, seconds > 0, seconds < 3600 else { return "–" }
+        guard let seconds = seconds, seconds.isFinite, seconds > 0, seconds < 3600 else { return "…" }
         let total = Int(seconds.rounded())
         return String(format: "%d:%02d", total / 60, total % 60)
     }

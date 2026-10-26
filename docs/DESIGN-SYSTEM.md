@@ -11,7 +11,8 @@ Verbindliche Entscheidung von Selvir. Grundlage: Apple Human Interface Guideline
 - Schrift: System-Schrift (`-apple-system, BlinkMacSystemFont, system-ui, sans-serif`), kein Webfont. Typo-Stufen nach iOS (Large Title 34, Title 28/22/20, Headline 17 semibold, Body 17, Callout 16, Subhead 15, Footnote 13, Caption 12). Zahlen mit `font-variant-numeric: tabular-nums`.
 - Radien: Buttons und Eingabefelder 8px, Karten und gruppierte Listen 12px. Nichts darüber.
 - Icons: Phosphor (Regular), als Inline-SVG lokal im Code, ohne CDN. Jedes rein grafische Bedienelement hat ein `aria-label`.
-- Bewegung: nur Sheet hochgleiten (iOS-artig) und einmaliges kurzes Füllen von Fortschrittsringen. `prefers-reduced-motion` schaltet beides ab.
+- Bewegung: nur Sheet hochgleiten (iOS-artig), einmaliges kurzes Füllen von Fortschrittsringen und das Ausblenden des Startbildschirms (mind. 1,2 s sichtbar, 250 ms Fade). `prefers-reduced-motion` schaltet alles ab.
+- Dezimalfelder sind `type=text inputmode=decimal`; Komma wird als Dezimaltrenner akzeptiert, gespeichert wird eine Zahl.
 - Tippflächen mindestens 44 × 44 px. Safe Areas beachten. Mindestens 390 × 844 prüfen.
 
 ## Verboten

@@ -58,7 +58,14 @@ try{
 }catch(error){console.warn('PULS native icon',error)}
 // Kurzer Takt, damit die Live-Aktivität angelegt wird, solange die App noch im Vordergrund ist.
 setInterval(syncNativeRest,400);
-document.addEventListener('visibilitychange',syncNativeRest);
-window.addEventListener('pagehide',syncNativeRest);
-syncNativeRest();
+function syncNativeState(){try{syncNativeRest();if(typeof syncRunActivity==='function')syncRunActivity()}catch(error){console.warn('PULS native state',error)}}
+// Ende/Verwerfen sofort melden, bevor iOS die WebView nach dem nächsten Wechsel schlafen legt.
+for(const name of ['save','render']){
+  if(name==='save'&&typeof save==='function'){const base=save;save=function(...args){try{return base.apply(this,args)}finally{syncNativeState()}}}
+  if(name==='render'&&typeof render==='function'){const base=render;render=function(...args){try{return base.apply(this,args)}finally{syncNativeState()}}}
+}
+document.addEventListener('visibilitychange',syncNativeState);
+window.addEventListener('pagehide',syncNativeState);
+window.addEventListener('pageshow',syncNativeState);
+syncNativeState();
 })();

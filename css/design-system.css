@@ -809,3 +809,72 @@ html body #run-root .runcountdown > small { font-size: 17px !important; }
 html body #workout-dock { border: .5px solid var(--ds-separator) !important; border-radius: 12px !important; background: var(--ds-bar) !important; }
 html body #workout-dock svg { width: 22px; height: 22px; }
 html body #workout-dock small, html body #workout-dock small b { font-size: 12px !important; }
+
+/* =====================================================================
+   Schritt 3: Rückmeldungen vom iPhone (26.10.2026)
+   ===================================================================== */
+
+/* Konto: Menügruppen sind immer eine einspaltige Liste (Zeile: Symbol, Text, Pfeil).
+   Ursache war das Element <nav> der Seitenleiste mit Spalten-Raster; die Regeln in style.css und navigation.css
+   gelten jetzt nur noch für nav ohne .dsgroup, dieser Block sichert es zusätzlich ab. */
+html body nav.dsgroup { display: block !important; grid-template-columns: none !important; grid-auto-flow: row !important; gap: 0 !important; margin: 0 !important; padding: 0 !important; width: auto !important; }
+html body nav.dsgroup > .dsrow { display: flex !important; flex-direction: row !important; align-items: center !important; width: 100% !important; }
+
+/* Abstände: aufeinanderfolgende Gruppen und Karten haben einheitlich 12 bis 16 px. */
+html body #content .dsgroup + .dsgroup, html body #content .dsgroup + .card, html body #content .card + .dsgroup { margin-top: 16px !important; }
+html body #content .btn.full + .card, html body #content .btn.full + section, html body #content .btn.full + .dsgroup, html body .workoutbody > .btn.full + * { margin-top: 12px !important; }
+html body .workoutbody > .btn.full { margin-bottom: 12px !important; }
+
+/* Ergebnislisten (Essen suchen, Zutat, Übungsbibliothek): eine gruppierte Fläche mit Haarlinien, runde Ecken nur außen. */
+html body #modal .searchitem, html body .librarylist .searchitem { margin: 0 !important; border-radius: 0 !important; background: var(--ds-surface) !important; }
+html body #modal .searchitem:not(.searchitem + .searchitem), html body .librarylist .searchitem:not(.searchitem + .searchitem) { border-top-left-radius: 12px !important; border-top-right-radius: 12px !important; }
+html body #modal .searchitem:not(:has(+ .searchitem)), html body .librarylist .searchitem:not(:has(+ .searchitem)) { border-bottom-left-radius: 12px !important; border-bottom-right-radius: 12px !important; margin-bottom: 12px !important; }
+html body #modal .searchitem.ffrow:active, html body .librarylist .searchitem:active { background: var(--ds-fill) !important; }
+html body #modal .ffresults { display: block; }
+
+/* Essen-Suche: Lupe links, Text mit Abstand daneben, Löschen rechts. */
+html body #modal .ffsearchbar { position: relative; display: flex; align-items: center; margin: 0 0 12px; }
+html body #modal .ffsearchicon { position: absolute; left: 12px; top: 50%; z-index: 1; display: grid; place-items: center; width: 20px; height: 20px; transform: translateY(-50%); color: var(--ds-label-3); pointer-events: none; }
+html body #modal .ffsearchicon svg { width: 20px; height: 20px; }
+html body #modal .ffsearchbar input { width: 100%; min-height: 44px; margin: 0; padding: 0 44px 0 38px; }
+
+/* Chips (Zuletzt, Favoriten, Text & Sprache): nur Text, eine Zeile. */
+html body #modal .ffchip { flex-direction: row; gap: 6px; padding: 0 16px; font-weight: 400 !important; }
+html body #modal .ffchip svg, html body #modal .ffchip .pulsicon { display: none; }
+
+/* Foto: zwei klare Zeilen in einer gruppierten Liste. */
+html body #modal .ffphotoactions { margin: 0 0 12px; }
+html body #modal label.dsphotorow { display: flex !important; align-items: center; gap: 12px; position: relative; min-height: 44px; margin: 0; padding: 11px 16px; color: var(--ds-label) !important; font: 400 17px/22px var(--font) !important; cursor: pointer; }
+html body #modal label.dsphotorow .dsrowtext > span { font-size: 17px; }
+html body #modal label.dsphotorow > input[type=file] { position: absolute !important; inset: 0 !important; display: block !important; width: 100% !important; height: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; opacity: 0; font-size: 0 !important; cursor: pointer; }
+html body #modal label.dsphotorow:has(input:focus-visible) { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+
+/* Segmentsteuerung (100 g / 100 ml, Wertespalte): gewähltes Segment ist ein blaues Kästchen. */
+html body #modal .ffsegment { gap: 2px; padding: 2px; border: 0 !important; border-radius: 8px; background: var(--ds-fill); }
+html body #modal .ffsegment button { min-height: 44px; border-radius: 6px !important; background: transparent; font-size: 15px; font-weight: 500; }
+html body #modal .ffsegment button[aria-checked=true]:not([aria-pressed=true]):not(.active), html body #modal .ffsegment button[aria-checked=true] { background: var(--ds-accent-fill) !important; color: #FFFFFF !important; font-weight: 600; }
+
+/* Datums- und Zahlenfelder: auf dem iPhone linksbündig, mittig, gleiche Höhe und Schrift. */
+html body input[type=date], html body input[type=time], html body input[type=month], html body input[type=datetime-local] { -webkit-appearance: none !important; appearance: none !important; display: block; width: 100%; min-width: 0; min-height: 44px; padding: 0 12px !important; line-height: 22px; text-align: left !important; }
+html body input[type=date]::-webkit-date-and-time-value, html body input[type=time]::-webkit-date-and-time-value, html body input[type=month]::-webkit-date-and-time-value, html body input[type=datetime-local]::-webkit-date-and-time-value { min-height: 22px; margin: 0; text-align: left !important; }
+html body input[type=date]::-webkit-datetime-edit, html body input[type=time]::-webkit-datetime-edit { padding: 0; }
+html body input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not(#session-root *), html body select, html body textarea { font-size: 17px !important; font-weight: 400 !important; }
+
+/* Zeitraum: Beschriftung und Auswahl auf einer Linie. */
+html body .chartperiod { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+html body .chartperiod select { width: auto; min-width: 120px; margin: 0 !important; }
+
+/* Wischen zum Löschen: die ganze Zeile (Text und kcal) wandert gemeinsam, die rote Fläche liegt dahinter. */
+html body .swipediary { overflow: hidden; background: var(--ds-red-fill); }
+html body .swipediary .diaryrow { position: relative; z-index: 1; }
+html body .swipediary .swipedelete { z-index: 0; }
+html body .swipediary::before { z-index: 3 !important; }
+html body .diaryrow > span:last-child { display: inline-flex; align-items: baseline; gap: 3px; }
+html body .diaryrow > span:last-child small { display: inline; margin: 0; }
+html body .dsgroup .swipediary { margin: 0; border-radius: 0; }
+html body .dsgroup .swipediary .diaryrow { padding: 11px 16px !important; min-height: 44px; border-radius: 0; }
+html body .swipediary + .dsrow::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--ds-separator); }
+
+/* Startbildschirm: ruhig ausblenden (nur 250 ms Deckkraft, bei reduzierter Bewegung sofort). */
+html body .puls-splash.splashout { opacity: 0 !important; transition: opacity .25s ease !important; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { html body .puls-splash.splashout { transition: none !important; } }
