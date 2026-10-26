@@ -54,7 +54,7 @@ function runRouteById(id){return runRouteList().find(r=>r.id===id)||null}
 function runDefaultView(){let r=[...runList()].reverse().find(x=>x.route),p=r?runRoutePoints(r.route)[0]?.[0]:runLineLatLngs(runRouteList().at(-1)?.line)[0];return p?{center:p,zoom:14}:{center:[51.16,10.45],zoom:6}}
 
 // Live-Karte im Lauf-Fenster
-function runLiveMapHtml(){return `<div class="runmap live" id="runlivemap"><button type="button" class="runmapbtn" onclick="runLiveRecenter()" aria-label="${runText('Karte auf mich zentrieren','Centre map on me')}">◎</button></div>`}
+function runLiveMapHtml(){return `<div class="runmap live" id="runlivemap"><button type="button" class="runmapbtn" onclick="runLiveRecenter()" aria-label="${runText('Karte auf mich zentrieren','Centre map on me')}">${uiIcon('crosshair')}</button></div>`}
 async function runLiveMapMount(id='runlivemap'){
   if(runLive.map&&!document.body.contains(runLive.map.getContainer())){runLive.map.remove();runLive.map=null}
   runLive.map=await runMountMap(id,map=>{
@@ -86,10 +86,10 @@ function runSaveRouteFromRun(id){
 }
 
 // Routen: Liste, Vorschau, Planer
-function runRouteMeta(r){return `${runKm(r.distanceKm)} km${Number.isFinite(r.ascentM)?' · ↑ '+Math.round(r.ascentM)+' m':''}`}
+function runRouteMeta(r){return `${runKm(r.distanceKm)} km${Number.isFinite(r.ascentM)?' · '+runText('Anstieg','Ascent')+' '+Math.round(r.ascentM)+' m':''}`}
 function runRoutesSheet(){
   let routes=runRouteList();
-  openModal(runText('Routen','Routes'),`<button type="button" class="btn full" onclick="runPlanner()">＋ ${runText('Neue Route planen','Plan a new route')}</button>${routes.length?`<div class="runlist">${routes.map(r=>`<button type="button" class="searchitem runrow" onclick="runRouteSheet('${esc(r.id)}')"><div>${esc(r.name)}<small>${runRouteMeta(r)}</small></div><span aria-hidden="true">›</span></button>`).join('')}</div>`:`<p class="note">${runText('Tippe auf der Karte Punkte an. Die Route folgt Fuß- und Feldwegen, Distanz und Höhenmeter siehst du sofort.','Tap points on the map. The route follows footpaths and tracks; you see distance and climb instantly.')}</p>`}`);
+  openModal(runText('Routen','Routes'),`<button type="button" class="btn full" onclick="runPlanner()">${uiIcon('plus')} ${runText('Neue Route planen','Plan a new route')}</button>${routes.length?`<div class="runlist">${routes.map(r=>`<button type="button" class="searchitem runrow" onclick="runRouteSheet('${esc(r.id)}')"><div>${esc(r.name)}<small>${runRouteMeta(r)}</small></div><span aria-hidden="true">›</span></button>`).join('')}</div>`:`<p class="note">${runText('Tippe auf der Karte Punkte an. Die Route folgt Fuß- und Feldwegen, Distanz und Höhenmeter siehst du sofort.','Tap points on the map. The route follows footpaths and tracks; you see distance and climb instantly.')}</p>`}`);
 }
 function runRouteSheet(id){
   let r=runRouteById(id);if(!r)return;
@@ -101,7 +101,7 @@ function runDeleteRoute(id){if(!confirm(runText('Diese Route löschen?','Delete 
 function runPlanner(id=null){
   let existing=id?runRouteById(id):null;
   runPlan={id:existing?.id||null,waypoints:existing?runLineLatLngs(existing.waypoints):[],line:existing?runLineLatLngs(existing.line):[],distanceKm:existing?.distanceKm||0,ascentM:existing?.ascentM,snap:true,serial:0,busy:false,map:null};
-  openModal(existing?runText('Route bearbeiten','Edit route'):runText('Route planen','Plan route'),`<div class="runmap planner" id="runplannermap"><button type="button" class="runmapbtn" onclick="runPlannerLocate()" aria-label="${runText('Mein Standort','My location')}">◎</button><span class="runmaptrails">${runTrailsButton()}</span></div><div class="runplanstats"><div><strong id="runplan-km">0 km</strong><small>${runText('Distanz','Distance')}</small></div><div><strong id="runplan-up">–</strong><small>${runText('Anstieg','Climb')}</small></div><div><strong id="runplan-time">–</strong><small>${runText('bei deiner Pace','at your pace')}</small></div></div><p class="note" id="runplan-hint">${runText('Tippe auf die Karte, um Punkte zu setzen.','Tap the map to add points.')}</p><div class="runplantools"><button type="button" class="btn secondary" id="runplan-snap" aria-pressed="true" onclick="runPlannerSnap()">${runText('Wegen folgen','Follow paths')}</button><button type="button" class="btn secondary" onclick="runPlannerUndo()">↶ ${runText('Zurück','Undo')}</button><button type="button" class="btn secondary" onclick="runPlannerLoop()">⟲ ${runText('Rundkurs','Loop')}</button><button type="button" class="btn secondary" onclick="runPlannerClear()">${runText('Leeren','Clear')}</button></div><form onsubmit="runPlannerSave(event)"><label>${runText('Name','Name')}<input id="runplan-name" maxlength="60" value="${esc(existing?.name||'')}" placeholder="${runText('z. B. Stadtpark-Runde','e.g. City park loop')}"></label><button class="btn full">${runText('Route speichern','Save route')}</button></form>`);
+  openModal(existing?runText('Route bearbeiten','Edit route'):runText('Route planen','Plan route'),`<div class="runmap planner" id="runplannermap"><button type="button" class="runmapbtn" onclick="runPlannerLocate()" aria-label="${runText('Mein Standort','My location')}">${uiIcon('crosshair')}</button><span class="runmaptrails">${runTrailsButton()}</span></div><div class="runplanstats"><div><strong id="runplan-km">0 km</strong><small>${runText('Distanz','Distance')}</small></div><div><strong id="runplan-up">–</strong><small>${runText('Anstieg','Climb')}</small></div><div><strong id="runplan-time">–</strong><small>${runText('bei deiner Pace','at your pace')}</small></div></div><p class="note" id="runplan-hint">${runText('Tippe auf die Karte, um Punkte zu setzen.','Tap the map to add points.')}</p><div class="runplantools"><button type="button" class="btn secondary" id="runplan-snap" aria-pressed="true" onclick="runPlannerSnap()">${runText('Wegen folgen','Follow paths')}</button><button type="button" class="btn secondary" onclick="runPlannerUndo()">${uiIcon('arrow-counter-clockwise')} ${runText('Zurück','Undo')}</button><button type="button" class="btn secondary" onclick="runPlannerLoop()">⟲ ${runText('Rundkurs','Loop')}</button><button type="button" class="btn secondary" onclick="runPlannerClear()">${runText('Leeren','Clear')}</button></div><form onsubmit="runPlannerSave(event)"><label>${runText('Name','Name')}<input id="runplan-name" maxlength="60" value="${esc(existing?.name||'')}" placeholder="${runText('z. B. Stadtpark-Runde','e.g. City park loop')}"></label><button class="btn full">${runText('Route speichern','Save route')}</button></form>`);
   modal.classList.add('runplannersheet');modal.addEventListener('close',()=>modal.classList.remove('runplannersheet'),{once:true});
   runMountMap('runplannermap',map=>{
     runPlan.map=map;runPlan.layer=L.polyline([],{color:runAccent(),weight:5,lineCap:'round',lineJoin:'round'}).addTo(map);runPlan.marks=L.layerGroup().addTo(map);
@@ -136,7 +136,7 @@ async function runPlannerRoute(){
 }
 function runPlannerDraw(){
   let plan=runPlan;if(!plan?.map)return;plan.layer.setLatLngs(plan.line);plan.marks.clearLayers();
-  plan.waypoints.forEach((p,i)=>L.circleMarker(p,{radius:i===0?7:5,color:'#fff',weight:2,fillColor:i===0?'#3ddc84':runAccent(),fillOpacity:1}).addTo(plan.marks));
+  plan.waypoints.forEach((p,i)=>L.circleMarker(p,{radius:i===0?7:5,color:'#fff',weight:2,fillColor:i===0?'#34C759':runAccent(),fillOpacity:1}).addTo(plan.marks));
   let km=$('runplan-km'),up=$('runplan-up'),time=$('runplan-time'),pace=runTypicalPace();
   if(km)km.textContent=runKm(Math.round(plan.distanceKm*100)/100)+' km';if(up)up.textContent=Number.isFinite(plan.ascentM)?Math.round(plan.ascentM)+' m':'–';
   if(time)time.textContent=pace&&plan.distanceKm>0?formatClock(pace*plan.distanceKm):'–';

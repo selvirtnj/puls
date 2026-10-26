@@ -17,16 +17,23 @@ function dsRow({label,detail='',value='',icon='',action='',chevron=false,cls=''}
   return `<${tag} class="dsrow${icon?' dsiconrow':''}${cls?' '+cls:''}"${attrs}>${icon?`<span class="dsrowicon" aria-hidden="true">${phIcon(icon)}</span>`:''}<span class="dsrowtext"><span>${label}</span>${detail?`<small>${detail}</small>`:''}</span>${value!==''?`<span class="dsrowvalue">${value}</span>`:''}${chevron?`<span class="dsrowchevron" aria-hidden="true">${phIcon('caret-right')}</span>`:''}</${tag}>`;
 }
 function dsGroup(title,rows,foot=''){return `${title?`<h2 class="dsgrouptitle">${title}</h2>`:''}<div class="dsgroup">${rows}</div>${foot?`<p class="dsgroupfoot">${foot}</p>`:''}`}
-function dsEnergyCard(){
-  let t=totals(),g=(typeof dayGoals==='function'?dayGoals(date):state.goals)||{},goal=Number(g.kcal)||0,eaten=t.kcal,over=goal>0&&eaten>goal,left=goal-eaten;
-  let percent=goal>0?eaten/goal*100:0;
-  let big=goal>0?(over?'+'+dsKcal(eaten-goal):dsKcal(left))+' kcal':dsKcal(eaten)+' kcal';
-  let caption=goal>0?(over?dsText('über dem Tagesziel','over your daily target'):dsText('übrig','left')):dsText('gegessen, kein Tagesziel','eaten, no daily target');
-  let macros=[['p',dsText('Protein','Protein')],['c',dsText('Kohlenhydrate','Carbs')],['f',dsText('Fett','Fat')]].map(([k,label])=>{
+function dsDayGoals(){return (typeof dayGoals==='function'?dayGoals(date):state.goals)||{}}
+/* Makros einheitlich in Akzentfarbe; Orange nur, wenn ein Ziel überschritten ist. */
+function dsMacroRows(t,g){
+  return `<div class="dsmacros">${[['p',dsText('Protein','Protein')],['c',dsText('Kohlenhydrate','Carbs')],['f',dsText('Fett','Fat')]].map(([k,label])=>{
     let target=Number(g[k])||0,value=t[k]||0,width=target>0?Math.min(100,value/target*100):0,isOver=target>0&&value>target;
     return `<div class="dsmacro"><span>${label}</span><strong>${n(Math.round(value))}${target>0?' / '+n(target):''} g</strong><div class="dsmeter" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${target||0}" aria-valuenow="${Math.round(value)}"><i class="${isOver?'dsover':''}" style="width:${width}%"></i></div></div>`;
-  }).join('');
-  return `<div class="dsgroup dsenergy"><div class="dsenergytop"><div class="dsringwrap">${dsRing(percent,over)}<div class="dsringlabel"><strong>${dsKcal(eaten)}</strong><small>${goal>0?dsText('von','of')+' '+dsKcal(goal):'kcal'}</small></div></div><div class="dsenergyfacts"><span class="dsbig${over?' dsover':''}">${big}</span><span class="dscaption">${caption}</span></div></div><div class="dsmacros">${macros}</div><button type="button" class="btn full dsprimary" onclick="foodForm();if(typeof foodTab==='function')foodTab('search')">${dsText('Essen eintragen','Log food')}</button></div>`;
+  }).join('')}</div>`;
+}
+function dsEnergyFacts(t,g){
+  let goal=Number(g.kcal)||0,eaten=t.kcal,over=goal>0&&eaten>goal,left=goal-eaten;
+  return {goal,eaten,over,percent:goal>0?eaten/goal*100:0,
+    big:goal>0?(over?'+'+dsKcal(eaten-goal):dsKcal(left))+' kcal':dsKcal(eaten)+' kcal',
+    caption:goal>0?(over?dsText('über dem Tagesziel','over your daily target'):dsText('übrig','left')):dsText('gegessen, kein Tagesziel','eaten, no daily target')};
+}
+function dsEnergyCard(){
+  let t=totals(),g=dsDayGoals(),e=dsEnergyFacts(t,g);
+  return `<div class="dsgroup dsenergy"><div class="dsenergytop"><div class="dsringwrap">${dsRing(e.percent,e.over)}<div class="dsringlabel"><strong>${dsKcal(e.eaten)}</strong><small>${e.goal>0?dsText('von','of')+' '+dsKcal(e.goal):'kcal'}</small></div></div><div class="dsenergyfacts"><span class="dsbig${e.over?' dsover':''}">${e.big}</span><span class="dscaption">${e.caption}</span></div></div>${dsMacroRows(t,g)}<button type="button" class="btn full dsprimary" onclick="foodForm();if(typeof foodTab==='function')foodTab('search')">${dsText('Essen eintragen','Log food')}</button></div>`;
 }
 function dsFoodGroup(){
   let entries=state.foods.filter(x=>x.date===date),shown=entries.slice(-5).reverse();
@@ -116,25 +123,49 @@ function dsRenderConnectivity(status){
 }
 window.addEventListener('puls:connectivity',event=>dsRenderConnectivity(event.detail||window.pulsConnectivity));
 
-/* ---------- Emoji-Symbole in App-eigenen Bausteinen durch Phosphor ersetzen ----------
-   Nur feste App-Beschriftungen (Serien-Zähler, Wasser-Überschrift); Nutzerinhalte, Eingaben und Lebensmittelnamen
-   werden nie verändert. Nur die direkten Textknoten dieser Elemente, Leerzeichen bleiben erhalten. */
-const dsEmojiIcons={'🔥':'fire','💧':'drop'};
-const dsEmojiTargets='.identitystreak > strong, .accountstreak > strong, .watercompact .waterinline h3, .watercard > .cardhead > h3';
-function dsReplaceEmoji(root){
+/* ---------- Dateiauswahl: gestalteter Knopf statt „Choose File“ ----------
+   Das echte <input type=file> bleibt im Knopf (visuell versteckt, fokussierbar, für VoiceOver erreichbar);
+   ein Tippen auf den Knopf öffnet die Auswahl. Handler und Attribute des Inputs bleiben unverändert. */
+function dsFileLabel(input){
+  let accept=input.getAttribute('accept')||'';
+  if(/image/.test(accept))return dsText('Foto auswählen','Choose photo');
+  if(/json/.test(accept))return dsText('Sicherungsdatei auswählen','Choose backup file');
+  return dsText('Datei auswählen','Choose file');
+}
+function dsDecorateFileInputs(root){
   if(!root?.querySelectorAll)return;
-  for(let element of root.querySelectorAll(dsEmojiTargets)){
-    if(element.isContentEditable||element.closest('input,textarea,[contenteditable]'))continue;
-    for(let node of [...element.childNodes]){
-      if(node.nodeType!==3||!/🔥|💧/.test(node.nodeValue))continue;
-      let frag=document.createDocumentFragment();
-      for(let part of node.nodeValue.split(/(🔥|💧)/)){
-        if(dsEmojiIcons[part]){let span=document.createElement('span');span.className='dsinlineicon';span.setAttribute('aria-hidden','true');span.innerHTML=phIcon(dsEmojiIcons[part]);frag.append(span)}
-        else if(part)frag.append(document.createTextNode(part));
-      }
-      node.replaceWith(frag);
-    }
-  }
+  root.querySelectorAll('input[type=file]:not([data-ds-file])').forEach(input=>{
+    input.dataset.dsFile='1';
+    // Das Profilbild im Konto ist bereits ein runder Bildknopf und bleibt so.
+    if(input.closest('.avatarpicker'))return;
+    let button=document.createElement('span');button.className='dsfilebutton';
+    let text=document.createElement('span');text.className='dsfiletext';text.textContent=dsFileLabel(input);
+    button.innerHTML=phIcon(/image/.test(input.getAttribute('accept')||'')?'image':'upload-simple');button.append(text);
+    let label=input.closest('label');
+    if(label){input.before(button);button.prepend(input)}
+    else{let wrap=document.createElement('label');wrap.className='dsfilewrap';input.before(wrap);wrap.append(button);button.prepend(input)}
+    if(!input.getAttribute('aria-label')){let own=label?[...label.childNodes].filter(node=>node.nodeType===3).map(node=>node.nodeValue.trim()).join(' ').trim():'';input.setAttribute('aria-label',own||text.textContent)}
+    input.addEventListener('change',()=>{let file=input.files?.[0];text.textContent=file?file.name:dsFileLabel(input)});
+  });
+}
+
+/* ---------- Aktivitäts- und Steuersymbole aus Phosphor ---------- */
+const dsRunIcons={run:'person-simple-run',trail:'mountains',walk:'person-simple-walk',hike:'person-simple-hike',mountain:'mountains',ride:'bicycle',tabletennis:'ping-pong',soccer:'soccer-ball',mma:'boxing-glove',padel:'tennis-ball',inline:'sneaker-move',other:'dots-three-circle',route:'path',locate:'crosshair',lock:'lock-simple',play:'play',pause:'pause',stop:'stop',down:'caret-down',lap:'flag-checkered'};
+if(typeof runIcon==='function'){const dsRunIconBase=runIcon;runIcon=function(key){return dsRunIcons[key]?phIcon(dsRunIcons[key]):dsRunIconBase(key)}}
+const dsControlGlyphs={'⌄':'caret-down','⌃':'caret-up','‹':'caret-left','›':'caret-right','×':'x','✕':'x'};
+if(typeof controlIconSvg==='function')controlIconSvg=function(glyph){return phIcon(dsControlGlyphs[glyph]||'x','controlicon')};
+
+/* ---------- Essen: Kopf als ruhige Liste (kleiner Ring, Restwert, Makro-Balken) ---------- */
+if(typeof combinedNutrition==='function')combinedNutrition=function(){
+  let t=totals(),g=dsDayGoals(),e=dsEnergyFacts(t,g);
+  return `<div class="dsenergytop dsenergysmall"><div class="dsringwrap">${dsRing(e.percent,e.over)}</div><div class="dsenergyfacts"><span class="dsbig${e.over?' dsover':''}">${e.big}</span><span class="dscaption">${e.goal>0?dsKcal(e.eaten)+' '+dsText('von','of')+' '+dsKcal(e.goal)+' kcal · '+e.caption:e.caption}</span></div></div>${dsMacroRows(t,g)}${typeof baselineEnergyLine==='function'?baselineEnergyLine(date):''}`;
+};
+if(typeof nutritionSlides==='function'&&typeof microBars==='function'){
+  nutritionSlides=function(){
+    let labels=[dsText('Energie & Makros','Energy & macros'),dsText('Mikronährstoffe','Micronutrients')];
+    return `<section class="nutritiondeck"><div class="segmented slidedots dsslideswitch" role="group" aria-label="${dsText('Ansicht','View')}">${labels.map((label,i)=>`<button type="button" class="${nutrientSlide===i?'selected':''}" aria-pressed="${nutrientSlide===i}" onclick="setNutrientSlide(${i})" data-no-translate>${label}</button>`).join('')}</div><div class="nutritiontrack" id="nutrition-track" onscroll="nutritionSlideChanged(this)"><article class="nutritionslide">${combinedNutrition()}</article><article class="nutritionslide" aria-label="${labels[1]}">${microBars()}</article></div></section>`;
+  };
+  const dsSlideChanged=nutritionSlideChanged;nutritionSlideChanged=function(...args){let result=dsSlideChanged.apply(this,args);document.querySelectorAll('.dsslideswitch button').forEach((el,i)=>el.setAttribute('aria-pressed',String(i===nutrientSlide)));return result};
 }
 
 /* ---------- Tab-Leiste und Seitenrahmen ---------- */
@@ -154,7 +185,7 @@ function dsChrome(){
     dial.insertAdjacentHTML('afterbegin',dsRing(fill,totals().kcal>((typeof dayGoals==='function'?dayGoals(date):state.goals)?.kcal||Infinity)));
   });
   if(dsLastPage!==page){dsLastPage=page;content?.querySelectorAll('.dsring').forEach(ring=>ring.classList.add('dsringanimate'))}
-  dsReplaceEmoji(content);dsReplaceEmoji(identity);
+  dsDecorateFileInputs(content);
   dsDecoratePasswords(content||document);
   dsRenderConnectivity(window.pulsConnectivity);
 }
@@ -164,9 +195,9 @@ const dsRenderBase=render;render=function(...args){let result=dsRenderBase.apply
 function dsDecorateSheet(){
   let body=$('mb');if(!body)return;
   let close=document.querySelector('#modal .modalhead button.quiet');
-  if(close&&!close.querySelector('svg')){close.innerHTML=phIcon('x');if(!close.getAttribute('aria-label'))close.setAttribute('aria-label',dsText('Schließen','Close'))}
+  if(close&&!close.querySelector('.pulsicon')){close.innerHTML=phIcon('x');if(!close.getAttribute('aria-label'))close.setAttribute('aria-label',dsText('Schließen','Close'))}
   if($('cloud-email'))body.querySelector('form')?.classList.add('dsauth');
-  dsDecoratePasswords(body);dsReplaceEmoji(body);
+  dsDecoratePasswords(body);dsDecorateFileInputs(body);
 }
 const dsOpenModal=openModal;openModal=function(...args){let result=dsOpenModal.apply(this,args);dsDecorateSheet();return result};
 
@@ -189,6 +220,23 @@ if(typeof accountSections!=='undefined'){let entry=accountSections.find(x=>x.key
 // Frühere Design- und Farbauswahl ist ohne Oberfläche; der Platzhalter hält den Kontobereich „Darstellung“ erreichbar.
 designChooser=function(){return '<section class="card designchooser" hidden></section>'};
 
+// Spät hinzugefügte Fenster-Inhalte (Tabs, Suchergebnisse) bekommen ebenfalls den gestalteten Dateiknopf.
+if($('mb'))new MutationObserver(()=>dsDecorateFileInputs($('mb'))).observe($('mb'),{childList:true,subtree:true});
+// Das Erststart-Fenster öffnet sich schon vor diesem Skript.
+if(modal?.open)dsDecorateSheet();
+
+// Übersetzungen für Texte, die in Schritt 2 ihre Symbole verloren haben oder neu sind.
+// Bestehende Einträge mit Pfeil/Häkchen/Plus gelten auch ohne das Zeichen; vorhandene Übersetzungen bleiben unangetastet.
+function dsAddEnglish(map){if(typeof englishUI!=='object')return;for(let [key,value] of Object.entries(map))if(!(key in englishUI))englishUI[key]=value}
+if(typeof englishUI==='object'){
+  let derived={};
+  for(let [key,value] of Object.entries(englishUI)){
+    let plain=key.replace(/^[＋★☆♫▥◎⌁↓←‹●]\s*/u,'').replace(/\s*[↗→✓›]$/u,'').trim();
+    if(plain&&plain!==key)derived[plain]=String(value).replace(/^[＋★☆♫▥◎⌁↓←‹●+]\s*/u,'').replace(/\s*[↗→✓›]$/u,'').trim();
+  }
+  dsAddEnglish(derived);
+}
+dsAddEnglish({'Beenden':'Finish','Workout öffnen':'Open workout','Starten':'Start','Fertig':'Done','Abgeschlossen':'Completed','Bestleistung':'Personal best','Übung hinzufügen':'Add exercise','Satz hinzufügen':'Add set','Satz':'Set','Erledigt':'Done','Leeres Workout starten':'Start empty workout','Routine':'Routine','Routine erstellen':'Create routine','Alle Routinen':'All routines','Plan anpassen':'Adjust plan','Gesamtwasser':'Total water','250 ml Wasser hinzufügen':'Add 250 ml water','250 ml Wasser erfasst':'250 ml water logged','Essen hinzufügen':'Add food','Nährwertfoto':'Label photo','Dein Ziel':'Your goal','Körper':'Body','Plan & Entwicklung':'Plan & development','Einstellungen':'Settings','Ziele anpassen':'Edit goals','Zielgewicht':'Target weight','Gewicht erfassen':'Log weight','Angemeldet':'Signed in','Nicht angemeldet':'Not signed in','Nur auf diesem Gerät gespeichert':'Stored on this device only','Foto auswählen':'Choose photo','Datei auswählen':'Choose file','Sicherungsdatei auswählen':'Choose backup file','Anstieg':'Ascent','Höhenmeter':'Elevation gain','Gewicht':'Weight','Tag vollständig':'Day complete','Eingetragen':'Logged','Workout abgeschlossen':'Workout completed','Neue Leistung':'New best','Zum Workout':'Back to workout','Geglätteter Trend':'Smoothed trend','Messwerte':'Measurements','Konto zurücksetzen':'Reset account','Vorherige':'Previous','Weitere Produkte':'More products','Mit Kamera scannen':'Scan with camera','Originalprodukt ansehen':'View original product','Öffnen':'Open','Heute gegessen':'Eaten today','Mikronährstoffe':'Micronutrients'});
 if(typeof englishUI==='object')Object.assign(englishUI,{'Darstellung':'Appearance','Farbschema':'Colour scheme','Hell, Dunkel, Sprache & App-Icon':'Light, dark, language & app icon','Übersicht':'Overview','Essen':'Food','Konto':'Account','Hinzufügen':'Add'});
 
 render();

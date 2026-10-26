@@ -15,7 +15,7 @@ const polishExerciseOptions=renderExerciseOptions;renderExerciseOptions=function
     let exact=exerciseOptions(name).some(x=>normalizeSearch(x.name)===normalizeSearch(name)),none=!list.querySelector('.searchitem');
     if(!exact){
       let button=document.createElement('button');button.type='button';button.className='searchitem ownexercise';button.setAttribute('onclick','addTypedExercise()');
-      button.innerHTML=`<div>${esc(name)}<small>${state.language==='en'?'Add as your own exercise':'Als eigene Übung hinzufügen'}</small></div><span>＋</span>`;
+      button.innerHTML=`<div>${esc(name)}<small>${state.language==='en'?'Add as your own exercise':'Als eigene Übung hinzufügen'}</small></div><span>${uiIcon('plus')}</span>`;
       if(none)list.prepend(button);else list.append(button);
       list.querySelector(':scope > p.note:last-child')?.remove();
     }

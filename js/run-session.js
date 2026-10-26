@@ -113,11 +113,11 @@ function runReadyHtml(){
   ${t.gps?`<div class="runmaptools"><button type="button" class="runround runlocate" onclick="runPreviewRecenter()" aria-label="${runText('Auf mich zentrieren','Centre on me')}">${runIcon('locate')}</button>${runTrailsButton()}</div>`:''}
   <section class="runpanel">
     ${t.id==='mma'?runRoundsPanel():`<div class="runpanelstats"><div><strong>00:00</strong><small>${runText('Zeit','Time')}</small></div>${t.gps?`<div><strong>–</strong><small>${t.category==='run'?runText('Ø Pace','Avg pace'):runText('Ø km/h','Avg km/h')}</small></div><div><strong>${new Intl.NumberFormat(appLocale(),{minimumFractionDigits:2}).format(0)}</strong><small>${runText('Distanz (km)','Distance (km)')}</small></div>`:`<div><strong>–</strong><small>${runText('Kalorien','Calories')}</small></div>`}</div>`}
-    ${route?`<div class="runroutechip">${runIcon('route')}<span>${esc(route.name)} · ${runKm(route.distanceKm)} km</span><button type="button" onclick="runSelectRoute(null)" aria-label="${runText('Route entfernen','Remove route')}">✕</button></div>`:''}
+    ${route?`<div class="runroutechip">${runIcon('route')}<span>${esc(route.name)} · ${runKm(route.distanceKm)} km</span><button type="button" onclick="runSelectRoute(null)" aria-label="${runText('Route entfernen','Remove route')}">${uiIcon('x')}</button></div>`:''}
     <div class="runcontrols">
       <button type="button" class="runside" onclick="runTypePicker()"><span class="runsideicon">${runIcon(t.icon)}</span><small>${esc(runTypeName(t))}</small></button>
       <button type="button" class="runstart" onclick="runCountdownStart()" aria-label="${runText('Start','Start')}">${runIcon('play')}</button>
-      <button type="button" class="runside" onclick="runRoutesSheet()" ${t.gps?'':'disabled'}><span class="runsideicon">${runIcon('route')}</span><small>${route?runText('Route ✓','Route ✓'):runText('Route','Route')}</small></button>
+      <button type="button" class="runside" onclick="runRoutesSheet()" ${t.gps?'':'disabled'}><span class="runsideicon">${runIcon('route')}</span><small>${runText('Route','Route')}</small>${route?`<span class="dsvisuallyhidden">${runText('gewählt','selected')}</span>`:''}</button>
     </div>
   </section>`;
 }
@@ -125,7 +125,7 @@ function runTypePicker(){
   let current=runCurrentType().id,groups={run:runText('Laufen & Gehen','Run & walk'),walk:runText('Laufen & Gehen','Run & walk'),ride:runText('Rad','Cycling'),other:runText('Weitere','More')};
   let list=runTypeList(),seen=new Set(),html='';
   for(let key of ['run','walk','ride','other']){let items=list.filter(t=>(t.category==='walk'?'run':t.category)===(key==='walk'?'run':key)&&!seen.has(t.id));if(!items.length||seen.has('group:'+groups[key]))continue;seen.add('group:'+groups[key]);items.forEach(t=>seen.add(t.id));
-    html+=`<h3 class="runpickhead">${groups[key]}</h3>`+items.map(t=>`<button type="button" class="runpick ${t.id===current?'on':''}" onclick="runChooseType('${esc(t.id)}')"><span>${runIcon(t.icon)}</span>${esc(runTypeName(t))}${t.id===current?'<b>✓</b>':''}</button>`).join('')}
+    html+=`<h3 class="runpickhead">${groups[key]}</h3>`+items.map(t=>`<button type="button" class="runpick ${t.id===current?'on':''}" onclick="runChooseType('${esc(t.id)}')"><span>${runIcon(t.icon)}</span>${esc(runTypeName(t))}${t.id===current?`<b>${uiIcon('check')}</b>`:''}</button>`).join('')}
   openModal(runText('Aktivität wählen','Choose activity'),`<div class="runpicklist">${html}</div>`);
 }
 function runChooseType(id){runViewType=id;state.runSettings={...(state.runSettings||{}),lastType:id};save();if(!runTypeInfo(id).gps)runViewRouteId=null;modal.close();runViewMapKey='';renderRunView()}
@@ -139,7 +139,7 @@ function runCountdownLeft(){return runCountdown?Math.max(0,Math.ceil((runCountdo
 function runCountdownTick(){let left=runCountdownLeft(),el=document.querySelector('[data-runcount]');if(el&&el.textContent!==String(left)){el.textContent=left;el.classList.remove('tick');void el.offsetWidth;el.classList.add('tick');if(left<=3&&left>0&&typeof pulsHaptic==='function')pulsHaptic('light')}if(left<=0)runCountdownGo()}
 function runCountdownGo(){runCountdownCancel();runPreviewStop();let t=runCurrentType();runView='live';runSheetOpen=false;runLocked=false;startRunTimer(!!t.gps,t.gps?runViewRouteId:null,t.id);if(t.id==='mma')runBeep('work');else if(typeof pulsHaptic==='function')pulsHaptic('success')}
 function runCountdownHtml(){
-  return `<div class="runviewmap blur" id="runviewmap"></div><div class="runcountdown"><small>${esc(runTypeName(runCurrentType()))}</small><strong data-runcount class="tick">${runCountdownLeft()}</strong><div class="runcountactions"><button type="button" class="btn secondary" onclick="runCountdownAdd()">＋10 ${runText('Sekunden','seconds')}</button><button type="button" class="btn" onclick="runCountdownGo()">${runText('Jetzt starten','Start now')} →</button></div><button type="button" class="textbtn" onclick="runCountdownCancel();runView='ready';renderRunView()">${runText('Abbrechen','Cancel')}</button></div>`;
+  return `<div class="runviewmap blur" id="runviewmap"></div><div class="runcountdown"><small>${esc(runTypeName(runCurrentType()))}</small><strong data-runcount class="tick">${runCountdownLeft()}</strong><div class="runcountactions"><button type="button" class="btn secondary" onclick="runCountdownAdd()">+10 ${runText('Sekunden','seconds')}</button><button type="button" class="btn" onclick="runCountdownGo()">${runText('Jetzt starten','Start now')}</button></div><button type="button" class="textbtn" onclick="runCountdownCancel();runView='ready';renderRunView()">${runText('Abbrechen','Cancel')}</button></div>`;
 }
 
 // MMA: Runden vor dem Start einstellen (runRoundsSettings/runSetRounds in running.js).
@@ -193,7 +193,7 @@ function runRoundWatch(run){
 let runSheetOpen=false,runLocked=false,runFinishArm=0,runFinishTimer=null,runElevCache={key:'',gain:null,alt:null};
 function runLiveKind(run){let t=runTypeInfo(run?.type);if(t.id==='mma')return 'mma';if(!run?.gps)return 'plain';return t.category==='run'?'run':'walk'}
 function runLiveFields(kind){
-  const f={time:runText('Zeit','Time'),dist:runText('Distanz (km)','Distance (km)'),pace:runText('Tempo (/km)','Pace (/km)'),avgpace:runText('Ø Tempo (/km)','Avg pace (/km)'),gain:runText('Höhenmeter ↑','Elevation gain'),alt:runText('Höhe','Altitude'),speed:runText('Ø km/h','Avg km/h'),kcal:runText('kcal*','kcal*'),clock:runText('Uhrzeit','Time of day')};
+  const f={time:runText('Zeit','Time'),dist:runText('Distanz (km)','Distance (km)'),pace:runText('Tempo (/km)','Pace (/km)'),avgpace:runText('Ø Tempo (/km)','Avg pace (/km)'),gain:runText('Höhenmeter','Elevation gain'),alt:runText('Höhe','Altitude'),speed:runText('Ø km/h','Avg km/h'),kcal:runText('kcal*','kcal*'),clock:runText('Uhrzeit','Time of day')};
   let keys=kind==='run'?['time','dist','pace','avgpace','kcal']:kind==='walk'?['time','dist','gain','alt','speed','kcal']:['kcal','clock'];
   return keys.map(k=>[k,f[k]]);
 }
@@ -249,7 +249,7 @@ function runLiveHtml(){
   return `${top}<div class="runplain ${kind}">${kind==='plain'?`<span class="runplainicon">${runIcon(t.icon)}</span>`:''}${mma}
     <div class="runliveclock"><strong data-runclock>${formatClock(runElapsed())}</strong><small>${runText('Dauer','Duration')}</small></div>
     <div class="runplainvals">${runLiveFields(kind).map(f=>val(f)).join('')}</div>
-    ${kind==='mma'&&data._round.phase!=='done'?`<button type="button" class="runlapbtn big" onclick="runLiveLap()">${runText('Nächste Runde','Next round')} →</button>`:''}
+    ${kind==='mma'&&data._round.phase!=='done'?`<button type="button" class="runlapbtn big" onclick="runLiveLap()">${runText('Nächste Runde','Next round')}</button>`:''}
   </div>${runLiveBar(run)}${runLockHtml()}`;
 }
 // Jede Sekunde (running.js updateRunLive): Zahlen ohne Neuaufbau aktualisieren; MMA-Signale auch bei minimierter Ansicht.
@@ -318,7 +318,7 @@ function runLapsHtml(laps,duration){
 }
 
 // Zusammenfassung
-const RUN_FEELINGS=[[1,'😫','Erschöpft','Exhausted'],[2,'😕','Schwer','Hard'],[3,'🙂','Normal','Normal'],[4,'😀','Gut','Good'],[5,'💪','Stark','Strong']];
+const RUN_FEELINGS=[[1,'smiley-x-eyes','Erschöpft','Exhausted'],[2,'smiley-sad','Schwer','Hard'],[3,'smiley-meh','Normal','Normal'],[4,'smiley','Gut','Good'],[5,'lightning','Stark','Strong']];
 const RUN_TERRAINS=[['road','Straße','Road'],['forest','Wald','Forest'],['mixed','Gemischt','Mixed'],['trail','Trail','Trail'],['track','Bahn','Track'],['treadmill','Laufband','Treadmill']];
 function runOpenSummary(run,points,km){
   let previous=runSummary?.key===run.startedAt?runSummary:runDraftLoad(run.startedAt);
@@ -332,7 +332,7 @@ function runDetailRows(x){
     [runText('Ø Pace','Avg pace'),x.km>0?runPaceText(x.moving/x.km):'–'],
     [runText('Ø Geschwindigkeit','Avg speed'),speed?n(Math.round(speed*10)/10)+' km/h':'–'],
     [runText('Max. Geschwindigkeit','Max speed'),Number.isFinite(x.maxSpeed)?n(x.maxSpeed)+' km/h':'–'],
-    [runText('Höhenmeter ↑','Elevation gain'),Number.isFinite(x.gain)?Math.round(x.gain)+' m':'–'],
+    [runText('Höhenmeter','Elevation gain'),Number.isFinite(x.gain)?Math.round(x.gain)+' m':'–'],
     [runText('Max. Höhe','Max elevation'),Number.isFinite(x.max)?Math.round(x.max)+' m':'–'],
     [runText('Pause','Paused'),formatClock(x.pause||0)],
     [runText('Kalorien (geschätzt)','Calories (estimate)'),Number.isFinite(x.kcal)?x.kcal+' kcal':runText('– · Gewicht eintragen','– · add body weight')]];
@@ -353,7 +353,7 @@ function runSummaryHtml(){
     <div class="runsumbig">${t.gps?`<div><strong>${runKm(x.km)}</strong><small>km</small></div>`:''}<div><strong>${formatClock(x.moving)}</strong><small>${runText('Dauer','Duration')}</small></div><div><strong>${Number.isFinite(x.kcal)?x.kcal:'–'}</strong><small>kcal*</small></div></div>
     ${t.gps&&x.km<.01?`<label class="runkmfix">${runText('GPS hat keine Strecke erfasst – Distanz in km (optional)','GPS recorded no distance – distance in km (optional)')}<input id="runsum-km" type="number" inputmode="decimal" min="0" max="1000" step="0.01" placeholder="0,00" value="${esc(x.manualKm||'')}" oninput="runSummary.manualKm=this.value;runDraftSave()"></label>`:''}
     <h3>${runText('Wie hat es sich angefühlt?','How did it feel?')}</h3>
-    <div class="runfeel">${RUN_FEELINGS.map(([v,e,de,en])=>`<button type="button" class="${x.feeling===v?'on':''}" onclick="runSummarySet('feeling',${v})"><span>${e}</span><small>${state.language==='en'?en:de}</small></button>`).join('')}</div>
+    <div class="runfeel">${RUN_FEELINGS.map(([v,e,de,en])=>`<button type="button" class="${x.feeling===v?'on':''}" onclick="runSummarySet('feeling',${v})" aria-pressed="${x.feeling===v}"><span aria-hidden="true">${uiIcon(e)}</span><small>${state.language==='en'?en:de}</small></button>`).join('')}</div>
     ${t.category!=='other'?`<h3>${runText('Untergrund','Terrain')}</h3><div class="runchips">${RUN_TERRAINS.map(([k,de,en])=>`<button type="button" class="${x.terrain===k?'on':''}" onclick="runSummarySet('terrain','${k}')">${state.language==='en'?en:de}</button>`).join('')}</div>`:''}
     <label class="runnote">${runText('Notiz (optional)','Note (optional)')}<textarea id="runsum-note" maxlength="200" rows="2" oninput="runSummary.note=this.value;runDraftSave()" placeholder="${runText('z. B. Intervalle, Wetter, Schuhe','e.g. intervals, weather, shoes')}">${esc(x.note||'')}</textarea></label>
     <h3>${runText('Details','Details')}</h3>
@@ -378,7 +378,7 @@ function runSummarySave(){
 }
 function runMountSummaryMap(){
   if(!runPendingRoute||typeof runMountMap!=='function')return;
-  runMountMap('runviewmap',map=>{let segs=runRoutePoints(runPendingRoute),line=L.polyline(segs,{color:runAccent(),weight:5}).addTo(map);L.circleMarker(segs[0][0],{radius:6,color:'#fff',weight:2,fillColor:'#3ddc84',fillOpacity:1}).addTo(map);L.circleMarker(segs.at(-1).at(-1),{radius:6,color:'#fff',weight:2,fillColor:'#ff5c6c',fillOpacity:1}).addTo(map);map.fitBounds(line.getBounds(),{padding:[18,18]})});
+  runMountMap('runviewmap',map=>{let segs=runRoutePoints(runPendingRoute),line=L.polyline(segs,{color:runAccent(),weight:5}).addTo(map);L.circleMarker(segs[0][0],{radius:6,color:'#fff',weight:2,fillColor:'#34C759',fillOpacity:1}).addTo(map);L.circleMarker(segs.at(-1).at(-1),{radius:6,color:'#fff',weight:2,fillColor:'#FF3B30',fillOpacity:1}).addTo(map);map.fitBounds(line.getBounds(),{padding:[18,18]})});
 }
 
 // Gespeicherte Aktivität ansehen und nachträglich Gefühl, Untergrund, Notiz ändern.
@@ -386,14 +386,14 @@ function runDetail(id){
   let r=runList().find(x=>x.id===id);if(!r)return;let t=runTypeInfo(r.type),start=r.startedAt?new Date(r.startedAt):new Date(r.date+'T12:00:00');
   let when=start.toLocaleDateString(appLocale(),{weekday:'long',day:'numeric',month:'long'})+(r.startedAt?' · '+start.toLocaleTimeString(appLocale(),{hour:'2-digit',minute:'2-digit'}):'');
   let feel=RUN_FEELINGS.find(f=>f[0]===r.feeling),terrain=RUN_TERRAINS.find(x=>x[0]===r.terrain);
-  openModal(runTypeName(t),`${r.route?`<div class="runmap detail" id="rundetailmap"></div>`:''}<p class="rundetaildate">${esc(when)}${feel?' · '+feel[1]+' '+(state.language==='en'?feel[3]:feel[2]):''}${terrain?' · '+(state.language==='en'?terrain[2]:terrain[1]):''}</p><div class="runsumbig compact">${r.distanceKm>0?`<div><strong>${runKm(r.distanceKm)}</strong><small>km</small></div>`:''}<div><strong>${formatClock(r.durationSeconds)}</strong><small>${runText('Dauer','Duration')}</small></div><div><strong>${Number.isFinite(r.kcal)?r.kcal:'–'}</strong><small>kcal*</small></div></div>${r.note?`<p class="note">${esc(r.note)}</p>`:''}${runDetailRows({km:r.distanceKm,moving:r.durationSeconds,maxSpeed:r.maxSpeed,gain:r.elevationGain,max:r.elevationMax,pause:r.pauseSeconds,kcal:r.kcal})}${runSplitsHtml(r.splits,r.splitRest)}${r.type!=='mma'?runLapsHtml(r.laps,r.durationSeconds):''}<div class="runactions"><button type="button" class="btn secondary" onclick="runEditForm('${esc(r.id)}')">${runText('Bearbeiten','Edit')}</button>${r.route?`<button type="button" class="btn secondary" onclick="runSaveRouteFromRun('${esc(r.id)}')">${runText('Als Route sichern','Save as route')}</button>`:''}</div><p class="note">* ${runText('Kalorien geschätzt.','Calories estimated.')}</p>`);
-  if(r.route&&typeof runMountMap==='function')runMountMap('rundetailmap',map=>{let segs=runRoutePoints(r.route),line=L.polyline(segs,{color:runAccent(),weight:5}).addTo(map);L.circleMarker(segs[0][0],{radius:6,color:'#fff',weight:2,fillColor:'#3ddc84',fillOpacity:1}).addTo(map);L.circleMarker(segs.at(-1).at(-1),{radius:6,color:'#fff',weight:2,fillColor:'#ff5c6c',fillOpacity:1}).addTo(map);map.fitBounds(line.getBounds(),{padding:[18,18]})});
+  openModal(runTypeName(t),`${r.route?`<div class="runmap detail" id="rundetailmap"></div>`:''}<p class="rundetaildate">${esc(when)}${feel?' · '+(state.language==='en'?feel[3]:feel[2]):''}${terrain?' · '+(state.language==='en'?terrain[2]:terrain[1]):''}</p><div class="runsumbig compact">${r.distanceKm>0?`<div><strong>${runKm(r.distanceKm)}</strong><small>km</small></div>`:''}<div><strong>${formatClock(r.durationSeconds)}</strong><small>${runText('Dauer','Duration')}</small></div><div><strong>${Number.isFinite(r.kcal)?r.kcal:'–'}</strong><small>kcal*</small></div></div>${r.note?`<p class="note">${esc(r.note)}</p>`:''}${runDetailRows({km:r.distanceKm,moving:r.durationSeconds,maxSpeed:r.maxSpeed,gain:r.elevationGain,max:r.elevationMax,pause:r.pauseSeconds,kcal:r.kcal})}${runSplitsHtml(r.splits,r.splitRest)}${r.type!=='mma'?runLapsHtml(r.laps,r.durationSeconds):''}<div class="runactions"><button type="button" class="btn secondary" onclick="runEditForm('${esc(r.id)}')">${runText('Bearbeiten','Edit')}</button>${r.route?`<button type="button" class="btn secondary" onclick="runSaveRouteFromRun('${esc(r.id)}')">${runText('Als Route sichern','Save as route')}</button>`:''}</div><p class="note">* ${runText('Kalorien geschätzt.','Calories estimated.')}</p>`);
+  if(r.route&&typeof runMountMap==='function')runMountMap('rundetailmap',map=>{let segs=runRoutePoints(r.route),line=L.polyline(segs,{color:runAccent(),weight:5}).addTo(map);L.circleMarker(segs[0][0],{radius:6,color:'#fff',weight:2,fillColor:'#34C759',fillOpacity:1}).addTo(map);L.circleMarker(segs.at(-1).at(-1),{radius:6,color:'#fff',weight:2,fillColor:'#FF3B30',fillOpacity:1}).addTo(map);map.fitBounds(line.getBounds(),{padding:[18,18]})});
 }
 function runEditForm(id){
   let r=runList().find(x=>x.id===id);if(!r)return;
   let types=typeof runPickableActivities==='function'?runPickableActivities():runTypeList(),savedType=r.type??'run';
   if(!types.some(t=>t.id===savedType))types=[...types,{...runTypeInfo(savedType),id:savedType}];
-  openModal(runText('Bearbeiten','Edit'),`<form onsubmit="runEditSave(event,'${esc(r.id)}')"><label>${runText('Aktivität','Activity')}<select id="runedit-type">${types.map(t=>`<option value="${esc(t.id)}" ${t.id===savedType?'selected':''}>${esc(runTypeName(t))}</option>`).join('')}</select></label><label>${runText('Gefühl','Feeling')}<select id="runedit-feel"><option value="">–</option>${RUN_FEELINGS.map(([v,e,de,en])=>`<option value="${v}" ${r.feeling===v?'selected':''}>${e} ${state.language==='en'?en:de}</option>`).join('')}</select></label><label>${runText('Untergrund','Terrain')}<select id="runedit-terrain"><option value="">–</option>${RUN_TERRAINS.map(([k,de,en])=>`<option value="${k}" ${r.terrain===k?'selected':''}>${state.language==='en'?en:de}</option>`).join('')}</select></label><label>${runText('Notiz','Note')}<input id="runedit-note" maxlength="200" value="${esc(r.note||'')}"></label><button class="btn full">${runText('Speichern','Save')}</button><button type="button" class="textbtn rundiscard" onclick="deleteRun('${esc(r.id)}')">${runText('Aktivität löschen','Delete activity')}</button></form>`);
+  openModal(runText('Bearbeiten','Edit'),`<form onsubmit="runEditSave(event,'${esc(r.id)}')"><label>${runText('Aktivität','Activity')}<select id="runedit-type">${types.map(t=>`<option value="${esc(t.id)}" ${t.id===savedType?'selected':''}>${esc(runTypeName(t))}</option>`).join('')}</select></label><label>${runText('Gefühl','Feeling')}<select id="runedit-feel"><option value="">–</option>${RUN_FEELINGS.map(([v,e,de,en])=>`<option value="${v}" ${r.feeling===v?'selected':''}>${state.language==='en'?en:de}</option>`).join('')}</select></label><label>${runText('Untergrund','Terrain')}<select id="runedit-terrain"><option value="">–</option>${RUN_TERRAINS.map(([k,de,en])=>`<option value="${k}" ${r.terrain===k?'selected':''}>${state.language==='en'?en:de}</option>`).join('')}</select></label><label>${runText('Notiz','Note')}<input id="runedit-note" maxlength="200" value="${esc(r.note||'')}"></label><button class="btn full">${runText('Speichern','Save')}</button><button type="button" class="textbtn rundiscard" onclick="deleteRun('${esc(r.id)}')">${runText('Aktivität löschen','Delete activity')}</button></form>`);
 }
 function runEditSave(event,id){
   event.preventDefault();let r=runList().find(x=>x.id===id);if(!r)return;

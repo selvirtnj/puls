@@ -21,6 +21,8 @@
   --ds-separator: #C6C6C8;
   --ds-accent: #007AFF;
   --ds-accent-text: #0062CC;
+  /* Gefüllte Knöpfe: Apple-Blau, so dunkel, dass weiße Schrift 4.5:1 erreicht. */
+  --ds-accent-fill: #0071E3;
   --ds-on-accent: #FFFFFF;
   --ds-green: #34C759;
   --ds-green-text: #248A3D;
@@ -28,7 +30,9 @@
   --ds-orange-text: #C93400;
   --ds-red: #FF3B30;
   --ds-red-text: #D70015;
+  --ds-red-fill: #D70015;
   --ds-scrim: rgba(0, 0, 0, .32);
+  --ds-button-2: #E3E3E8;
 }
 :root[data-scheme=dark] {
   color-scheme: dark;
@@ -46,6 +50,7 @@
   --ds-separator: #38383A;
   --ds-accent: #0A84FF;
   --ds-accent-text: #409CFF;
+  --ds-accent-fill: #0071E3;
   --ds-on-accent: #FFFFFF;
   --ds-green: #30D158;
   --ds-green-text: #30D158;
@@ -53,10 +58,13 @@
   --ds-orange-text: #FF9F0A;
   --ds-red: #FF453A;
   --ds-red-text: #FF6961;
+  --ds-red-fill: #D70015;
   --ds-scrim: rgba(0, 0, 0, .55);
+  /* Zweitknöpfe: dunkle Fläche, damit die Akzentschrift 4.5:1 erreicht. */
+  --ds-button-2: #2C2C2E;
 }
 /* In Fenstern (Sheets) liegen Karten eine Ebene höher. */
-:root[data-scheme=dark] dialog { --ds-surface: #2C2C2E; --ds-field: #3A3A3C; --ds-fill: #48484A; }
+:root[data-scheme=dark] dialog { --ds-surface: #2C2C2E; --ds-field: #3A3A3C; --ds-fill: #3A3A3C; }
 :root[data-scheme=light] dialog { --ds-surface: #FBFBFD; --ds-field: #E9E9EE; }
 
 /* Variablen der älteren Schichten auf die Tokens umlegen. */
@@ -65,8 +73,8 @@
   --panel: var(--ds-surface);
   --line: var(--ds-separator);
   --muted: var(--ds-label-2);
-  --lime: var(--ds-accent);
-  --blue: var(--ds-accent);
+  --lime: var(--ds-accent-text);
+  --blue: var(--ds-accent-text);
   --orange: var(--ds-orange);
   --danger: var(--ds-red);
   --ink: var(--ds-label);
@@ -174,7 +182,7 @@ aside .brand span { color: var(--ds-accent) !important; }
   font-weight: 500 !important;
   transform: none !important;
 }
-#nav button.active, #nav button[aria-current=page] { color: var(--ds-accent) !important; background: transparent !important; }
+#nav button.active, #nav button[aria-current=page] { color: var(--ds-accent-text) !important; background: transparent !important; }
 #nav button .ico { display: grid !important; place-items: center !important; width: 28px !important; height: 28px !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; color: inherit !important; transform: none !important; font-size: 0 !important; }
 #nav button .ico svg { width: 26px !important; height: 26px !important; transform: none !important; }
 #nav .navlabel { display: block !important; color: inherit !important; }
@@ -225,7 +233,7 @@ hr { border-top: .5px solid var(--ds-separator) !important; }
   min-height: 44px;
   border: 0 !important;
   border-radius: 8px !important;
-  background: var(--ds-accent) !important;
+  background: var(--ds-accent-fill) !important;
   color: var(--ds-on-accent) !important;
   font-size: 17px;
   font-weight: 600 !important;
@@ -233,15 +241,12 @@ hr { border-top: .5px solid var(--ds-separator) !important; }
   text-transform: none !important;
 }
 .btn.secondary, a.btn.secondary {
-  background: var(--ds-fill) !important;
+  background: var(--ds-button-2) !important;
   color: var(--ds-accent-text) !important;
 }
 .btn:disabled { opacity: .4; }
-/* Trainingsbereiche (Workout, Routinen, Kalender, Fortschritt): Reiter mit Unterstrich, aktiver in Akzentfarbe. */
-html body #content .workouttabs > .btn { background: transparent !important; color: var(--ds-label-2) !important; border: 0 !important; border-bottom: 2px solid transparent !important; border-radius: 0 !important; font-size: 15px !important; font-weight: 500 !important; }
-html body #content .workouttabs > .btn[aria-pressed=true] { color: var(--ds-accent-text) !important; border-bottom-color: var(--ds-accent) !important; font-weight: 600 !important; }
 .textbtn { background: transparent !important; border: 0 !important; color: var(--ds-accent-text) !important; min-height: 44px; border-radius: 8px !important; letter-spacing: normal !important; text-transform: none !important; }
-.quiet { color: var(--ds-accent) !important; }
+.quiet { color: var(--ds-accent-text) !important; }
 .delete { color: var(--ds-red-text) !important; }
 .error { color: var(--ds-red-text) !important; }
 input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea {
@@ -265,7 +270,7 @@ label { color: var(--ds-label-2); }
   background: var(--ds-fill) !important; border: 0 !important; border-radius: 8px !important;
 }
 .segmented button, .langswitch button, .actmode button {
-  min-height: 32px; margin: 0 !important; padding: 4px 8px !important;
+  min-height: 44px; margin: 0 !important; padding: 4px 8px !important;
   border: 0 !important; border-radius: 7px !important;
   background: transparent !important; color: var(--ds-label) !important;
   font-size: 15px !important; font-weight: 500 !important;
@@ -321,64 +326,64 @@ dialog::backdrop { background: var(--ds-scrim) !important; }
 /* ---------- Darstellung (Konto) ---------- */
 .dsappearance { padding: 16px !important; margin-bottom: 16px; }
 .dsappearance h3 { margin: 0 0 10px !important; font-size: 17px !important; }
-.dsappearance .segmented button { min-height: 36px; }
+.dsappearance .segmented button { min-height: 44px; }
 .dsappearance .note { margin: 10px 0 0; font-size: 13px; }
 
 /* ---------- Übersicht ---------- */
 .dshome { display: flex; flex-direction: column; gap: 0; max-width: 720px; }
 .avatarpicker > span { color: var(--ds-label) !important; background: var(--ds-surface) !important; }
-.dshome .dsgrouptitle {
+.dsgrouptitle {
   margin: 22px 16px 6px; font-size: 13px; font-weight: 400; line-height: 18px;
   color: var(--ds-label-2); text-transform: uppercase; letter-spacing: .02em;
 }
-.dshome .dsgroup { margin: 0; padding: 0; border-radius: 12px; background: var(--ds-surface); overflow: hidden; }
-.dshome .dsgroupfoot { margin: 6px 16px 0; font-size: 13px; line-height: 18px; color: var(--ds-label-2); }
-.dshome .dsrow {
+.dsgroup { margin: 0; padding: 0; border-radius: 12px; background: var(--ds-surface); overflow: hidden; }
+.dsgroupfoot { margin: 6px 16px 0; font-size: 13px; line-height: 18px; color: var(--ds-label-2); }
+.dsrow {
   position: relative; display: flex; align-items: center; gap: 12px;
   width: 100%; min-height: 44px; margin: 0; padding: 11px 16px;
   border: 0; border-radius: 0; background: transparent; color: var(--ds-label);
   font: 400 17px/22px var(--font); text-align: left;
 }
-.dshome button.dsrow { cursor: pointer; }
-.dshome .dsrow + .dsrow::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--ds-separator); }
-.dshome .dsrow.dsiconrow + .dsrow::before, .dshome .dsrow + .dsrow.dsiconrow::before { left: 56px; }
-.dshome .dsrowicon { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; color: var(--ds-accent); }
-.dshome .dsrowicon svg { width: 24px; height: 24px; }
-.dshome .dsrowtext { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.dshome .dsrowtext > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dshome .dsrowtext small { display: block; margin-top: 1px; font-size: 15px; line-height: 20px; color: var(--ds-label-2); letter-spacing: normal; }
-.dshome .dsrowvalue { flex-shrink: 0; color: var(--ds-label-2); font-size: 17px; font-variant-numeric: tabular-nums; text-align: right; }
-.dshome .dsrowchevron { display: grid; place-items: center; width: 14px; flex-shrink: 0; color: var(--ds-label-3); }
-.dshome .dsrowchevron svg { width: 14px; height: 14px; }
-.dshome .dsrow.dsaction { color: var(--ds-accent-text); }
-.dshome .dsrow.dsempty { color: var(--ds-label-2); font-size: 15px; }
+button.dsrow { cursor: pointer; }
+.dsrow + .dsrow::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--ds-separator); }
+.dsrow.dsiconrow + .dsrow::before, .dsrow + .dsrow.dsiconrow::before { left: 56px; }
+.dsrowicon { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; color: var(--ds-accent); }
+.dsrowicon svg { width: 24px; height: 24px; }
+.dsrowtext { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.dsrowtext > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsrowtext small { display: block; margin-top: 1px; font-size: 15px; line-height: 20px; color: var(--ds-label-2); letter-spacing: normal; }
+.dsrowvalue { flex-shrink: 0; color: var(--ds-label-2); font-size: 17px; font-variant-numeric: tabular-nums; text-align: right; }
+.dsrowchevron { display: grid; place-items: center; width: 14px; flex-shrink: 0; color: var(--ds-label-3); }
+.dsrowchevron svg { width: 14px; height: 14px; }
+.dsrow.dsaction { color: var(--ds-accent-text); }
+.dsrow.dsempty { color: var(--ds-label-2); font-size: 15px; }
 
-.dshome .dsenergy { padding: 16px; }
-.dshome .dsenergytop { display: flex; align-items: center; gap: 18px; }
-.dshome .dsringwrap { position: relative; width: 112px; height: 112px; flex-shrink: 0; }
+.dsenergy { padding: 16px; }
+.dsenergytop { display: flex; align-items: center; gap: 18px; }
+.dsringwrap { position: relative; width: 112px; height: 112px; flex-shrink: 0; }
 .dsring { display: block; width: 100%; height: 100%; }
 .dsring circle { fill: none; stroke-width: 9; }
 .dsring .dsringtrack { stroke: var(--ds-fill); }
 .dsring .dsringvalue { stroke: var(--ds-accent); stroke-linecap: round; }
 .dsring.dsover .dsringvalue { stroke: var(--ds-orange); }
-.dshome .dsringlabel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.dshome .dsringlabel strong { font-size: 22px; font-weight: 700; line-height: 26px; color: var(--ds-label); }
-.dshome .dsringlabel small { font-size: 12px; line-height: 16px; color: var(--ds-label-2); }
-.dshome .dsenergyfacts { flex: 1; min-width: 0; }
-.dshome .dsenergyfacts .dsbig { display: block; font-size: 28px; font-weight: 700; line-height: 34px; font-variant-numeric: tabular-nums; color: var(--ds-label); }
-.dshome .dsenergyfacts .dsbig.dsover { color: var(--ds-orange-text); }
-.dshome .dsenergyfacts .dscaption { display: block; margin-top: 2px; font-size: 15px; line-height: 20px; color: var(--ds-label-2); }
-.dshome .dsmacros { display: grid; gap: 12px; margin-top: 18px; }
-.dshome .dsmacro { display: grid; grid-template-columns: 1fr auto; row-gap: 6px; align-items: baseline; }
-.dshome .dsmacro span { font-size: 15px; color: var(--ds-label); }
-.dshome .dsmacro strong { font-size: 15px; font-weight: 400; color: var(--ds-label-2); font-variant-numeric: tabular-nums; }
-.dshome .dsmeter { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--ds-fill); overflow: hidden; }
-.dshome .dsmeter i { display: block; height: 100%; border-radius: 3px; background: var(--ds-accent); }
-.dshome .dsmeter i.dsover { background: var(--ds-orange); }
-.dshome .dsprimary { width: 100%; margin-top: 18px; }
-.dshome .dschart { margin-top: 0; }
-.dshome .dschart .card { padding: 16px !important; }
-.dshome .dschart .cardhead h2 { font-size: 17px !important; font-weight: 600 !important; line-height: 22px !important; }
+.dsringlabel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.dsringlabel strong { font-size: 22px; font-weight: 700; line-height: 26px; color: var(--ds-label); }
+.dsringlabel small { font-size: 12px; line-height: 16px; color: var(--ds-label-2); }
+.dsenergyfacts { flex: 1; min-width: 0; }
+.dsenergyfacts .dsbig { display: block; font-size: 28px; font-weight: 700; line-height: 34px; font-variant-numeric: tabular-nums; color: var(--ds-label); }
+.dsenergyfacts .dsbig.dsover { color: var(--ds-orange-text); }
+.dsenergyfacts .dscaption { display: block; margin-top: 2px; font-size: 15px; line-height: 20px; color: var(--ds-label-2); }
+.dsmacros { display: grid; gap: 12px; margin-top: 18px; }
+.dsmacro { display: grid; grid-template-columns: 1fr auto; row-gap: 6px; align-items: baseline; }
+.dsmacro span { font-size: 15px; color: var(--ds-label); }
+.dsmacro strong { font-size: 15px; font-weight: 400; color: var(--ds-label-2); font-variant-numeric: tabular-nums; }
+.dsmeter { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--ds-fill); overflow: hidden; }
+.dsmeter i { display: block; height: 100%; border-radius: 3px; background: var(--ds-accent); }
+.dsmeter i.dsover { background: var(--ds-orange); }
+.dsprimary { width: 100%; margin-top: 18px; }
+.dschart { margin-top: 0; }
+.dschart .card { padding: 16px !important; }
+.dschart .cardhead h2 { font-size: 17px !important; font-weight: 600 !important; line-height: 22px !important; }
 .charttoggles button { min-height: 32px; border: 0 !important; border-radius: 8px !important; background: var(--ds-fill) !important; color: var(--ds-label) !important; font-size: 13px !important; }
 .charttoggles button[aria-pressed=false] { color: var(--ds-label-2) !important; }
 .chartperiod { color: var(--ds-label-2) !important; font-size: 13px !important; }
@@ -389,3 +394,416 @@ dialog::backdrop { background: var(--ds-scrim) !important; }
 .caloriedial > .dsring { position: absolute; inset: 0; }
 .caloriedial > div { position: relative; z-index: 1; background: transparent !important; }
 .caloriedial::before, .caloriedial::after { display: none !important; }
+
+/* =====================================================================
+   Schritt 2: Essen, Hinzufügen, Training, Laufen, Konto, Fenster.
+   Gleiche Bausteine wie die Übersicht: gruppierte Listen, Typo-Stufen nach iOS,
+   Akzent nur für Aktionen, Grün/Orange/Rot nur mit Bedeutung.
+   ===================================================================== */
+
+/* ---------- Grundbausteine ---------- */
+body { font-variant-numeric: tabular-nums; }
+.dsvisuallyhidden { position: absolute !important; width: 1px !important; height: 1px !important; margin: -1px !important; padding: 0 !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; white-space: nowrap !important; border: 0 !important; }
+.btn, a.btn, .textbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn.full, a.btn.full, .textbtn.full { display: flex; width: 100%; }
+.btn .pulsicon, .textbtn .pulsicon, .quiet .pulsicon, .delete .pulsicon { width: 20px; height: 20px; }
+.delete { display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; }
+.btn.secondary .pulsicon, .textbtn .pulsicon { color: inherit; }
+.textbtn { font-size: 17px; font-weight: 400 !important; padding: 0 4px; }
+
+/* Typo-Stufen in den älteren Bildschirmen (Title 3 20, Headline 17, Subhead 15, Footnote 13, Caption 12). */
+#content .card h2, #content .sectionhead h2, #modal #mb h2, #session-root h2 { font-size: 20px !important; line-height: 25px !important; font-weight: 600 !important; letter-spacing: normal !important; text-transform: none !important; color: var(--ds-label) !important; }
+#content .card h3, #modal #mb h3, #session-root h3 { font-size: 17px !important; line-height: 22px !important; font-weight: 600 !important; letter-spacing: normal !important; text-transform: none !important; color: var(--ds-label) !important; }
+#content .note, #modal .note, #session-root .note, #content .toolnote, #content .accountcaption { font-size: 13px !important; line-height: 18px !important; color: var(--ds-label-2) !important; letter-spacing: normal !important; }
+#content small, #modal small, #session-root small { font-size: 13px; line-height: 18px; letter-spacing: normal !important; text-transform: none; }
+#content .label, #content .eyebrow { font-size: 13px !important; letter-spacing: .02em !important; color: var(--ds-label-2) !important; }
+#content p, #modal p { letter-spacing: normal; }
+.sectionhead { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px; margin: 24px 0 8px !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+.sectionhead > div > p { margin: 2px 0 0; font-size: 13px; color: var(--ds-label-2); }
+.sectionhead .btn { min-height: 44px; padding: 0 14px !important; font-size: 15px !important; }
+.card { padding: 16px !important; margin: 0 0 12px !important; }
+.cardhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cardhead > .textbtn, .cardhead > a.textbtn { flex-shrink: 0; font-size: 15px; }
+details > summary { min-height: 44px; display: flex; align-items: center; gap: 6px; color: var(--ds-accent-text) !important; font-size: 15px !important; font-weight: 400 !important; cursor: pointer; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: ""; width: 14px; height: 14px; flex-shrink: 0; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+details[open] > summary::before { transform: rotate(90deg); }
+a, #content a, #modal a { color: var(--ds-accent-text) !important; }
+.badge { font-size: 13px !important; font-weight: 500 !important; padding: 2px 8px !important; }
+
+/* Auswahllisten: nativer Pfeil kommt als Phosphor caret-down zurück. */
+html body select:not([multiple]) {
+  -webkit-appearance: none !important; appearance: none !important;
+  padding: 0 40px 0 12px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%238E8E93'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important; background-position: right 12px center !important; background-size: 16px 16px !important;
+}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), textarea { padding: 0 12px; }
+textarea { padding: 10px 12px !important; }
+#modal .formgrid, #content .formgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+#modal form > label + label, #modal form > label + .formgrid, #modal form > .formgrid + label { margin-top: 12px; }
+#modal .btn.full + .btn.full, #modal .btn.full + .textbtn.full { margin-top: 8px; }
+#modal form > .btn.full { margin-top: 16px; }
+
+/* Gestalteter Dateiknopf (ersetzt „Choose File“). */
+.dsfilebutton { position: relative; display: flex; width: fit-content; align-items: center; gap: 8px; max-width: 100%; min-height: 44px; margin-top: 6px; padding: 0 14px; border-radius: 8px; background: var(--ds-button-2); color: var(--ds-accent-text); font: 600 15px/1.2 var(--font); cursor: pointer; }
+.dsfilebutton svg { width: 20px; height: 20px; flex-shrink: 0; }
+.dsfilebutton .dsfiletext { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .dsfilebutton > input[type=file] { position: absolute; inset: 0; width: 100% !important; height: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; opacity: 0; cursor: pointer; font-size: 0 !important; }
+.dsfilebutton:has(input:focus-visible) { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+.dsfilewrap { display: block; }
+
+/* Gruppierte Listen aus älteren Bausteinen: Suchtreffer, Tagebuch, Routinen-Zeilen. */
+html body .searchitem {
+  position: relative; display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px !important;
+  width: 100%; min-height: 44px !important; margin: 0 !important; padding: 11px 16px !important;
+  border: 0 !important; border-radius: 0 !important; background: var(--ds-surface) !important; color: var(--ds-label) !important;
+  font: 400 17px/22px var(--font) !important; text-align: left !important;
+}
+html body .searchitem:not(.searchitem + .searchitem) { border-top-left-radius: 12px !important; border-top-right-radius: 12px !important; }
+html body .searchitem:not(:has(+ .searchitem)) { border-bottom-left-radius: 12px !important; border-bottom-right-radius: 12px !important; margin-bottom: 12px !important; }
+html body .searchitem + .searchitem::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--ds-separator); }
+html body .searchitem > div, html body .searchitem .ffrowtext { flex: 1; min-width: 0; color: var(--ds-label) !important; font-size: 17px !important; }
+html body .searchitem small { display: block; margin-top: 2px; color: var(--ds-label-2) !important; font-size: 13px !important; line-height: 18px !important; }
+html body .searchitem > span:last-child, html body .searchitem > svg:last-child { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; color: var(--ds-label-2) !important; font-size: 15px !important; }
+html body .searchitem .pulsicon { width: 20px; height: 20px; color: var(--ds-accent); }
+.card .searchitem { background: transparent !important; padding-left: 0 !important; padding-right: 0 !important; }
+.card .searchitem + .searchitem::before { left: 0; }
+.card .searchitem:not(:has(+ .searchitem)) { margin-bottom: 4px !important; }
+
+/* ---------- Essen ---------- */
+.nutritiondeck { margin: 0 0 12px !important; padding: 16px !important; border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; }
+.nutritiondeck .dsslideswitch { margin: 0 0 14px !important; }
+.nutritiondeck .dsslideswitch button.selected { background: var(--ds-selected) !important; font-weight: 600 !important; }
+.nutritiondeck .nutritiontrack { margin: 0 !important; padding: 0 !important; gap: 16px; }
+.nutritiondeck .nutritionslide { margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+.nutritiondeck .nutritionslide > h2 { margin: 0 0 12px !important; font-size: 20px !important; font-weight: 600 !important; }
+.dsenergytop { display: flex; align-items: center; gap: 18px; }
+.dsenergysmall { gap: 14px; }
+.dsenergysmall .dsringwrap { width: 56px; height: 56px; }
+.dsenergysmall .dsring circle { stroke-width: 11; }
+.dsmacros { margin-top: 16px; }
+.dsenergysmall + .dsmacros { margin-top: 16px; }
+.nutritionslide .baselineenergy { margin-top: 12px; font-size: 13px; color: var(--ds-label-2); }
+.microgrid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 14px 16px !important; }
+.microgrid > div { display: grid; gap: 6px; padding: 0 !important; border: 0 !important; background: transparent !important; }
+.microgrid .microlabel { display: flex; justify-content: space-between; gap: 12px; }
+.microgrid .microlabel span, .microgrid > div > span { font-size: 15px; color: var(--ds-label); }
+.microgrid strong { font-size: 15px !important; font-weight: 400 !important; color: var(--ds-label-2) !important; }
+.microgrid .bar { height: 6px; }
+.compactfoodtools, .foodtools { display: grid !important; grid-template-columns: 1fr !important; gap: 12px !important; margin: 0 0 12px !important; }
+html body .compactfoodtools > .btn { width: 100%; min-height: 44px !important; padding: 0 16px !important; font-size: 17px !important; }
+.dsfoodentries { margin: 0 !important; }
+.watercompact { display: block; }
+.watercompact .waterinline { display: flex !important; align-items: center !important; gap: 12px !important; }
+.watercompact .waterglyph { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; color: var(--ds-accent); }
+.watercompact .waterglyph svg { width: 26px; height: 26px; }
+.watercompact .waterinline > div { flex: 1; min-width: 0; }
+.watercompact .waterinline h3 { margin: 0 !important; font-size: 15px !important; font-weight: 400 !important; line-height: 20px !important; color: var(--ds-label-2) !important; }
+.watercompact .waterinline strong { display: block; font-size: 22px !important; font-weight: 700 !important; line-height: 28px; color: var(--ds-label) !important; }
+.watercompact .waterinline strong small { font-size: 15px !important; font-weight: 400; color: var(--ds-label-2) !important; }
+.watercompact .waterglass { min-height: 44px; padding: 0 14px !important; font-size: 15px !important; }
+.watercompact .bar { height: 6px; margin-top: 12px; }
+.watercompact .waterfoot { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px; margin-top: 8px; }
+.watercompact .waterfoot .textbtn { font-size: 15px; padding: 0; }
+.watercompact .waterfoot details { text-align: right; }
+.compactdiary { padding: 0 !important; overflow: hidden; }
+.compactdiary > .cardhead { padding: 14px 16px 6px; }
+.compactdiary > .empty { padding: 0 16px 14px; margin: 0; font-size: 15px; }
+.swipediary { position: relative; }
+.swipediary + .swipediary::before { content: ""; position: absolute; z-index: 2; top: 0; left: 16px; right: 0; border-top: .5px solid var(--ds-separator); }
+html body .diaryrow { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px !important; width: 100%; min-height: 44px; margin: 0 !important; padding: 11px 16px !important; border: 0 !important; border-radius: 0 !important; background: var(--ds-surface) !important; color: var(--ds-label) !important; text-align: left; }
+html body .diaryrow > span:first-child { display: flex; flex-direction: column; min-width: 0; }
+html body .diaryrow strong { font-size: 17px !important; font-weight: 400 !important; line-height: 22px; color: var(--ds-label) !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .diaryrow small { font-size: 13px !important; color: var(--ds-label-2) !important; }
+html body .diaryrow > span:last-child { flex-shrink: 0; font-size: 17px; color: var(--ds-label-2) !important; }
+html body .diaryrow > span:last-child small { margin-left: 3px; font-size: 15px !important; }
+.swipedelete { background: var(--ds-red-fill) !important; color: #FFFFFF !important; border-radius: 0 !important; font-size: 15px !important; }
+.compacttoolcard .cardhead { flex-wrap: wrap; }
+.compacttoolcard .toolnote { margin: 8px 0 0; }
+.compacttoolcard .btn.secondary { min-height: 44px; padding: 0 14px !important; font-size: 15px !important; }
+.compacttoolcard .btn.secondary[aria-pressed=true] { color: var(--ds-green-text) !important; }
+.compacttoolcard .btn:not(.secondary)[aria-pressed=true], .compacttoolcard .btn:not(.secondary)[aria-pressed=true] .pulsicon { color: var(--ds-on-accent) !important; }
+#diary-undo { background: var(--ds-label) !important; color: var(--ds-bg) !important; border: 0 !important; border-radius: 12px !important; }
+#diary-undo button { min-height: 44px; background: transparent !important; color: var(--ds-bg) !important; border: 0 !important; font-weight: 600; }
+
+/* Essen-Fenster: Reiter, Suche, Detail. */
+#modal .fftabs .btn, #modal .foodtabs .btn { color: var(--ds-label-2) !important; }
+#modal .fftabs .btn[aria-pressed=true], #modal .foodtabs .btn.foodtabactive { background: var(--ds-surface) !important; color: var(--ds-accent-text) !important; }
+#modal .fftabs .fftablabel { color: inherit !important; font-size: 12px !important; }
+#modal .ffchip { min-height: 36px; border: 0 !important; border-radius: 8px !important; background: var(--ds-fill) !important; color: var(--ds-label) !important; font-size: 15px !important; }
+#modal .ffchip.active, #modal .ffchip[aria-pressed=true] { background: var(--ds-label) !important; color: var(--ds-bg) !important; }
+#modal .ffstatus { font-size: 13px !important; color: var(--ds-label-2) !important; }
+.foodwarning { color: var(--ds-orange-text) !important; font-size: 13px !important; }
+
+/* ---------- Hinzufügen (Aktionsliste) ---------- */
+#modal .dsactionlist { margin: 0; }
+#modal .dsactionlist .dsrow { min-height: 56px; }
+#modal .dsactionlist .dsrowtext small { font-size: 13px; line-height: 18px; }
+
+/* ---------- Training: Kopf, Bereiche, Listen ---------- */
+#workout-identity { display: flex !important; align-items: center !important; gap: 12px !important; margin: 0 0 12px !important; padding: 12px 16px !important; border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; }
+#workout-identity[hidden] { display: none !important; }
+#workout-identity .identityprofile { display: flex !important; align-items: center !important; gap: 12px !important; flex: 1; min-width: 0; min-height: 44px; padding: 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-label) !important; text-align: left; }
+#workout-identity .profileavatar, .accountprofilegroup .profileavatar { display: grid !important; place-items: center !important; width: 40px !important; height: 40px !important; flex-shrink: 0; overflow: hidden; border: 0 !important; background: var(--ds-fill) !important; color: var(--ds-label) !important; font-size: 17px !important; font-weight: 600 !important; }
+#workout-identity .profileavatar img { width: 100%; height: 100%; object-fit: cover; }
+#workout-identity .identitylevels { display: grid !important; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 8px; row-gap: 6px; flex: 1; min-width: 0; }
+#workout-identity .identitylevels strong { font-size: 17px !important; font-weight: 600 !important; color: var(--ds-label) !important; }
+#workout-identity .identitylevels small { font-size: 13px !important; color: var(--ds-label-2) !important; }
+#workout-identity .xpfill { grid-column: 1 / -1; display: block; height: 4px !important; margin: 0 !important; }
+#workout-identity .xpfill i { display: block; height: 100%; }
+#workout-identity .identitystreak, .accountstreak { display: flex !important; flex-direction: column !important; align-items: flex-end !important; flex-shrink: 0; margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+#workout-identity .identitystreak strong, .accountstreak strong { display: inline-flex !important; align-items: center !important; gap: 4px; font-size: 17px !important; font-weight: 600 !important; color: var(--ds-label) !important; }
+#workout-identity .identitystreak strong .pulsicon, .accountstreak strong .pulsicon { width: 18px; height: 18px; color: var(--ds-orange); }
+#workout-identity .identitystreak small, .accountstreak small { font-size: 12px !important; color: var(--ds-label-2) !important; }
+#workout-identity .identityspacer { display: none !important; }
+html body #content .workouttabs { display: grid !important; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px !important; margin: 0 0 12px !important; padding: 2px !important; border: 0 !important; border-radius: 8px !important; background: var(--ds-fill) !important; overflow: visible !important; }
+html body #content .workouttabs > .btn { min-height: 44px !important; margin: 0 !important; padding: 0 4px !important; border: 0 !important; border-radius: 7px !important; background: transparent !important; color: var(--ds-label) !important; font-size: 13px !important; font-weight: 500 !important; white-space: nowrap; }
+html body #content .workouttabs > .btn[aria-pressed=true] { background: var(--ds-selected) !important; color: var(--ds-label) !important; font-weight: 600 !important; }
+.trainingutilities { display: flex; margin: 0 0 4px !important; }
+.trainingutilities .restglobal { min-height: 44px; padding: 0 !important; font-size: 15px !important; color: var(--ds-accent-text) !important; }
+.workoutbody > .btn.full { margin: 0 0 12px; }
+.routinepreview .cardhead h2 { font-size: 17px !important; line-height: 22px !important; }
+.routinepreview .cardhead small { font-size: 13px; color: var(--ds-label-2); }
+.routinepreview .cardhead .btn { min-height: 44px; padding: 0 16px !important; font-size: 15px !important; }
+.routinepreviewrow { position: relative; display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border: 0 !important; font-size: 15px; }
+.routinepreviewrow + .routinepreviewrow::before, .cardhead + .routinepreviewrow::before { content: ""; position: absolute; top: 0; left: 0; right: 0; border-top: .5px solid var(--ds-separator); }
+.routinepreviewrow small { color: var(--ds-label-2); font-size: 15px; }
+.routinepreview .actionrow { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.badge.runningbadge { display: inline-flex !important; align-items: center; gap: 6px; background: var(--ds-fill) !important; color: var(--ds-label) !important; }
+.badge.runningbadge i { width: 8px; height: 8px; border-radius: 50% !important; background: var(--ds-green) !important; }
+.completedworkout .completedmetrics { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0; font-size: 15px; color: var(--ds-label-2); }
+.completedworkout .completedmetrics span { padding: 0 !important; background: transparent !important; border: 0 !important; }
+h3.donehead, .workoutbody > h3 { margin: 24px 16px 6px !important; font-size: 13px !important; font-weight: 400 !important; text-transform: uppercase; letter-spacing: .02em !important; color: var(--ds-label-2) !important; }
+.runcard .runweek { margin: 8px 0 12px; }
+.runcard .actweekhead { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.runcard .actweekhead strong { font-size: 22px; font-weight: 700; color: var(--ds-label); }
+.runcard .actweekhead small, .runcard .actweekkm { font-size: 13px; color: var(--ds-label-2); }
+.runbar { height: 6px !important; margin-top: 8px; border-radius: 3px !important; background: var(--ds-fill) !important; overflow: hidden; }
+.runbar i { display: block; height: 100%; border-radius: 3px !important; background: var(--ds-accent) !important; }
+.runheadactions { display: flex; gap: 4px; }
+
+/* Kalender */
+.trainingcalendar { gap: 2px !important; }
+.trainingcalendar > small { font-size: 12px !important; color: var(--ds-label-2) !important; text-align: center; }
+html body .calday { display: grid !important; place-items: center !important; min-width: 44px; min-height: 44px; aspect-ratio: auto !important; margin: 0 auto !important; padding: 0 !important; border: 0 !important; border-radius: 50% !important; background: transparent !important; color: var(--ds-label) !important; font-size: 17px !important; font-weight: 400 !important; }
+html body .calday.trained, html body .calday.hasworkout, html body .calday.done { background: var(--ds-accent-fill) !important; color: #FFFFFF !important; font-weight: 600 !important; }
+html body .calday.today, html body .calday.todaycal { color: var(--ds-accent-text) !important; font-weight: 700 !important; }
+html body .calday.selected, html body .calday[aria-pressed=true] { outline: 2px solid var(--ds-label); outline-offset: -2px; }
+#content .card > .cardhead > .quiet { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; }
+
+/* Fortschritt */
+.metricgroups { display: grid !important; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px !important; margin: 12px 0 !important; padding: 2px !important; border-radius: 8px !important; background: var(--ds-fill) !important; }
+.metricgroups > .btn { min-height: 44px; margin: 0 !important; padding: 0 2px !important; border-radius: 7px !important; background: transparent !important; color: var(--ds-label) !important; font-size: 13px !important; font-weight: 500 !important; white-space: nowrap; }
+.metricgroups > .btn[aria-pressed=true] { background: var(--ds-selected) !important; font-weight: 600 !important; }
+.metricexplorer .cardhead small { font-size: 13px; color: var(--ds-label-2); text-transform: uppercase; letter-spacing: .02em; }
+.metricheadline strong { font-size: 28px !important; font-weight: 700 !important; color: var(--ds-label) !important; }
+.metricheadline strong small { font-size: 17px !important; font-weight: 400 !important; color: var(--ds-label-2) !important; }
+.metricheadline span { font-size: 15px; color: var(--ds-label-2); }
+.metricfacts { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--ds-label-2); }
+.metricfacts span { padding: 0 !important; background: transparent !important; border: 0 !important; }
+.metricempty { font-size: 15px; color: var(--ds-label-2) !important; background: var(--ds-surface-2) !important; border: 0 !important; border-radius: 8px !important; }
+.metricmini { border: 0 !important; border-radius: 12px !important; background: var(--ds-surface-2) !important; color: var(--ds-label) !important; text-align: left; }
+.metricmini span { font-size: 13px; color: var(--ds-label-2); }
+.metricmini strong { font-size: 20px; color: var(--ds-label); }
+.metricrange { font-size: 13px; color: var(--ds-label-2); }
+.charttoggles { display: flex; flex-wrap: wrap; gap: 8px; }
+.charttoggles button { display: inline-flex !important; align-items: center; gap: 6px; min-height: 36px !important; padding: 0 12px !important; }
+.charttoggles .dsseriesdot { width: 8px; height: 8px; border-radius: 50%; background: var(--series, var(--ds-accent)); }
+.charttoggles button[aria-pressed=false] .dsseriesdot { background: var(--ds-label-3); }
+
+/* ---------- Laufendes Workout ---------- */
+html body #session-root { background: var(--ds-bg) !important; color: var(--ds-label) !important; }
+html body #session-root .sessionhead { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px; background: var(--ds-bar) !important; border: 0 !important; border-bottom: .5px solid var(--ds-separator) !important; }
+html body #session-root .sessionhead > .quiet { display: grid !important; place-items: center !important; width: 44px !important; height: 44px !important; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-accent-text) !important; }
+html body #session-root .sessionhead > .quiet svg { width: 24px; height: 24px; }
+html body #session-root .sessionhead > strong { font-size: 17px !important; font-weight: 600 !important; color: var(--ds-label) !important; }
+html body #session-root .sessionhead > .btn { min-height: 44px !important; padding: 0 16px !important; font-size: 15px !important; }
+html body #session-root .sessioncontent > h2 { font-size: 28px !important; line-height: 34px !important; font-weight: 700 !important; }
+html body #session-root .discardworkout { color: var(--ds-red-text) !important; font-size: 15px !important; }
+html body #session-root .sessionrestsetting { display: inline-flex; min-height: 44px; padding: 0 !important; font-size: 15px !important; color: var(--ds-accent-text) !important; }
+html body #session-root .restpanel { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 8px; padding: 8px 8px 8px 16px !important; border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; color: var(--ds-label) !important; }
+html body #session-root .restpanel[hidden] { display: none !important; }
+html body #session-root .restpanel > span { font-size: 15px; color: var(--ds-label-2); }
+html body #session-root .restpanel strong { font-size: 22px !important; font-weight: 700 !important; color: var(--ds-label) !important; }
+html body #session-root .restpanel > div { display: flex; gap: 0; }
+html body #session-root .restpanel .textbtn { min-width: 44px; padding: 0 8px !important; font-size: 15px !important; }
+html body #session-root .exercise { margin: 0 0 12px !important; padding: 12px 16px !important; border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; }
+html body #session-root .exercisehead { display: flex !important; align-items: center !important; gap: 8px; }
+html body #session-root .exercisename { display: flex !important; align-items: center !important; gap: 10px !important; flex: 1; min-width: 0; min-height: 44px; padding: 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-label) !important; text-align: left; }
+html body #session-root .exercisename strong { font-size: 17px !important; font-weight: 600 !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .exercisenumber { display: grid !important; place-items: center !important; width: 24px !important; height: 24px !important; flex-shrink: 0; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 50% !important; background: var(--ds-fill) !important; color: var(--ds-label-2) !important; font-size: 13px !important; font-weight: 600 !important; }
+html body .exerciseoptions { display: grid !important; place-items: center !important; width: 44px !important; height: 44px !important; flex-shrink: 0; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-accent-text) !important; }
+html body .exerciseoptions svg { width: 24px; height: 24px; }
+html body #session-root .exercisehistory { margin: 0 0 6px !important; font-size: 13px !important; color: var(--ds-label-2) !important; }
+html body #session-root .setlabels span { font-size: 12px !important; font-weight: 500 !important; letter-spacing: .02em; text-transform: uppercase; color: var(--ds-label-2) !important; text-align: center; }
+html body #session-root .setlabels span:first-child { text-align: left; }
+html body #session-root .setlabels .pulsicon { width: 16px; height: 16px; }
+html body #session-root .liveset .setnumber { font-size: 15px; font-weight: 600; color: var(--ds-label-2); }
+html body #session-root .liveset .previousset { min-height: 44px; padding: 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-label-2) !important; font-size: 13px !important; text-align: center; }
+html body #session-root .liveset input[type=number] { min-height: 44px !important; height: 44px; padding: 0 6px !important; text-align: center; font-size: 17px !important; }
+html body #session-root .liveset.setdone input[type=number] { background-color: transparent !important; }
+html body #session-root .liveset input[type=checkbox]::before { border-color: var(--ds-label-3) !important; }
+html body #session-root .liveset input[type=checkbox]:checked::before { border-color: var(--ds-accent-fill) !important; background-color: var(--ds-accent-fill) !important; }
+html body #session-root .addsetwide { margin-top: 4px; min-height: 44px; font-size: 15px !important; }
+html body #session-root .removeset { font-size: 15px !important; color: var(--ds-red-text) !important; }
+html body #session-root .supersetbadge { font-size: 13px; color: var(--ds-label-2); }
+/* Abschluss-Bildschirme */
+html body #session-root .completion { color: var(--ds-label) !important; background: var(--ds-bg) !important; }
+html body #session-root .completion h1 { font-size: 28px !important; line-height: 34px !important; font-weight: 700 !important; color: var(--ds-label) !important; }
+html body #session-root .completion .celebration, html body #session-root .completion .streakhero { display: flex !important; align-items: center; justify-content: center; gap: 8px; color: var(--ds-label) !important; background: transparent !important; border: 0 !important; }
+html body #session-root .completion .celebration svg { width: 56px; height: 56px; color: var(--ds-green); }
+html body #session-root .completion .streakhero { font-size: 48px !important; font-weight: 700 !important; }
+html body #session-root .completion .streakhero svg { width: 40px; height: 40px; color: var(--ds-orange); }
+html body #session-root .completiontiles > div { border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; }
+html body #session-root .completiontiles small { font-size: 13px; color: var(--ds-label-2); }
+html body #session-root .completiontiles strong { font-size: 22px; font-weight: 700; color: var(--ds-label); }
+html body #session-root .recordwin { display: flex; align-items: center; gap: 6px; color: var(--ds-green-text) !important; font-size: 15px; }
+html body #session-root .recordwin svg { width: 18px; height: 18px; }
+html body #session-root .completionxp { height: 6px !important; border-radius: 3px !important; background: var(--ds-fill) !important; }
+html body #session-root .completionxp i { display: block; height: 100%; border-radius: 3px !important; background: var(--ds-accent) !important; }
+html body #session-root .xpaward { color: var(--ds-label) !important; }
+html body #session-root .weekdots span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50% !important; background: var(--ds-fill) !important; color: var(--ds-label-2) !important; }
+html body #session-root .weekdots span.trained { background: var(--ds-accent-fill) !important; color: #FFFFFF !important; }
+html body #session-root .weekdots span svg { width: 16px; height: 16px; }
+html body #session-root .completionclose { display: grid !important; place-items: center !important; width: 44px !important; height: 44px !important; padding: 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-label-2) !important; }
+
+/* ---------- Konto ---------- */
+.accountoverview, .accountdetail { max-width: 720px; }
+.accountoverview > .dsgrouptitle:first-of-type { margin-top: 22px; }
+.accountprofilegroup { padding: 12px 16px !important; }
+.accountprofilegroup .accountprofileheader { display: flex !important; align-items: center !important; gap: 12px !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+.accountprofilegroup .accountidentity { display: flex !important; align-items: center !important; gap: 12px !important; flex: 1; min-width: 0; margin: 0 !important; }
+.accountprofilegroup .avatarpicker { position: relative; width: 56px !important; height: 56px !important; font-size: 22px !important; cursor: pointer; }
+.accountprofilegroup .avatarpicker img { width: 100%; height: 100%; object-fit: cover; }
+.accountprofilegroup .avatarpicker > span { position: absolute; right: 0; bottom: 0; display: grid !important; place-items: center !important; width: 22px !important; height: 22px !important; border-radius: 50% !important; background: var(--ds-surface) !important; color: var(--ds-accent-text) !important; font-size: 0 !important; }
+.accountprofilegroup .avatarpicker > span svg { width: 14px; height: 14px; }
+.accountprofilegroup .avatarpicker input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.accountprofilegroup .avatarpicker:has(input:focus-visible) { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+.accountprofilegroup .accountname { display: flex !important; flex-direction: column; align-items: flex-start !important; justify-content: center; flex: 1; min-width: 0; min-height: 44px; padding: 0 !important; color: var(--ds-label) !important; }
+.accountprofilegroup .accountname strong { font-size: 20px !important; font-weight: 600 !important; color: var(--ds-label) !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.accountprofilegroup .accountname small { font-size: 13px !important; color: var(--ds-label-2) !important; }
+.accountoverview .dsrowvalue small { font-size: 15px; color: var(--ds-label-2); }
+.accountoverview .versionstamp { margin: 24px 16px 8px !important; font-size: 13px !important; color: var(--ds-label-3) !important; text-align: center; letter-spacing: normal !important; }
+.accountoverview .versionstamp span { color: inherit !important; }
+.accountmasthead, .accountrowmark, .accountrowarrow, .accountwordmark { display: none !important; }
+.accountdetailhead { margin: 0 0 4px -8px; }
+html body .accountback { display: inline-flex !important; align-items: center !important; gap: 2px !important; min-height: 44px; padding: 0 8px 0 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-accent-text) !important; font-size: 17px !important; font-weight: 400 !important; }
+html body .accountback svg { width: 22px; height: 22px; }
+#account-section-title { margin: 0 0 16px !important; font-size: 34px !important; line-height: 41px !important; font-weight: 700 !important; color: var(--ds-label) !important; letter-spacing: normal !important; }
+.accountdetailcontent > .card + .card, .accountdetailcontent > section + section { margin-top: 12px; }
+.accountdetailcontent dl { display: grid; grid-template-columns: 1fr auto; gap: 0; margin: 8px 0 0; }
+.accountdetailcontent dt, .accountdetailcontent dd { margin: 0; padding: 11px 0; border-top: .5px solid var(--ds-separator); font-size: 15px; }
+.accountdetailcontent dt { color: var(--ds-label); }
+.accountdetailcontent dd { color: var(--ds-label-2); text-align: right; }
+.accountdetailcontent .bodystrip { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 15px; color: var(--ds-label-2); }
+.accountdetailcontent .bodystrip strong { color: var(--ds-label); }
+.accountdetailcontent .weekweight { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 11px 0; border-top: .5px solid var(--ds-separator); font-size: 15px; }
+.accountdetailcontent .weekweight small { display: block; font-size: 13px; color: var(--ds-label-2); }
+.accountdetailcontent .weekweight > span:last-child { color: var(--ds-label-2); }
+.iconchoices button { border-radius: 12px !important; background: var(--ds-surface-2) !important; border: 0 !important; color: var(--ds-label) !important; }
+.iconchoices button[aria-pressed=true] { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+.iconchoices img { border-radius: 12px !important; }
+
+/* ---------- Fenster (Sheets) ---------- */
+#modal #mb { color: var(--ds-label); }
+#modal .firstrunnotice, .firstrunnotice { margin: 0 0 14px !important; padding: 10px 12px !important; border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; color: var(--ds-label-2) !important; font-size: 13px !important; line-height: 18px !important; }
+#modal .firstrunnotice a, .firstrunnotice a, .firstrunbanner a { color: var(--ds-accent-text) !important; }
+#modal .tabs:not(.fftabs):not(.foodtabs) { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; padding: 2px; border-radius: 8px; background: var(--ds-fill); }
+#modal .tabs:not(.fftabs):not(.foodtabs) > .btn { min-height: 44px; border: 0 !important; border-radius: 7px !important; background: transparent !important; color: var(--ds-label) !important; font-size: 15px !important; font-weight: 500 !important; }
+#modal .tabs:not(.fftabs):not(.foodtabs) > .btn:not(.secondary), #modal .tabs:not(.fftabs):not(.foodtabs) > .btn[aria-pressed=true] { background: var(--ds-surface) !important; font-weight: 600 !important; }
+#modal .toolactions .btn, #exercise-equipment .btn { min-height: 44px !important; padding: 0 12px !important; font-size: 13px !important; }
+#modal .toolactions .btn.secondary, #exercise-equipment .btn.secondary { background: var(--ds-fill) !important; color: var(--ds-label) !important; }
+#modal .toolactions .btn:not(.secondary), #exercise-equipment .btn:not(.secondary) { background: var(--ds-label) !important; color: var(--ds-bg) !important; }
+#modal .positionchoice { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 11px 16px; border: 0 !important; border-radius: 0 !important; background: var(--ds-surface) !important; color: var(--ds-label) !important; text-align: left; }
+#modal .positionchoice span { color: var(--ds-label-2); }
+#modal .positionchoice small { margin-left: auto; color: var(--ds-label-2); }
+#modal .positionchoice.selected small { color: var(--ds-accent-text); }
+#modal .exercisepositions { border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+#modal .exercisepositions .positionchoice + .positionchoice { border-top: .5px solid var(--ds-separator) !important; }
+#modal .routineitem, #modal .compactroutine { margin: 0 0 12px !important; padding: 12px 16px !important; border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; }
+#modal .routinecounts { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#modal .routinecounts .btn { min-height: 44px; padding: 0 12px !important; font-size: 15px !important; }
+#modal .routinecounts > span { font-size: 15px; color: var(--ds-label); }
+#modal .finishwarn { color: var(--ds-orange-text); }
+#modal .recordwin { color: var(--ds-green-text) !important; }
+.timewheel, .wheelcol { background: var(--ds-surface) !important; border: 0 !important; border-radius: 12px !important; }
+.wheelitem { color: var(--ds-label-2) !important; font-size: 22px !important; }
+.wheelitem.selected { color: var(--ds-label) !important; font-weight: 600 !important; }
+
+/* ---------- Startbildschirm ---------- */
+html body .puls-splash { position: fixed !important; inset: 0 !important; z-index: 1000 !important; display: grid !important; place-items: center !important; background: var(--ds-bg) !important; opacity: 1 !important; transform: none !important; }
+html body .puls-splash .splashlogo { font: 700 28px/1 var(--font) !important; letter-spacing: .08em !important; color: var(--ds-label) !important; }
+html body .puls-splash .splashlogo span, html body .puls-splash .splashline { display: none !important; }
+
+/* ---------- Karten (OpenStreetMap): Dunkelfilter nur im dunklen Schema ---------- */
+:root[data-scheme=light] .runtiles { filter: none !important; }
+#modal .profilefooter { border: 0 !important; border-top: .5px solid var(--ds-separator) !important; background: var(--ds-sheet) !important; }
+#modal .formsection { margin: 0 0 20px !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+#modal .formsection > .label { display: block; margin: 0 0 8px !important; font-size: 13px !important; font-weight: 400 !important; text-transform: uppercase; letter-spacing: .02em !important; color: var(--ds-label-2) !important; }
+.firstrunbanner { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--ds-surface); color: var(--ds-label-2); font-size: 13px; line-height: 18px; }
+html body .nutritiondeck .dsslideswitch { display: grid !important; position: static !important; width: auto !important; height: auto !important; margin: 0 0 14px !important; }
+html body .nutritiondeck .dsslideswitch button { width: auto !important; height: auto !important; min-width: 0 !important; min-height: 44px !important; padding: 4px 8px !important; border: 0 !important; border-radius: 7px !important; background: transparent !important; color: var(--ds-label) !important; font-size: 15px !important; font-weight: 500 !important; opacity: 1 !important; transform: none !important; }
+html body .nutritiondeck .dsslideswitch button::before, html body .nutritiondeck .dsslideswitch button::after { display: none !important; }
+html body .nutritiondeck .dsslideswitch button.selected { background: var(--ds-selected) !important; font-weight: 600 !important; }
+html body #content .compacttoolcard .btn { border: 0 !important; }
+.swipediary:not(.swiperevealed):not(.swipedragging) .swipedelete { visibility: hidden; }
+html body .diaryrow > span:last-child { white-space: nowrap; }
+#content .dashboardstack > p.note, #content .designdiary > p.note { margin: 0 16px 16px !important; }
+/* Pausen-Pop-up */
+html body #rest-popup .restpopupcard { border: 0 !important; border-radius: 12px !important; background: var(--ds-sheet) !important; color: var(--ds-label) !important; }
+html body #rest-popup h2 { font-size: 22px !important; font-weight: 700 !important; color: var(--ds-label) !important; }
+html body #rest-popup .restpopupnext { font-size: 13px !important; letter-spacing: .02em; text-transform: uppercase; color: var(--ds-label-2) !important; }
+html body #rest-popup .restpopupexercise { font-size: 17px !important; font-weight: 600 !important; color: var(--ds-label) !important; }
+html body #rest-popup .restpopupdetail { font-size: 15px !important; color: var(--ds-label-2) !important; }
+html body #rest-popup .restpopupring svg { stroke: var(--ds-accent) !important; }
+html body #modal .finishwarn { color: var(--ds-red-text) !important; }
+/* Fortschritt, Kalender, abgeschlossene Workouts: Haarlinien statt Rahmen, keine Schrift unter 12 px. */
+#content .exercise.livexercise, #content .completedworkout .exercise { border: 0 !important; border-radius: 12px !important; background: var(--ds-surface-2) !important; padding: 12px !important; margin: 8px 0 !important; }
+#content .setlabels span, #content .setlabels label { font-size: 12px !important; color: var(--ds-label-2) !important; }
+#content details { border: 0 !important; }
+#content .metricfacts, #content .exercisechart, #content .exercise-muscle-chart { border: 0 !important; }
+#content .exercisechart, #content .exercise-muscle-chart { border-radius: 12px !important; }
+#content .metricexplorer label, #content .card label { font-size: 13px !important; color: var(--ds-label-2) !important; }
+#content h4 { font-size: 13px !important; font-weight: 600 !important; color: var(--ds-label-2) !important; letter-spacing: normal !important; text-transform: none !important; }
+html body .calroutines { display: none !important; }
+html body .actnav { display: grid !important; place-items: center !important; min-width: 44px; min-height: 44px; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-accent-text) !important; }
+html body .actnav svg { width: 20px; height: 20px; }
+html body .actnav:disabled { color: var(--ds-label-3) !important; }
+html body .actday { border: 0 !important; }
+html body .actday.future { opacity: 1 !important; color: var(--ds-label-2) !important; background: transparent !important; }
+html body .actday.today { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+html body #content .metricgroups { display: flex !important; }
+html body #content .metricgroups > .btn { flex: 1 1 auto; padding: 0 6px !important; }
+.historyplot { color: var(--ds-accent); }
+html body .accountoverview .accountgoal, html body .accountoverview .accountbody { margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; }
+.dsrowvalue { white-space: nowrap; }
+html body .accountoverview .versionstamp, html body .accountoverview .versionstamp span { font-size: 13px !important; color: var(--ds-label-2) !important; }
+.accountprofilegroup .avatarpicker > span { border: 0 !important; }
+html body .statuspill { display: inline-block; padding: 2px 8px !important; border: 0 !important; border-radius: 6px !important; background: var(--ds-fill) !important; color: var(--ds-label-2) !important; font-size: 13px !important; }
+html body .bodytrend { border: 0 !important; }
+html body .trendlegend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+html body .trendlegend span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px !important; color: var(--ds-label-2) !important; }
+.trendlegend .dsseriesdot { width: 8px; height: 8px; border-radius: 50%; background: var(--ds-accent); }
+.trendlegend .dsseriesdot.dsseriesmuted { background: var(--ds-label-3); }
+html body .iconchoices span { font-size: 12px !important; color: var(--ds-label) !important; }
+html body .accountdetail .versionstamp, html body .accountdetail .versionstamp span { font-size: 13px !important; color: var(--ds-label-2) !important; }
+/* Essen-Fenster: keine Schrift unter 12 px, Linien als Haarlinien. */
+html body #modal .ffprivacy, html body #modal .ffprivacy a { font-size: 12px !important; line-height: 16px !important; }
+html body #modal .fftabs, html body #modal .ffsegment, html body #modal .ffstep, html body #modal .ffmore { border-width: .5px !important; border-color: var(--ds-separator) !important; }
+html body #modal :is(.ffsegment, .ffstep, .ffmore) span, html body #modal .ffrecipehead span, html body #modal .ffnumber span { font-size: 12px !important; }
+html body #modal .wheellabels span, html body #modal .ffsectionhead span, html body #modal .ffkcal span { font-size: 12px !important; }
+html body #modal .ffkcal strong { color: var(--ds-label) !important; }
+.trendlegend .dsseriesdot.dsseries-weight { background: var(--ds-accent); }
+.trendlegend .dsseriesdot.dsseries-strength { background: var(--ds-green); }
+.trendlegend .dsseriesdot.dsseries-kcal { background: var(--ds-orange); }
+html body .metricempty { font-size: 13px !important; }
+html body #modal .ffsegment button:not([aria-pressed=true]):not(.active) { color: var(--ds-label) !important; }
+html body #modal .ffsumrow strong { color: var(--ds-label) !important; }
+/* Aktivität: Beschriftungen mindestens Caption 12. */
+html body #run-root small, html body #run-root .runlivestate { font-size: 12px !important; letter-spacing: normal !important; }
+html body #run-root .runcountdown > small { font-size: 17px !important; }
+/* Laufendes-Workout-Leiste über der Tab-Leiste: Haarlinie statt Akzentrahmen. */
+html body #workout-dock { border: .5px solid var(--ds-separator) !important; border-radius: 12px !important; background: var(--ds-bar) !important; }
+html body #workout-dock svg { width: 22px; height: 22px; }
+html body #workout-dock small, html body #workout-dock small b { font-size: 12px !important; }

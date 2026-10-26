@@ -1,6 +1,6 @@
 /* Shared functionality; distinct visual systems across all screens. */
 
-.foodscreen{display:grid;gap:22px}.foodtools{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}.foodtools .btn{min-width:0;font-size:11px;padding:12px 5px}.foodtools span{font-size:16px}.foodscreen :is(.waterregion,.diaryregion,.ideasregion){min-width:0}.foodscreen .card{margin:0!important}.foodscreen .datasource{font-size:10px}.foodscreen .card :is(h2,h3){color:var(--design-ink)}
+.foodscreen{display:grid;gap:22px}.foodscreen :is(.waterregion,.diaryregion,.ideasregion){min-width:0}.foodscreen .card{margin:0!important}.foodscreen .datasource{font-size:10px}.foodscreen .card :is(h2,h3){color:var(--design-ink)}
 .foodscreen .card :is(.diaryrow,.searchitem,.compactfood){color:var(--design-ink);border-color:var(--line)}
 .foodscreen .diaryrow small{color:var(--design-muted)}
 .foodscreen .waterregion .watercompact{padding:12px 16px!important}
@@ -18,4 +18,3 @@
 /* Chrome identities: same controls, coordinated surfaces and transitions. */
 
 @media(min-width:900px){.orbitfoodgrid{grid-template-columns:1fr 1.4fr;align-items:start}.ledgerscreen .ledgerextras{grid-template-columns:1fr 1fr;align-items:start}}
-@media(max-width:359px){.foodtools .btn{font-size:9px}.foodtools span{font-size:13px}}

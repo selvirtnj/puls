@@ -23,7 +23,8 @@ const profileActivityText={'1.2':'Sitzend · kaum Sport','1.375':'Leicht aktiv �
 
 function translatedProfileText(text){return state.language==='en'&&typeof translatedUI==='function'?translatedUI(text):text}
 function profileSetLabel(label,text){let node=[...label.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(node)node.textContent=text+' ';else label.insertBefore(document.createTextNode(text+' '),label.firstChild)}
-function profileHeading(number,title){return `<span class="label"><i>${number}</i>${esc(title)}</span>`}
+// Abschnittstitel ohne Nummern (iOS-Gruppenüberschrift); die Nummer bleibt nur als Parameter für bestehende Aufrufer.
+function profileHeading(number,title){return `<span class="label">${esc(title)}</span>`}
 function profileSection(form,number,title,nodes){let section=document.createElement('div');section.className='formsection profilesection';section.innerHTML=profileHeading(number,title);for(let node of nodes)if(node)section.appendChild(node);form.insertBefore(section,form.querySelector('.profilefooter'));return section}
 function syncProfileSegments(){
   for(let [id] of Object.entries(profileSegments)){

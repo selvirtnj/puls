@@ -1,4 +1,6 @@
 const $=id=>document.getElementById(id),modal=$('modal');
+// Phosphor-Symbol für Quell-Markup; vor dem Laden von icons.js leer, der abschließende render() setzt es ein.
+function uiIcon(name,cls=''){return typeof phIcon==='function'?pulsIcon(name,cls):''}
 function appLocale(){return typeof state!=='undefined'&&state?.language==='en'?'en-GB':'de-DE'}
 const today=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const initial=()=>({goals:{kcal:2200,p:150,c:250,f:70},foods:[],weights:[],workouts:[],custom:[]});

@@ -92,7 +92,7 @@ body.runviewopen { overflow: hidden; }
 .runviewmap { position: relative; flex: 1 1 auto; min-height: 120px; background: var(--ds-surface); }
 .runview.ready .runviewmap, .runview.countdown .runviewmap { position: absolute; inset: 0; }
 .runviewmap.nomap { display: grid; place-items: center; }
-.runviewmap.blur { filter: blur(6px) brightness(.55); }
+.runviewmap.blur { filter: none; opacity: .25; }
 .runbigicon { width: 120px; height: 120px; color: var(--lime); opacity: .85; }
 
 .runviewmap .leaflet-container { background: var(--ds-surface); font: inherit; }
