@@ -219,6 +219,8 @@ aside .brand span { color: var(--ds-accent) !important; }
     justify-content: flex-start !important;
     font-size: 11px !important; line-height: 13px !important; letter-spacing: .01em !important; text-align: center !important;
   }
+  /* Plus-Knopf in derselben Reihe wie die übrigen Tabs (polish.css setzt sonst padding/gap 0 und hebt ihn an). */
+  #nav button.centraladd { gap: 3px !important; padding: 7px 0 5px !important; height: 54px !important; }
   #nav button .ico, #nav .centraladd .ico { width: 26px !important; height: 26px !important; }
   #nav button .ico svg { width: 25px !important; height: 25px !important; }
   #nav .navlabel { max-width: 100% !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
