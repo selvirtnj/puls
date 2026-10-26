@@ -163,6 +163,18 @@ function dsDecimalCheck(input){
   }
   input.setCustomValidity(message);
 }
+/* Anzeige mit Komma (deutsche Oberfläche, UI-9): Das Feld zeigt „180,5“, liest sich für alle Handler aber weiter als „180.5“.
+   Dafür bekommt jedes Dezimalfeld eine eigene value-Eigenschaft: Lesen wandelt ein eindeutiges Dezimalkomma in einen Punkt,
+   Schreiben zeigt Dezimalzahlen mit Komma. Gespeichert wird weiter eine Zahl. */
+const dsNativeInputValue=typeof HTMLInputElement==='function'?Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value'):null;
+const dsDisplayDecimal=fieldDecimal;
+function dsCommaValue(input){
+  if(!dsNativeInputValue||Object.hasOwn(input,'value'))return;
+  Object.defineProperty(input,'value',{configurable:true,
+    get(){let raw=dsNativeInputValue.get.call(this);return /^\s*\d*,\d*\s*$/.test(raw)?raw.replace(',','.'):raw},
+    set(v){dsNativeInputValue.set.call(this,dsDisplayDecimal(v))}});
+  if(document.activeElement!==input)dsNativeInputValue.set.call(input,dsDisplayDecimal(dsNativeInputValue.get.call(input)));
+}
 function dsDecorateDecimals(root){
   if(!root?.querySelectorAll)return;
   root.querySelectorAll('input[type=number]:not([data-ds-decimal])').forEach(input=>{
@@ -174,17 +186,19 @@ function dsDecorateDecimals(root){
     input.setAttribute('inputmode','decimal');
     input.setAttribute('pattern','[0-9]*[.,]?[0-9]*');
     input.setAttribute('autocomplete','off');
+    dsCommaValue(input);
     dsDecimalCheck(input);
   });
 }
 document.addEventListener('input',event=>{
   let input=event.target;
   if(!input?.dataset?.dsDecimal)return;
-  // Nur eindeutige Dezimalnotation (Ziffern mit höchstens einem Komma oder Punkt) wird umgeschrieben; alles andere bleibt stehen und wird als ungültig gemeldet.
-  let raw=input.value;
-  if(/^\d*,\d*$/.test(raw)){let caret=input.selectionStart;input.value=raw.replace(',','.');try{if(caret!==null)input.setSelectionRange(caret,caret)}catch{}}
+  // Komma und Punkt bleiben beim Tippen so stehen; die value-Eigenschaft liefert den Handlern immer die Punkt-Schreibweise.
+  if(!Object.hasOwn(input,'value')){let raw=input.value;if(/^\d*,\d*$/.test(raw)){let caret=input.selectionStart;input.value=raw.replace(',','.');try{if(caret!==null)input.setSelectionRange(caret,caret)}catch{}}}
   dsDecimalCheck(input);
 },true);
+// Nach dem Verlassen des Felds auch selbst getippte Punkte deutsch anzeigen.
+document.addEventListener('change',event=>{let input=event.target;if(input?.dataset?.dsDecimal&&dsNativeInputValue&&Object.hasOwn(input,'value'))dsNativeInputValue.set.call(input,dsDisplayDecimal(dsNativeInputValue.get.call(input)))},true);
 // Wert per Code geändert (z. B. Feld geleert): vor dem Absenden alle Dezimalfelder des Formulars neu prüfen.
 function dsRecheckDecimals(target){
   let scope=target?.closest?.('form')||document;
