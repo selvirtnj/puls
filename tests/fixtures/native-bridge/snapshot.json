@@ -1,0 +1,4 @@
+{"type":"snapshot","protocol":1,"seq":42,"userId":"a0000000-0000-4000-8000-0000000000aa","reason":"save",
+ "cloud":{"signedIn":true,"revision":17,"dirty":false,"conflict":false},
+ "flags":{"preview":false,"recovery":false,"uploadBlocked":false},
+ "state":{"goals":{"kcal":2300,"p":160,"c":240,"f":70},"foods":[],"weights":[{"id":"w0000000-0000-4000-8000-000000000001","date":"2026-10-20","kg":84.2}],"workouts":[],"custom":[],"xUnknown":{"keep":true}}}
