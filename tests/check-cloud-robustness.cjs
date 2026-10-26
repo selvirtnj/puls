@@ -1,13 +1,13 @@
 // Regression: beschädigter lokaler Stand, voller Speicher und Nicht-JSON-Serverantworten (nur lokale Mocks, kein echter Server).
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const files=['js/app.js','js/enhancements.js','js/products.js','js/recipes.js','js/experience.js','js/exercise-catalog.js','js/training.js','js/portions.js','js/insights.js','js/finish.js','js/personal.js'];
-function harness({disk=new Map(),fetchImpl,quota=()=>false}={}){
+function harness({disk=new Map(),fetchImpl,quota=()=>false,preview=false}={}){
   let nodes=new Map(),log={requests:[],writes:[],alerts:[],downloads:[],blobs:new Map()};
   const element=id=>{if(!nodes.has(id))nodes.set(id,{value:'',dataset:{},style:{setProperty(){},removeProperty(){}},classList:{add(){},remove(){},toggle(){}},innerHTML:'',textContent:'',querySelector:()=>null,remove(){},addEventListener(){},setAttribute(){},insertAdjacentHTML(){},showModal(){this.open=true},close(){this.open=false}});return nodes.get(id)};
   const context={document:{getElementById:element,createElement:()=>({click(){log.downloads.push({filename:this.download,blob:log.blobs.get(this.href)})}}),querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},body:{dataset:{},classList:{add(){},remove(){},toggle(){}}},documentElement:{}},
     localStorage:{getItem:k=>disk.has(k)?disk.get(k):null,setItem:(k,v)=>{if(quota(k))throw Error('QuotaExceededError');log.writes.push({key:k,value:String(v)});disk.set(k,String(v))},removeItem:k=>disk.delete(k)},
     crypto:require('crypto').webcrypto,Date,Intl,console,TextEncoder,Blob,URL:{createObjectURL:blob=>{let id='blob:fixture-'+log.blobs.size;log.blobs.set(id,blob);return id},revokeObjectURL(){}},window:{scrollTo(){},addEventListener(){},PULS_CLOUD:{url:'https://unit-test.supabase.co',publicKey:'sb_publishable_abcdefghijklmnopqrstuvwxyz'}},
-    location:{protocol:'file:'},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},navigator:{vibrate(){}},alert:message=>log.alerts.push(message),confirm:()=>true,AbortController,atob:s=>Buffer.from(s,'base64').toString(),
+    location:{protocol:'file:',search:preview?'?erststart=1':''},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},navigator:{vibrate(){}},alert:message=>log.alerts.push(message),confirm:()=>true,AbortController,atob:s=>Buffer.from(s,'base64').toString(),
     fetch:async(url,options)=>{log.requests.push(url);return fetchImpl(url,options)}};
   vm.createContext(context);const run=s=>vm.runInContext(s,context);
   for(let file of files)run(fs.readFileSync(file,'utf8'));context.document.documentElement.style={setProperty(){}};
@@ -81,7 +81,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   // Review 3/1: raw quota never blocks saving; warn once, retain in memory, offer exact download.
   let blockRaw=true;disk=new Map([['puls-v1','{kaputt']]);
   let raw=harness({disk,quota:k=>blockRaw&&k==='puls-v1-corrupt',fetchImpl:async()=>json(null)});
-  raw.run('state.goals.kcal=2200;save();save()');assert.equal(JSON.parse(disk.get('puls-v1')).goals.kcal,2200);assert(!disk.has('puls-v1-corrupt'));
+  raw.run('state.goals.kcal=2200;save();save()');assert.equal(disk.get('puls-v1'),'{kaputt');assert.equal(JSON.parse(disk.get('puls-v1-recovered')).goals.kcal,2200);assert(!disk.has('puls-v1-corrupt'));
   assert.equal(raw.run('stateCorruptRaw'),'{kaputt');assert.equal(raw.log.alerts.length,1);assert.match(raw.log.alerts[0],/Beschädigte Rohdaten herunterladen/);
   raw.run('exportCorruptBackup()');assert.equal(raw.log.downloads.length,1);
   assert.equal(JSON.parse(await raw.log.downloads[0].blob.text()).backups[0].raw,'{kaputt');
@@ -101,14 +101,14 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
       assert.equal(JSON.parse(disk.get('puls-v1')).__pulsRecoveryUploadBlocked,undefined,'Explicit import clears fallback metadata');
     }else assert.equal(disk.get('puls-v1'),'{new-corrupt');
     blocked=false;locked.run('save()');assert.equal(disk.get('puls-cloud-upload-blocked'),'1');assert.equal(disk.get('puls-v1-corrupt'),'{new-corrupt');
-    assert.equal(JSON.parse(disk.get('puls-v1')).__pulsRecoveryUploadBlocked,undefined);
+    assert.equal(JSON.parse(disk.get(markerOnly?'puls-v1':'puls-v1-recovered')).__pulsRecoveryUploadBlocked,markerOnly?undefined:true);
     const again=harness({disk,fetchImpl:async()=>json({revision:4})});await tick();await tick();
     assert(again.run('cloudUploadBlocked'));assert(!again.log.requests.some(u=>u.includes('/rpc/')));
   }
   // Exact existing copies are reused; a full ring replaces the oldest, remembering order across restarts.
   disk=new Map([['puls-v1','{current'],['puls-v1-corrupt','{older']]);let secondBlocked=true;
   let distinct=harness({disk,quota:k=>secondBlocked&&k==='puls-v1-corrupt-2',fetchImpl:async()=>json(null)});
-  distinct.run('save()');assert.equal(distinct.run('stateCorruptRaw'),'{current');assert.notEqual(disk.get('puls-v1'),'{current');secondBlocked=false;distinct.run('save()');
+  distinct.run('save()');assert.equal(distinct.run('stateCorruptRaw'),'{current');assert.equal(disk.get('puls-v1'),'{current');secondBlocked=false;distinct.run('save()');
   assert.equal(disk.get('puls-v1-corrupt'),'{older');assert.equal(disk.get('puls-v1-corrupt-2'),'{current');
   for(let same of [false,true]){
     disk=new Map([['puls-v1','{current'],['puls-v1-corrupt','{older'],['puls-v1-corrupt-2',same?'{current':'{other'],['puls-v1-corrupt-3','{third']]);
@@ -122,10 +122,12 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
     disk=new Map([['puls-v1','{unsaved-raw'],...['puls-v1-corrupt','puls-v1-corrupt-2','puls-v1-corrupt-3'].map((k,i)=>[k,'{old-'+i])]);
     const recover=harness({disk,quota:k=>/^puls-v1-corrupt(?:-[23])?$/.test(k),fetchImpl:async()=>json(null)});
     if(recovery==='import')await recover.run(`importData(${file(JSON.stringify(remote))})`);else recover.run(`applyCloudProfile({payload:${JSON.stringify(remote)},revision:8})`);
-    assert.equal(recover.run('state.goals.kcal'),1900);assert.equal(JSON.parse(disk.get('puls-v1')).goals.kcal,1900);assert.equal(recover.run('stateCorruptRaw'),'{unsaved-raw');
-    assert.equal(recover.log.alerts.length,1);assert(!recover.run('cloudUploadBlocked'));
+    assert.equal(recover.run('state.goals.kcal'),1900);assert.equal(disk.get('puls-v1'),'{unsaved-raw');assert.equal(JSON.parse(disk.get('puls-v1-recovered')).goals.kcal,1900);assert.equal(recover.run('stateCorruptRaw'),'{unsaved-raw');
+    assert.equal(recover.log.alerts.length,1);assert(recover.run('cloudUploadBlocked'));
   }
   console.log('PASS: Review 3/1 rotating raw backups, memory download + one warning, nonblocking import/cloud/save and persistent upload lock');
+  await checkRecoveredPersistence();
+  checkAccountCopyCleanup();
   // Q1 revision-first-poll: unchanged revision transfers no payload; changed revision pulls once.
   let poll,revision=7,payloadReads=0,revisionError=false,editDuringCheck=false;
   poll=harness({fetchImpl:async url=>{if(url.includes('select=revision&')){if(revisionError)throw Error('offline fixture');if(editDuringCheck)poll.run('state.goals.kcal=2150;save()');return json([{revision}])}payloadReads++;return json([{payload:remote,revision}])}});
@@ -262,4 +264,52 @@ function checkDownloadEntries(){
   assert(!html().includes('Letzte lokale Konflikt-Sicherung herunterladen'));
   fixture.disk.set('puls-cloud-conflict-backup','{}');assert(html().includes('Letzte lokale Konflikt-Sicherung herunterladen'));
   console.log('PASS: Review 3/1 + 3/5 conditional account download entries for raw disk/memory and separate local/remote conflicts');
+}
+
+async function checkRecoveredPersistence(){
+  const original='{only-damaged-copy',rawQuota=k=>/^puls-v1-corrupt(?:-[23])?$/.test(k);
+  const disk=new Map([['puls-v1',original],['puls-cloud-session',session],['puls-cloud-meta-user-1',JSON.stringify({revision:3,dirty:true})]]);
+  const make=()=>harness({disk,quota:rawQuota,fetchImpl:async()=>json({revision:4})});
+  let fixture=make();await tick();fixture.run('state.goals.kcal=2650;state.weights=[{id:"historical-weight",date:"2026-10-01",kg:81}];save()');
+  assert.equal(disk.get('puls-v1'),original);assert.equal(JSON.parse(disk.get('puls-v1-recovered')).goals.kcal,2650);
+  assert(fixture.run('cloudUploadBlocked'));assert(!fixture.log.requests.some(u=>u.includes('/rpc/')));
+  fixture=make();await tick();assert.equal(fixture.run('state.goals.kcal'),2650);assert.equal(fixture.run('state.weights[0].id'),'historical-weight');
+  assert(fixture.run('validData(state)'));assert(fixture.run('cloudUploadBlocked'));assert(!fixture.log.requests.some(u=>u.includes('/rpc/')));
+  fixture.run('state.goals.kcal=2700;save();confirm=()=>false;exportCorruptBackup()');
+  assert.equal(disk.get('puls-v1'),original);assert.equal(JSON.parse(disk.get('puls-v1-recovered')).goals.kcal,2700);
+  assert(JSON.parse(await fixture.log.downloads[0].blob.text()).backups.some(item=>item.raw===original));
+  // Even if a raw backup fits later, takeover still needs the requested explicit acknowledgement.
+  const room=harness({disk,fetchImpl:async()=>json(null)});room.run('save()');assert.equal(disk.get('puls-v1'),original);assert(disk.has('puls-v1-recovered'));
+  assert.equal(room.run('confirmRecoveredState()'),true);assert.equal(JSON.parse(disk.get('puls-v1')).goals.kcal,2700);assert(!disk.has('puls-v1-recovered'));assert(room.run('cloudUploadBlocked'));
+  const promoted=make();await tick();assert.equal(promoted.run('state.goals.kcal'),2700);assert(promoted.run('cloudUploadBlocked'));assert(!promoted.log.requests.some(u=>u.includes('/rpc/')));
+  // Download plus acknowledgement promotes; failed download or main write must keep recovery available.
+  let failMain=false;
+  const downloadDisk=new Map([['puls-v1',original]]),download=harness({disk:downloadDisk,quota:k=>rawQuota(k)||failMain&&k==='puls-v1',fetchImpl:async()=>json(null)});
+  download.run('state.goals.kcal=2500;save()');failMain=true;download.run('exportCorruptBackup()');
+  assert.equal(downloadDisk.get('puls-v1'),original);assert.equal(JSON.parse(downloadDisk.get('puls-v1-recovered')).goals.kcal,2500);
+  assert(download.run('stateRecoveryPending'));failMain=false;download.run('exportCorruptBackup()');
+  assert.equal(JSON.parse(downloadDisk.get('puls-v1')).goals.kcal,2500);assert(!downloadDisk.has('puls-v1-recovered'));
+  const failed=harness({disk:new Map([['puls-v1',original]]),quota:rawQuota,fetchImpl:async()=>json(null)});
+  failed.run('save();document.createElement=()=>({click(){throw Error("download fixture")}})');
+  assert.throws(()=>failed.run('exportCorruptBackup()'),/download fixture/);assert.equal(failed.disk.get('puls-v1'),original);assert(failed.disk.has('puls-v1-recovered'));
+  const full=harness({disk:new Map([['puls-v1',original]]),quota:k=>rawQuota(k)||k==='puls-v1-recovered',fetchImpl:async()=>json(null)});
+  full.run('state.goals.kcal=2800;save()');assert.equal(full.disk.get('puls-v1'),original);assert(!full.disk.has('puls-v1-recovered'));assert.equal(full.run('state.goals.kcal'),2800);assert(full.log.alerts.some(x=>/Speichern fehlgeschlagen/.test(x)));
+  for(let invalid of ['{broken','null','[]',JSON.stringify({...remote,goals:{...remote.goals,kcal:-1}})]){
+    const invalidDisk=new Map([['puls-v1',JSON.stringify(remote)],['puls-v1-recovered',invalid]]);
+    const ignore=harness({disk:invalidDisk,fetchImpl:async()=>json(null)});assert.equal(ignore.run('state.goals.kcal'),1900);assert(!ignore.run('stateRecoveryPending'));
+  }
+  const filled={...remote,foods:[{id:'saved-snapshot',name:'Fixture',date:'2026-10-01',meal:'Frühstück',grams:20,kcal:50,p:3,c:5,f:2}]};
+  const selected=harness({disk:new Map([['puls-v1',JSON.stringify(remote)],['puls-v1-recovered',JSON.stringify(filled)]]),fetchImpl:async()=>json(null)});
+  assert.equal(selected.run('state.foods[0].id'),'saved-snapshot');assert.equal(selected.run('state.foods[0].kcal'),50);assert(selected.run('cloudUploadBlocked'));
+  console.log('PASS: N1 recovered-copy persistence, original raw retention, restart preference + upload lock, download/confirmation, failed promotion/download, quota/RAM and invalid recovery rejection');
+}
+
+function checkAccountCopyCleanup(){
+  const source=fs.readFileSync('js/account-guide.js','utf8'),cleanup=source.slice(source.indexOf('function clearCurrentAccountCopies('),source.indexOf('async function performAccountAction('));
+  for(let preview of [false,true]){
+    const entries=[['puls-cloud-conflict-remote-backup','remote fixture'],['puls-cloud-conflict-backup','local conflict fixture'],['puls-cloud-pending-self','pending self'],['puls-cloud-meta-self','self meta'],['puls-progress-photos-self','self photos'],['puls-cloud-pending-other','pending other'],['puls-cloud-meta-other','other meta'],['puls-progress-photos-other','other photos'],['puls-local-before-import','device import backup'],['puls-v1-corrupt','{device raw'],['puls-v1-corrupt-2','{second raw'],['puls-v1-corrupt-3','{third raw'],['puls-v1-corrupt-order','[]']];
+    const fixture=harness({disk:new Map(entries),preview,fetchImpl:async()=>json(null)});fixture.run(cleanup);fixture.run("clearCurrentAccountCopies('self')");
+    for(let [key,value] of entries){const accountCopy=['puls-cloud-conflict-remote-backup','puls-cloud-conflict-backup','puls-cloud-pending-self','puls-cloud-meta-self','puls-progress-photos-self'].includes(key);assert.equal(fixture.disk.get(key),accountCopy&&!preview?undefined:value,key)}
+  }
+  console.log('PASS: N2 account cleanup removes remote conflict backup, preserves unscoped import/raw device backups and other users, preview stays read-only');
 }
