@@ -6,7 +6,7 @@ const today=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth
 const initial=()=>({goals:{kcal:2200,p:150,c:250,f:70},foods:[],weights:[],workouts:[],custom:[]});
 const firstRunPreview=typeof location.search==='string'&&/[?&]erststart=1(?:&|$)/.test(location.search);
 const appStore=firstRunPreview?{getItem:()=>null,setItem(){}}:localStorage;
-let state;try{state=JSON.parse(appStore.getItem('puls-v1'))||initial()}catch{state=initial()}let date=today(),page='home',foodSelection=null;
+let state,stateLoadCorrupt=false;{let raw=null;try{raw=appStore.getItem('puls-v1')}catch{}try{let parsed=raw===null?null:JSON.parse(raw);if(raw!==null&&!(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)))throw Error('invalid');state=parsed||initial()}catch{state=initial();stateLoadCorrupt=true;try{if(appStore.getItem('puls-v1-corrupt')===null)appStore.setItem('puls-v1-corrupt',raw)}catch{}}}let date=today(),page='home',foodSelection=null;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n=x=>new Intl.NumberFormat(appLocale(),{maximumFractionDigits:1}).format(x),uid=()=>crypto.randomUUID(),round=x=>Math.round(x*10)/10;
 function save(){try{appStore.setItem('puls-v1',JSON.stringify(state))}catch{alert('Speichern fehlgeschlagen. Bitte exportiere deine Daten.')}}
