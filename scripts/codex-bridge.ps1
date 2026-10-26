@@ -72,7 +72,9 @@ if ($Resume) {
   $cxArgs = @('exec', '-C', $repo) + $common + @('-')
 }
 
+$ErrorActionPreference = 'Continue'
 $prompt | & $cx.FullName @cxArgs 2>$null | Tee-Object -FilePath $events | Out-Null
+$ErrorActionPreference = 'Stop'
 
 $log = if (Test-Path $events) { Get-Content $events -Encoding utf8 } else { @() }
 $thread = ($log | Select-String '"thread_id":"([^"]+)"' | Select-Object -First 1).Matches.Groups[1].Value
