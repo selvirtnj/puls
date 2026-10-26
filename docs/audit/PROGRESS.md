@@ -17,12 +17,12 @@ Auftrag: Selvirs „Master Mission“ vom 26.10.2026 (Gesamt-Audit, Aufräumen, 
 | # | Phase | Status |
 |---|---|---|
 | 0 | Git-Sicherung, Branch, Baseline-Tag | erledigt |
-| 1 | Inventar Funktionen/Architektur (`docs/audit/FEATURE-INVENTORY.md`) | offen |
-| 2 | Baseline: `node scripts/check.cjs`, Browser-Baseline 390×844 | offen |
-| 3 | Testmatrix (`docs/audit/TEST-MATRIX.md`) | offen |
+| 1 | Inventar Funktionen/Architektur (`docs/audit/FEATURE-INVENTORY.md`) | erledigt |
+| 2 | Baseline: `node scripts/check.cjs`, Browser-Baseline 390×844 | check PASS; Browser BLOCKED |
+| 3 | Testmatrix (`docs/audit/TEST-MATRIX.md`) | erledigt |
 | 4 | UI/UX-Audit im Browser | offen |
 | 5–7 | Aufräumen, Refactoring, Abhängigkeiten | offen |
-| 8–9 | Sicherheit, Performance, Zuverlässigkeit | offen |
+| 8–9 | Sicherheit, Performance, Zuverlässigkeit | Lese-Audit erledigt; 4 von 12 Befunden behoben |
 | 10 | Testinfrastruktur | offen |
 | 11 | Codex-Review der Änderungen | offen |
 | 12–14 | Git-Ordnung, README, Projektanweisungen | offen |
@@ -36,3 +36,15 @@ Auftrag: Selvirs „Master Mission“ vom 26.10.2026 (Gesamt-Audit, Aufräumen, 
 
 ## Log
 - 26.10. 03:40 Branch angelegt, Tag gesetzt. Claude-5-h-Limit bei 95 %, Wochenlimit 72 % → sparsam arbeiten.
+- 26.10. 06:50 Geplante Sitzung: Wochenlimit 72 %. Codex-Lese-Audit erneut versucht → CODEX_UNAVAILABLE bis 07:27.
+- 26.10. 06:54 Phase 1–3 erledigt (`d26f9f3`): `FEATURE-INVENTORY.md`, `TEST-MATRIX.md`. Baseline `node scripts/check.cjs` PASS (vom Koordinator wiederholt), HTTP-Ladetest 94/94 PASS. Browser-Layout 390×844: BLOCKED (Vorschau-Start in unbeaufsichtigter Sitzung abgelehnt).
+- 26.10. 07:00 Phase 8–9 Lese-Audit (puls-reviewer): `QUALITY-REPORT.md`, 12 Befunde, kein XSS-/Secret-/RLS-Befund (statisch).
+- 26.10. 07:05 Korrekturen Befunde 2, 3, 9, 11 (puls-backend) → `c90c8de`, neuer Test `tests/check-cloud-robustness.cjs`, check.cjs PASS (vom Koordinator wiederholt). Keine Versionserhöhung (erst vor Veröffentlichung).
+- 26.10. 07:06 Codex-Review dieses Diffs geplant für 07:29 (Hintergrund-Lauf); Ergebnis → `docs/audit/codex-review-1.md`.
+
+## Nächste Schritte
+1. Codex-Ergebnis einarbeiten (Befunde vom Entwickler beheben lassen, Prüfer prüft erneut).
+2. Offene Befunde 1, 4–8, 10, 12 aus `QUALITY-REPORT.md` bewerten; Befund 4/5 sind UI-Verhalten → Browser-Prüfung nötig.
+3. Toten Design-Code (flows.js/visuals.js/designs-extra.js) nur nach Browser-Bestätigung entfernen.
+4. Browser-Baseline 390×844 in einer beaufsichtigten Sitzung nachholen.
+5. Phasen 12–15: README, Abschlussbericht `docs/audit/FINAL-REPORT.md`.
