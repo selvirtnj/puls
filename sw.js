@@ -37,14 +37,12 @@ self.addEventListener('fetch',event=>{
  const path=url.pathname.slice(base.pathname.length),catalogue=CATALOG_PATH.test(path);
  if(request.mode==='navigate'){
   event.respondWith((async()=>{
-   let timer;
    try{
-    const response=await Promise.race([fetch(request),new Promise((_,reject)=>{timer=globalThis.setTimeout?.(()=>reject(Error('Navigation timeout')),4000)})]);
+    const response=await fetch(request);
     if(!response.ok){const cached=await caches.match(new URL('index.html',base));return cached||response}
-    let copy=response.clone();event.waitUntil(caches.open(CACHE).then(c=>c.put(new URL('index.html',base),copy)).catch(()=>{}));
+    if(path===''||path==='index.html'){let copy=response.clone();event.waitUntil(caches.open(CACHE).then(c=>c.put(new URL('index.html',base),copy)).catch(()=>{}))}
     return response;
    }catch(error){const cached=await caches.match(new URL('index.html',base));if(cached)return cached;throw error}
-   finally{globalThis.clearTimeout?.(timer)}
   })());return;
  }
  if(!ASSETS.includes(path)&&!catalogue)return;

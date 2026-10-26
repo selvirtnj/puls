@@ -2,12 +2,12 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const files=['js/app.js','js/enhancements.js','js/products.js','js/recipes.js','js/experience.js','js/exercise-catalog.js','js/training.js','js/portions.js','js/insights.js','js/finish.js','js/personal.js'];
 function harness({disk=new Map(),fetchImpl,quota=()=>false}={}){
-  let nodes=new Map(),log={requests:[],writes:[],toasts:0};
+  let nodes=new Map(),log={requests:[],writes:[],alerts:[],downloads:[],blobs:new Map()};
   const element=id=>{if(!nodes.has(id))nodes.set(id,{value:'',dataset:{},style:{setProperty(){},removeProperty(){}},classList:{add(){},remove(){},toggle(){}},innerHTML:'',textContent:'',querySelector:()=>null,remove(){},addEventListener(){},setAttribute(){},insertAdjacentHTML(){},showModal(){this.open=true},close(){this.open=false}});return nodes.get(id)};
-  const context={document:{getElementById:element,querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},body:{dataset:{},classList:{add(){},remove(){},toggle(){}}},documentElement:{}},
+  const context={document:{getElementById:element,createElement:()=>({click(){log.downloads.push({filename:this.download,blob:log.blobs.get(this.href)})}}),querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},body:{dataset:{},classList:{add(){},remove(){},toggle(){}}},documentElement:{}},
     localStorage:{getItem:k=>disk.has(k)?disk.get(k):null,setItem:(k,v)=>{if(quota(k))throw Error('QuotaExceededError');log.writes.push({key:k,value:String(v)});disk.set(k,String(v))},removeItem:k=>disk.delete(k)},
-    crypto:require('crypto').webcrypto,Date,Intl,console,TextEncoder,window:{scrollTo(){},addEventListener(){},PULS_CLOUD:{url:'https://unit-test.supabase.co',publicKey:'sb_publishable_abcdefghijklmnopqrstuvwxyz'}},
-    location:{protocol:'file:'},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},navigator:{vibrate(){}},alert(){},confirm:()=>true,AbortController,atob:s=>Buffer.from(s,'base64').toString(),
+    crypto:require('crypto').webcrypto,Date,Intl,console,TextEncoder,Blob,URL:{createObjectURL:blob=>{let id='blob:fixture-'+log.blobs.size;log.blobs.set(id,blob);return id},revokeObjectURL(){}},window:{scrollTo(){},addEventListener(){},PULS_CLOUD:{url:'https://unit-test.supabase.co',publicKey:'sb_publishable_abcdefghijklmnopqrstuvwxyz'}},
+    location:{protocol:'file:'},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},navigator:{vibrate(){}},alert:message=>log.alerts.push(message),confirm:()=>true,AbortController,atob:s=>Buffer.from(s,'base64').toString(),
     fetch:async(url,options)=>{log.requests.push(url);return fetchImpl(url,options)}};
   vm.createContext(context);const run=s=>vm.runInContext(s,context);
   for(let file of files)run(fs.readFileSync(file,'utf8'));context.document.documentElement.style={setProperty(){}};
@@ -78,32 +78,54 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   out=harness({disk,quota:k=>k==='puls-cloud-pending-user-1'&&++pendingWrites>1,fetchImpl:async()=>{out.run('state.goals.kcal=2300');return json({})}});
   out.run(`cloudSession=${session};cloudDirty=true;state.goals.kcal=2100`);await out.run('signOutCloud()');
   assert.equal(out.run('cloudSession'),null);assert.equal(out.run('state.goals.kcal'),2300,'Änderung während Abmeldung bleibt');
-  // Review 1/5: scheitert die Rohsicherung, bleibt puls-v1 unangetastet, bis die Sicherung gelingt.
+  // Review 3/1: raw quota never blocks saving; warn once, retain in memory, offer exact download.
   let blockRaw=true;disk=new Map([['puls-v1','{kaputt']]);
   let raw=harness({disk,quota:k=>blockRaw&&k==='puls-v1-corrupt',fetchImpl:async()=>json(null)});
-  raw.run('state.goals.kcal=2200;save()');assert.equal(disk.get('puls-v1'),'{kaputt');assert(!disk.has('puls-v1-corrupt'));
-  blockRaw=false;raw.run('save()');assert.equal(disk.get('puls-v1-corrupt'),'{kaputt');assert.notEqual(disk.get('puls-v1'),'{kaputt');
-  // R2-1 marker-retry-before-replacement: startup quota, later successful save, then restart.
+  raw.run('state.goals.kcal=2200;save();save()');assert.equal(JSON.parse(disk.get('puls-v1')).goals.kcal,2200);assert(!disk.has('puls-v1-corrupt'));
+  assert.equal(raw.run('stateCorruptRaw'),'{kaputt');assert.equal(raw.log.alerts.length,1);assert.match(raw.log.alerts[0],/Beschädigte Rohdaten herunterladen/);
+  raw.run('exportCorruptBackup()');assert.equal(raw.log.downloads.length,1);
+  assert.equal(JSON.parse(await raw.log.downloads[0].blob.text()).backups[0].raw,'{kaputt');
+  blockRaw=false;raw.run('save()');assert.equal(disk.get('puls-v1-corrupt'),'{kaputt');assert.equal(raw.run('stateCorruptRaw'),null);
+  // Failure of the separate upload marker also allows saves while preserving the lock in local metadata.
   for(let markerOnly of [false,true]){
     let blocked=true;disk=new Map([['puls-v1','{new-corrupt'],['puls-cloud-session',session],['puls-cloud-meta-user-1',JSON.stringify({revision:3,dirty:true})]]);
     let locked=harness({disk,quota:k=>blocked&&(!markerOnly||k==='puls-cloud-upload-blocked'),fetchImpl:async()=>json({revision:4})});
-    await tick();locked.run('save()');assert.equal(disk.get('puls-v1'),'{new-corrupt');
+    await tick();locked.run('save()');
+    if(markerOnly){
+      assert.equal(JSON.parse(disk.get('puls-v1')).__pulsRecoveryUploadBlocked,true);assert.equal(locked.run('state.__pulsRecoveryUploadBlocked'),undefined);
+      locked.run('exportData()');assert.equal(JSON.parse(await locked.log.downloads[0].blob.text()).__pulsRecoveryUploadBlocked,undefined,'Recovery marker is local metadata, not an export field');
+      const stillBlocked=harness({disk,quota:k=>k==='puls-cloud-upload-blocked',fetchImpl:async()=>json({revision:4})});await tick();await tick();
+      assert(stillBlocked.run('cloudUploadBlocked'));assert(!stillBlocked.log.requests.some(u=>u.includes('/rpc/')));
+      await stillBlocked.run(`importData(${file(JSON.stringify({...remote,__pulsRecoveryUploadBlocked:true}))})`);assert(!stillBlocked.run('cloudUploadBlocked'));
+      assert.equal(stillBlocked.run('state.__pulsRecoveryUploadBlocked'),undefined);
+      assert.equal(JSON.parse(disk.get('puls-v1')).__pulsRecoveryUploadBlocked,undefined,'Explicit import clears fallback metadata');
+    }else assert.equal(disk.get('puls-v1'),'{new-corrupt');
     blocked=false;locked.run('save()');assert.equal(disk.get('puls-cloud-upload-blocked'),'1');assert.equal(disk.get('puls-v1-corrupt'),'{new-corrupt');
-    assert(locked.log.writes.findIndex(x=>x.key==='puls-cloud-upload-blocked')<locked.log.writes.findIndex(x=>x.key==='puls-v1'));
+    assert.equal(JSON.parse(disk.get('puls-v1')).__pulsRecoveryUploadBlocked,undefined);
     const again=harness({disk,fetchImpl:async()=>json({revision:4})});await tick();await tick();
     assert(again.run('cloudUploadBlocked'));assert(!again.log.requests.some(u=>u.includes('/rpc/')));
   }
-  // R2-2 distinct-raw-backups: exact match only, bounded slots, quota retry, full slots block replacement.
+  // Exact existing copies are reused; a full ring replaces the oldest, remembering order across restarts.
   disk=new Map([['puls-v1','{current'],['puls-v1-corrupt','{older']]);let secondBlocked=true;
   let distinct=harness({disk,quota:k=>secondBlocked&&k==='puls-v1-corrupt-2',fetchImpl:async()=>json(null)});
-  distinct.run('save()');assert.equal(disk.get('puls-v1'),'{current');secondBlocked=false;distinct.run('save()');
+  distinct.run('save()');assert.equal(distinct.run('stateCorruptRaw'),'{current');assert.notEqual(disk.get('puls-v1'),'{current');secondBlocked=false;distinct.run('save()');
   assert.equal(disk.get('puls-v1-corrupt'),'{older');assert.equal(disk.get('puls-v1-corrupt-2'),'{current');
   for(let same of [false,true]){
     disk=new Map([['puls-v1','{current'],['puls-v1-corrupt','{older'],['puls-v1-corrupt-2',same?'{current':'{other'],['puls-v1-corrupt-3','{third']]);
-    const slots=harness({disk,fetchImpl:async()=>json(null)});slots.run('save()');assert.equal(disk.get('puls-v1')==='{current',!same);
-    assert.equal(disk.get('puls-v1-corrupt'),'{older');assert.equal(disk.get('puls-v1-corrupt-3'),'{third');
+    const slots=harness({disk,fetchImpl:async()=>json(null)});slots.run('save()');assert.notEqual(disk.get('puls-v1'),'{current');
+    assert.equal(disk.get('puls-v1-corrupt'),same?'{older':'{current');assert.equal(disk.get('puls-v1-corrupt-3'),'{third');
+    if(!same){disk.set('puls-v1','{next');const next=harness({disk,fetchImpl:async()=>json(null)});next.run('save()');assert.equal(disk.get('puls-v1-corrupt'),'{current');assert.equal(disk.get('puls-v1-corrupt-2'),'{next');
+      next.run('exportCorruptBackup()');assert.deepEqual(JSON.parse(await next.log.downloads[0].blob.text()).backups.map(x=>x.raw),['{current','{next','{third']);}
   }
-  console.log('PASS: R2-1 marker-retry-before-replacement + restart; R2-2 distinct-raw-backups + bounded/full slots');
+  // Recovery paths must keep working even when raw copies cannot be written.
+  for(let recovery of ['import','cloud']){
+    disk=new Map([['puls-v1','{unsaved-raw'],...['puls-v1-corrupt','puls-v1-corrupt-2','puls-v1-corrupt-3'].map((k,i)=>[k,'{old-'+i])]);
+    const recover=harness({disk,quota:k=>/^puls-v1-corrupt(?:-[23])?$/.test(k),fetchImpl:async()=>json(null)});
+    if(recovery==='import')await recover.run(`importData(${file(JSON.stringify(remote))})`);else recover.run(`applyCloudProfile({payload:${JSON.stringify(remote)},revision:8})`);
+    assert.equal(recover.run('state.goals.kcal'),1900);assert.equal(JSON.parse(disk.get('puls-v1')).goals.kcal,1900);assert.equal(recover.run('stateCorruptRaw'),'{unsaved-raw');
+    assert.equal(recover.log.alerts.length,1);assert(!recover.run('cloudUploadBlocked'));
+  }
+  console.log('PASS: Review 3/1 rotating raw backups, memory download + one warning, nonblocking import/cloud/save and persistent upload lock');
   // Q1 revision-first-poll: unchanged revision transfers no payload; changed revision pulls once.
   let poll,revision=7,payloadReads=0,revisionError=false,editDuringCheck=false;
   poll=harness({fetchImpl:async url=>{if(url.includes('select=revision&')){if(revisionError)throw Error('offline fixture');if(editDuringCheck)poll.run('state.goals.kcal=2150;save()');return json([{revision}])}payloadReads++;return json([{payload:remote,revision}])}});
@@ -129,7 +151,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   await imported.run(`importData(${file(JSON.stringify(linked))})`);
   assert.equal(imported.run('state.workouts[0].exercises[0].exerciseId'),exerciseId);assert.equal(imported.run('state.routines[0].exercises[0].exerciseId'),exerciseId);
   assert.equal(imported.run('JSON.stringify(state.foods)'),JSON.stringify(linked.foods));assert.equal(imported.run('JSON.stringify(state.weights)'),JSON.stringify(linked.weights));
-  for(let fail of ['migration','validation','backup','write','cancel']){
+  for(let fail of ['migration','validation','write','cancel']){
     let armed=false;const attempt=harness({fetchImpl:async()=>json(null),quota:k=>armed&&(fail==='backup'&&k==='puls-local-before-import'||fail==='write'&&k==='puls-v1')});
     attempt.run('state.goals.kcal=2345;save()');const before=attempt.run('JSON.stringify(state)'),oldDisk=attempt.disk.get('puls-v1');armed=true;
     if(fail==='migration')attempt.run('migrate=()=>{state.goals.kcal=1;throw Error("fixture") }');
@@ -139,51 +161,105 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
     assert.equal(attempt.run('JSON.stringify(state)'),before,fail+' keeps active state');assert.equal(attempt.disk.get('puls-v1'),oldDisk,fail+' keeps disk state');
   }
   console.log('PASS: Q6 import-migrate-backup-commit, legacy IDs, migration/validation/storage failures and cancellation');
+  // Review 3/6: keep one pre-import copy through later saves; replace it on the next import.
+  const savedPrior=imported.disk.get('puls-local-before-import');imported.run('state.goals.kcal=2301;save()');
+  assert.equal(imported.disk.get('puls-local-before-import'),savedPrior);
+  const nextPrior=imported.run('JSON.stringify(state)');await imported.run(`importData(${file(JSON.stringify(remote))})`);
+  assert.equal(imported.disk.get('puls-local-before-import'),nextPrior);imported.run('save()');assert.equal(imported.disk.get('puls-local-before-import'),nextPrior);
+  for(let proceed of [false,true]){
+    const fallback=harness({quota:k=>k==='puls-local-before-import',fetchImpl:async()=>json(null)});
+    fallback.run(`state.goals.kcal=2345;save();let confirmations=0;confirm=()=>++confirmations===1||${proceed}`);
+    const before=fallback.run('JSON.stringify(state)');await fallback.run(`importData(${file(JSON.stringify(remote))})`);
+    assert.equal(fallback.log.downloads.length,1);assert.equal(JSON.parse(await fallback.log.downloads[0].blob.text()).goals.kcal,2345);
+    assert.equal(fallback.run('confirmations'),2);assert.equal(fallback.run('state.goals.kcal'),proceed?1900:2345);
+    if(!proceed)assert.equal(fallback.run('JSON.stringify(state)'),before);
+  }
+  const noExport=harness({quota:k=>k==='puls-local-before-import',fetchImpl:async()=>json(null)});
+  noExport.run('state.goals.kcal=2345;exportData=()=>{throw Error("export fixture")}');await noExport.run(`importData(${file(JSON.stringify(remote))})`);assert.equal(noExport.run('state.goals.kcal'),2345);
+  console.log('PASS: Review 3/6 single retained import backup, next-import replacement, quota download/confirm/cancel and failed export');
   // Q7 local-conflict-remote-backup: backup must precede upload and failing backup retains the conflict/lock.
   for(let fail of [false,true]){
-    let conflict;conflict=harness({quota:k=>fail&&k==='puls-cloud-conflict-backup',fetchImpl:async url=>{
-      if(url.includes('/rpc/')){assert.equal(conflict.disk.get('puls-cloud-conflict-backup'),JSON.stringify(remote));return json({revision:10})}
+    let conflict;conflict=harness({disk:new Map([['puls-cloud-conflict-backup','{"fixture":"local backup"}']]),quota:k=>fail&&k==='puls-cloud-conflict-remote-backup',fetchImpl:async url=>{
+      if(url.includes('/rpc/')){assert.equal(conflict.disk.get('puls-cloud-conflict-remote-backup'),JSON.stringify(remote));return json({revision:10})}
       return json([{payload:remote,revision:9}]);
     }});
     conflict.run(`cloudSession=${session};cloudRevision=3;cloudConflict=true;cloudUploadBlocked=true;state.goals.kcal=2450`);
     await conflict.run("resolveCloudConflict('local')");
     assert.equal(conflict.log.requests.some(u=>u.includes('/rpc/')),!fail);assert.equal(conflict.run('cloudConflict'),fail);assert.equal(conflict.run('cloudUploadBlocked'),fail);
     assert.equal(conflict.run('state.goals.kcal'),2450);if(fail)assert.match(conflict.run('cloudMessage'),/Gerätespeicher voll/);
+    assert.equal(conflict.disk.get('puls-cloud-conflict-backup'),'{"fixture":"local backup"}');
+    if(!fail){conflict.run("exportCloudBackup();exportCloudBackup('remote')");
+      assert.equal(await conflict.log.downloads[0].blob.text(),'{"fixture":"local backup"}');assert.equal(await conflict.log.downloads[1].blob.text(),JSON.stringify(remote));
+      assert.equal(conflict.log.downloads[1].filename,'puls-cloud-konfliktstand.json');}
   }
-  console.log('PASS: Q7 local-conflict-remote-backup before CAS upload, storage failure keeps lock/conflict');
-  // Q8 unsupported-remote-update-hint: invalid future enum never changes local state/revision.
-  const future=harness({fetchImpl:async()=>json([{revision:99,payload:{...remote,plan:{mode:'future-mode'}}}])});
-  future.run(`cloudSession=${session};cloudRevision=3`);const futureBefore=future.run('JSON.stringify(state)');
-  await future.run('syncCloud({forcePull:true})');assert.match(future.run('cloudMessage'),/App aktualisieren/);assert.equal(future.run('JSON.stringify(state)'),futureBefore);assert.equal(future.run('cloudRevision'),3);assert(!future.log.requests.some(u=>u.includes('/rpc/')));
-  console.log('PASS: Q8 unsupported-remote-update-hint retains local state and revision');
-  // Q12 utf8-byte-limit: ASCII and multibyte data around the 4.5 MB safety limit (< SQL 5 MB).
+  console.log('PASS: Review 3/5 separate local/remote conflict keys and downloads, backup-before-CAS and quota failure');
+  // Review 3/7: rejected revisions keep their hint and only transfer revision on subsequent polls.
+  let futureRevision=99,futureValid=false,futureFailure=false;
+  const future=harness({fetchImpl:async url=>{
+    if(url.includes('select=revision&'))return json([{revision:futureRevision}]);
+    if(futureFailure)throw Error('payload fixture offline');
+    return json([{revision:futureRevision,payload:futureValid?remote:{...remote,plan:{mode:'future-mode'}}}]);
+  }});
+  const payloadCount=()=>future.log.requests.filter(u=>u.includes('select=payload,')).length;
+  future.run(`cloudSession=${session};cloudRevision=3;modal.close()`);const futureBefore=future.run('JSON.stringify(state)');
+  await future.run('syncCloud()');assert.equal(payloadCount(),1);assert.match(future.run('cloudMessage'),/App aktualisieren/);
+  for(let i=0;i<3;i++)await future.run('syncCloud()');assert.equal(payloadCount(),1);assert.match(future.run('cloudMessage'),/App aktualisieren/);
+  await future.run('syncCloud({forcePull:true})');assert.equal(payloadCount(),2);
+  futureRevision=100;await future.run('syncCloud()');assert.equal(payloadCount(),3);await future.run('syncCloud()');assert.equal(payloadCount(),3);
+  assert.equal(future.run('JSON.stringify(state)'),futureBefore);assert.equal(future.run('cloudRevision'),3);assert(!future.log.requests.some(u=>u.includes('/rpc/')));
+  futureRevision=101;futureFailure=true;await future.run('syncCloud()');await future.run('syncCloud()');assert.equal(payloadCount(),5,'Transport errors remain retryable');
+  futureFailure=false;futureValid=true;await future.run('syncCloud()');assert.equal(payloadCount(),6);assert.equal(future.run('cloudRevision'),101);assert.equal(future.run('cloudRejectedRevision'),null);
+  assert.equal(future.run('state.goals.kcal'),1900);
+  future.run('cloudRejectedRevision=999');await future.run('signOutCloud()');assert.equal(future.run('cloudRejectedRevision'),null);
+  const switched=harness({fetchImpl:async()=>json([{revision:99,payload:remote}])});switched.run('cloudRejectedRevision=99');
+  await switched.run(`activateCloudSession({...${session},expires_in:3600})`);assert.equal(switched.run('cloudRejectedRevision'),null);assert.equal(switched.run('cloudRevision'),99);
+  console.log('PASS: Review 3/7 rejected-revision memory, hint retention, forcePull/new revision retry, transport retry and account reset');
+  // Review 3/4: UTF-8 byte limit reserves jsonb::text spacing overhead below the SQL 5 MB limit.
   assert.match(fs.readFileSync('backend/accounts.sql','utf8'),/octet_length\(payload::text\)<=5000000/);
-  for(let [unit,count,uploads] of [['a',4490000,true],['a',4510000,false],['ä',2260000,false],['😀',1130000,false]]){
+  for(let [unit,count,uploads] of [['a',3990000,true],['a',4010000,false],['ä',2010000,false],['😀',1005000,false]]){
     const bytes=harness({fetchImpl:async()=>json({revision:4})});bytes.run(`cloudSession=${session};cloudDirty=true;state.fixture=${JSON.stringify(unit)}.repeat(${count})`);
     await bytes.run('syncCloud()');assert.equal(bytes.log.requests.some(u=>u.includes('/rpc/')),uploads,unit+' byte threshold');if(!uploads)assert.match(bytes.run('cloudMessage'),/zu groß/);
   }
-  console.log('PASS: Q12 utf8-byte-limit (ASCII, umlaut and supplementary Unicode)');
+  console.log('PASS: Review 3/4 utf8-byte-limit at 4,000,000 bytes (ASCII, umlaut and supplementary Unicode)');
+  checkDownloadEntries();
   await checkNavigationFallback();
   console.log('PASS: corrupt local backup, persisted upload lock, import unlock, login/logout backup failures, storage quota, non-JSON responses, recipes version (local mocks only)');
 })().catch(error=>{console.error(error);process.exitCode=1});
 
 async function checkNavigationFallback(){
   const source=fs.readFileSync('sw.js','utf8');
-  for(let mode of ['ok','404','503','offline','timeout','late-success','uncached-503','uncached-offline']){
-    const handlers={},timers=new Map(),puts=[];let pendingResponse,timerId=0,delay;
-    const cached=mode.startsWith('uncached')?null:{body:'cached shell'},fresh={ok:mode==='ok'||mode==='late-success',status:mode.includes('503')?503:404,clone(){return this}};
+  for(let path of ['', 'index.html', 'icon-install.html', 'other/page'])for(let mode of ['ok','404','503','offline','delayed','uncached-503','uncached-offline']){
+    const handlers={},puts=[];let pendingResponse,settled=false;
+    const cached=mode.startsWith('uncached')?null:{body:'cached shell'},fresh={ok:mode==='ok'||mode==='delayed',status:mode.includes('503')?503:404,clone(){return this}};
     const ctx={URL,Promise,self:{registration:{scope:'https://fixture.invalid/puls/'},addEventListener:(name,fn)=>handlers[name]=fn},
-      caches:{match:async()=>cached,open:async()=>({put:async(_,r)=>puts.push(r)})},
-      setTimeout:(fn,ms)=>{delay=ms;timers.set(++timerId,fn);return timerId},clearTimeout:id=>timers.delete(id),
-      fetch:()=>mode==='timeout'||mode==='late-success'?new Promise(resolve=>pendingResponse=resolve):mode.endsWith('offline')?Promise.reject(Error('offline')):Promise.resolve(fresh)};
+      caches:{match:async()=>cached,open:async()=>({put:async(url,r)=>puts.push({url:url.href,response:r})})},
+      setTimeout(){throw Error('Navigation must not set a timeout')},clearTimeout(){throw Error('Unexpected navigation timer')},
+      fetch:()=>mode==='delayed'?new Promise(resolve=>pendingResponse=resolve):mode.endsWith('offline')?Promise.reject(Error('offline')):Promise.resolve(fresh)};
     vm.createContext(ctx);vm.runInContext(source,ctx);
-    let work;handlers.fetch({request:{method:'GET',mode:'navigate',url:'https://fixture.invalid/puls/?test=1'},respondWith:p=>work=p,waitUntil(){}});
-    assert.equal(delay,4000);
-    if(mode==='timeout'||mode==='late-success')for(let fn of timers.values())fn();
+    let work;handlers.fetch({request:{method:'GET',mode:'navigate',url:'https://fixture.invalid/puls/'+path+'?test=1'},respondWith:p=>work=p,waitUntil(){}});
+    if(mode==='delayed'){work.then(()=>settled=true);await tick();assert.equal(settled,false,'Still waits for the network');pendingResponse(fresh)}
     if(mode==='uncached-offline')await assert.rejects(work,/offline/);
-    else assert.strictEqual(await work,mode==='ok'||mode==='uncached-503'?fresh:cached,mode);
-    if(mode==='late-success'){pendingResponse({...fresh,ok:true});await tick()}
-    assert.equal(timers.size,0,'timer cleaned: '+mode);assert.equal(puts.length,mode==='ok'?1:0,'only timely OK response cached');
+    else assert.strictEqual(await work,mode==='ok'||mode==='delayed'||mode==='uncached-503'?fresh:cached,mode);
+    const shell=path===''||path==='index.html';
+    assert.equal(puts.length,shell&&(mode==='ok'||mode==='delayed')?1:0,'Only a successful shell navigation may update index.html: '+path+' '+mode);
+    if(puts.length)assert.equal(puts[0].url,'https://fixture.invalid/puls/index.html');
   }
-  console.log('PASS: Q10 navigation-cache-fallback for 404/503/offline/4s timeout, late response, missing cache and timer cleanup');
+  console.log('PASS: Review 3/2 navigation waits for network without timeout; HTTP/network cache fallback and missing cache');
+  console.log('PASS: Review 3/3 only root/index.html navigations update the shell; icon-install.html/other paths never replace it');
+}
+
+function checkDownloadEntries(){
+  const source=fs.readFileSync('js/account-refresh.js','utf8'),fixture=harness({fetchImpl:async()=>json(null)});
+  // Execute the actual standalone render functions with the same storage and recovery helpers.
+  fixture.run(source.slice(source.indexOf('function accountManageBody('),source.indexOf('function accountSectionNode(')));
+  fixture.run(source.slice(source.indexOf('function accountListRow('),source.indexOf('function accountMenuRow(')));
+  const html=()=>fixture.run('accountManageBody({querySelector:()=>null})');
+  assert(!html().includes('Beschädigte Rohdaten herunterladen'));assert(!html().includes('Cloud-Konfliktstand herunterladen'));
+  fixture.disk.set('puls-v1-corrupt-order','[]');assert(!html().includes('Beschädigte Rohdaten herunterladen'),'Order metadata is not raw data');
+  for(let key of ['puls-v1-corrupt','puls-v1-corrupt-2','puls-v1-corrupt-3']){fixture.disk.set(key,'{fixture');assert(html().includes('onclick="exportCorruptBackup()"'));fixture.disk.delete(key)}
+  fixture.run('stateCorruptRaw="{memory-fixture"');assert(html().includes('Beschädigte Rohdaten herunterladen'));
+  fixture.disk.set('puls-cloud-conflict-remote-backup','{}');assert(html().includes("exportCloudBackup('remote')"));assert(html().includes('Cloud-Konfliktstand herunterladen'));
+  assert(!html().includes('Letzte lokale Konflikt-Sicherung herunterladen'));
+  fixture.disk.set('puls-cloud-conflict-backup','{}');assert(html().includes('Letzte lokale Konflikt-Sicherung herunterladen'));
+  console.log('PASS: Review 3/1 + 3/5 conditional account download entries for raw disk/memory and separate local/remote conflicts');
 }

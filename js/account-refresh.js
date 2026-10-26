@@ -26,6 +26,8 @@ function accountManageBody(root){
  data+=`<label class="dsrow accountimport"><span class="dsrowicon" aria-hidden="true">${uiIcon('upload-simple')}</span><span class="dsrowtext"><span>Sicherung importieren</span></span><input type="file" data-ds-file="1" accept="application/json,.json" aria-label="Sicherung importieren" onchange="importData(this.files[0])"></label>`;
  data+=accountListRow({label:'CSV-Export',action:'csvExportForm()',cls:'dsaction',chevron:true});
  if(localStorage.getItem('puls-cloud-conflict-backup'))data+=accountListRow({label:'Letzte lokale Konflikt-Sicherung herunterladen',action:'exportCloudBackup()',cls:'dsaction'});
+ if(localStorage.getItem('puls-cloud-conflict-remote-backup'))data+=accountListRow({label:'Cloud-Konfliktstand herunterladen',action:"exportCloudBackup('remote')",cls:'dsaction'});
+ if(typeof corruptBackups==='function'&&corruptBackups().length)data+=accountListRow({label:'Beschädigte Rohdaten herunterladen',action:'exportCorruptBackup()',cls:'dsaction'});
  let device=accountListRow({label:'Lokal gespeichert',detail:'Dein Profil bleibt auf diesem Gerät verfügbar.',icon:'database'});
  device+=accountListRow({label:'Konto zurücksetzen',action:"accountActionForm('reset')",chevron:true,cls:'dsaction'});
  return group('Anmeldung',status,'cloudaccount')+conflict+group('Daten',data)+group('Gerät',device)+`<section class="dsgroup accountdelete">${accountListRow({label:'Konto löschen',action:"accountActionForm('delete')",cls:'dangertext'})}</section>`;
