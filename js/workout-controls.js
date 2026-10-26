@@ -63,36 +63,33 @@ const controlsSession=renderWorkoutSession;renderWorkoutSession=function(...args
   return result;
 };
 
-// Standardpause: Scroll-Rad wie bei einer Uhrzeit; die Zahlenfelder bleiben (versteckt) die Quelle für saveGlobalRest.
-const wheelRow=40;
-function buildTimeWheel(input,values,unit){
-  let column=document.createElement('div');column.className='wheelcol';column.setAttribute('role','listbox');column.setAttribute('aria-label',unit);column.tabIndex=0;
-  column.innerHTML=values.map(v=>`<div class="wheelitem" role="option" data-value="${v}">${String(v).padStart(2,'0')}</div>`).join('');
-  let settle;
-  let select=(index,scroll)=>{index=Math.max(0,Math.min(values.length-1,index));let value=values[index];[...column.children].forEach((item,i)=>{item.classList.toggle('selected',i===index);item.setAttribute('aria-selected',String(i===index))});if(+input.value!==value){input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}))}if(scroll)column.scrollTo({top:index*wheelRow,behavior:'smooth'})};
-  column.addEventListener('scroll',()=>{clearTimeout(settle);settle=setTimeout(()=>select(Math.round(column.scrollTop/wheelRow),false),90)});
-  column.addEventListener('click',event=>{let item=event.target.closest('.wheelitem');if(item)select([...column.children].indexOf(item),true)});
-  column.addEventListener('keydown',event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();select(values.indexOf(+input.value)+(event.key==='ArrowDown'?1:-1),true)}});
-  column.selectValue=value=>select(values.indexOf(value),true);
-  requestAnimationFrame(()=>{let index=Math.max(0,values.indexOf(+input.value));column.scrollTop=index*wheelRow;select(index,false)});
-  return column;
-}
+
+// Standardpause: iOS-Einstellungszeilen. Die Zahlenfelder bleiben (versteckt) die Quelle für saveGlobalRest;
+// der Stepper (15-Sekunden-Schritte) schreibt nur in diese Felder.
+const restStep=15,restMax=900;
 const controlsRestSettings=globalRestSettings;globalRestSettings=function(...args){
   let result=controlsRestSettings.apply(this,args),minutes=$('rest-minutes'),seconds=$('rest-seconds'),row=minutes?.closest('.formrow');
   if(!row)return result;
   let en=state.language==='en',form=row.closest('form');form.classList.add('restsettingsform');
   form.querySelectorAll('.note').forEach(n=>n.remove());
   let intro=form.querySelector(':scope > p');if(intro)intro.textContent=en?'Rest after every completed set':'Pause nach jedem abgeschlossenen Satz';
-  let secondValues=[...new Set([...Array.from({length:12},(_,i)=>i*5),+seconds.value])].sort((a,b)=>a-b);
-  let wheel=document.createElement('div');wheel.className='timewheel';
-  let minCol=buildTimeWheel(minutes,Array.from({length:16},(_,i)=>i),en?'Minutes':'Minuten'),secCol=buildTimeWheel(seconds,secondValues,en?'Seconds':'Sekunden');
-  wheel.append(minCol,Object.assign(document.createElement('span'),{className:'wheelcolon',textContent:':'}),secCol);
-  wheel.insertAdjacentHTML('beforeend',`<div class="wheellabels" aria-hidden="true"><span>${en?'min':'Min.'}</span><span>${en?'sec':'Sek.'}</span></div>`);
-  row.insertAdjacentElement('beforebegin',wheel);row.hidden=true;
-  // 15:00 ist das Maximum: bei 15 Minuten springen die Sekunden auf 0.
-  minutes.addEventListener('input',()=>{if(+minutes.value===15&&+seconds.value>0)secCol.selectValue(0)});
-  seconds.addEventListener('input',()=>{if(+minutes.value===15&&+seconds.value>0)secCol.selectValue(0)});
-  let apply=$('rest-apply')?.closest('label');if(apply)apply.lastChild.textContent=en?'Also apply to routines and the running workout':'Auch für Routinen und das laufende Workout';
+  row.hidden=true;
+  let total=()=>(+minutes.value||0)*60+(+seconds.value||0);
+  let group=document.createElement('div');group.className='restgroup';
+  group.innerHTML=`<div class="restrow"><span class="restlabel">${en?'Rest time':'Pausenzeit'}</span><div class="reststepper" role="group" aria-label="${en?'Rest time':'Pausenzeit'}"><button type="button" class="reststep" data-dir="-1" aria-label="${en?'15 seconds less':'15 Sekunden weniger'}">${uiIcon('minus')}</button><output class="restvalue" aria-live="polite"></output><button type="button" class="reststep" data-dir="1" aria-label="${en?'15 seconds more':'15 Sekunden mehr'}">${uiIcon('plus')}</button></div></div>`;
+  let output=group.querySelector('.restvalue'),minus=group.querySelector('[data-dir="-1"]'),plus=group.querySelector('[data-dir="1"]');
+  let show=()=>{let t=total();output.textContent=formatClock(t);minus.disabled=t<=0;plus.disabled=t>=restMax};
+  let set=value=>{value=Math.max(0,Math.min(restMax,value));minutes.value=Math.floor(value/60);seconds.value=value%60;show()};
+  minus.addEventListener('click',()=>set(Math.ceil(total()/restStep)*restStep-restStep));
+  plus.addEventListener('click',()=>set(Math.floor(total()/restStep)*restStep+restStep));
+  let apply=$('rest-apply')?.closest('label');
+  if(apply){
+    apply.classList.add('restrow','restapply');
+    apply.lastChild.textContent='';
+    let text=document.createElement('span');text.className='restlabel';text.textContent=en?'Also apply to routines and the running workout':'Auch für Routinen und das laufende Workout';
+    apply.prepend(text);group.append(apply);
+  }
+  row.insertAdjacentElement('beforebegin',group);show();
   let save=form.querySelector('button.btn.full');if(save)save.textContent=en?'Save':'Speichern';
   return result;
 };

@@ -7,8 +7,6 @@ body[data-current-page=workout] #content .trainingutilities {
   padding: 0 !important;
   border: 0 !important;
 }
-/* Tabs Workout/Routinen/Kalender/Fortschritt näher an die obere Leiste. */
-body[data-current-page=workout] main > .datebar { margin-bottom: 0 !important; }
 body[data-current-page=workout] #content .trainingutilities .restglobal {
   display: inline-flex;
   flex: 0 0 auto;
@@ -62,3 +60,28 @@ body[data-current-page=workout] #content .trainingutilities .restglobal {
   border-radius: 50%;
   background: var(--ds-green);
 }
+
+/* Übungssuche: feste Sheet-Höhe, die Trefferliste scrollt innen (kein Schrumpfen bei kurzen Listen). */
+html body dialog#modal.exercisesheet[open] {
+  display: flex !important;
+  flex-direction: column;
+  height: min(90dvh, 860px) !important;
+  min-height: min(90dvh, 860px) !important;
+  max-height: min(90dvh, 860px) !important;
+  overflow: hidden !important;
+  box-sizing: border-box;
+}
+@media (max-width: 760px) {
+  html body dialog#modal.exercisesheet[open] { height: 90dvh !important; min-height: 90dvh !important; max-height: 90dvh !important; }
+}
+html body dialog#modal.exercisesheet > .modalhead { position: relative; top: auto; flex: 0 0 auto; }
+html body dialog#modal.exercisesheet > #mb { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+html body dialog#modal.exercisesheet > #mb > * { flex: 0 0 auto; }
+html body dialog#modal.exercisesheet > #mb > #library-results {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+html body dialog#modal.exercisesheet > #mb > p.note { display: none; }

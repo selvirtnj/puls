@@ -341,3 +341,10 @@ body.runviewopen #toast { z-index: 1000; top: calc(env(safe-area-inset-top, 0px)
 #content .baselineenergy { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px 8px; width: fit-content; max-width: 100%; margin: 10px auto 0; padding: 6px 14px; border-radius: 12px; background: var(--ds-fill); color: var(--muted); font-size: 12px; line-height: 1.4; text-align: center; font-variant-numeric: tabular-nums; }
 #content .baselineenergy b { color: var(--app-ink, var(--ds-label)); font-weight: 700; }
 #content .baselineenergy small { flex-basis: 100%; font-size: 10px; opacity: .8; }
+
+/* Endscreen nach dem Speichern einer Aktivität (Bausteine des Workout-Abschlusses, ohne Serie) */
+body #session-root .activitydone .completiontiles > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
+body #session-root .activitydone h2 { margin: 16px 0 0; }
+body #session-root .activitydone .completionxp { margin: 12px 0 8px; }
+body #session-root .activitydone .completioncontinue { margin-top: 24px; }
+body #session-root .activitydone .textbtn { min-height: 44px; margin-top: 8px; }

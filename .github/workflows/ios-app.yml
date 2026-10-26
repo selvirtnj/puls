@@ -31,16 +31,12 @@ jobs:
         run: brew install xcodegen librsvg
 
       - name: App-Icons
-        # Hauptsymbol (lila) plus fünf Farbvarianten für den Icon-Wechsel in der App.
+        # Festes dunkles App-Symbol, identisch mit der Web-Variante.
         run: |
           set -e
           assets=ios/PULS/Assets.xcassets
-          for color in purple blue mint rose amber green; do
-            if [ "$color" = purple ]; then set="$assets/AppIcon.appiconset"; else set="$assets/AppIcon-$color.appiconset"; fi
-            mkdir -p "$set"
-            rsvg-convert -w 1024 -h 1024 --background-color '#15121b' "icons/$color.svg" -o "$set/AppIcon.png"
-            if [ "$color" != purple ]; then cp "$assets/AppIcon.appiconset/Contents.json" "$set/Contents.json"; fi
-          done
+          mkdir -p "$assets/AppIcon.appiconset"
+          rsvg-convert -w 1024 -h 1024 "icons/dark.svg" -o "$assets/AppIcon.appiconset/AppIcon.png"
 
       - name: Xcode-Projekt erzeugen
         working-directory: ios

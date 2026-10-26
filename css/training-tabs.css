@@ -62,3 +62,36 @@
 
 /* Kalender: Abschlusslinie des Blocks entfällt, die Linie unter dem letzten Eintrag reicht. */
 #content .designworkouts[data-train-tab=calendar] .workoutbody > .card:last-child { border-bottom: 0 !important; }
+
+/* Segmentleiste (Workout / Routinen / Kalender / Fortschritt): beim Kleben unter der Safe Area (Statusleiste,
+   Dynamic Island) statt am Bildschirmrand. Die Leiste selbst hat Seitenfarbe, das Grau liegt als ::before dahinter;
+   ein fester Streifen in Seitenfarbe deckt die Statusleiste ab. Keine Schatten. */
+html body #content .designworkouts > .workouttabs {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 3;
+  margin: 0 0 4px !important;
+  padding: 10px 2px !important;
+  border-radius: 0 !important;
+  background: var(--ds-bg) !important;
+}
+html body #content .designworkouts > .workouttabs::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 8px 0;
+  border-radius: 8px;
+  background: var(--ds-fill);
+  pointer-events: none;
+}
+body[data-current-page=workout]::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--ds-bg);
+  z-index: 3;
+  pointer-events: none;
+}

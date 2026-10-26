@@ -19,7 +19,7 @@ Mit einer kostenlosen Apple-ID läuft die Signatur nach 7 Tagen ab. AltStore ern
 - Kamera/Mikrofon für Barcode-Scan und Spracheingabe (iOS fragt einmal).
 - Downloads (Sicherung, CSV) öffnen das Teilen-Menü → „In Dateien sichern“.
 - `alert`/`confirm`/`prompt` als native Dialoge; iPad in allen Ausrichtungen und mit Split View.
-- **App-Icon** (ab App 1.2): Konto → Sprache & App-Icon wechselt das echte Home-Bildschirm-Symbol über `setAlternateIconName` (iOS zeigt dazu kurz eine Systemmeldung). Die Farbvarianten entstehen im Build aus `icons/<farbe>.svg`. Kein automatischer Abgleich beim Start, um wiederholte Systemmeldungen zu vermeiden: nach dem Update die gewünschte Farbe einmal antippen.
+- **App-Icon (lokal vorbereitet):** festes dunkles Symbol aus `icons/dark.svg`. Die Web-Auswahl Hell/Dunkel ändert das native Symbol nicht. Frühere alternative Farb-Icons entfallen; eine neue IPA ist nötig.
 - **Dynamic Island / Sperrbildschirm** (ab App 1.2): Fortschrittsring links, Zeit mit fester Breite rechts (laufende Timer-Texte reservieren sonst Platz für „0:00:00“ und ziehen die Insel breit), aufgeklappt mit Übung, Satz und Balken.
 - **Pausentimer außerhalb der App** (ab App 1.1 / Web 39): `native-bridge.js` meldet jede laufende Pause über `window.webkit.messageHandlers.pulsNative` (`restStart`/`restCancel`). Die App plant dann eine Mitteilung „Pause vorbei – Nächster Satz: …“ zum Pausenende und zeigt eine Live-Aktivität mit Countdown in Dynamic Island und Sperrbildschirm (Widget-Erweiterung `ios/PULSWidgets`). iOS zählt den Countdown selbst; nach Ablauf zeigt sie „Los!“ und wird beim nächsten Öffnen der App entfernt. Beim ersten Pausenstart fragt iOS einmal nach der Erlaubnis für Mitteilungen. In der offenen App bleibt es beim gewohnten Hinweis mit Ton.
 - **GPS für Läufe** (ab App 1.5 / Web 62, auf Selvirs ausdrücklichen Wunsch): `ios/PULS/RunTracker.swift` zeichnet bei „Lauf mit GPS“ über `CLLocationManager` auf, auch bei gesperrtem iPhone (`UIBackgroundModes: location`, blaue Statusanzeige). Nachrichten von `js/running.js`: `runGpsStart{runKey,segment}`, `runGpsStop{clear}`, `runGpsSync{runKey,since}`; Antwort über `window.pulsRunGpsReceive`. Distanz und Strecke berechnet die Web-App. Punkte liegen bis zum Speichern/Verwerfen in `Application Support/run-track.json`. Kennzeichen `runGps` in `window.pulsNativeFeatures`; ältere Apps und der Browser nutzen `watchPosition` nur bei offener App. Rohpunkte gibt es nur auf dem Gerät, das den Lauf gestartet hat; beim Beenden holt die Web-App alle Punkte ab (`total`), beim Speichern/Verwerfen löscht `runGpsStop{clear:true}` die Datei.
@@ -29,7 +29,7 @@ Mit einer kostenlosen Apple-ID läuft die Signatur nach 7 Tagen ab. AltStore ern
 
 ## Bauen
 
-`.github/workflows/ios-app.yml` baut bei jedem Push auf `main`, der `ios/`, `icons/purple.svg` oder den Workflow ändert, auf einem kostenlosen macOS-Runner (öffentliches Repo) und veröffentlicht ein GitHub-Release mit `PULS.ipa`. Manuell: GitHub → Actions → „iOS app“ → **Run workflow**.
+`.github/workflows/ios-app.yml` baut bei jedem Push auf `main`, der `ios/`, `icons/dark.svg` oder den Workflow ändert, auf einem kostenlosen macOS-Runner (öffentliches Repo) und veröffentlicht ein GitHub-Release mit `PULS.ipa`. Manuell: GitHub → Actions → „iOS app“ → **Run workflow**.
 
 Das Xcode-Projekt wird mit XcodeGen aus `ios/project.yml` erzeugt und nicht eingecheckt. Lokal bauen geht nur auf einem Mac (`brew install xcodegen && cd ios && xcodegen generate`).
 

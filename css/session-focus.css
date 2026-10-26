@@ -27,6 +27,26 @@ body #session-root :is(.compactexercise,.exercise) .liveset:not(.setlabels) {
 }
 body #session-root :is(.compactexercise,.exercise) .setlabels { margin-bottom: 4px !important; }
 
+/* Satzzeile: Spaltenköpfe und Zellen (Satz, Vorher, kg, Reps, Haken) horizontal und vertikal mittig. */
+html body #session-root :is(.compactexercise,.exercise) .liveset {
+  grid-template-columns: 36px 72px minmax(0, 1fr) minmax(0, 1fr) 44px;
+  align-items: center;
+}
+html body #session-root :is(.compactexercise,.exercise) .liveset > span,
+html body #session-root :is(.compactexercise,.exercise) .liveset > .previousset {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  text-align: center !important;
+}
+html body #session-root :is(.compactexercise,.exercise) .setlabels > span { min-height: 24px; }
+html body #session-root :is(.compactexercise,.exercise) .liveset input:not([type=checkbox]) { height: 44px !important; min-height: 44px !important; }
+@media (max-width: 359px) {
+  html body #session-root :is(.compactexercise,.exercise) .liveset { grid-template-columns: 30px 60px minmax(0, 1fr) minmax(0, 1fr) 44px; }
+}
+
 body #session-root .liveset input[type=checkbox] {
   -webkit-appearance: none;
   appearance: none;

@@ -10,10 +10,25 @@ const accountSections=[
 ];
 // „Konto verwalten“ bündelt Anmeldung/Synchronisierung, Sicherung und Zurücksetzen/Löschen ohne doppelte Überschriften.
 function accountManageBody(root){
- let sync=root.querySelector('.cloudaccount'),data=[...root.children].find(node=>node.querySelector('h2,h3')?.textContent==='Deine Daten'),danger=root.querySelector('.accountdanger');
- data?.querySelector('h2,h3')?.replaceChildren('Sicherung & Export');data?.querySelectorAll(':scope > .note').forEach(note=>note.remove());
- if(danger){danger.querySelector('h3')?.replaceChildren('Zurücksetzen & Löschen');danger.querySelectorAll('.note').forEach(note=>note.remove())}
- return [sync,data,danger].filter(Boolean).map(node=>node.outerHTML).join('');
+ let sync=root.querySelector('.cloudaccount'),online=!!cloudSession,available=cloudConfigured&&!firstRunPreview;
+ let group=(title,rows,cls='')=>`<h2 class="dsgrouptitle">${title}</h2><section class="dsgroup ${cls}">${rows}</section>`;
+ let status=accountListRow({label:online?'Angemeldet als':'Status',detail:online?esc(cloudSession.user.email||''):available?'Nicht angemeldet':'Nur auf diesem Gerät gespeichert',icon:'user-circle'});
+ if(online){
+  status+=accountListRow({label:'Synchronisierung',detail:esc(cloudMessage),labelId:'cloud-status-label',id:'account-sync-status'}).replace('<small>','<small id="cloud-status" role="status">');
+  status+=accountListRow({label:'Jetzt synchronisieren',action:'syncCloud()',cls:'dsaction'});
+  status+=accountListRow({label:'Abmelden',action:'signOutCloud()',cls:'dsaction'});
+ }else if(available){
+  status+=accountListRow({label:'Anmelden',action:"cloudAuthForm('signin')",cls:'dsaction',chevron:true});
+  status+=accountListRow({label:'Konto erstellen',action:"cloudAuthForm('signup')",cls:'dsaction',chevron:true});
+ }
+ let conflict=sync?.querySelector('#cloud-conflict')?.outerHTML||'';
+ let data=accountListRow({label:'Sicherung exportieren',icon:'download-simple',action:'exportData()',cls:'dsaction'});
+ data+=`<label class="dsrow accountimport"><span class="dsrowicon" aria-hidden="true">${uiIcon('upload-simple')}</span><span class="dsrowtext"><span>Sicherung importieren</span></span><input type="file" data-ds-file="1" accept="application/json,.json" aria-label="Sicherung importieren" onchange="importData(this.files[0])"></label>`;
+ data+=accountListRow({label:'CSV-Export',action:'csvExportForm()',cls:'dsaction',chevron:true});
+ if(localStorage.getItem('puls-cloud-conflict-backup'))data+=accountListRow({label:'Letzte lokale Konflikt-Sicherung herunterladen',action:'exportCloudBackup()',cls:'dsaction'});
+ let device=accountListRow({label:'Lokal gespeichert',detail:'Dein Profil bleibt auf diesem Gerät verfügbar.',icon:'database'});
+ device+=accountListRow({label:'Konto zurücksetzen',action:"accountActionForm('reset')",chevron:true,cls:'dsaction'});
+ return group('Anmeldung',status,'cloudaccount')+conflict+group('Daten',data)+group('Gerät',device)+`<section class="dsgroup accountdelete">${accountListRow({label:'Konto löschen',action:"accountActionForm('delete')",cls:'dangertext'})}</section>`;
 }
 function accountSectionNode(root,entry){return entry.selector?root.querySelector(entry.selector):[...root.children].find(node=>node.querySelector('h2,h3')?.textContent===entry.heading)}
 // iOS-Einstellungsliste: Symbol, Titel, kurze Angabe und Chevron. Bei „Konto verwalten“ steht der Anmeldestatus.
@@ -25,11 +40,13 @@ function accountGoalSummary(){let manual=state.plan.mode==='manual',hasProfile=!
 function accountBodySummary(){let weights=state.weights.filter(item=>item.date<=today()).sort((a,b)=>b.date.localeCompare(a.date)),latest=weights[0],weight=currentWeight(),weekRows=latest?weights.filter(item=>weekStart(item.date)===weekStart(latest.date)):[],mean=weekRows.length?weekRows.reduce((sum,item)=>sum+item.kg,0)/weekRows.length:null;return `<h2 class="dsgrouptitle" id="account-body-title">Körper</h2><section class="dsgroup accountbody compactbody" aria-labelledby="account-body-title">${accountListRow({label:latest?'Zuletzt erfasst':'Profilgewicht',detail:latest?esc(fmtDate(latest.date)):'Noch kein Gewichtseintrag',value:weight===null?'–':n(weight)+' kg',icon:'scales'})}${accountListRow({label:'Wochenmittel',detail:latest?'<span>Woche ab</span> '+esc(fmtDate(weekStart(latest.date)))+' · '+weekRows.length+' <span>'+(weekRows.length===1?'Messung':'Messungen')+'</span>':'',value:mean===null?'–':n(round(mean))+' kg'})}${accountListRow({label:'Gewicht erfassen',action:'weightForm()',chevron:true,cls:'dsaction'})}</section>`}
 const accountRefreshBase=accountPage;
 accountPage=function(){
- let template=document.createElement('template');template.innerHTML=accountRefreshBase().replace(/Version 35/g,'Version 68');let root=template.content.querySelector('.accountcompact');if(!root)return template.innerHTML;
+ let template=document.createElement('template');template.innerHTML=accountRefreshBase().replace(/Version 35/g,'Version 69');let root=template.content.querySelector('.accountcompact');if(!root)return template.innerHTML;
  let available=accountSections.filter(entry=>accountSectionNode(root,entry)),entry=available.find(item=>item.key===accountSection);
  if(entry){
   // Nur noch das Original-Design: der Bereich zeigt Sprache & App-Icon; „Konto verwalten“ bündelt Konto und Daten.
-  let section=accountSectionNode(root,entry),body=entry.key==='design'?accountAppearanceCard():entry.key==='manage'?accountManageBody(root):section.outerHTML;
+  let section=accountSectionNode(root,entry);
+  if(entry.key==='body'&&section.querySelector('h2,h3')?.textContent===entry.title)section.querySelector('h2,h3').remove();
+  let body=entry.key==='design'?accountAppearanceCard():entry.key==='manage'?accountManageBody(root):section.outerHTML;
   return `<div class="accountcompact accountrefresh accountdetail"><div class="accountdetailhead"><button type="button" class="accountback" onclick="closeAccountSection()">${uiIcon('caret-left')}<span>Konto</span></button></div><h1 id="account-section-title" tabindex="-1">${esc(entry.title)}</h1><div class="accountdetailcontent">${body}</div></div>`}
  accountSection='';let identity=root.querySelector('.accountprofileheader'),version=root.querySelector('.versionstamp');
  return `<div class="accountcompact accountrefresh accountoverview">${identity?`<div class="dsgroup accountprofilegroup">${identity.outerHTML}</div>`:''}${accountGoalSummary()}${accountBodySummary()}<h2 class="dsgrouptitle" id="account-plan-title">Plan & Entwicklung</h2><nav class="dsgroup accountmenugroup" aria-labelledby="account-plan-title">${available.filter(item=>item.mark).map(accountMenuRow).join('')}</nav><h2 class="dsgrouptitle" id="account-settings-title">Einstellungen</h2><nav class="dsgroup accountmenugroup" aria-labelledby="account-settings-title">${available.filter(item=>!item.mark).map(accountMenuRow).join('')}</nav>${version?.outerHTML||''}</div>`;
@@ -37,8 +54,8 @@ accountPage=function(){
 function openAccountSection(key){if(key==='data'||key==='sync')key='manage';if(!accountSections.some(entry=>entry.key===key))return;accountOverviewScroll=window.scrollY||0;accountSection=key;render();window.scrollTo(0,0);document.getElementById('account-section-title')?.focus({preventScroll:true})}
 function closeAccountSection(){let previous=accountSection;accountSection='';render();window.scrollTo(0,accountOverviewScroll);document.getElementById('account-link-'+previous)?.focus({preventScroll:true})}
 function accountAppearanceCard(){
- let en=state.language==='en',icon=state.iconColor||'purple';
- return `<section class="card preferences accountappearance"><h3>Sprache</h3><div class="langswitch" role="group" aria-label="Sprache"><button type="button" aria-pressed="${!en}" onclick="setAppLanguage('de')" data-no-translate>Deutsch</button><button type="button" aria-pressed="${en}" onclick="setAppLanguage('en')" data-no-translate>English</button></div><h3>App-Icon</h3><div class="iconchoices">${Object.entries(iconChoices).map(([key,[label]])=>`<button type="button" aria-label="${label}" aria-pressed="${icon===key}" onclick="chooseAppIcon('${key}')"><img src="icons/${key}-180.png" alt=""><span>${label}</span></button>`).join('')}</div><p class="note">Neues Icon im Browser: Seite öffnen, dann Teilen und „Zum Home-Bildschirm“.</p><a class="btn secondary full" href="icon-install.html?icon=${icon}" target="_blank" rel="noopener">Icon zum Home-Bildschirm</a></section>`;
+ let en=state.language==='en',icon=currentAppIcon();
+ return `<section class="card preferences accountappearance"><h3>Sprache</h3><div class="langswitch" role="group" aria-label="Sprache"><button type="button" aria-pressed="${!en}" onclick="setAppLanguage('de')" data-no-translate>Deutsch</button><button type="button" aria-pressed="${en}" onclick="setAppLanguage('en')" data-no-translate>English</button></div><h3>App-Icon</h3>${window.webkit?.messageHandlers?.pulsNative?'<p>'+(en?'The iOS app icon stays dark.':'Das iOS-App-Symbol bleibt dunkel.')+'</p>':''}<div class="iconchoices">${Object.entries(iconChoices).map(([key,[label]])=>`<button type="button" aria-label="${appIconLabel(key)}" aria-pressed="${icon===key}" onclick="chooseAppIcon('${key}')"><img src="icons/${key}-180.png" alt=""><span>${appIconLabel(key)}</span></button>`).join('')}</div><p class="note">Neues Icon im Browser: Seite öffnen, dann Teilen und „Zum Home-Bildschirm“.</p><a class="btn secondary full" href="icon-install.html?icon=${icon}" target="_blank" rel="noopener">Icon zum Home-Bildschirm</a></section>`;
 }
 // Im Bereich „Dein Design“ ändern Sprache und Icon direkt die Seite statt das alte Fenster zu öffnen.
 function accountInlineAppearance(base){return function(...args){if(accountSection!=='design')return base.apply(this,args);let group=document.activeElement?.closest?.('.langswitch,.iconchoices')?.className,modalFn=appearanceSettings;appearanceSettings=()=>{};try{base.apply(this,args)}finally{appearanceSettings=modalFn}render();if(group)document.querySelector(`.accountappearance .${group} [aria-pressed=true]`)?.focus({preventScroll:true})}}
@@ -47,4 +64,5 @@ const accountRefreshGo=go;go=function(next){accountSection='';accountOverviewScr
 if(typeof englishUI==='object')Object.assign(englishUI,{'DEIN KONTO':'YOUR ACCOUNT','DEIN ZIEL':'YOUR GOAL','DEIN BEREICH':'YOUR SECTION','EINSTELLUNGEN':'SETTINGS','Anpassen ↗':'Edit ↗','kcal / Tag':'kcal / day','kg Zielgewicht':'kg target weight','Kalorien und Makros selbst eingestellt':'Calories and macros set manually','Tagesziel aus deinem Profil':'Daily target from your profile','Zuletzt erfasst':'Last logged','Profilgewicht':'Profile weight','Wochenmittel':'Weekly average','Noch kein Gewichtseintrag':'No weight logged yet','Plan und Entwicklung':'Plan and development','Einstellungen und Daten':'Settings and data','Ziele, Kalorien & Makros':'Goals, calories & macros','Gewichtstrend, Wochenmittel & Maße':'Weight trend, weekly averages & measurements','Verlauf & Kalibrierung':'History & calibration','Aussehen & Farbwelt':'Appearance & colours','Deine Darstellung':'Your preferences','Töne & Lautstärke':'Sounds & volume','Verbindung & Sicherungsstatus':'Connection & backup status','Sicherung, Import & Export':'Backup, import & export','Zurücksetzen & Löschen':'Reset & delete'});
 if(typeof englishUI==='object')Object.assign(englishUI,{'Aussehen, Sprache & App-Icon':'Appearance, language & app icon','Konto, Synchronisierung & Sicherung':'Account, sync & backup','Sprache':'Language','Neues Icon im Browser: Seite öffnen, dann Teilen und „Zum Home-Bildschirm“.':'New icon in the browser: open the page, then Share and “Add to Home Screen”.','Icon zum Home-Bildschirm':'Icon to Home Screen'});
 if(typeof englishUI==='object')Object.assign(englishUI,{'Woche ab':'Week of','Messung':'measurement','Messungen':'measurements','Dein Ziel festlegen':'Set your goal','Profil für dein Tagesziel ergänzen':'Complete your profile for a daily target'});
+if(typeof englishUI==='object')Object.assign(englishUI,{'Anmeldung':'Sign-in','Angemeldet als':'Signed in as','Status':'Status','Synchronisierung':'Sync','Daten':'Data','Gerät':'Device','Lokal gespeichert':'Stored locally','Dein Profil bleibt auf diesem Gerät verfügbar.':'Your profile remains available on this device.','Sicherung importieren':'Import backup','Konto löschen':'Delete account'});
 render();

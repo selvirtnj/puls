@@ -111,7 +111,6 @@ document.addEventListener('submit',event=>{
 function dsConnectivityText(status=window.pulsConnectivity){
   if(!status)return '';
   if(!status.online)return {icon:'cloud-slash',text:dsText('Offline, wird später synchronisiert','Offline, will sync later')};
-  if(status.pendingSync&&typeof cloudSession!=='undefined'&&cloudSession)return {icon:'arrows-clockwise',text:dsText('Wird synchronisiert','Syncing')};
   return '';
 }
 function dsRenderConnectivity(status){
@@ -216,7 +215,21 @@ if(typeof nutritionSlides==='function'&&typeof microBars==='function'){
 /* ---------- Tab-Leiste und Seitenrahmen ---------- */
 const dsTabs=[['workout','barbell','Training','Training'],['home','house','Übersicht','Overview'],['add','plus-circle','Hinzufügen','Add'],['food','fork-knife','Essen','Food'],['account','user-circle','Konto','Account']];
 let dsLastPage=null;
+/* Datum rechts neben dem Large Title: Kalender-Knopf (öffnet die bestehende Auswahl) mit ‹ › und, wenn nicht heute, „Zu Heute“. */
+function dsDateBar(){
+  let bar=document.querySelector('.datebar'),line=document.querySelector('.titleline');
+  if(!bar||!line)return;
+  if(bar.parentElement!==line)line.append(bar);
+  let identity=$('workout-identity');if(identity&&identity.parentElement===line)line.after(identity);
+  let isToday=date===today(),label=esc(friendlyDay(date));
+  bar.innerHTML=`<button type="button" class="quiet" aria-label="${dsText('Vorheriger Tag','Previous day')}" onclick="moveDay(-1)">${phIcon('caret-left')}</button><button type="button" class="daylabel" aria-label="${dsText('Datum auswählen','Choose date')}: ${label}" onclick="pickDiaryDate()">${isToday?phIcon('calendar-blank'):''}<span>${label}</span></button><button type="button" class="quiet" aria-label="${dsText('Nächster Tag','Next day')}" onclick="moveDay(1)">${phIcon('caret-right')}</button><input id="date" type="date" value="${date}" hidden>`;
+  let back=line.querySelector('.dsbacktoday');
+  if(!back){back=document.createElement('button');back.type='button';back.className='dsbacktoday';back.setAttribute('onclick','setDate(today())');line.append(back)}
+  back.innerHTML=`${phIcon('arrow-counter-clockwise')}<span>${dsText('Zu Heute','Back to today')}</span>`;
+  back.hidden=isToday||bar.hidden;
+}
 function dsChrome(){
+  dsDateBar();
   let nav=$('nav');
   if(nav)nav.innerHTML=dsTabs.map(([id,icon,de,en])=>{let current=page===id;return `<button type="button" class="${current?'active ':''}${id==='add'?'centraladd':''}" ${current?'aria-current="page"':''} onclick="${id==='add'?'quickAddMenu()':`go('${id}')`}"><span class="ico" aria-hidden="true">${phIcon(icon)}</span><span class="navlabel">${dsText(de,en)}</span></button>`}).join('');
   let title=$('title'),subtitle=$('subtitle'),tab=dsTabs.find(x=>x[0]===page);

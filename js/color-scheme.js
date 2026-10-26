@@ -14,6 +14,7 @@ function applyColorScheme(){
   root.setAttribute('data-scheme',resolved);
   root.style.colorScheme=resolved;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',resolved==='dark'?'#000000':'#f2f2f7');
+  if(typeof applyAppIcon==='function')applyAppIcon();
   return resolved;
 }
 function setColorScheme(mode){

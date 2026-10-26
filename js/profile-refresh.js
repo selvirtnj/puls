@@ -83,3 +83,47 @@ const profileRefreshData=dataSettings;dataSettings=function(...args){
   return result
 };
 if(typeof englishUI==='object')Object.assign(englishUI,{'Selbst':'Manual','Berechnet':'Calculated','Abnehmen':'Lose','Halten':'Maintain','Aufbauen':'Build','Wenig':'Low','Mittel':'Medium','Viel':'High','Extrem':'Extreme','Pro kg':'Per kg','Formel':'Formula','Gemessen':'Measured','Körper':'Body','Ziel':'Goal','Makros':'Macros','Automatik':'Automation','Ergebnis':'Result','Sicherung':'Backup','Alter':'Age','Größe (cm)':'Height (cm)','Gewicht (kg)':'Weight (kg)','Zielgewicht (kg)':'Target weight (kg)','Aktivität':'Activity','Ruheumsatz':'Resting energy','Gemessener Ruheumsatz (kcal)':'Measured resting energy (kcal)','Kalorienziel':'Calorie target','Richtung':'Direction','Tempo':'Pace','Kalorien (kcal/Tag)':'Calories (kcal/day)','Protein (g/kg)':'Protein (g/kg)','Fett (g/kg)':'Fat (g/kg)','Protein (g)':'Protein (g)','Kohlenhydrate (g)':'Carbs (g)','Fett (g)':'Fat (g)','Ziele bei neuen Gewichtseinträgen anpassen':'Adjust targets with new weigh-ins','Erhalt aus Tagebuch und Gewicht lernen':'Learn maintenance from diary and weight','Sitzend · kaum Sport':'Sedentary · little exercise','Leicht aktiv · 1–3 Trainings/Woche':'Lightly active · 1–3 workouts/week','Moderat · 3–5 Trainings/Woche':'Moderate · 3–5 workouts/week','Sehr aktiv · viel Training':'Very active · lots of training','Extrem aktiv · körperliche Arbeit':'Extremely active · physical work','Klassisch':'Classic','Grundbedarf + Sport':'Baseline + exercise','Kalorienberechnung':'Calorie calculation','Alltag ohne Sport':'Daily life without exercise','Sitzend':'Sedentary','Leicht':'Light','Aktiv':'Active',[profileKcalModeText.classic]:'Exercise is part of the activity factor. Workouts do not add to the daily target.',[profileKcalModeText.baseline]:'Daily target = baseline (resting energy × daily life) + estimated exercise kcal of the day. Learning maintenance is off in this mode.'});
+/* Body composition is derived at display time, never written as a measured value.
+   US Navy circumference equations, inputs converted from cm to inches:
+   https://www.corpscpc.noaa.gov/procedures/corps_directives/chapter_16/ncd_ch16.pdf */
+measurementFields.neck=['Hals','cm',15,80]; // toolsValid reads this registry dynamically, including old backups.
+function navyBodyFat(profile,measure){
+ const valid=(v,min,max)=>Number.isFinite(v)&&v>=min&&v<=max;
+ if(!profile||!measure||profile.sex!=='male'||!valid(profile.height,100,250)||!valid(measure.neck,15,80)||!valid(measure.waist,30,250))return null;
+ let circumference=measure.waist-measure.neck;if(circumference<=0)return null;
+ let bf=86.010*Math.log10(circumference/2.54)-70.041*Math.log10(profile.height/2.54)+36.76;
+ return valid(bf,2,70)?bf:null
+}
+function currentBodyFat(profile=state.profile,rows=state.measurements||[],day=today()){
+ const manual=x=>Number.isFinite(x.bodyfat)&&x.bodyfat>=2&&x.bodyfat<=70;
+ let dated=rows.filter(x=>x.date<=day).slice().sort((a,b)=>b.date.localeCompare(a.date)||Number(manual(b))-Number(manual(a)));
+ // Use one complete measurement day; never combine unrelated dates or invent missing circumferences.
+ for(let row of dated){if(manual(row))return {value:row.bodyfat,estimated:false,date:row.date};let value=navyBodyFat(profile,row);if(value!==null)return {value,estimated:true,date:row.date}}
+ return null
+}
+const navyMeasurementNote='US Navy für Männer: Größe aus dem Profil, Hals und Taille vom selben Tag. Bauchumfang am Nabel und Hals unterhalb des Kehlkopfs messen. Grobe Schätzung, keine Messung.';
+if(typeof englishUI==='object')Object.assign(englishUI,{
+ 'Hals':'Neck','Körperfett geschätzt (US Navy)':'Estimated body fat (US Navy)','Körperfett manuell erfasst':'Manually recorded body fat',
+ 'Körperfett geschätzt':'Estimated body fat','Körperfett manuell':'Manual body fat','Stand:':'As of:',
+ 'US-Navy-Schätzung aus Körpermaßen, keine Messung.':'US Navy estimate from body measurements, not a measurement.',
+ 'Manuell erfasster Körperfettanteil.':'Manually recorded body fat percentage.',
+ [navyMeasurementNote]:'US Navy for men: height from the profile, neck and waist from the same day. Measure the abdomen at the navel and the neck below the larynx. Rough estimate, not a measurement.'
+});
+function bodyFatMarkup(value){return value?'<p class="note">'+translatedProfileText(value.estimated?'Körperfett geschätzt (US Navy)':'Körperfett manuell erfasst')+': <strong>'+n(round(value.value))+' %</strong> · '+esc(fmtDate(value.date))+'</p>':''}
+const navyMeasurementsForm=measurementsForm;measurementsForm=function(...args){
+ let result=navyMeasurementsForm.apply(this,args),form=$('measure-date')?.closest('form');if(!form)return result;
+ let saveButton=form.querySelector('button.btn.full');
+ saveButton.insertAdjacentHTML('beforebegin','<div id="navy-preview" aria-live="polite"></div><p class="note">'+translatedProfileText(navyMeasurementNote)+'</p>');
+ let footer=document.createElement('div');footer.className='profilefooter';saveButton.before(footer);footer.append(saveButton);
+ form.addEventListener('input',previewNavyBodyFat);previewNavyBodyFat();return result
+};
+function previewNavyBodyFat(){
+ let target=$('navy-preview'),day=$('measure-date')?.value;if(!target||!toolDateValid(day)||day>today()){if(target)target.innerHTML='';return}
+ let row={...(state.measurements||[]).find(x=>x.date===day),date:day};
+ for(let key of ['neck','waist','bodyfat']){let raw=$('measure-'+key)?.value?.trim();if(raw){let v=Number(raw.replace(',','.'));if(!Number.isFinite(v)||v<measurementFields[key][2]||v>measurementFields[key][3]){target.innerHTML='';return}row[key]=v}}
+ target.innerHTML=bodyFatMarkup(currentBodyFat(state.profile,[row],day))
+}
+const navyWeeklyWeightCard=weeklyWeightCard;weeklyWeightCard=function(...args){
+ let html=navyWeeklyWeightCard.apply(this,args),bf=currentBodyFat();if(!bf)return html;
+ return html.replace(/<span>Körperfett ≈ <strong>.*?<\/strong><\/span>/,'<span>'+translatedProfileText(bf.estimated?'Körperfett geschätzt':'Körperfett manuell')+' <strong>'+n(round(bf.value))+' %</strong></span>').replace('Körperfett grob aus BMI und Alter geschätzt, keine Messung.',translatedProfileText(bf.estimated?'US-Navy-Schätzung aus Körpermaßen, keine Messung.':'Manuell erfasster Körperfettanteil.')+' '+translatedProfileText('Stand:')+' '+esc(fmtDate(bf.date)))
+};

@@ -36,85 +36,59 @@ button.hasicon:active, button:active > .hasicon { transform: scale(.9); }
 }
 #session-root .sessionrestsetting::before { content: '◷'; color: var(--lime); }
 
-/* Scroll-Rad für die Standardpause */
+/* Standardpause: gruppierte iOS-Einstellungszeilen (Text links, Bedienelement rechts, vertikal mittig) */
 #mb .restsettingsform { display: grid; gap: 14px; }
 #mb .restsettingsform > p { margin: 0; color: var(--muted); }
-#mb .timewheel {
-  position: relative;
+#mb .restgroup {
   display: grid;
-  grid-template-columns: 96px 28px 96px;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-  margin: 4px 0;
-  border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--bg);
+  background: var(--ds-surface, var(--panel));
   overflow: hidden;
-  -webkit-user-select: none;
-  user-select: none;
 }
-/* Auswahlband in der Mitte, oben/unten ausblenden */
-#mb .timewheel::before {
-  content: '';
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  top: 80px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--theme-tint, var(--ds-fill));
-  pointer-events: none;
-}
-#mb .timewheel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-#mb .wheelcol {
-  position: relative;
-  z-index: 1;
-  height: 200px;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
-  padding: 80px 0;
+#mb .restgroup .restrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  margin: 0;
+  padding: 4px 12px 4px 16px;
   box-sizing: border-box;
-  outline: none;
 }
-#mb .wheelcol::-webkit-scrollbar { display: none; }
-#mb .wheelitem {
-  height: 40px;
-  display: grid;
-  place-items: center;
-  scroll-snap-align: center;
-  font-size: 22px;
+#mb .restgroup .restrow + .restrow { border-top: .5px solid var(--ds-separator, var(--line)); }
+#mb .restgroup .restlabel { flex: 1 1 auto; min-width: 0; color: var(--ds-label, inherit); font-size: 16px; font-weight: 400; line-height: 1.25; }
+#mb .restgroup .restapply { cursor: pointer; }
+#mb .restgroup .restapply > input[type=checkbox] {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin: 0 0 0 12px;
+  accent-color: var(--ds-accent, var(--lime));
+}
+#mb .reststepper { display: inline-flex; align-items: center; flex: 0 0 auto; gap: 0; }
+#mb .reststepper .restvalue {
+  min-width: 64px;
+  text-align: center;
+  color: var(--ds-label, inherit);
+  font-size: 20px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  cursor: pointer;
 }
-#mb .wheelitem.selected { color: var(--app-ink, inherit); font-size: 28px; font-weight: 800; }
-#mb .wheelcolon { position: relative; z-index: 1; text-align: center; font-size: 26px; font-weight: 800; color: var(--app-ink, inherit); }
-#mb .wheellabels {
-  position: absolute;
-  z-index: 1;
-  left: 50%;
-  top: 80px;
-  width: 220px;
-  height: 40px;
-  transform: translateX(-50%);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 4px;
-  font-size: 11px;
-  color: var(--muted);
-  pointer-events: none;
+#mb .reststepper .reststep {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ds-fill);
+  color: var(--ds-accent-text, var(--lime));
 }
-#mb .wheelcol:focus-visible { outline: 2px solid var(--lime); outline-offset: -2px; border-radius: 10px; }
+#mb .reststepper .reststep svg { width: 22px; height: 22px; }
+#mb .reststepper .reststep:disabled { opacity: .38; }
+#mb .reststepper .reststep:active:not(:disabled) { transform: scale(.94); }
+#mb .reststepper .reststep:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
 
 /* Datumsfeld: auf dem iPhone mittig und groß statt an den Rand gedrückt */
 input[type=date] {

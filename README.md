@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="icons/purple-180.png" width="88" alt="PULS">
+<img src="icons/dark-180.png" width="88" alt="PULS">
 
 # PULS
 

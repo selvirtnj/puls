@@ -18,7 +18,7 @@ function actRangeLabel(start,end){
 function actSetMode(mode){if(mode===actMode)return;actMode=mode;actOffset=0;render()}
 function actShift(step){actOffset=Math.min(0,actOffset+step);render()}
 function actSetFilter(type){actFilter=actFilter===type&&type!=='all'?'all':type;render()}
-function actOpen(kind,id){if(kind==='workout'){if(typeof workoutSummary==='function')workoutSummary(id)}else runDetail(id)}
+function actOpen(kind,id){if(kind==='workout'){if(typeof reviewWorkout==='function')reviewWorkout(id);else if(typeof workoutSummary==='function')workoutSummary(id)}else runDetail(id)}
 
 function actCalendar(start,end,days){
   let first=new Date(start+'T12:00:00'),now=today(),loc=appLocale(),cells=[];

@@ -1,1 +1,1 @@
-{"name":"PULS – Meine Fitness","short_name":"PULS","start_url":"./","display":"standalone","background_color":"#101210","theme_color":"#101210","icons":[{"src":"icons/purple-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}],"id":"./"}
+{"id":"./","name":"PULS","short_name":"PULS","start_url":"./","scope":"./","display":"standalone","background_color":"#1C1C1E","theme_color":"#1C1C1E","icons":[{"src":"icons/dark-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}

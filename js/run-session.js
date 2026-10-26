@@ -374,7 +374,7 @@ function runSummarySave(){
   let note=($('runsum-note')?.value||'').trim().slice(0,200),km=x.km;
   let fixValue=$('runsum-km')?.value??x.manualKm;if(!(x.km>=.01)&&fixValue!==''&&fixValue!==undefined&&fixValue!==null){let v=Number(fixValue);if(!(v>=0&&v<=1000)){toast(runText('Bitte eine gültige Distanz eingeben','Please enter a valid distance'));return}km=Math.round(v*100)/100;x.kcal=runKcal(x.type,x.moving,km,x.elev?.gain)}
   let saved=commitRunActivity({distanceKm:km,durationSeconds:Math.min(172800,x.moving),pauseSeconds:Math.min(172800,x.pause),kcal:Number.isFinite(x.kcal)?x.kcal:undefined,feeling:x.feeling||undefined,terrain:x.terrain||undefined,note:note||undefined,elevationGain:Number.isFinite(x.elev?.gain)?Math.round(x.elev.gain):undefined,elevationMax:Number.isFinite(x.elev?.max)?Math.round(x.elev.max):undefined,maxSpeed:Number.isFinite(x.maxSpeed)?x.maxSpeed:undefined});
-  runSummary=null;runDraftClear();runView=null;renderRunView();if(saved)runDetail(saved.id);
+  runSummary=null;runDraftClear();runView=null;renderRunView();if(saved)activityDoneShow(saved.id);
 }
 function runMountSummaryMap(){
   if(!runPendingRoute||typeof runMountMap!=='function')return;
@@ -408,3 +408,27 @@ const runSessionRender=render;render=function(...args){let result=runSessionRend
 if(state.activeRun&&runOwnedHere(state.activeRun)){runView='live';renderRunView()}
 if(typeof quickAddActions!=='undefined'&&Array.isArray(quickAddActions)){let item=quickAddActions.find(x=>x[0]==='run');if(item){item[1]='Aktivität';item[2]='Laufen, Rad & mehr'}}
 if(typeof englishUI==='object')Object.assign(englishUI,{'Aktivität':'Activity','Laufen, Rad & mehr':'Run, ride & more'});
+
+// Endscreen nach dem Speichern einer Aktivität: gleiche Bausteine wie der Workout-Abschluss (#session-root, .completion),
+// aber ohne Serie. XP und Werte kommen aus workoutAwards() und der gespeicherten Aktivität; es wird nichts neu vergeben.
+let activityDoneId=null;
+function activityDoneShow(id){if(!runList().some(x=>x.id===id))return;activityDoneId=id;$('toast').style.display='none';render();$('session-root')?.focus({preventScroll:true})}
+function activityDoneClose(after){let id=activityDoneId;activityDoneId=null;let root=$('session-root');if(root)delete root.dataset.activityDone;render();if(after==='detail'&&id)runDetail(id)}
+function activityDoneHtml(id){
+  let r=runList().find(x=>x.id===id);if(!r)return '';
+  let t=runTypeInfo(r.type??'run'),award=workoutAwards()[id]||{xp:0,wins:[]},level=xpProgress(totalWorkoutXP());
+  let start=r.startedAt?new Date(r.startedAt):new Date(r.date+'T12:00:00'),when=start.toLocaleDateString(appLocale(),{weekday:'short',day:'numeric',month:'short'});
+  let tiles=[];
+  if(Number.isFinite(r.durationSeconds)&&r.durationSeconds>0)tiles.push([runText('Dauer','Duration'),formatClock(r.durationSeconds)]);
+  tiles.push([runText('Fortschritt','Progress'),`+${award.xp} XP`]);
+  if(t.gps&&r.distanceKm>0){tiles.push([runText('Distanz','Distance'),`${runKm(r.distanceKm)} km`]);if(r.durationSeconds>0)tiles.push(['Pace',runPaceText(runPace(r))])}
+  if(Number.isFinite(r.kcal)&&r.kcal>0)tiles.push([runText('Kalorien','Calories'),`${r.kcal} kcal`]);
+  return `<div class="completion activitydone"><button class="quiet completionclose" aria-label="${runText('Abschluss schließen','Close summary')}" onclick="activityDoneClose()">${uiIcon('x')}</button><div class="celebration" aria-hidden="true">${uiIcon('check-circle')}</div><h1>${runText('Stark gemacht!','Well done!')}</h1><p>${esc(runTypeName(t))} · ${esc(when)}</p><div class="completiontiles">${tiles.map(([label,value])=>`<div><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>${(award.wins||[]).map(x=>`<p class="recordwin">${uiIcon('arrow-up')} ${runText('Bestleistung','Personal best')} · ${esc(x)}</p>`).join('')}<h2>Level ${level.level}</h2><div class="completionxp" role="progressbar" aria-label="${runText('Level-Fortschritt','Level progress')}" aria-valuemin="0" aria-valuemax="${level.needed}" aria-valuenow="${level.current}"><i style="width:${level.current/level.needed*100}%"></i></div><p>${level.current} / ${level.needed} XP</p><button class="btn full completioncontinue" onclick="activityDoneClose()">${runText('Fertig','Done')}</button><button class="textbtn" onclick="activityDoneClose('detail')">${runText('Details ansehen','View details')}</button></div>`;
+}
+const activityDoneBase=renderWorkoutSession;renderWorkoutSession=function(...args){
+  if(!activityDoneId)return activityDoneBase.apply(this,args);
+  if(!runList().some(x=>x.id===activityDoneId)){activityDoneId=null;return activityDoneBase.apply(this,args)}
+  document.querySelectorAll('main,aside').forEach(el=>el.inert=true);
+  let root=sessionRoot();document.body.classList.add('sessionopen');
+  if(root.dataset.activityDone!==activityDoneId){root.dataset.activityDone=activityDoneId;root.setAttribute('aria-label',runText('Aktivität abgeschlossen','Activity finished'));root.innerHTML=activityDoneHtml(activityDoneId);root.scrollTop=0}
+};

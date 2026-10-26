@@ -24,7 +24,7 @@ let savedPlan=savePlan(test);assert.equal(savedPlan.weights.length,2);assert.equ
 test=app(savedPlan);test.run('settings()');assert.equal(test.el('pl-pace').value,'extreme');assert.equal(test.el('pl-learn-tdee').checked,true);assert.equal(test.el('pl-adaptive').checked,false);assert.equal(test.el('pr-rmr').value,'1650.5');
 fill(test,{'pl-direction':'gain','pr-target':90});test.run('updatePlanPreview()');assert.equal(test.el('pl-pace').value,'high');assert(!test.el('pace-info').textContent.includes('Extreme Weight Loss'));
 
-// Legacy backups stay valid; startup and the hidden form use the personal male profile by coordinator decision.
+// Legacy backups stay valid; startup and the hidden form retain the personal male profile.
 let legacy=JSON.parse(JSON.stringify(savedPlan));legacy.profile={...profilePlan,sex:'female',special:true};legacy.plan={...autoPlan,mode:'manual'};legacy.goals={kcal:2200,p:150,c:250,f:70};
 test=app(legacy);assert(test.run('validData('+JSON.stringify(legacy)+')'));assert.equal(test.run('state.profile.sex'),'male');assert.equal(test.run('state.profile.special'),false);
 // Also cover a legacy profile arriving after startup, as with an import or cloud pull.
@@ -161,4 +161,14 @@ test.run('state.workouts=[];state.runs=[];state.routines=[{id:"routine",name:"Gy
 test.run('state.workouts=[];$("empty-workout-name").value="Gym";startEmptyWorkout({preventDefault(){}})');assert.equal(test.run('state.workouts[0].durationXpVersion'),1,'free workout creation also marked');
 console.log('PASS: late activity/planner/adaptation chain, baseline/gain/extreme/manual/classic, calibration gate, form round-trip, pure day navigation and live sport allowance.');
 `;
-vmPlan.runInNewContext(harnessPlan+casesPlan,{require,console,process},{filename:'profile-planning-harness.cjs'});
+const navyValidation=String.raw`
+test=app();test.run(fs.readFileSync('js/profile-refresh.js','utf8'));
+assert(test.run('validData(JSON.parse(JSON.stringify(state)))'),'old backups remain valid without neck');
+test.run('state.measurements=[{id:"neck-fixture",date:today(),neck:40,waist:90}]');
+assert(test.run('validData(JSON.parse(JSON.stringify(state)))'),'optional neck round trip');
+test.run('state.measurements[0].neck=14');assert(!test.run('validData(state)'));
+test.run('state.measurements[0].neck="40"');assert(!test.run('validData(state)'));
+test.run('state.measurements[0].neck=81');assert(!test.run('validData(state)'));
+console.log('PASS: optional neck uses shared measurement registry validation, old backups and round trip.');
+`;
+vmPlan.runInNewContext(harnessPlan+casesPlan+navyValidation,{require,console,process},{filename:'profile-planning-harness.cjs'});

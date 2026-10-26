@@ -105,7 +105,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         case "restCancel":
             RestCoordinator.shared.cancel()
         case "setAppIcon":
-            setAppIcon(body["icon"] as? String ?? "purple")
+            setAppIcon(body["icon"] as? String ?? "dark")
         case "haptic":
             playHaptic(body["style"] as? String ?? "light")
         case "runGpsStart":
@@ -214,16 +214,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         }
     }
 
-    /// Echtes App-Symbol wechseln (alternative Icons aus dem Asset-Katalog, im Build aus icons/<farbe>.svg erzeugt).
-    private func setAppIcon(_ key: String) {
-        let colors = ["purple", "blue", "mint", "rose", "amber", "green"]
-        guard colors.contains(key), UIApplication.shared.supportsAlternateIcons else { return }
-        let name: String? = key == "purple" ? nil : "AppIcon-\(key)"
-        guard UIApplication.shared.alternateIconName != name else { return }
-        UIApplication.shared.setAlternateIconName(name) { error in
-            if let error = error { NSLog("PULS: App-Icon nicht gewechselt: \(error)") }
-        }
-    }
+    /// Legacy bridge messages are ignored; the app has one fixed dark icon.
+    private func setAppIcon(_ key: String) {}
 
     // MARK: Navigation
 
