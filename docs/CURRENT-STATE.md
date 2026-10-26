@@ -1,5 +1,14 @@
 # PULS — aktueller Stand und Übergabe
 
+### Gesamt-Audit 26.10.2026 (Branch refactor/comprehensive-app-audit, nicht veröffentlicht)
+
+- Branch ab Tag `audit-baseline-v69`, HEAD `b2ae598`; kein Push, nicht auf `main`, keine Versionserhöhung.
+- Sync/Speicher gehärtet (`js/cloud.js`, `js/app.js`): Beschädigungs-Sicherung, dauerhafte Upload-Sperre, Recovery-Arbeitskopie `puls-v1-recovered`, Rotation, 4-MB-Grenze, Konfliktkopien. Nur Mock-Tests, keine Live-RLS.
+- UI: Onboarding wählt „Berechnet“ vor, ruhige Live-Eingabe, entprelltes Speichern, Singular/Plural, Dezimalkomma; „Text & Sprache“ aus Plus-Menü entfernt. Offen: UI-5, UI-6, UI-7 (Rest), UI-11/12.
+- `js/visuals.js` und `css/visuals.css` entfernt; `designs-extra.js` bleibt (alte Designschlüssel in `validData`).
+- Letzter `node scripts/check.cjs`: Exit 0 auf `b2ae598`. Codex-Abschlussreview und Nachprüfung: Merge-Empfehlung ja. Gemini nicht beteiligt.
+- Nicht getestet: echtes iPhone, Live-Supabase/RLS, echter Offline-SW, GPS, Kamera. Vor Veröffentlichung `node scripts/bump-version.cjs`, check, Merge, Push, Live-Check.
+- Details und iPhone-Checkliste: `docs/audit/FINAL-REPORT.md`.
 ### Konto, Speichern und Navy-KFA, lokal vorbereitet (26.10.2026)
 
 - Koordinator-Auftrag an Codex auf Basis `2c8fdae`; vorhandene ungestagte Änderungen erhalten. Kein Commit, Push, Versionswechsel oder Live-Backend-Eingriff.

@@ -43,3 +43,7 @@ Ungeprüft bleiben Browser/iPhone-Layout, tatsächliche iOS-Prozessbeendigung oh
 **Empfehlung für Merge auf main: ja nach Fix des P2-Recovery-Übergangs und gezielter Nachprüfung.**
 
 RÜCKFRAGEN: Keine.
+
+## Nachprüfung nach b2ae598
+
+Echter Codex-Lauf (Nachprüfung des Fixes). Wortlaut der Schlussaussage: „P2 bei b2ae598 geschlossen … keine neue Regression … Merge-Empfehlung: ja“. `node scripts/check.cjs`: Exit 0 auf `b2ae598` (vom Koordinator ausgeführt). Nicht geprüft bleiben Browser/iPhone, reale Speicherkontingente, Offline-SW und Live-Supabase/RLS.
