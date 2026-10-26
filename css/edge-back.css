@@ -1,0 +1,9 @@
+/* Zurück per Wisch vom linken Rand: die Ansicht folgt dem Finger und gleitet hinaus oder federt zurück. */
+.edgebackdragging { transition: none !important; will-change: transform; }
+.edgebacksettle { transition: transform .24s cubic-bezier(.2, .8, .2, 1) !important; }
+#modal.edgebackactive { overflow-x: hidden; }
+body:has(.edgebackactive) { overflow-x: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .edgebackdragging, .edgebacksettle { transition: none !important; transform: none !important; }
+}
