@@ -27,9 +27,9 @@ Bestehende Dateien werden erst verschoben, wenn kein paralleler Bearbeiter sie b
 ## Zustand
 
 - Genau ein `ProfileStore` (`@Observable`, `@MainActor`), einmal in `AppDelegate`/`AppEnvironment` erzeugt, per `.environment` an Views.
-- Hält `document: ProfileDocument`, `seq`, `userId`, `cloud`-Status, `flags`, `pending` (Outbox), `authority: .web | .native` (Phase A immer `.web`).
+- Hält `document: ProfileDocument` (Anzeige mit Overlay) und `confirmedDocument` (Web-Stand), `seq`, `userId`, `cloud`-Status, `flags`, `outboxEntries`/`pending`/`parked`/`conflicts`, `isWaitingForWeb`, `availableScreens`, `authority: .web | .native` (Phase A immer `.web`).
 - Views lesen abgeleitete, typisierte Werte (`store.weights`), schreiben nur über `store.perform(Command)`.
-- `perform` wendet die Änderung optimistisch auf eine Overlay-Ansicht an, legt den Befehl in die Outbox und übergibt ihn an die Brücke. Ack `ok` → aus Outbox; `invalid` → zurückrollen; sonst halten.
+- `perform` ergänzt op-spezifische Felder (`expect` aus der aktuellen Anzeige, `BridgeOps`), wendet die Änderung optimistisch auf eine Overlay-Ansicht an, legt den Befehl in die Outbox und übergibt ihn an die Brücke. Ack `ok` → `acked` (bleibt in der Outbox; pro Befehl wird persistent `lastSeenEffect` gespeichert = Wirkung im letzten gültigen Snapshot der Ack-Sitzung sichtbar ja/nein/noch keiner. Der `load`-Snapshot einer späteren App-Sitzung entscheidet: Wirkung sichtbar oder zuletzt `false` → ohne Replay entfernen; zuletzt `true` oder `nil` → mit derselben ID und demselben `expect` erneut senden, Abweichungen werden im Web zu `conflict`); `invalid` → entfernen und zurückrollen; `conflict` → parken, zurückrollen, in `store.conflicts` zur Nutzerentscheidung; `wrong_user`/`unknown_op` → parken; `not_ready` bzw. `hello` mit `ownerPending:true` → nur noch einreihen, nicht senden, bis zum nächsten Snapshot; `ownerPending` blendet native Bereiche aus und ist als `store.ownerPending` sichtbar; sonst halten.
 - Die Schreib-API bleibt beim Wechsel zu Phase B gleich.
 
 ## Persistenz
@@ -56,7 +56,7 @@ Bestehende Dateien werden erst verschoben, wenn kein paralleler Bearbeiter sie b
 
 - Trigger: Push auf alle Branches (Pfade `ios/**`, `icons/*.svg`, `tests/fixtures/native-bridge/**`, Workflow), `pull_request`, `workflow_dispatch`. `concurrency` pro `ref`.
 - Xcode fest per `xcode-select`; Simulator per `xcrun simctl list` ermitteln.
-- Schritte: XcodeGen → `xcodebuild test -scheme PULSCore` (Simulator, ohne Signatur, Result-Bundle als Artifact bei Fehler) → Release-Build → IPA → `upload-artifact` → GitHub-Release **nur** bei `refs/heads/main` und kein PR.
+- Schritte: XcodeGen → `xcodebuild test -scheme PULSCore` (Simulator, ohne Signatur, Result-Bundle als Artifact bei Fehler) → Release-Build → IPA → `upload-artifact`. Build-Job nur mit `contents: read`.
 
 ## Qualität
 

@@ -24,7 +24,7 @@
      "exercises": [{"id": "e0000000-0000-4000-8000-000000000003", "name": "Lat Pulldown", "sets": [{"kg": 60, "reps": 10, "done": true}, {"kg": 60, "reps": "", "done": false}]}]}
   ],
   "custom": [
-    {"id": "p0000000-0000-4000-8000-000000000001", "name": "Skyr Natur", "brand": "Testmarke", "kcal": 63, "p": 11, "c": 4, "f": 0.2, "unit": "g", "barcode": "4000000000017", "source": "openfoodfacts", "favorite": true, "packageAmount": 450, "packageUnit": "g", "packageChecked": true, "portions": [{"name": "Becher", "amount": 150, "unit": "g", "source": "label"}], "verified": true, "fetched": 1761200000000},
+    {"id": "p0000000-0000-4000-8000-000000000001", "name": "Skyr Natur", "brand": "Testmarke", "kcal": 63, "p": 11, "c": 4, "f": 0.2, "unit": "g", "barcode": "4000000000013", "source": "openfoodfacts", "favorite": true, "packageAmount": 450, "packageUnit": "g", "packageChecked": true, "portions": [{"name": "Becher", "amount": 150, "unit": "g", "source": "label"}], "verified": true, "fetched": 1761200000000},
     {"id": "p0000000-0000-4000-8000-000000000002", "name": "Olivenöl", "kcal": 884, "p": 0, "c": 0, "f": 100, "unit": "ml", "density": 0.91, "labelReviewed": true, "nutrients": {"potassium": 1}}
   ],
   "profile": {"age": 30, "sex": "male", "height": 180, "weight": 84, "target": 78, "activity": 1.55, "method": "mifflin", "rmr": 0, "special": false, "kcalMode": "baseline", "baselineFactor": 1.3},
@@ -33,8 +33,8 @@
     {"id": "t0000000-0000-4000-8000-000000000001", "name": "Push", "exercises": [{"exerciseId": "x0000000-0000-4000-8000-000000000001", "sets": 3, "min": 6, "max": 10, "restSeconds": 120}, {"exerciseId": "x0000000-0000-4000-8000-000000000002", "sets": 2, "min": 10, "max": 15, "superset": "s0000000-0000-4000-8000-000000000001"}]}
   ],
   "exerciseBook": [
-    {"id": "x0000000-0000-4000-8000-000000000001", "name": "Bench Press", "target": "chest", "muscles": ["chest", "triceps"], "equipment": "barbell", "repMin": 6, "repMax": 10, "loadStep": 2.5},
-    {"id": "x0000000-0000-4000-8000-000000000002", "name": "Cable Fly", "target": "chest", "equipment": "cable"}
+    {"id": "x0000000-0000-4000-8000-000000000001", "name": "Bench Press", "target": 0, "muscles": ["chest", "triceps"], "equipment": "barbell", "repMin": 6, "repMax": 10, "loadStep": 2.5},
+    {"id": "x0000000-0000-4000-8000-000000000002", "name": "Cable Fly", "target": 0, "equipment": "cable"}
   ],
   "recipes": [
     {"id": "r0000000-0000-4000-8000-000000000001", "name": "Chili sin Carne", "yield": 1600, "ingredients": [{"name": "Kidneybohnen", "unit": "g", "amount": 500, "kcal": 450, "p": 30, "c": 70, "f": 2, "source": "catalog"}, {"name": "Tomaten", "unit": "g", "amount": 800, "kcal": 144, "p": 7, "c": 28, "f": 2}], "importNotes": ["Endgewicht manuell geprüft"]}
@@ -55,15 +55,15 @@
   "soundVolume": 0.6,
   "setupPending": false,
   "onboardingComplete": true,
-  "tutorialVersion": 3,
+  "tutorialVersion": 1,
   "chartPeriod": "90",
   "chartLines": {"weight": true, "strength": false, "kcal": true},
-  "progressView": {"group": "all", "range": "12w", "metric": "volume"},
+  "progressView": {"group": "training", "range": "month", "metric": "volume"},
   "runs": [
     {"id": "u0000000-0000-4000-8000-000000000001", "date": "2026-10-22", "type": "run", "distanceKm": 5.02, "durationSeconds": 1690, "startedAt": 1761120000000, "createdAt": 1761121800000, "pauseSeconds": 40, "kcal": 380, "feeling": 4, "terrain": "road", "note": "Locker", "elevationGain": 32, "elevationMax": 210, "maxSpeed": 4.1, "source": "gps", "laps": [600, 1210], "durationXpVersion": 1, "route": "52.5,13.4;52.501,13.401|52.502,13.402;52.503,13.403", "splits": [335, 338, 340, 339, 338], "splitRest": [20, 7]}
   ],
   "activeRun": null,
-  "runRoutes": [{"id": "q0000000-0000-4000-8000-000000000001", "name": "Parkrunde", "line": "52.5,13.4;52.51,13.41;52.5,13.4", "waypoints": [[52.5, 13.4], [52.51, 13.41]], "distanceKm": 3.1, "ascentM": 12, "createdAt": 1761000000000}],
+  "runRoutes": [{"id": "q0000000-0000-4000-8000-000000000001", "name": "Parkrunde", "line": "52.5,13.4;52.51,13.41;52.5,13.4", "waypoints": "52.5,13.4;52.51,13.41", "distanceKm": 3.1, "ascentM": 12, "createdAt": 1761000000000}],
   "runSettings": {"weeklyGoalKm": 20, "weekMinutesGoal": 240, "lastType": "run", "rounds": {"work": 180, "rest": 60, "count": 5}},
   "fasts": [{"id": "z0000000-0000-4000-8000-000000000001", "startedAt": 1750000000000, "targetHours": 16, "endedAt": 1750057600000}],
   "mealPlans": [],

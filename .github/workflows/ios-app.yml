@@ -1,31 +1,104 @@
-# Baut die native PULS-Hülle als unsignierte .ipa zum Sideloaden mit AltStore.
-# Ergebnis: GitHub-Release mit PULS.ipa, immer erreichbar unter /releases/latest/download/PULS.ipa
+# Baut die native PULS-App, führt die PULSCore-Unit-Tests auf dem Simulator aus und packt eine unsignierte .ipa
+# zum Sideloaden mit AltStore.
+# - Jeder Branch: Tests + .ipa als Actions-Artifact.
+# - Nur main: zusätzlich GitHub-Release, immer erreichbar unter /releases/latest/download/PULS.ipa
 name: iOS app
 
 on:
   push:
-    branches: [main]
     paths:
       - 'ios/**'
       - 'icons/*.svg'
+      - 'tests/fixtures/native-bridge/**'
+      - '.github/workflows/ios-app.yml'
+  pull_request:
+    paths:
+      - 'ios/**'
+      - 'icons/*.svg'
+      - 'tests/fixtures/native-bridge/**'
       - '.github/workflows/ios-app.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: ios-app
+  group: ios-app-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
+
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+
+      - name: Xcode wählen
+        # Neueste installierte stabile Xcode-Version (keine Betas/Release Candidates).
+        run: |
+          set -euo pipefail
+          xcode="$(ls -d /Applications/Xcode_*.app 2>/dev/null | python3 -c '
+          import re, sys
+          best = None
+          for line in sys.stdin:
+              path = line.strip()
+              m = re.fullmatch(r"/Applications/Xcode_(\d+(?:\.\d+)*)\.app", path)
+              if m:
+                  version = tuple(int(p) for p in m.group(1).split("."))
+                  if best is None or version > best[0]:
+                      best = (version, path)
+          print(best[1] if best else "")
+          ' || true)"
+          if [ -z "$xcode" ]; then xcode="/Applications/Xcode.app"; fi
+          echo "Xcode: $xcode"
+          sudo xcode-select -s "$xcode/Contents/Developer"
+          xcodebuild -version
+
+      - name: Simulator ermitteln
+        # iPhone-Simulator mit der höchsten verfügbaren iOS-Laufzeit >= 17; notfalls einen anlegen.
+        run: |
+          set -euo pipefail
+          udid="$(xcrun simctl list devices available -j | python3 -c '
+          import json, re, sys
+          best = None
+          for runtime, devices in json.load(sys.stdin)["devices"].items():
+              m = re.search(r"iOS-(\d+)-(\d+)", runtime)
+              if not m:
+                  continue
+              version = (int(m.group(1)), int(m.group(2)))
+              if version < (17, 0):
+                  continue
+              for d in devices:
+                  if d.get("isAvailable", True) and d.get("name", "").startswith("iPhone"):
+                      key = (version, d["name"])
+                      if best is None or key > best[0]:
+                          best = (key, d["udid"])
+          print(best[1] if best else "")
+          ')"
+          if [ -z "$udid" ]; then
+            runtime="$(xcrun simctl list runtimes available -j | python3 -c '
+          import json, sys
+          rts = [r for r in json.load(sys.stdin)["runtimes"] if r.get("platform", "iOS") == "iOS" and ".iOS-" in r.get("identifier", "") and r.get("isAvailable", True)]
+          rts.sort(key=lambda r: [int(p) for p in r["version"].split(".")])
+          print(rts[-1]["identifier"] if rts else "")
+          ')"
+            devicetype="$(xcrun simctl list devicetypes -j | python3 -c '
+          import json, sys
+          types = [t for t in json.load(sys.stdin)["devicetypes"] if t["name"].startswith("iPhone")]
+          print(types[-1]["identifier"] if types else "")
+          ')"
+            if [ -z "$runtime" ] || [ -z "$devicetype" ]; then
+              echo "::error::Kein iOS-Simulator verfügbar"
+              exit 1
+            fi
+            udid="$(xcrun simctl create PULS-CI "$devicetype" "$runtime")"
+          fi
+          echo "Simulator: $udid"
+          xcrun simctl list devices | grep "$udid" || true
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
 
       - name: Werkzeuge
         run: brew install xcodegen librsvg
@@ -41,6 +114,22 @@ jobs:
       - name: Xcode-Projekt erzeugen
         working-directory: ios
         run: xcodegen generate
+
+      - name: PULSCore-Tests
+        working-directory: ios
+        run: >
+          xcodebuild test -project PULS.xcodeproj -scheme PULSCore
+          -destination "id=${SIMULATOR_UDID}" -derivedDataPath build-tests
+          -resultBundlePath TestResults.xcresult
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+
+      - name: Testergebnis sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PULSCore-TestResults
+          path: ios/TestResults.xcresult
+          if-no-files-found: ignore
 
       - name: Bauen
         working-directory: ios
@@ -58,11 +147,35 @@ jobs:
           cp -R build/Build/Products/Release-iphoneos/PULS.app Payload/
           zip -qry PULS.ipa Payload
 
+      - name: IPA als Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PULS-ipa-${{ github.run_number }}
+          path: ios/PULS.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+
+  # Eigener Job: nur er darf schreiben (contents: write), und nur auf main ohne PR. Der Build-Job liest nur.
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: IPA holen
+        uses: actions/download-artifact@v4
+        with:
+          name: PULS-ipa-${{ github.run_number }}
+
       - name: Release veröffentlichen
         env:
           GH_TOKEN: ${{ github.token }}
         run: >
-          gh release create "ios-build-${{ github.run_number }}" ios/PULS.ipa
+          gh release create "ios-build-${{ github.run_number }}" PULS.ipa
+          --repo "${{ github.repository }}"
           --target "${{ github.sha }}" --latest
           --title "PULS iOS-App · Build ${{ github.run_number }}"
           --notes "Unsignierte App zum Installieren mit AltStore. Anleitung: docs/IOS-APP.md"

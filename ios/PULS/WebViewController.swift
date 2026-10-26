@@ -16,6 +16,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var locateManager: CLLocationManager?
     private var locatePending = false
     private var locateTimeout: DispatchWorkItem?
+    // Zustandsbrücke pulsState (Web/StateBridge.swift); nil = nicht verfügbar, Feature wird nicht gemeldet.
+    private var stateBridge: StateBridge?
 
     override func loadView() {
         let config = WKWebViewConfiguration()
@@ -26,10 +28,15 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         config.websiteDataStore = .default()
         // Gegenstück: native-bridge.js (window.webkit.messageHandlers.pulsNative).
         config.userContentController.add(self, name: "pulsNative")
+        // Gegenstück: native-state.js (window.webkit.messageHandlers.pulsState), docs/native/NATIVE-BRIDGE-PROTOCOL.md.
+        stateBridge = StateBridge.makeDefault(appHost: Self.appHost, appPath: Self.appPath)
+        stateBridge?.install(into: config.userContentController)
         // Kennzeichen für native-bridge.js: diese App-Version zeigt die Workout-Zeit in der Live-Aktivität.
-        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge'"
+        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
+        stateBridge?.webView = webView
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.isOpaque = false

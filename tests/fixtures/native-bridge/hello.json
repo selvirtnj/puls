@@ -1,1 +1,1 @@
-{"type":"hello","protocol":1,"webVersion":"74","ops":["weight.upsert","weight.delete"],"screens":["body"]}
+{"type":"hello","protocol":1,"webVersion":"74","ops":["weight.upsert","weight.delete"],"screens":["body"],"ownerPending":false}
