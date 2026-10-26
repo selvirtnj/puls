@@ -19,7 +19,7 @@ function appFixture(profile=null,preview=false,stored=[]){
  const run=source=>vm.runInContext(source,ctx),load=file=>run(read(file));
  load('js/color-scheme.js');
  const earlyScheme=root.attrs['data-scheme'];
- for(let file of ['app','enhancements','products','recipes','experience','exercise-catalog','training','portions','insights','finish','personal','navigation','flows','visuals','designs-extra'])load('js/'+file+'.js');
+ for(let file of ['app','enhancements','products','recipes','experience','exercise-catalog','training','portions','insights','finish','personal','navigation','flows','designs-extra'])load('js/'+file+'.js');
  return {ctx,run,load,disk,media,root,meta,events,properties,earlyScheme,reads:()=>reads,setFetch:fn=>fetchHandler=fn};
 }
 function base(){return {goals:{kcal:2200,p:150,c:250,f:70},foods:[],weights:[],workouts:[],custom:[],onboardingComplete:true}}

@@ -79,7 +79,32 @@ Methode: Quelltext aller geladenen Skripte per `fetch` geholt, `toString()` der 
 |---|---|---|
 | `js/flows.js` | **REQUIRED** | Aktive Definitionen `macroCard`, `trendData`, `currentDesign`; Onboarding-Commit (UI-1); 17 gerenderte Klassen nur in dieser Datei (`designworkouts`, `designdiary`, `watercompact`, `microgrid`, `accountidentity`, `chartperiod` …); `appDesigns` + `validData`-Wrapper: `validData({...state, appDesign:'apple'})` wird `false`, sobald der Eintrag fehlt. Nur Teile (Designwahl `designChooser`/`chooseAppDesign`, nicht genutzte Designzweige) sind toter Code. |
 | `js/designs-extra.js` | **REQUIRED** (nicht entfernen) | Darstellungszweige (`terra`/`volt`/`blueprint`/`nocturne`) sind tot, aber die Datei ergänzt diese 4 Schlüssel in `appDesigns`. Test: ohne `appDesigns.terra` liefert `validData({...state, appDesign:'terra'})` **false**; ältere Sicherungen/Profile mit diesen Designs würden abgelehnt. Außerdem nutzt `color-scheme.js` `terra`/`blueprint` zur Migration, und `tests/check-refinement34.cjs` lädt die Datei. Entfernen nur nach Migration (`appDesign` → `classic` bzw. Schlüssel woanders erhalten). |
-| `js/visuals.js` | **NEEDS INVESTIGATION**, Tendenz SAFE TO REMOVE | Alle Wrapper reichen bei `'classic'` durch (`nutrition`, `applyAppDesign`, `accountPage` ersetzt nur „Version 22“, kommt nicht vor); `themedFoodActions` wird von `compact.js` ersetzt; `nutrientDetailBlock` nur in toten Zweigen; `Object.assign` ändert nur Notizen bestehender Schlüssel (kein `validData`-Einfluss); keine gerenderte Klasse stammt nur aus dieser Datei. Vor Entfernung: `index.html`, `sw.js` (ASSETS), `tests/check-premium.cjs` anpassen, zugehöriges CSS (`visuals.css`) separat prüfen, dann volle Prüfung. |
+| `js/visuals.js` | **ENTFERNT** (Phase 5, siehe „Aufräumen“); vorheriger Befund: NEEDS INVESTIGATION, Tendenz SAFE TO REMOVE | Alle Wrapper reichen bei `'classic'` durch (`nutrition`, `applyAppDesign`, `accountPage` ersetzt nur „Version 22“, kommt nicht vor); `themedFoodActions` wird von `compact.js` ersetzt; `nutrientDetailBlock` nur in toten Zweigen; `Object.assign` ändert nur Notizen bestehender Schlüssel (kein `validData`-Einfluss); keine gerenderte Klasse stammt nur aus dieser Datei. Vor Entfernung: `index.html`, `sw.js` (ASSETS), `tests/check-premium.cjs` anpassen, zugehöriges CSS (`visuals.css`) separat prüfen, dann volle Prüfung. |
+
+## Aufräumen (Phase 5, 26.10.2026, `puls-frontend`, Basis 93327eb, nicht committet)
+
+**Entscheidung: `js/visuals.js` und `css/visuals.css` SAFE TO REMOVE — entfernt.**
+
+Beleg je Definition in `visuals.js` (ohne die Datei wirksame Definition in Klammern):
+
+| Definition | Ergebnis |
+|---|---|
+| `applyAppDesign` (Durchreicher) | letzte wirksame bleibt `designs-extra.js` (`expandedDesignApply`) → `flows.js`; identischer Funktionstext im Browser |
+| `nutrition` (nur bei `currentDesign()!=='classic'` anders) | `currentDesign()` liefert immer `'classic'` (`flows.js:135`, nirgends überschrieben) → reiner Durchreicher; wirksam bleibt die Kette bis `compact.js:17` (`compactfoodtools`) |
+| `themedFoodActions` | nur in toten Nicht-Classic-Zweigen (`visuals.js`, `designs-extra.js:11`) aufgerufen; `compact.js:16` setzt sie ohnehin neu (globale Zuweisung, kein `use strict` im Projekt); Ausgabe-Hash vorher/nachher identisch |
+| `nutrientDetailBlock` | nur in toten Zweigen (`visuals.js`, `designs-extra.js:11`); danach `undefined`, nie erreicht |
+| `chooseAppDesign=function(){}` | zwischen `visuals.js` und `app-polish.js:4` wickelt niemand die Funktion ein; `app-polish.js` setzt wieder No-op → identisch. Einziger Aufrufer (`designChooser`-onclick) wird von `design-system.js:294` als leerer `hidden`-Abschnitt ersetzt und im Konto nicht gerendert |
+| `accountPage` `'Version 22'→'23'` | Kette danach unterbrochen ohne Folgen: `workout-polish.js:47` setzt die Versionsmarke per Regex `Version \d+` neu, danach `comfort`→32→33→35→69; Konto-HTML vorher/nachher identisch |
+| `Object.assign(appDesigns.*)` (Notizen, Edition-Farben) | nur von `designChooser` gelesen, der nicht mehr gerendert wird; Schlüssel/Anzahl unverändert (`validData` prüft nur `Object.hasOwn`) |
+| `render()` am Dateiende | ein zusätzlicher Zwischen-Render beim Laden; viele spätere Dateien rendern erneut |
+
+`css/visuals.css`: alle Regeln hängen an `.foodscreen`, `.orbitfoodgrid` oder `.ledgerscreen .ledgerextras`; diese Klassen erzeugte nur der tote `nutrition`-Zweig von `visuals.js`. Im Browser (390 × 844, `?erststart=1`) 0 Treffer auf Übersicht, Ernährung, Training, Konto, Essen-Dialog (Suche/Barcode/Rezepte) und Schnellerfassung.
+
+Browser-Vergleich vorher/nachher (gleicher Ablauf, je Ansicht Hash über `innerHTML`, `innerText` und berechnete Styles aller Elemente): Übersicht, Ernährung, Training, Konto, `foodForm()`, `foodTab('search'|'barcode'|'recipes')`, `quickAddMenu()` — alle Hashes identisch; Lebensmittelaktionen weiterhin `foodtools compactfoodtools` mit Suche/Barcode/Foto/Rezepte. Konsole vorher und nachher nur dieselben umgebungsbedingten Meldungen (OFF-CORS auf localhost, `navigator.vibrate` ohne Tippen).
+
+Geändert: `index.html` (Link `css/visuals.css`, Skript `js/visuals.js` entfernt), `sw.js` (beide ASSETS-Einträge entfernt), `tests/check-premium.cjs` (lädt `visuals.js` nicht mehr; prüft stattdessen, dass `nutrition()` für alle Legacy-Designwerte identisch mit Classic ist, plus die bisherigen Aktionsprüfungen), `tests/check-color-offline.cjs` (Ladeliste ohne `visuals`). Keine Versionserhöhung (folgt bei Veröffentlichung).
+
+Rest für später (nicht Teil dieses Auftrags): tote Selektoren `.foodscreen`/`.waterregion` in `css/comfort.css` und `css/compact.css`, die tote `themedFoodActions`-Zuweisung in `compact.js:16` und der tote Nicht-Classic-Zweig in `designs-extra.js:11`; `docs/ARCHITECTURE.md:27` nennt `visuals.js` noch.
 
 ## Offene Grenzen
 

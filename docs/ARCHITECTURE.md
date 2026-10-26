@@ -24,7 +24,7 @@ docs/                   Produktwissen, Stand, Team-Ablauf; docs/archive/ = histo
 | Grundlage und Daten | app.js, enhancements.js, personal.js, experience.js, adaptation.js, i18n.js |
 | Ernährung | products.js, recipes.js, portions.js, food-search.js, catalog-search.js, catalog-worker.js, food-upgrade.js, quick-units.js, nutrition-input.js |
 | Training | exercise-catalog.js, machine-library.js, training.js, insights.js, finish.js, workout-polish.js, tracker-tools.js, progress-metrics.js |
-| Darstellung und Abläufe | navigation.js, flows.js, visuals.js, interactions.js, polish.js, compact.js, lifecycle.js, comfort.js, refinement.js, designs-extra.js, preview-mode.js |
+| Darstellung und Abläufe | navigation.js, flows.js, interactions.js, polish.js, compact.js, lifecycle.js, comfort.js, refinement.js, designs-extra.js, preview-mode.js |
 | Konto und Sync | cloud.js, cloud-config.js, account-guide.js, account-refresh.js |
 | Neuere Verfeinerungen (zuletzt geladen) | profile-refresh.js (Profil & Ziele), training-tabs.js (Workout/Routinen), session-focus.js (laufendes Workout), running.js (Laufen inkl. GPS), native-bridge.js (nur in der iOS-Hülle aktiv) |
 
