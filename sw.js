@@ -36,10 +36,16 @@ self.addEventListener('fetch',event=>{
  if(request.method!=='GET'||url.origin!==base.origin||!url.pathname.startsWith(base.pathname))return;
  const path=url.pathname.slice(base.pathname.length),catalogue=CATALOG_PATH.test(path);
  if(request.mode==='navigate'){
-  event.respondWith(fetch(request).then(response=>{
-   if(response.ok){let copy=response.clone();event.waitUntil(caches.open(CACHE).then(c=>c.put(new URL('index.html',base),copy)).catch(()=>{}))}
-   return response;
-  }).catch(()=>caches.match(new URL('index.html',base))));return;
+  event.respondWith((async()=>{
+   let timer;
+   try{
+    const response=await Promise.race([fetch(request),new Promise((_,reject)=>{timer=globalThis.setTimeout?.(()=>reject(Error('Navigation timeout')),4000)})]);
+    if(!response.ok){const cached=await caches.match(new URL('index.html',base));return cached||response}
+    let copy=response.clone();event.waitUntil(caches.open(CACHE).then(c=>c.put(new URL('index.html',base),copy)).catch(()=>{}));
+    return response;
+   }catch(error){const cached=await caches.match(new URL('index.html',base));if(cached)return cached;throw error}
+   finally{globalThis.clearTimeout?.(timer)}
+  })());return;
  }
  if(!ASSETS.includes(path)&&!catalogue)return;
  event.respondWith(caches.open(catalogue?CATALOG_CACHE:CACHE).then(async cache=>{

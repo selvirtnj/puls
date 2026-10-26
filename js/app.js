@@ -6,10 +6,22 @@ const today=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth
 const initial=()=>({goals:{kcal:2200,p:150,c:250,f:70},foods:[],weights:[],workouts:[],custom:[]});
 const firstRunPreview=typeof location.search==='string'&&/[?&]erststart=1(?:&|$)/.test(location.search);
 const appStore=firstRunPreview?{getItem:()=>null,setItem(){}}:localStorage;
-let state,stateLoadCorrupt=false,stateCorruptRaw=null,stateCorruptAlerted=false;{let raw=null;try{raw=appStore.getItem('puls-v1')}catch{}try{let parsed=raw===null?null:JSON.parse(raw);if(raw!==null&&!(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)))throw Error('invalid');state=parsed||initial()}catch{state=initial();stateLoadCorrupt=true;try{appStore.setItem('puls-cloud-upload-blocked','1')}catch{}try{if(appStore.getItem('puls-v1-corrupt')===null)appStore.setItem('puls-v1-corrupt',raw)}catch{stateCorruptRaw=raw}}}let date=today(),page='home',foodSelection=null;
+let state,stateLoadCorrupt=false,stateCorruptRaw=null,stateCorruptAlerted=false,stateUploadBlockPending=false;
+// Never replace damaged data until both the upload lock and this exact raw text are durable.
+function preserveCorruptState(){
+ if(stateUploadBlockPending){appStore.setItem('puls-cloud-upload-blocked','1');stateUploadBlockPending=false}
+ if(stateCorruptRaw===null)return;
+ const keys=['puls-v1-corrupt','puls-v1-corrupt-2','puls-v1-corrupt-3'];
+ if(!keys.some(key=>appStore.getItem(key)===stateCorruptRaw)){
+  let key=keys.find(key=>appStore.getItem(key)===null);if(!key)throw Error('Corrupt backup slots full');
+  appStore.setItem(key,stateCorruptRaw);
+ }
+ stateCorruptRaw=null;
+}
+{let raw=null;try{raw=appStore.getItem('puls-v1')}catch{}try{let parsed=raw===null?null:JSON.parse(raw);if(raw!==null&&!(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)))throw Error('invalid');state=parsed||initial()}catch{state=initial();stateLoadCorrupt=true;stateCorruptRaw=raw;stateUploadBlockPending=true;try{preserveCorruptState()}catch{}}}let date=today(),page='home',foodSelection=null;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n=x=>new Intl.NumberFormat(appLocale(),{maximumFractionDigits:1}).format(x),uid=()=>crypto.randomUUID(),round=x=>Math.round(x*10)/10;
-function save(){if(stateCorruptRaw!==null){try{appStore.setItem('puls-v1-corrupt',stateCorruptRaw);stateCorruptRaw=null}catch{if(!stateCorruptAlerted){stateCorruptAlerted=true;alert('Beschädigte Daten konnten nicht gesichert werden. Speichern pausiert, bis Gerätespeicher frei ist.')}return}}try{appStore.setItem('puls-v1',JSON.stringify(state))}catch{alert('Speichern fehlgeschlagen. Bitte exportiere deine Daten.')}}
+function save(){try{preserveCorruptState()}catch{if(!stateCorruptAlerted){stateCorruptAlerted=true;alert('Beschädigte Daten konnten nicht gesichert werden. Speichern pausiert. Bitte Sicherungen exportieren und Gerätespeicher freigeben.')}return}try{appStore.setItem('puls-v1',JSON.stringify(state))}catch{alert('Speichern fehlgeschlagen. Bitte exportiere deine Daten.')}}
 // Dezimalwert für Eingabefelder: deutsche Oberfläche zeigt Komma, gespeichert bleibt die Zahl (UI-9).
 // Zahl mit Einzahl/Mehrzahl („1 Übung“, „2 Übungen“, UI-8); i18n.js übersetzt beide Formen.
 function countText(count,one,many){return `${count} ${Number(count)===1?one:many}`}
@@ -65,6 +77,6 @@ function settings(){openModal('Ziele & Daten',`<form onsubmit="saveGoals(event)"
 function saveGoals(e){e.preventDefault();['kcal','p','c','f'].forEach(k=>state.goals[k]=Number($('goal-'+k).value));save();modal.close();render();toast('Ziele gespeichert')}
 function exportData(){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.href=u;a.download='puls-sicherung-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 function validData(s){const finite=(v,min=0)=>typeof v==='number'&&Number.isFinite(v)&&v>=min;const str=x=>typeof x==='string';const day=x=>str(x)&&/^\d{4}-\d{2}-\d{2}$/.test(x);const nutrients=x=>['kcal','p','c','f'].every(k=>finite(x[k]));return s&&s.goals&&nutrients(s.goals)&&finite(s.goals.kcal,1)&&['p','c','f'].every(k=>finite(s.goals[k]))&&['foods','weights','workouts','custom'].every(k=>Array.isArray(s[k]))&&s.foods.every(x=>str(x.id)&&str(x.name)&&day(x.date)&&meals.includes(x.meal)&&finite(x.grams,.1)&&nutrients(x))&&s.weights.every(x=>str(x.id)&&day(x.date)&&finite(x.kg,20)&&x.kg<=400)&&s.custom.every(x=>str(x.id)&&str(x.name)&&nutrients(x))&&s.workouts.every(w=>str(w.id)&&str(w.name)&&day(w.date)&&typeof w.finished==='boolean'&&Array.isArray(w.exercises)&&w.exercises.every(e=>str(e.id)&&str(e.name)&&Array.isArray(e.sets)&&e.sets.every(s=>(s.kg===''||finite(s.kg))&&(s.reps===''||finite(s.reps,1))&&typeof s.done==='boolean')))}
-async function importData(file){if(!file)return;try{if(file.size>5000000)throw Error();let s=JSON.parse(await file.text());if(!validData(s))throw Error();if(!confirm('Alle aktuellen Daten durch diese Sicherung ersetzen?'))return;state=s;save();modal.close();render();toast('Sicherung wiederhergestellt')}catch{toast('Ungültige Sicherung. Daten bleiben erhalten.')}}
+async function importData(file){if(!file)return;try{if(file.size>5000000)throw Error();let s=JSON.parse(await file.text());if(!validData(s))throw Error();if(typeof prepareImportedData==='function')s=prepareImportedData(s);if(!validData(s))throw Error();if(!confirm('Alle aktuellen Daten durch diese Sicherung ersetzen?'))return;try{preserveCorruptState();appStore.setItem('puls-local-before-import',JSON.stringify(state));appStore.setItem('puls-v1',JSON.stringify(s))}catch{toast('Wiederherstellen abgebrochen: Sicherung oder Speichern nicht möglich. Bitte Gerätespeicher freigeben.');return}state=s;save();modal.close();render();toast('Sicherung wiederhergestellt')}catch{toast('Ungültige Sicherung. Daten bleiben erhalten.')}}
 setDate(date);
 
