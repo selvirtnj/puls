@@ -53,6 +53,11 @@ const form={'pr-age':30,'pr-height':180,'pr-weight':80,'pr-target':75,'pr-sex':'
  test=app();continueName(test);await test.run('importData')({size:100,text:async()=>JSON.stringify(full)});assert.equal(test.run('setupPending'),false);assert.equal(test.run('state.profile.weight'),80);
  let bad={...full,profile:{age:30}};before=test.run('JSON.stringify(state)');await test.run('importData')({size:100,text:async()=>JSON.stringify(bad)});assert.equal(test.run('JSON.stringify(state)'),before);
  test=app({...blank,displayName:'   '});assert(test.run('workoutIdentity()').includes('>P</span>'));assert(test.run('accountPage()').includes('Nutzername wählen'));
+ // Fenster-X beendet den Erststart in Schritt 1 und 2 ohne Ziel-, Plan- oder Profiländerung und ohne halbe Eingaben.
+ function skipped(test){test.run('skipOnboarding()');assert.equal(test.run('setupPending'),false);assert.equal(test.run('state.onboardingComplete'),true);assert.equal(test.run('state.setupPending'),false);assert.equal(test.run('page'),'home');assert(test.run('validData(state)'));return JSON.parse(test.run('JSON.stringify(state)'))}
+ test=app();test.run('nameProfile()');test.el('profile-name').value='Halb getippt';let skip1=skipped(test);assert.equal(skip1.displayName||'',blank.displayName||'');assert.deepEqual(skip1.goals,blank.goals);assert.deepEqual(skip1.plan,blank.plan);assert.equal(skip1.profile,null);assert.equal(app(skip1).run('setupPending'),false);
+ test=app(existing);fill(test,form);let skip2=skipped(test);assert.deepEqual(skip2.goals,existing.goals);assert.deepEqual(skip2.plan,existing.plan);assert.equal(skip2.profile,null);assert.deepEqual(skip2.weights,existing.weights);assert.equal(skip2.profileHistory.length,0);assert.equal(app(skip2).run('setupPending'),false);
+ test=app(full);let untouched=test.run('JSON.stringify(state)');test.run('skipOnboarding()');assert.equal(test.run('JSON.stringify(state)'),untouched);
  for(let key of ['setupPending','onboardingComplete']){test.run('state.'+key+'="invalid"');assert(!test.run('validData(state)'));test.run('state.'+key+'=false')}
  console.log('PASS: optional first run, reload, complete/incomplete/invalid profiles, unchanged goals, account validation, old tutorial flags and backup import');
 })().catch(error=>{console.error(error);process.exitCode=1});

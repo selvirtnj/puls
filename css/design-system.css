@@ -197,6 +197,10 @@ aside .brand span { color: var(--ds-accent) !important; }
 #nav .navlabel { display: block !important; color: inherit !important; }
 #nav .centraladd { background: transparent !important; color: var(--ds-label-2) !important; width: auto !important; height: auto !important; margin: 0 !important; border-radius: 8px !important; }
 #nav .centraladd .ico { background: transparent !important; width: 28px !important; height: 28px !important; }
+/* Plus dreht sich zum ×, solange das Plus-Menü offen ist (nur dieses Symbol). */
+#nav button.centraladd .ico svg { transition: transform .32s cubic-bezier(.2, 1.3, .4, 1) !important; }
+body.quickaddopen #nav button.centraladd .ico svg { transform: rotate(135deg) !important; }
+@media (prefers-reduced-motion: reduce) { #nav button.centraladd .ico svg { transition: none !important; } }
 @media (min-width: 761px) {
   #nav button { flex-direction: row !important; gap: 12px !important; min-height: 44px !important; padding: 10px 12px !important; font-size: 17px !important; }
   #nav button.active, #nav button[aria-current=page] { background: var(--ds-fill) !important; }
