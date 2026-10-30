@@ -8,15 +8,22 @@
 - Arbeitsbranch `native-ios` angelegt (Basis `5dc74cd`, Web-Version 73, iOS-Projektversion 1.7).
 - Gemeinsame Fixtures: `tests/fixtures/native-bridge/`.
 
+## M1 Fundament — fertig (Commit `0a1eb18` auf `native-ios`)
+
+- Paket B (Codex): `js/native-state.js` + `tests/check-native-state.cjs`. Zwei Review-Runden durch Claude `puls-reviewer`, alle Befunde behoben (Anmeldefenster, `expect`/`conflict`, Rollback, Owner-Sperre, Migrate-Snapshots).
+- Paket A+D (Claude `puls-backend`): `ios/PULSCore` (JSONValue, Spiegel, Outbox, ProfileStore, BridgeOps), `ios/PULSCoreTests`, `StateBridge.swift`, iOS 17, CI für alle Branches, Release nur auf `main` (eigener Job). Codex-Review: 5 Befunde behoben; Unicode-Schlüsselgleichheit als bekannte Grenze dokumentiert.
+- §7-Entscheidung des Koordinators: `lastSeenEffect` unterscheidet Speicherverlust (Replay) von bewusstem Löschen (kein Replay).
+- Web-Regel „ein Gewicht pro Tag“ im Code bestätigt (`addWeight`).
+- CI-Lauf #10 (https://github.com/selvirtnj/puls/actions/runs/40371349741): grün — XcodeGen, `xcodebuild test` PULSCore, Release-Build, IPA-Artifact `PULS-ipa-10`. Anzahl ausgeführter Tests im Log nicht eingesehen (Log nur angemeldet sichtbar).
+
 ## Nächste Schritte
 
-1. M1 parallel: Paket B (Codex, Web-Seite) und Paket A+D (Claude, PULSCore/CI/StateBridge) nach [AGENT_TASKS.md](AGENT_TASKS.md).
-2. Kreuz-Review, `node scripts/check.cjs`, CI auf `native-ios` grün mit Tests.
-3. Branch-IPA auf Selvirs iPhone: App unverändert, Spiegel wird geschrieben.
-4. M2 Körper & Gewicht.
+1. M2 Körper & Gewicht: native Liste, Sheet, Swift-Charts-Verlauf, Reducer für `weight.upsert`/`weight.delete`, `openNative{screen:'body'}`, Store nach `AppDelegate`/`AppEnvironment`.
+2. Branch-IPA auf Selvirs iPhone: App unverändert, Spiegel wird geschrieben.
 
 ## Nicht verifiziert / offen
 
-- Kein iOS-Build und kein Test auf Gerät bisher.
-- Selvirs iPhone-iOS-Version (Mindestziel wird 17.0) noch zu bestätigen.
-- Web-Regel „ein Gewicht pro Tag“ beim Implementieren von `weight.upsert` im Code verifizieren.
+- Kein Test auf Gerät bisher; Live-Aktivität/GPS nach iOS-17-Anhebung ungeprüft.
+- Selvirs iPhone-iOS-Version (Mindestziel 17.0) noch zu bestätigen.
+- `native-state.js` ist nur auf `native-ios`, nicht live; Asset-Version noch 73 (Versionserhöhung beim Merge nach `main`).
+- `actions/upload-artifact@v4` läuft auf Node 20 (Deprecation-Warnung) — bei Gelegenheit auf neuere Hauptversion heben.
