@@ -1,6 +1,7 @@
 import UIKit
 import WebKit
 import CoreLocation
+import PULSCore
 
 /// Native PULS-Hülle: lädt die veröffentlichte Web-App, damit Updates ohne neue App-Version ankommen.
 /// Daten liegen wie im Browser im WebView-Speicher; Cloud-Sync läuft über das PULS-Konto.
@@ -18,6 +19,18 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var locateTimeout: DispatchWorkItem?
     // Zustandsbrücke pulsState (Web/StateBridge.swift); nil = nicht verfügbar, Feature wird nicht gemeldet.
     private var stateBridge: StateBridge?
+    // Native Bereiche als Sheet über der WebView (Shell/NativeRouter.swift); nil ohne Zustandsbrücke.
+    private var nativeRouter: NativeRouter?
+    private let environment: AppEnvironment
+
+    init(environment: AppEnvironment) {
+        self.environment = environment
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) wird nicht verwendet")
+    }
 
     override func loadView() {
         let config = WKWebViewConfiguration()
@@ -29,14 +42,22 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // Gegenstück: native-bridge.js (window.webkit.messageHandlers.pulsNative).
         config.userContentController.add(self, name: "pulsNative")
         // Gegenstück: native-state.js (window.webkit.messageHandlers.pulsState), docs/native/NATIVE-BRIDGE-PROTOCOL.md.
-        stateBridge = StateBridge.makeDefault(appHost: Self.appHost, appPath: Self.appPath)
+        if let store = environment.store {
+            stateBridge = StateBridge(store: store, appHost: Self.appHost, appPath: Self.appPath)
+        }
         stateBridge?.install(into: config.userContentController)
         // Kennzeichen für native-bridge.js: diese App-Version zeigt die Workout-Zeit in der Live-Aktivität.
-        let stateFeature = stateBridge == nil ? "" : ",'stateBridge'"
+        // 'nativeBody' (M2) nur mit Zustandsbrücke: dann leitet das Web „Körper & Gewicht“ per openNative weiter.
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody'"
         config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
         stateBridge?.webView = webView
+        if let store = environment.store, let stateBridge {
+            let router = NativeRouter(store: store, host: self, webView: webView, appHost: Self.appHost, appPath: Self.appPath)
+            nativeRouter = router
+            stateBridge.onOpenNative = { [weak router] screen in router?.open(screen) }
+        }
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.isOpaque = false

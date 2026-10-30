@@ -13,7 +13,7 @@ let stateOwner=userId();
 // A failed login persists its Auth session before fetching the profile. Keep that ambiguity across reloads.
 if(!preview&&stateOwner!==null)try{if(localStorage.getItem(ownerPendingKey)===stateOwner)stateOwner=undefined}catch{stateOwner=undefined}
 const profileReady=()=>!activating&&stateOwner===userId();
-function hello(){const ownerPending=!profileReady();if(!ready||ownerPending===helloOwnerPending)return;helloOwnerPending=ownerPending;post({type:'hello',webVersion,ops:['weight.upsert','weight.delete'],screens:['body'],ownerPending})}
+function hello(){const ownerPending=!profileReady();if(!ready||ownerPending===helloOwnerPending)return;if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete'],screens:['body'],ownerPending}))helloOwnerPending=ownerPending}
 function claimProfile(){stateOwner=userId();if(!preview)try{localStorage.removeItem(ownerPendingKey)}catch{}hello()}
 const uploadConfirmed=(user,revision)=>user!==null&&user===userId()&&cloudRevision>revision&&!cloudDirty&&!cloudConflict;
 function restoreState(target,backup){for(const key of Object.keys(target))if(!Object.hasOwn(backup,key))delete target[key];Object.assign(target,copy(backup))}
@@ -22,7 +22,26 @@ function flags(){return {preview:!!preview,
   uploadBlocked:!!((typeof cloudUploadBlocked!=='undefined'&&cloudUploadBlocked)||(typeof stateUploadBlockPending!=='undefined'&&stateUploadBlockPending))}}
 function cloud(){return {signedIn:userId()!==null,revision:typeof cloudRevision!=='undefined'?cloudRevision:0,
   dirty:typeof cloudDirty!=='undefined'&&!!cloudDirty,conflict:typeof cloudConflict!=='undefined'&&!!cloudConflict}}
-function post(message){try{bridge.postMessage({protocol:1,...message})}catch(error){console.warn('PULS state bridge',error)}}
+function post(message){try{bridge.postMessage({protocol:1,...message});return true}catch(error){console.warn('PULS state bridge',error);return false}}
+// Loaded after account-refresh and page-slide; later scripts do not replace these entry points.
+// Scope the Web escape to this call, never to a later click or the lifetime of the section.
+let openingWeb=false;
+if(typeof openAccountSection==='function'){
+  const base=openAccountSection;
+  openAccountSection=function(key,...args){
+    if(key==='body'&&!openingWeb&&ready&&helloOwnerPending===false&&profileReady()&&
+      Array.isArray(window.pulsNativeFeatures)&&window.pulsNativeFeatures.includes('nativeBody')&&
+      post({type:'openNative',screen:'body'}))return;
+    return base.call(this,key,...args);
+  };
+}
+window.pulsNativeNavigate=function(target){
+  if(!target||typeof target!=='object'||Array.isArray(target)||!['workout','home','food','account'].includes(target.page))return;
+  if(target.section!==undefined&&(target.page!=='account'||typeof accountSections==='undefined'||
+    !accountSections.some(entry=>entry.key===target.section)||typeof openAccountSection!=='function'))return;
+  const previous=openingWeb;openingWeb=target.web===true;
+  try{go(target.page);if(target.section!==undefined)openAccountSection(target.section)}finally{openingWeb=previous}
+};
 function readSeq(){if(preview)return seq;let value=Number(localStorage.getItem(seqKey));return Number.isSafeInteger(value)&&value>=0?value:0}
 try{seq=readSeq()}catch{}
 function persistedProfile(){

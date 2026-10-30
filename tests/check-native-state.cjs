@@ -6,7 +6,7 @@ const sessionId=fixture('snapshot').userId;
 // Established DOM bootstrap; use actual persistence, validators, planner, cloud, import and reset functions.
 const bootstrap=fs.readFileSync('tests/check-premium.cjs','utf8').split('run(`state.foods=')[0]
   .replace("protocol:'file:'","protocol:'file:',search:options.preview?'?erststart=1':''")
-  .replace("value:'',dataset", "classList:{add(){},remove(){},toggle(){}},querySelector(){return null},querySelectorAll(){return []},value:'',dataset")
+  .replace("value:'',dataset", "focus(){},classList:{add(){},remove(){},toggle(){}},querySelector(){return null},querySelectorAll(){return []},value:'',dataset")
   .replace('style:{setProperty(){}}','style:{setProperty(){},removeProperty(){}}');
 function app(options={}){
   const test=vm.runInNewContext('(function(require,options){'+bootstrap+';return {ctx,run,el}})(require,options)',{require,options,console});
@@ -28,6 +28,8 @@ function app(options={}){
   for(const file of ['interactions','lifecycle','comfort','tracker-tools','nutrition-input','adaptation','food-search','catalog-search','food-upgrade','cloud','account-guide','quick-units','progress-metrics','designs-extra','profile-refresh','running','run-metrics']){
     run(fs.readFileSync('js/'+file+'.js','utf8'));run('render=function(){adaptiveGoals()}');
   }
+  run('var setAppLanguage=function(){},chooseAppIcon=function(){}');
+  run(fs.readFileSync('js/account-refresh.js','utf8'));run('render=function(){adaptiveGoals()}');
   run('state.onboardingComplete=true;state.setupPending=false;setupPending=false;');
   if(options.profile)run('state='+JSON.stringify(options.profile));
   else if(!options.preview&&store.has('puls-v1'))run('state='+store.get('puls-v1'));
@@ -52,12 +54,57 @@ function started(options){const test=app(options);test.start();return test}
 function latest(test,reason){const snapshot=test.snapshots().at(-1);assert.equal(snapshot.reason,reason);return snapshot}
 
 (async()=>{
+  const bodyFeatures=['stateBridge','nativeBody'];
+  const openings=t=>t.messages.filter(x=>x.type==='openNative');
+  for(const options of [{handler:false,features:bodyFeatures},{features:['nativeBody']},{features:['stateBridge']},{features:['stateBridge','native:body']}]){
+    const n=started(options);n.run("go('account');openAccountSection('body')");
+    assert.equal(n.run('accountSection'),'body');assert.equal(openings(n).length,0);
+  }
+  let n=started({features:bodyFeatures,deferLoad:true});
+  n.run("go('account');openAccountSection('body')");assert.equal(n.run('accountSection'),'body');assert.equal(openings(n).length,0);
+  n.load();n.run("closeAccountSection();openAccountSection('body')");
+  assert.equal(n.run('accountSection'),'');assert.deepEqual(openings(n),[{protocol:1,type:'openNative',screen:'body'}]);
+  n.run("openAccountSection('plan')");assert.equal(n.run('accountSection'),'plan');
+  const navigate=target=>n.ctx.window.pulsNativeNavigate(target);
+  navigate({page:'account',section:'body',web:true});assert.equal(n.run('accountSection'),'body');assert.equal(openings(n).length,1);
+  n.run('render()');assert.equal(n.run('accountSection'),'body');assert.equal(openings(n).length,1);
+  navigate({page:'home'});assert.equal(n.run('page'),'home');assert.equal(n.run('accountSection'),'');
+  navigate({page:'account',section:'body'});assert.equal(n.run('accountSection'),'');assert.equal(openings(n).length,2);
+  navigate({page:'account',section:'body',web:true});n.run("closeAccountSection();openAccountSection('body')");assert.equal(openings(n).length,3);
+  navigate({page:'food',web:true});navigate({page:'account',section:'body'});assert.equal(openings(n).length,4,'unused bypass never survives navigation');
+  const navBefore=n.run('[page,accountSection]').join();
+  for(const target of [null,'account',[],{}, {page:'unknown'},{page:'weight'},{page:'account',section:'unknown'},{page:'home',section:'body'}])navigate(target);
+  assert.equal(n.run('[page,accountSection]').join(),navBefore);assert.equal(openings(n).length,4);
+  // Always call the current go/section wrappers, and clear the bypass even if opening throws.
+  n.run('var navigateCalls=[];const navigationGo=go;go=function(p){navigateCalls.push(p);return navigationGo(p)};const navigationSection=openAccountSection;openAccountSection=function(k){navigateCalls.push(k);return navigationSection(k)}');
+  navigate({page:'account',section:'body',web:true});assert.deepEqual(clone(n.run('navigateCalls')),['account','body']);
+  n.run('const navigationRender=render;render=function(){throw Error("render failed")}');
+  assert.throws(()=>navigate({page:'account',section:'body',web:true}),/render failed/);
+  n.run("render=navigationRender;closeAccountSection();openAccountSection('body')");assert.equal(openings(n).length,5);
+  for(const flag of ['stateRecoveryPending=true','stateCorruptRaw="broken"','cloudUploadBlocked=true','stateUploadBlockPending=true']){
+    const r=started({features:bodyFeatures});r.run(flag+";go('account');openAccountSection('body')");assert.equal(openings(r).length,1,flag);
+  }
+  n=started({features:bodyFeatures,preview:true});n.run("go('account');openAccountSection('body')");assert.equal(openings(n).length,1);
+  n=started({features:bodyFeatures,store:new Map([['puls-native-owner-pending',sessionId]])});
+  n.run("go('account');openAccountSection('body')");assert.equal(n.run('accountSection'),'body');assert.equal(openings(n).length,0);
+  n=started({features:bodyFeatures,signedIn:false});let endLogin;
+  n.ctx.pendingBodyLogin=new Promise(resolve=>{endLogin=resolve});n.run('fetchCloudProfile=function(){return pendingBodyLogin}');
+  const bodyLogin=n.run('activateCloudSession')({user:{id:sessionId}});
+  n.run("go('account');openAccountSection('body')");assert.equal(n.run('accountSection'),'body');assert.equal(openings(n).length,0);
+  endLogin({revision:18,payload:fixture('profile-full')});await bodyLogin;
+  n.run("closeAccountSection();openAccountSection('body')");assert.equal(openings(n).length,1);
+  // A throwing handler has not sent hello; an openNative delivery failure falls back to Web.
+  n=app({features:bodyFeatures});n.ctx.window.webkit.messageHandlers.pulsState.postMessage=()=>{throw Error('handler unavailable')};n.start();
+  n.run("go('account');openAccountSection('body')");assert.equal(n.run('accountSection'),'body');
+  n=started({features:bodyFeatures});n.ctx.window.webkit.messageHandlers.pulsState.postMessage=()=>{throw Error('handler unavailable')};
+  n.run("go('account');openAccountSection('body')");assert.equal(n.run('accountSection'),'body');
+  console.log('PASS: nativeBody readiness/feature gates, readonly routing, one-opening Web escape, current navigation wrappers and invalid destination rejection');
   for(const options of [{handler:false},{features:[]},{features:'stateBridge'}]){
-    const t=app(options),before=t.run('[save,render,applyCloudProfile,importData,performAccountAction,migrate,closeOverlongWorkouts,cloudStatusChanged,activateCloudSession,signOutCloud,cloudClearUploadBlock,initializeCloudProfile,syncCloud,resolveCloudConflict]');
+    const t=app(options),before=t.run('[save,render,applyCloudProfile,importData,performAccountAction,migrate,closeOverlongWorkouts,cloudStatusChanged,activateCloudSession,signOutCloud,cloudClearUploadBlock,initializeCloudProfile,syncCloud,resolveCloudConflict,openAccountSection,go]');
     const reads=t.reads.length,writes=t.writes.length,listeners=JSON.stringify(t.events);
-    t.start();assert.equal(t.ctx.window.pulsNativeApply,undefined);assert.equal(t.messages.length,0);
+    t.start();assert.equal(t.ctx.window.pulsNativeApply,undefined);assert.equal(t.ctx.window.pulsNativeNavigate,undefined);assert.equal(t.messages.length,0);
     assert.equal(t.reads.length,reads);assert.equal(t.writes.length,writes);assert.equal(JSON.stringify(t.events),listeners);
-    t.run('[save,render,applyCloudProfile,importData,performAccountAction,migrate,closeOverlongWorkouts,cloudStatusChanged,activateCloudSession,signOutCloud,cloudClearUploadBlock,initializeCloudProfile,syncCloud,resolveCloudConflict]').forEach((fn,i)=>assert.equal(fn,before[i]));
+    t.run('[save,render,applyCloudProfile,importData,performAccountAction,migrate,closeOverlongWorkouts,cloudStatusChanged,activateCloudSession,signOutCloud,cloudClearUploadBlock,initializeCloudProfile,syncCloud,resolveCloudConflict,openAccountSection,go]').forEach((fn,i)=>assert.equal(fn,before[i]));
   }
   let t=started({profile:fixture('profile-full'),restBridge:true,deferLoad:true});
   assert.equal(t.messages.length,0);assert.equal(t.apply(upsert()).error.code,'not_ready');t.load();

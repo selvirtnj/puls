@@ -3,7 +3,8 @@ import WebKit
 import PULSCore
 
 /// Zustandsbrücke Web ↔ Native, Protokoll v1 (docs/native/NATIVE-BRIDGE-PROTOCOL.md).
-/// Gegenstück: js/native-state.js. In M1 ohne sichtbare Wirkung: spiegelt nur und hält die Outbox.
+/// Gegenstück: js/native-state.js. Spiegelt, hält die Outbox und leitet `openNative` an den `NativeRouter` weiter.
+/// Der Store kommt aus `AppEnvironment` und wird mit den nativen Bereichen geteilt.
 @MainActor
 final class StateBridge: NSObject, WKScriptMessageHandler {
     let store: ProfileStore
@@ -24,12 +25,9 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
         }
     }
 
-    /// Store im Application-Support-Verzeichnis. `nil`, wenn das Verzeichnis nicht verfügbar ist; dann
-    /// meldet die App `stateBridge` nicht und das Web bleibt wie bisher.
-    static func makeDefault(appHost: String, appPath: String) -> StateBridge? {
-        guard let environment = try? StoreEnvironment.live() else { return nil }
-        return StateBridge(store: ProfileStore(environment: environment), appHost: appHost, appPath: appPath)
-    }
+    /// Nach jedem `openNative` mit dem gewünschten Bereich (`NativeRouter.open`). Der Store merkt sich den Wunsch
+    /// zusätzlich in `requestedScreen`.
+    var onOpenNative: ((String) -> Void)?
 
     /// Registriert den Handler `pulsState` (ein vorhandener gleichen Namens wird vorher entfernt) und lädt den
     /// letzten Spiegel.
@@ -66,6 +64,9 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
         switch outcome {
         case .message(let message):
             store.receive(message)
+            if case .openNative(let open) = message {
+                onOpenNative?(open.screen)
+            }
         case .ignored:
             break
         case .failed(let reason):

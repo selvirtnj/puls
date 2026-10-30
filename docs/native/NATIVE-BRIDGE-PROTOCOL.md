@@ -9,7 +9,7 @@ Beide Seiten testen gegen dieselben Fixtures in `tests/fixtures/native-bridge/`.
 - Native injiziert beim Dokumentstart (bestehendes User-Script) `window.pulsNativeFeatures` und ergänzt dort den Eintrag `stateBridge`.
 - Native registriert den Script-Message-Handler **`pulsState`** (Hauptframe, gleicher Host wie bisher `pulsNative`).
 - `native-state.js` tut **nichts**, wenn `window.webkit?.messageHandlers?.pulsState` fehlt oder `stateBridge` nicht gemeldet ist (Browser, PC, alte IPA). Keine Fehler, keine Listener, keine Wrapper.
-- Im Vorschau-Modus (`?erststart=1`) sendet das Web `hello` und `snapshot` mit `flags.preview:true`; Native zeigt dann nichts nativ an und sendet keine Befehle. Die Zustandsbrücke liest oder verändert dabei keinen echten Gerätespeicher: Profil und Sequenz bleiben im Arbeitsspeicher.
+- Im Vorschau-Modus (`?erststart=1`) sendet das Web `hello` und `snapshot` mit `flags.preview:true`; Native zeigt den Körperbereich ab M2 nur lesbar und sendet keine schreibenden Befehle. Die Zustandsbrücke liest oder verändert dabei keinen echten Gerätespeicher: Profil und Sequenz bleiben im Arbeitsspeicher.
 - Während `activateCloudSession` läuft, setzt die Web-Brücke `activating`: keine Snapshots, schreibende Befehle erhalten `not_ready`. Danach folgt ein Snapshot des endgültigen Zustands, sobald dieser zur aktuellen Nutzer-ID gehört. Ein fehlgeschlagener Profilabruf lässt gegebenenfalls die neue Session und den bisherigen lokalen Stand zurück; auch `cloudStatusChanged` darf diesen Stand nicht mit der neuen Nutzer-ID versenden. Bis zur Übernahme des Kontoprofils, einer ausdrücklichen lokalen Standübernahme im Web, einem bestätigten vollständigen Upload oder der Abmeldung bleiben Snapshots gesperrt und Befehle bei `not_ready`.
 - Die ungeklärte Profilzuordnung bleibt über Neuladen/Neustart erhalten (`puls-native-owner-pending`, lokale Bridge-Metadaten). Eine gespeicherte Auth-Session allein hebt diese Sperre nicht auf.
 - Ein Upload bestätigt die Zuordnung, wenn `syncCloud` für denselben Nutzer mit schmutzigem lokalen Stand einen Upload beginnt, die Revision danach steigt und `dirty:false` sowie `conflict:false` gelten. Das gilt auch nach `resolveCloudConflict('local')`. Ein Abruf mit gleicher Revision, ein fehlgeschlagener Upload oder ein Upload mit noch offenen lokalen Änderungen reicht nicht. Nach Bestätigung wird die Sperre entfernt und der aktuelle Snapshot gesendet.
@@ -52,7 +52,18 @@ Antwort auf genau ein `apply`. `ok:true` **erst nach bestätigter Persistenz** (
 ```json
 {"type":"openNative","protocol":1,"screen":"body"}
 ```
-Das Web leitet einen Einstieg (z. B. `openAccountSection('body')`) an Native weiter, wenn `screen` in den von Native gemeldeten `nativeScreens` steht (siehe 3).
+**Pflicht für Native:** Auf jedes `openNative{screen:'body'}` zeigt Native immer etwas an (notfalls Lade- oder Nur-lesen-Ansicht, nach ca. 3 s ohne Daten mit „Im Web öffnen“). Kann Native den Bereich nicht darstellen, ruft es sofort `pulsNativeNavigate({page:'account',section:'body',web:true})` auf. Vor jedem `pulsNativeNavigate` schließt Native seine eigene Ansicht.
+
+Ab M2 umschließt `native-state.js` die zuletzt wirksame Funktion `openAccountSection`. Ein Aufruf mit `'body'` sendet diese Nachricht **anstelle** der Web-Unterseite, genau wenn:
+
+- die Zustandsbrücke aktiv ist (`pulsState.postMessage` und Feature `stateBridge`),
+- `window.pulsNativeFeatures` zusätzlich **`nativeBody`** enthält,
+- das Laden abgeschlossen und `hello` erfolgreich gesendet ist, zuletzt mit `ownerPending:false`,
+- keine Anmeldung läuft (`activating:false`) und die Profilzuordnung weiterhin geklärt ist.
+
+Fehlt eine Bedingung oder wirft `postMessage`, läuft die bisherige Web-Öffnung unverändert. `flags.preview`, `flags.recovery` und `flags.uploadBlocked` verhindern die Weiterleitung **nicht**; Native stellt den Bereich dann nur lesbar dar. Schreibende Ops bleiben durch `readonly` gesperrt.
+
+Web-Einstieg: Kontomenü → „Körper & Entwicklung“ (`accountMenuRow` → `openAccountSection('body')`). Die Körper-Kurzübersicht im Konto und das Plus-Menü öffnen mit `weightForm()` unmittelbar das Web-Gewichtsformular; sie öffnen keine Körper-Unterseite und bleiben unverändert. Die Übersicht hat keinen weiteren Einstieg in die Körper-Unterseite. `closeAccountSection()` und die bestehende Randwischgeste bleiben unverändert.
 
 ### `navigate`
 ```json
@@ -63,7 +74,7 @@ Das Web meldet einen internen Seitenwechsel (`go(page)`), damit Native später (
 ## 3. Native → Web
 
 ### Fähigkeiten
-`window.pulsNativeFeatures` enthält zusätzlich `stateBridge` und pro nativ verfügbarem Bereich `native:<screen>` (z. B. `native:body` ab M2). Das Web leitet nur dann per `openNative` weiter.
+`window.pulsNativeFeatures` ist ein Array. Für M2 meldet Native **`stateBridge` und `nativeBody`** (zusätzlich zu bisherigen Features). `native:body` und `nativeScreens` sind kein Teil dieses Vertrags. `hello.screens` bleibt `['body']`, `hello.ops` bleibt `['weight.upsert','weight.delete']`; Maße, Körperfett und BMI benötigen keine neuen schreibenden Ops in M2. Native prüft vor Freischaltung weiterhin Screen, beide Gewichts-Ops und `ownerPending:false`.
 
 ### `window.pulsNativeApply(cmd)` (per `evaluateJavaScript`)
 ```json
@@ -74,8 +85,16 @@ Das Web meldet einen internen Seitenwechsel (`go(page)`), damit Native später (
 - `baseSeq`: Spiegel-Stand, auf dem Native den Befehl gebildet hat. Nur Diagnose; Entitätsbefehle sind gegen spätere Änderungen robust und werden nicht wegen abweichender `seq` abgelehnt.
 - Rückgabe des Funktionsaufrufs ist bedeutungslos; maßgeblich ist die `ack`-Nachricht.
 
-### `window.pulsNativeNavigate(page)`
-Ruft `go(page)` auf (ab M3).
+### `window.pulsNativeNavigate({page, section?, web?:true})`
+Ab M2, nur bei aktiver Zustandsbrücke verfügbar. Beispiel für „Körpermaße & Körperfett“, das in M2 im Web bleibt:
+```js
+window.pulsNativeNavigate({page:'account', section:'body', web:true});
+```
+- Erlaubte `page`: `workout | home | food | account`. Unbekannte Seiten und ungültige Ziele werden ohne Navigation ignoriert (auch das historische Alias `weight`).
+- `section` ist optional, nur für `page:'account'` zulässig und muss einem Schlüssel in den bestehenden `accountSections` entsprechen. Unbekannte Abschnitte werden ohne Seitenwechsel ignoriert.
+- Ruft zur Ausführungszeit die zuletzt wirksamen `go(page)` und danach optional `openAccountSection(section)` auf. Keine neue Navigationshistorie, kein eigener Profilzustand. M2 ergänzt keine `navigate`-Nachrichten bei Web-Tabwechseln; das bleibt M3.
+- Nur `web:true` umgeht die native Weiterleitung während **dieses synchronen Aufrufs**. Die geöffnete Web-Unterseite bleibt beim Rendern im Web; ein späterer Einstieg leitet wieder nativ weiter, auch nach Zurück oder Tabwechsel. Die Ausnahme bleibt auch bei einem Fehler nicht aktiv.
+- Die Navigation selbst ist auch vor Bereitschaft oder bei `ownerPending` möglich; ausschließlich die Weiterleitung nach Native setzt die oben beschriebene Bereitschaft voraus.
 
 ## 4. Ausführung und Bestätigung im Web
 
