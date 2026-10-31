@@ -10,7 +10,8 @@ const harness=fs.readFileSync('tests/check-native-training.cjs','utf8').split('c
   .replace("['native-state','native-projection','native-training']","['native-state','native-projection','native-training','native-progress']")
   .replace("['stateBridge','nativeTraining']","['stateBridge','nativeProgress']");
 const app=vm.runInNewContext('(function(require){'+harness+';return app})(require)',{require,console});
-const start=o=>{const t=app(o);t.start();t.progress=()=>t.messages.filter(m=>m.type==='projection'&&m.name==='progress').at(-1);return t};
+const start=o=>{const t=app(o);t.start();t.progress=()=>t.messages.filter(m=>m.type==='projection'&&m.name==='progress').at(-1);
+  if(t.ctx.window.pulsNativeProgress){t.ctx.window.pulsNativeSetInterest({projections:t.messages.find(m=>m.type==='hello').projections.filter(name=>name!=='overview'||o?.features?.includes('nativeOverview'))});t.tick(1000)}return t};
 let serial=0;
 const cmd=(op,args)=>({id:'d0000000-0000-4000-8000-'+String(++serial).padStart(12,'0'),userId:uid,baseSeq:0,op,args});
 const ok=(a)=>assert.equal(a.ok,true,JSON.stringify(a)),code=(a,c)=>{assert.equal(a.ok,false);assert.equal(a.error.code,c)};
@@ -23,6 +24,17 @@ const compareFixture=(name,value)=>{if(process.argv.includes('--write-fixtures')
     assert.equal(t.progress(),undefined);if(t.ctx.window.pulsNativeApply)code(t.apply(cmd('progress.goal.set',{})),'unknown_op');
     if(options.features?.length===1&&options.features[0]==='stateBridge')assert.deepEqual(t.messages.find(m=>m.type==='hello'),{...fixture('hello'),webVersion:fs.readFileSync('index.html','utf8').match(/js\/native-state\.js\?v=(\d+)/)[1]});
   }
+  const demand=app();demand.start();assert(!demand.messages.some(m=>m.name==='progress'),'progress requires interest');
+  demand.run('var demandBuilds=0;const demandBuild=window.pulsNativeProgress.build;window.pulsNativeProgress.build=function(...a){demandBuilds++;return demandBuild(...a)}');
+  demand.run('save();save()');demand.tick(2000);assert.equal(demand.run('demandBuilds'),0);
+  for(const request of [null,{},[],{projections:new Array(1)},{projections:['other']},{projections:['progress','progress']},{projections:['progress'],code:'no'},{projections:'progress'}])
+    assert.equal(demand.ctx.window.pulsNativeSetInterest(request),false);
+  assert.equal(demand.ctx.window.pulsNativeSetInterest({projections:['progress']}),true);demand.tick(999);assert.equal(demand.run('demandBuilds'),0);
+  demand.run('save()');demand.tick(999);assert.equal(demand.run('demandBuilds'),0,'each save restarts the quiet period');demand.tick(1);assert.equal(demand.run('demandBuilds'),1);
+  demand.ctx.window.pulsNativeSetInterest({projections:[]});demand.run('state.foods[0].kcal++;save()');demand.tick(2000);assert.equal(demand.run('demandBuilds'),1);
+  demand.ctx.window.pulsNativeSetInterest({projections:['progress']});
+  demand.ctx.document.activeElement={matches:()=>true,closest:()=>({})};demand.tick(1000);assert.equal(demand.run('demandBuilds'),1,'no heavy projection in set input');
+  demand.ctx.document.activeElement=null;demand.tick(1000);assert.equal(demand.run('demandBuilds'),2);
   let t=start(),p=t.progress();assert(p,'progress projection sent');
   compareFixture('progress-projection',p);
   assert.equal(t.run('validData(state)'),true);assert.deepEqual(t.state(),input.profile,'read providers preserve old/unknown profile fields');
@@ -35,11 +47,16 @@ const compareFixture=(name,value)=>{if(process.argv.includes('--write-fixtures')
   assert.equal(p.progress.weeklyGoals.activeMinutes,t.run('Math.floor(activeMinutesWeek())'));
   assert.equal(p.progress.runRecords[0].seconds,t.run('runBestEfforts()[1].seconds'));
   assert(p.progress.activity.summary.unknownKcalCount>0,'unknown kcal remain explicit');
+  for(const language of ['de','en']){
+    const chips=start({profile:{...clone(input.profile),language}}).progress().progress.activity.types;
+    assert.equal(chips[0].type,'gym');assert.deepEqual(chips.slice(1).map(x=>x.label),chips.slice(1).map(x=>x.label).sort((a,b)=>a.localeCompare(b,language==='en'?'en-GB':'de-DE')));
+  }
   const month=query(t,'month',{month:'2026-10'});compareFixture('progress-result-month',month);
   assert.equal(month.result.days.length,31);assert.equal(month.result.total,input.profile.workouts.filter(w=>w.finished).length+input.profile.runs.length);
   const wid=input.profile.workouts.find(w=>w.finished).id,bid=input.profile.exerciseBook[0].id,rid=input.profile.runs[0].id;
   compareFixture('progress-result-workout',query(t,'workout',{id:wid}));
   compareFixture('progress-result-exercise',query(t,'exercise',{id:bid}));
+  const originalExercise=query(t,'exercise',{id:bid}).result;assert.equal(typeof originalExercise.best,'object');assert.equal(typeof originalExercise.bestE1rm,'number');
   compareFixture('progress-result-run',query(t,'run',{id:rid}));
   const unknown=query(t,'run',{id:input.profile.runs[1].id});assert.equal(unknown.result.kcal,null);assert.equal(unknown.result.paceText,'–');
   const selectedWeek=query(t,'month',{month:'2026-10',day:'2026-10-26'}).result.recaps.week;
@@ -66,13 +83,13 @@ const compareFixture=(name,value)=>{if(process.argv.includes('--write-fixtures')
   console.log('PASS: feature isolation, shared projection/results, Web values, read-only data, unknowns, validated queries');
 
   // Existing save invalidation; no heavy provider work during ordinary render/tab/date/forced hello.
-  t.run('render()');t.tick(300);
+  t.run('render()');t.tick(1000);
   t.run('var builds=0,metricsBuilds=0;const oldBuild=window.pulsNativeProgress.build;window.pulsNativeProgress.build=function(...a){builds++;return oldBuild(...a)};const oldMetrics=buildProgressMetrics;buildProgressMetrics=function(...a){metricsBuilds++;return oldMetrics(...a)}');
   for(let i=0;i<5;i++){t.run('render();go("food");setDate("2026-10-25")');t.tick(300)}
   assert.equal(t.run('builds'),0);assert.equal(t.run('metricsBuilds'),0);
   query(t,'month',{month:'2026-09'});query(t,'month',{month:'2026-10'});assert.equal(t.run('metricsBuilds'),0);
   t.event('window','pagehide');t.event('window','pageshow',{persisted:true});t.tick(300);assert.equal(t.run('builds'),0);
-  t.run('save();save()');t.tick(300);assert.equal(t.run('builds'),1);assert.equal(t.run('metricsBuilds'),1);
+  t.run('save();save()');t.tick(1000);assert.equal(t.run('builds'),1);assert.equal(t.run('metricsBuilds'),0,'unchanged save reuses granular metrics');
   // Native refuses requests during ownership ambiguity/load; no old user's result leaks.
   const waiting=app({deferLoad:true});waiting.start();assert.equal(waiting.ctx.window.pulsNativeProgressQuery({requestId:'x',kind:'month',month:'2026-10'}),false);
   t.run('cloudSession={user:{id:"other"}};cloudStatusChanged()');t.tick(300);
@@ -83,6 +100,25 @@ const compareFixture=(name,value)=>{if(process.argv.includes('--write-fixtures')
   assert.deepEqual(projections.map(m=>m.projectionSeq),[1,2,3]);
   console.log('PASS: cached providers, cheap renders and queries, save invalidation, bfcache, owner readiness');
 
+  const cache=start();cache.run('var awardCalls=0,metricCalls=0;const countedAwards=workoutAwards,countedMetrics=buildProgressMetrics;workoutAwards=function(...a){awardCalls++;return countedAwards(...a)};buildProgressMetrics=function(...a){metricCalls++;return countedMetrics(...a)}');
+  cache.run('state.foods[0].kcal+=7;save()');cache.tick(1000);assert.equal(cache.run('awardCalls'),0,'food does not rebuild awards');assert.equal(cache.run('metricCalls'),1);
+  const beforeVolume=cache.progress().progress.stats.volume;
+  cache.run('state.workouts.find(w=>w.finished).exercises[0].sets[0].kg+=5;save()');cache.tick(1000);
+  assert.equal(cache.run('awardCalls'),1,'one awards calculation even through metrics/identity');assert.equal(cache.run('metricCalls'),2);assert.notEqual(cache.progress().progress.stats.volume,beforeVolume);
+  const beforeRecord=cache.progress().progress.records[0].best;
+  cache.run('state.workouts.find(w=>!w.finished).exercises[0].sets[0]={kg:200,reps:1,done:true};save()');cache.tick(1000);
+  assert.equal(cache.run('awardCalls'),1);assert.equal(cache.run('metricCalls'),2,'active sets do not rebuild completed metrics');assert.notDeepEqual(cache.progress().progress.records[0].best,beforeRecord);
+  const editing=start();editing.run('calendarEditing=function(){return true}');let blurred=0;editing.ctx.document.activeElement={blur(){blurred++}};
+  ok(editing.apply(cmd('progress.view.set',{key:'range',value:'year',expect:input.profile.progressView})));assert.equal(blurred,1);
+  const raced=start();raced.ctx.document.activeElement={blur(){raced.run('state.progressView.range="week";save()')}};
+  code(raced.apply(cmd('progress.view.set',{key:'range',value:'year',expect:input.profile.progressView})),'conflict');assert.equal(raced.state().progressView.range,'week','blur-triggered Web edit must precede the native expectation check');
+  editing.run('var forbiddenMetricCalls=0;buildProgressMetrics=function(){forbiddenMetricCalls++;throw Error("uncached metric build")}');
+  ok(editing.apply(cmd('progress.view.set',{key:'metric',value:'volume',expect:editing.state().progressView})));assert.equal(editing.run('forbiddenMetricCalls'),0);
+  const schema=start();const definitions=clone(schema.run('buildProgressMetrics().definitions.map(x=>({key:x.key,group:x.group}))'));
+  for(const m of definitions){schema.run('state.progressView='+JSON.stringify({group:m.group}));
+    const plan=schema.run('window.pulsNativeProgress.ops["progress.view.set"].check('+JSON.stringify({key:'metric',value:m.key,expect:{group:m.group}})+')');
+    assert.equal(plan.code,undefined,'provider metric remains accepted: '+m.key);
+  }
   t=start();let a=cmd('progress.view.set',{key:'range',value:'year',expect:input.profile.progressView});ok(t.apply(a));
   const stored=t.store.get('puls-v1');ok(t.apply(a));assert.equal(t.store.get('puls-v1'),stored);
   t.store.delete('puls-native-applied');ok(t.apply({...a,id:cmd('',{}).id}));

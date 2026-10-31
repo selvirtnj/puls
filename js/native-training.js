@@ -360,11 +360,19 @@ const ops={
   }
 };
 
+const parts=new Map();
+let previousWorkout=null;
+function memo(name,keys,build){const prior=parts.get(name);if(prior&&keys.length===prior.keys.length&&keys.every((x,i)=>x===prior.keys[i]))return prior.value;const value=build();parts.set(name,{keys,value});return value}
 function build(){
+  const history=JSON.stringify(state.workouts.filter(w=>w.finished)),runs=JSON.stringify(state.runs||[]),day=today();
+  const bookKey=JSON.stringify(state.exerciseBook),routineKey=JSON.stringify(state.routines);
+  const completed=memo('completed',[state,history,day],()=>completedWorkouts());
+  const awards=memo('awards',[state,history,runs,day],()=>workoutAwards());
   const settings=state.workoutSettings??{restSeconds:120},restDefault=settings.restSeconds,book=state.exerciseBook||[];
   const bookName=id=>book.find(b=>b.id===id)?.name;
   const previousSet=s=>s?{kg:s.kg,reps:s.reps,shownKg:decimal(Number(s.kg))}:null;
   const w=activeWorkout();let active=null;
+  if(previousWorkout!==(w?.id??null)){for(const key of parts.keys())if(key.startsWith('previous:'))parts.delete(key);previousWorkout=w?.id??null}
   if(w&&isId(w.id)){
     const exercises=w.exercises.filter(e=>isId(e.id)),sets=w.exercises.flatMap(e=>e.sets);
     active={id:w.id,name:text(w.name),date:w.date,routineId:isId(w.routineId)?w.routineId:null,
@@ -376,7 +384,7 @@ function build(){
       complete:exercises.length===w.exercises.length,
       exercises:exercises.map(e=>{
         // Same source as the Web "Vorher" column and copy button: previous done sets, by set index.
-        const previous=previousPerformance(w,e),group=e.superset?w.exercises.filter(x=>x.superset===e.superset):[];
+        const previous=memo('previous:'+e.id,[state,history,w.id,w.date,w.startedAt,e.exerciseId,e.name],()=>previousPerformance(w,e)),group=e.superset?w.exercises.filter(x=>x.superset===e.superset):[];
         return {id:e.id,libraryId:isId(e.exerciseId)?e.exerciseId:null,name:text(e.name),
           restSeconds:typeof e.restSeconds==='number'?e.restSeconds:null,effectiveRestSeconds:e.restSeconds??restDefault,
           repMin:Number.isFinite(e.repMin)?e.repMin:null,repMax:Number.isFinite(e.repMax)?e.repMax:null,
@@ -386,29 +394,32 @@ function build(){
           sets:e.sets.map((s,i)=>({...setView(s),previous:previousSet(previous?.sets[i])}))};
       })};
   }
-  const awards=workoutAwards(),recent=completedWorkouts().slice(-10).reverse().filter(x=>isId(x.id)).map(x=>{
+  const recent=memo('recent',[state,history,runs,day],()=>completed.slice(-10).reverse().filter(x=>isId(x.id)).map(x=>{
     const stats=workoutStats([x]);
     return {id:x.id,name:text(x.name),date:x.date,routineId:isId(x.routineId)?x.routineId:null,
       durationSeconds:Number.isFinite(x.durationSeconds)?x.durationSeconds:null,sets:stats.sets,reps:stats.reps,volume:decimal(stats.volume),
       xp:awards[x.id]?.xp||0,autoFinished:!!x.autoFinished};
-  });
+  }));
   const {last,next}=routineRecommendation(),routines=(state.routines||[]).filter(r=>isId(r.id)),library=book.filter(b=>isId(b.id));
-  const xp=typeof xpProgress==='function'&&typeof totalWorkoutXP==='function'?xpProgress(totalWorkoutXP()):null;
+  const identity=memo('identity',[state,history,runs,day],()=>{const xp=typeof xpProgress==='function'?xpProgress(Object.values(awards).reduce((sum,a)=>sum+a.xp,0)):null;
+    return xp?{level:xp.level,current:xp.current,needed:xp.needed,total:xp.total,streak:typeof dailyWorkoutStreak==='function'?dailyWorkoutStreak():null}:null});
   const training={
     language:state.language==='en'?'en':'de',locale:appLocale(),today:today(),settings:{restSeconds:restDefault},active,
-    routines:routines.map(r=>({id:r.id,name:text(r.name),exerciseCount:r.exercises.length,setCount:r.exercises.reduce((a,e)=>a+e.sets,0),
+    routines:memo('routines',[state,bookKey,routineKey],()=>routines.map(r=>({id:r.id,name:text(r.name),exerciseCount:r.exercises.length,setCount:r.exercises.reduce((a,e)=>a+e.sets,0),
       exercises:r.exercises.map(e=>({libraryId:isId(e.exerciseId)?e.exerciseId:null,name:bookName(e.exerciseId)==null?null:text(bookName(e.exerciseId)),
-        sets:e.sets,min:e.min,max:e.max,restSeconds:typeof e.restSeconds==='number'?e.restSeconds:null,superset:typeof e.superset==='string'?e.superset:null}))})),
+        sets:e.sets,min:e.min,max:e.max,restSeconds:typeof e.restSeconds==='number'?e.restSeconds:null,superset:typeof e.superset==='string'?e.superset:null}))}))),
     routineCount:(state.routines||[]).length,
     recommendation:{nextRoutineId:isId(next?.id)?next.id:null,
       last:last&&isId(last.id)?{id:last.id,name:text(last.name),date:last.date,routineId:isId(last.routineId)?last.routineId:null}:null},
-    library:library.map(b=>({id:b.id,name:text(b.name),muscles:Array.isArray(b.muscles)?b.muscles.map(text):[],equipment:typeof b.equipment==='string'?text(b.equipment):null,
-      target:Number.isFinite(b.target)?b.target:0,repMin:Number.isFinite(b.repMin)?b.repMin:null,repMax:Number.isFinite(b.repMax)?b.repMax:null,loadStep:Number.isFinite(b.loadStep)?b.loadStep:null})),
+    library:memo('library',[state,bookKey],()=>library.map(b=>({id:b.id,name:text(b.name),muscles:Array.isArray(b.muscles)?b.muscles.map(text):[],equipment:typeof b.equipment==='string'?text(b.equipment):null,
+      target:Number.isFinite(b.target)?b.target:0,repMin:Number.isFinite(b.repMin)?b.repMin:null,repMax:Number.isFinite(b.repMax)?b.repMax:null,loadStep:Number.isFinite(b.loadStep)?b.loadStep:null}))),
     libraryCount:book.length,recent,
-    identity:xp?{level:xp.level,current:xp.current,needed:xp.needed,total:xp.total,streak:typeof dailyWorkoutStreak==='function'?dailyWorkoutStreak():null}:null,
+    identity,
     omitted:{routines:(state.routines||[]).length-routines.length,library:book.length-library.length,recent:0}
   };
   // Same 48 Ki code-unit budget as the overview. The active session is never shortened; oldest history goes first.
+  // Budget trimming must never mutate cached sections.
+  training.recent=training.recent.slice();training.library=training.library.slice();training.routines=training.routines.slice();
   const limit=48*1024;let size=JSON.stringify(training).length;
   for(const key of ['recent','library','routines'])while(size>limit&&training[key].length){size-=JSON.stringify(training[key].pop()).length+1;training.omitted[key]++}
   while(JSON.stringify(training).length>limit){

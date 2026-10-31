@@ -29,15 +29,42 @@ const session=(w,awards)=>({id:w.id,name:text(w.name),date:w.date,durationSecond
   durationClock:Number.isFinite(w.durationSeconds)?formatClock(w.durationSeconds):null,timeApprox:!!w.timeApprox,autoFinished:!!w.autoFinished,
   exerciseCount:w.exercises.length,...stats([w]),...award(w,awards)});
 // Build the expensive providers only after explicit invalidation; ordinary renders/date/forced Hellos reuse them.
-let cached=null,cachedInputs=null;
+const parts=new Map();
+function memo(name,keys,build){const prior=parts.get(name);if(prior&&keys.length===prior.keys.length&&keys.every((x,i)=>x===prior.keys[i]))return prior.value;const value=build();parts.set(name,{keys,value});return value}
 const queryCache=new Map();
-function data(context){
-  const inputs=[context?.revision,state,today(),state.language,state.chartPeriod,state.workouts,state.runs,state.foods,state.weights,state.measurements,state.exerciseBook,state.profile];
-  if(!cachedInputs||inputs.some((x,i)=>x!==cachedInputs[i])){
-    queryCache.clear();
-    cached={workouts:completedWorkouts(),awards:workoutAwards(),metrics:buildProgressMetrics(),chart:trendData()};cachedInputs=inputs;
-  }
-  return cached;
+// These signatures are evaluated only on demand, never in render or save wrappers. Split active edits from history.
+function inputs(){return {day:today(),language:state.language,history:JSON.stringify(state.workouts.filter(w=>w.finished)),
+  workouts:JSON.stringify(state.workouts),runs:JSON.stringify(state.runs||[]),book:JSON.stringify(state.exerciseBook),
+  weights:JSON.stringify(state.weights),foods:JSON.stringify(state.foods),measurements:JSON.stringify(state.measurements),profile:JSON.stringify(state.profile)}}
+function withAwards(d,fn){const original=workoutAwards,completed=completedWorkouts;workoutAwards=()=>d.awards;completedWorkouts=()=>d.workouts;
+  try{return fn()}finally{workoutAwards=original;completedWorkouts=completed}}
+function data(context,metrics=false,chart=false){
+  const k=inputs(),workouts=memo('workouts',[state,k.day,k.history],()=>completedWorkouts());
+  const awards=memo('awards',[state,k.day,k.history,k.runs],()=>workoutAwards()),d={k,workouts,awards};
+  memo('queryToken',[state,...Object.values(k),JSON.stringify(state.runSettings)],()=>{queryCache.clear();return true});
+  if(metrics)d.metrics=memo('metrics',[state,k.day,k.language,k.history,k.runs,k.book,k.foods,k.weights,k.measurements,k.profile],()=>withAwards(d,()=>buildProgressMetrics()));
+  if(chart)d.chart=memo('chart',[state,k.day,k.workouts,k.foods,k.weights,state.chartPeriod],()=>trendData());
+  return d;
+}
+// One pass indexes exercise sources; Web strengthRecord/exerciseHistory/forecast/progression still do all mathematics.
+function exerciseProviders(d,fn){
+  const index=memo('exerciseIndex',[state,d.k.day,d.k.workouts,d.k.history],()=>{
+    const ids=new Map(),names=new Map(),sessions=new Map(),legacy=new Map();let order=0;
+    const add=(map,key,value)=>{if(!map.has(key))map.set(key,[]);map.get(key).push(value)};
+    for(const w of state.workouts)if(w.date<=d.k.day)for(const e of w.exercises)for(const s of e.sets)if(s.done){const item={order:order++,set:{...s,date:w.date}};
+      if(e.exerciseId)add(ids,e.exerciseId,item);else add(names,e.name.toLocaleLowerCase('de'),item)}
+    for(const w of d.workouts){const seen=new Set(),old=new Set();for(const e of w.exercises){if(e.exerciseId)seen.add(e.exerciseId);else old.add(e.name.toLowerCase())}
+      for(const key of seen)add(sessions,key,w);for(const key of old)add(legacy,key,w)}
+    return {ids,names,sessions,legacy,histories:new Map(),records:new Map()};
+  });
+  const originalSets=exerciseSets,originalHistory=exerciseHistory,originalRecord=strengthRecord,completed=completedWorkouts;
+  exerciseSets=(key,name)=>[...(index.ids.get(key)||[]),...(index.names.get(name.toLocaleLowerCase('de'))||[])].sort((a,b)=>a.order-b.order).map(x=>x.set);
+  exerciseHistory=b=>{const key=JSON.stringify([b.id,b.name]);if(!index.histories.has(key)){
+    const candidates=new Set([...(index.sessions.get(b.id)||[]),...(index.legacy.get(b.name.toLowerCase())||[])]);
+    completedWorkouts=()=>d.workouts.filter(w=>candidates.has(w));try{index.histories.set(key,originalHistory(b))}finally{completedWorkouts=completed}
+  }return index.histories.get(key)};
+  strengthRecord=b=>{const key=JSON.stringify([b.id,b.name]);if(!index.records.has(key))index.records.set(key,originalRecord(b));return index.records.get(key)};
+  try{return fn()}finally{exerciseSets=originalSets;exerciseHistory=originalHistory;strengthRecord=originalRecord;completedWorkouts=completed}
 }
 function record(b){
   // strengthRecord intentionally includes done sets in unfinished workouts, just like Web recordsPage/rankHtml.
@@ -68,7 +95,7 @@ function activityBetween(mode,offset,filter,range){
   if(filter!=='all'&&!allTypes.includes(filter))filter='all';
   const rows=s.entries.filter(x=>filter==='all'||x.type===filter),view=filter==='all'?s:s.byType[filter]||empty;
   return {mode,offset,filter,start:s.start,end:s.end,summary:activitySummary(view),activeDays:[...new Set(rows.map(x=>x.entry.date))].sort(),
-    types:allTypes.map(type=>({type:text(type),label:text(actTypeName(type))})),
+    types:allTypes.sort((a,b)=>a==='gym'?-1:b==='gym'?1:actTypeName(a).localeCompare(actTypeName(b),appLocale())).map(type=>({type:text(type),label:text(actTypeName(type))})),
     byType:Object.entries(s.byType).sort((a,b)=>b[1].durationSeconds-a[1].durationSeconds||b[1].count-a[1].count)
       .map(([type,v])=>({type:text(type),label:text(actTypeName(type)),...activitySummary(v)})),
     entries:rows.slice(-60).reverse().filter(x=>id(x.entry.id)).map(activityRow),omitted:rows.length-rows.slice(-60).filter(x=>id(x.entry.id)).length};
@@ -105,10 +132,14 @@ function metricView(d){
     average:points.length?shown(values.reduce((a,b)=>a+b,0)/points.length):null,high:points.length?shown(values.reduce((a,b)=>Math.max(a,b),-Infinity)):null};
 }
 function build(context){
-  const d=data(context),book=state.exerciseBook||[],records=book.filter(b=>id(b.id)).slice(0,60).map(record),chart=d.chart;
+  const d=data(context,true,true),k=d.k;
+  return memo('projection',[state,...Object.values(k),JSON.stringify(settings()),JSON.stringify(state.runSettings),recapMode,recapOffset,actMode,actOffset,actFilter],()=>buildFresh(d));
+}
+function buildFresh(d){
+  const k=d.k,book=state.exerciseBook||[],records=memo('records',[state,k.day,k.language,k.workouts,k.book],()=>exerciseProviders(d,()=>book.filter(b=>id(b.id)).slice(0,60).map(record))),chart=d.chart;
   const range=runWeekRange(),efforts=runBestEfforts();
   const p={language:state.language==='en'?'en':'de',locale:appLocale(),today:today(),settings:settings(),
-    identity:{...xpProgress(totalWorkoutXP()),streak:dailyWorkoutStreak(),weekStreak:trainingStreak()},stats:stats(d.workouts),
+    identity:memo('identity',[state,k.day,k.history,k.runs],()=>({...xpProgress(Object.values(d.awards).reduce((sum,a)=>sum+a.xp,0)),streak:dailyWorkoutStreak(),weekStreak:trainingStreak()})),stats:memo('stats',[state,k.day,k.history],()=>stats(d.workouts)),
     records,recordCount:book.length,metrics:metricView(d),
     chart:{period:state.chartPeriod||'month',lines:Object.fromEntries(['weight','strength','kcal'].map(k=>[k,state.chartLines?.[k]!==false])),
       rows:chart.slice(-400).map(x=>({date:x.date,weight:number(x.weight),strength:number(x.strength),kcal:Number.isFinite(x.kcal)?Math.round(x.kcal):null})),
@@ -141,7 +172,7 @@ function workoutQuery(w,d){
 function exerciseQuery(b){
   const h=exerciseHistory(b),points=h.filter(x=>x.best>0),history=h.slice(-120).reverse().map(x=>({workoutId:id(x.w.id)?x.w.id:null,date:x.w.date,name:text(x.w.name),
     e1rm:x.best?number(x.best):null,volume:number(x.volume),sets:x.sets.slice(0,100).map(s=>({kg:s.kg,reps:s.reps})),omitted:Math.max(0,x.sets.length-100)}));
-  return {...record(b),best:number(h.reduce((v,x)=>Math.max(v,x.best),0)||null),history,total:h.length,omitted:h.length-history.length,
+  return {...record(b),bestE1rm:number(h.reduce((v,x)=>Math.max(v,x.best),0)||null),history,total:h.length,omitted:h.length-history.length,
     points:points.slice(-400).map(x=>({date:x.w.date,workoutId:id(x.w.id)?x.w.id:null,value:number(x.best)})),pointsOmitted:Math.max(0,points.length-400)};
 }
 function query(r,context){
@@ -170,7 +201,7 @@ function query(r,context){
     const item=r.kind==='workout'?state.workouts.find(w=>w.id===r.id&&w.finished):r.kind==='exercise'?state.exerciseBook.find(b=>b.id===r.id):(state.runs||[]).find(x=>x.id===r.id);
     if(!item)return {kind:r.kind,ok:false,error:{code:'gone',message:'Eintrag nicht mehr vorhanden'}};
     if(r.kind==='workout')result=workoutQuery(item,d);
-    if(r.kind==='exercise')result=exerciseQuery(item);
+    if(r.kind==='exercise')result=exerciseProviders(d,()=>exerciseQuery(item));
     if(r.kind==='run')result={...activityRow({kind:'activity',type:item.type??'run',entry:item}),
       paceText:runPaceText(runPace(item)),maxSpeed:number(item.maxSpeed),elevationGain:number(item.elevationGain),elevationMax:number(item.elevationMax),
       pauseSeconds:Number.isFinite(item.pauseSeconds)?item.pauseSeconds:null,note:text(item.note),feeling:item.feeling??null,terrain:typeof item.terrain==='string'?text(item.terrain):null,
@@ -202,12 +233,20 @@ function query(r,context){
   if(queryCache.size>=8)queryCache.delete(queryCache.keys().next().value);
   queryCache.set(cacheKey,out);return out;
 }
+function metricExists(key,group){
+  if(group==='training')return ['workouts','totalWorkouts','sets','reps','volume','totalVolume','duration','averageDuration','load','repsPerSet','density','exercises','xp','totalXP','level','wins','strength','streak'].includes(key);
+  if(group==='food')return ['kcal','p','c','f','entries'].some(k=>key==='food:'+k)||Object.hasOwn({...nutrientLabels,water:[]},key.replace(/^nutrient:/,''))&&key.startsWith('nutrient:');
+  if(group==='body')return ['weight','weightTrend','bmi','bodyfatEstimate'].includes(key)||key.startsWith('body:')&&Object.hasOwn(measurementFields,key.slice(5));
+  if(group!=='muscles')return false;
+  const match=key.match(/^muscle:(.+):(sets|volume)$/);if(!match)return false;
+  return read(()=>completedWorkouts().some(w=>loggedSets(w).some(s=>(bookFor(s.exercise)?.muscles?.length?bookFor(s.exercise).muscles:['unassigned']).includes(match[1]))));
+}
 const ops={
   'progress.view.set':{
     check(a){
       if(!['group','range','metric'].includes(a.key)||typeof a.value!=='string'||
         (a.key==='group'?!Object.hasOwn(progressGroups,a.value):a.key==='range'?!Object.hasOwn(progressRanges,a.value):
-          a.value.length>160||!read(()=>buildProgressMetrics().definitions.some(x=>x.key===a.value&&x.group===(state.progressView?.group||'training'))))||
+          a.value.length>160||!metricExists(a.value,state.progressView?.group||'training'))||
         !Object.hasOwn(a,'expect')||a.expect!==null&&!plain(a.expect))return fail('invalid','Ungültige Fortschrittsansicht oder Erwartung');
       const target={...(state.progressView||{}),[a.key]:a.value};if(a.key==='group')delete target.metric;
       if(same(state.progressView??null,target))return {noop:true,target};

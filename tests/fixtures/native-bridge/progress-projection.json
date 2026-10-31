@@ -17,7 +17,7 @@
     "conflict": false
   },
   "ownerPending": false,
-  "reason": "load",
+  "reason": "idle",
   "progress": {
     "language": "de",
     "locale": "de-DE",

@@ -8,6 +8,8 @@ const seqKey='puls-native-seq',appliedKey='puls-native-applied',ownerPendingKey=
 const webVersion=document.currentScript?.src?.match(/[?&]v=([^&#]+)/)?.[1]||'';
 let ready=false,seq=0,timer=null,pending=null,contextReason=null,applying=false,rollingBack=false,saveDepth=0,activating=false,activationProfile=null,adoptingLocal=false,helloOwnerPending;
 let projectionTimer=null,projectionSeq=0,projectionRevision=0;
+let progressTimer=null,progressIdle=false;
+let interests=new Set(['overview','training']);
 let chromeRequested=false,chromeSessionHold=false,pageHidden=false,lastChrome=null,reportedPage;
 let trainingConfirmed=false,trainingApplying=false;
 const feature=name=>Array.isArray(window.pulsNativeFeatures)&&window.pulsNativeFeatures.includes(name);
@@ -153,11 +155,29 @@ const views={
   progress:{feature:'nativeProgress',section:false,inputs:progressInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
     builder:()=>progressAdapter()?.build||null}
 };
-const enabledViews=()=>Object.entries(views).filter(([,view])=>feature(view.feature)&&view.builder());
+const supportedViews=()=>Object.entries(views).filter(([,view])=>feature(view.feature)&&view.builder());
+const enabledViews=()=>supportedViews().filter(([name])=>interests.has(name));
+const setInputActive=()=>!!document.activeElement?.matches?.('input,textarea,select')&&!!document.activeElement?.closest?.('.liveset,.set,.sessioncontent');
+function scheduleProgress(){
+  clearTimeout(progressTimer);progressTimer=null;progressIdle=false;
+  if(!interests.has('progress')||!progressAdapter())return;
+  progressTimer=setTimeout(()=>{progressTimer=null;progressIdle=true;if(setInputActive()){scheduleProgress();return}projection('idle','progress')},1000);
+}
+window.pulsNativeSetInterest=function(request){
+  if(!ready||pageHidden||!profileReady()||!request||typeof request!=='object'||Array.isArray(request)||Object.keys(request).length!==1||!Object.hasOwn(request,'projections')||
+    !Array.isArray(request.projections)||request.projections.length>3||new Set(request.projections).size!==request.projections.length||
+    Array.from(request.projections).some(name=>typeof name!=='string'||!supportedViews().some(([key])=>key===name)))return false;
+  const previous=interests;interests=new Set(request.projections);
+  for(const [name,view] of supportedViews())if(interests.has(name)&&!previous.has(name))view.force=true;
+  if(!interests.has('progress')){clearTimeout(progressTimer);progressTimer=null;progressIdle=false}
+  else if(!previous.has('progress'))scheduleProgress();
+  projection('interest');return true;
+};
 function projection(reason,force=false){
   clearTimeout(projectionTimer);projectionTimer=null;
   if(!ready||helloOwnerPending!==false||!profileReady()||applying||rollingBack||saveDepth)return;
   for(const [name,view] of enabledViews()){
+    if(name==='progress'&&(!progressIdle||setInputActive()||pageHidden))continue;
     const build=view.builder();
     try{
       const inputs=view.inputs();
@@ -173,6 +193,7 @@ function projection(reason,force=false){
 function queueProjection(reason='render',force=false){
   const list=enabledViews();if(!list.length)return;
   if(force)for(const [,view] of list)view.force=true;
+  if(list.some(([name,view])=>name==='progress'&&(view.force||!sameInputs(view.inputs(),view.cachedInputs)))&&!progressTimer)scheduleProgress();
   if(!list.some(([,view])=>view.force||!sameInputs(view.inputs(),view.cachedInputs)||view.section&&currentAccountSection()!==view.lastSection))return;
   clearTimeout(projectionTimer);
   if(ready&&!applying&&!rollingBack)projectionTimer=setTimeout(()=>{if(pending)flush();projection(reason)},300);
@@ -209,6 +230,7 @@ function flush(){
 }
 function queue(reason='save'){
   projectionRevision++;
+  scheduleProgress();
   // A render nested inside a cloud/import/apply action must not hide its more specific reason.
   if(reason!=='save'||!pending)pending=reason;
   clearTimeout(timer);timer=null;
@@ -383,10 +405,14 @@ function applyTraining(cmd,history,training,op){
   if(!args||typeof args!=='object'||Array.isArray(args)){ack(id,'invalid','Ungültige Argumente');return}
   // lifecycle.js closes sessions older than five hours on focus/visibility; do the same before acting on one.
   try{if(training===trainingAdapter()&&typeof sweepLongWorkouts==='function')sweepLongWorkouts()}catch{}
-  let plan;try{plan=op.check(args)}catch{plan={code:'invalid',message:'Ungültige Argumente'}}
+  let plan;try{
+    // blur may commit a Web onchange/save: validate expect only after that event has finished.
+    if(training===progressAdapter()&&!webDialogOpen()&&!['run','session'].includes(chromeState().reason))document.activeElement?.blur?.();
+    plan=op.check(args);
+  }catch{plan={code:'invalid',message:'Ungültige Argumente'}}
   if(plan.code){ack(id,plan.code,plan.message);return}
   // These Web functions close #modal; never discard an unrelated open Web form. Native retries after chrome changes.
-  if(plan.busy&&(webDialogOpen()||training===progressAdapter()&&chromeState().blocking)){ack(id,'busy','Ein Web-Ablauf ist geöffnet');return}
+  if(plan.busy&&(webDialogOpen()||training===progressAdapter()&&['run','session'].includes(chromeState().reason))){ack(id,'busy','Ein Web-Ablauf ist geöffnet');return}
   commit(cmd,history,{ui:training,run:()=>plan.noop?plan.result:op.run(args,plan),verify:(stored,result)=>op.effective(stored,args,plan,result)});
 }
 function commit(cmd,history,{run,verify,ui}){
@@ -489,7 +515,7 @@ if(progressFeature)window.pulsNativeProgressQuery=function(request){
   return !!result&&post({type:'progressResult',requestId:request.requestId,seq,userId:userId(),ownerPending:false,
     flags:flags(),cloud:cloud(),language:state.language==='en'?'en':'de',...result});
 };
-window.addEventListener('pagehide',()=>{flush();projection('background');pageHidden=true;chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome()});
+window.addEventListener('pagehide',()=>{pageHidden=true;flush();projection('background');chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome()});
 window.addEventListener('pageshow',event=>{
   const restored=pageHidden||event.persisted===true;pageHidden=false;
   if(restored){chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome();hello(true)}

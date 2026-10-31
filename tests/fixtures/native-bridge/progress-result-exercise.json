@@ -23,7 +23,10 @@
     "id": "x0000000-0000-4000-8000-000000000001",
     "name": "Bench Press",
     "target": 0,
-    "best": 101.3,
+    "best": {
+      "date": "2026-10-24",
+      "e1rm": 101.3
+    },
     "heaviest": {
       "date": "2026-10-24",
       "kg": 80,
@@ -36,6 +39,7 @@
     },
     "forecast": "Setze ein persönliches e1RM-Ziel für deine Rangprognose.",
     "suggestion": "Bereich 6–10 Reps. Letztes Training: 80 × 8 / 80 × 7. Erst nach zwei vollständigen Trainings am oberen Ende erhöhen.",
+    "bestE1rm": 101.3,
     "history": [
       {
         "workoutId": "o0000000-0000-4000-8000-000000000001",
