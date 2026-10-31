@@ -318,6 +318,38 @@ window.pulsNativeApply=function(cmd){
   },verify:stored=>Array.isArray(stored?.weights)&&(cmd.op==='weight.delete'?!stored.weights.some(x=>x.id===args.id):
     stored.weights.some(x=>x.id===args.id&&x.date===args.date&&x.kg===args.kg)&&stored.weights.filter(x=>x.date===args.date).length===1)});
 };
+// M4: the save/render wrappers of native-bridge.js/insights.js report rest, workout timer and run Live Activity state
+// synchronously. During a training op those messages stay in this document until the op is confirmed: then only the
+// final state per kind is delivered once (if it differs from what Native already has); after a rollback none is.
+// Rest/workout messages are pure state, so an equivalent repeat (the bridge correcting itself) is always dropped.
+const nativeKind=(handler,message)=>handler==='pulsWorkout'?'workout':['restStart','restCancel','workoutActive'].includes(message?.type)?'rest':message?.type==='runActivity'?'run':null;
+const nativeSame=(kind,a,b)=>{
+  if(!a||!b)return false;
+  // startsAt/cancelRest only describe how the bridge reached a state, not the state Native shows.
+  if(kind==='rest'){const plainState=({startsAt,cancelRest,...value})=>value;return JSON.stringify(plainState(a))===JSON.stringify(plainState(b))}
+  return JSON.stringify(a)===JSON.stringify(b);
+};
+const nativeSent=new Map();let nativeBuffer=null;
+function gateNativeHandler(name){
+  const handler=window.webkit?.messageHandlers?.[name];
+  if(!handler||typeof handler.postMessage!=='function')return;
+  const send=handler.postMessage,deliver=(kind,message)=>{send.call(handler,message);if(kind)nativeSent.set(kind,copy(message))};
+  try{
+    handler.postMessage=function(message){
+      const kind=nativeKind(name,message);
+      if(kind&&nativeBuffer){nativeBuffer.push({kind,message,deliver});return}
+      if((kind==='rest'||kind==='workout')&&nativeSame(kind,nativeSent.get(kind),message))return;
+      deliver(kind,message);
+    };
+  }catch{ /* A read-only handler keeps the previous, unbuffered behaviour. */ }
+}
+function releaseNative(confirmed){
+  const buffered=nativeBuffer||[];nativeBuffer=null;
+  if(!confirmed)return;
+  const last=new Map();for(const entry of buffered){last.delete(entry.kind);last.set(entry.kind,entry)}
+  for(const {kind,message,deliver} of last.values())if(!nativeSame(kind,nativeSent.get(kind),message))try{deliver(kind,message)}catch{}
+}
+if(trainingFeature){gateNativeHandler('pulsNative');gateNativeHandler('pulsWorkout')}
 const webDialogOpen=()=>(typeof modal!=='undefined'&&!!modal.open)||!!document.querySelector('dialog[open]');
 function applyTraining(cmd,history,training,op){
   const id=cmd.id,args=cmd.args;
@@ -339,6 +371,7 @@ function commit(cmd,history,{run,verify,ui}){
     metaKey=userId()===null?null:cloudStorageKey(userId());if(metaKey)metaRaw=localStorage.getItem(metaKey);
     dirty=typeof cloudDirty!=='undefined'?cloudDirty:undefined;message=typeof cloudMessage!=='undefined'?cloudMessage:undefined;
     before=copy(state);target=state;view=ui?ui.captureUi():undefined;applying=true;trainingApplying=!!ui;contextReason='apply';
+    if(ui)nativeBuffer=[];
     // Training ops call Web functions; an exception there is a rejected command, not a storage problem.
     try{result=run()}catch(error){if(ui){code='invalid';reason=error?.message}throw error}
     if(!validData(state)){code='invalid';throw Error('Ungültiges Profil')}
@@ -370,6 +403,8 @@ function commit(cmd,history,{run,verify,ui}){
     clearTimeout(timer);timer=null;pending=waiting;
     ack(id,code,code==='invalid'?(reason?'Web-Ablauf hat den Befehl abgelehnt: '+reason:'Ergebnis ist kein gültiges Profil'):'Speichern nicht bestätigt');
   }finally{
+    // After the ack: one reconciliation from the final state, or nothing at all after a rollback.
+    if(ui)releaseNative(!failed);
     applying=false;trainingApplying=false;contextReason=previousReason;if(failed&&pending)queue(pending);if(!failed)projection('apply');
     if(ui){reportNavigation();reportChrome()}
   }

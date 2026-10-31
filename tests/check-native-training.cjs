@@ -323,6 +323,44 @@ const TRAINING_OPS=['workout.start','set.update','set.add','set.remove','exercis
   for(const bad of [null,{query:'x'},{requestId:'',query:'x'},{requestId:'r',equipment:'rope'},{requestId:'r',limit:0}])assert.equal(t.ctx.window.pulsNativeExerciseSearch(bad),false);
   console.log('PASS: exercise search mirrors Web ranking/filter/own-exercise hint without changing the picker state');
 
+  // Review J/P2: native side effects (rest notification, Live Activity) leave an op only once, from the final state.
+  const delivered=(test,from)=>test.native.slice(from).map(x=>x.type);
+  t=started();ok(t.apply(cmd('rest.adjust',{workoutId:W,seconds:30,expect:{endAt:input.now+60000}})),'seed delivered rest');
+  let mark=t.native.length;
+  ok(t.apply(cmd('set.update',{workoutId:W,exerciseId:BENCH,setIndex:1,done:true,expect:{kg:80,reps:7,done:false}})),'open superset round');
+  assert.deepEqual(delivered(t,mark),['restCancel'],'no intermediate restStart before the superset cancel');assert.equal(workout(t).rest,null);
+  t.run('render();save()');assert.deepEqual(delivered(t,mark),['restCancel']);
+  // Rolled-back op with workoutTimer: neither the intermediate workoutActive nor the bridge correction reaches Native.
+  t=started({features:['stateBridge','nativeTraining','workoutTimer']});ok(t.apply(cmd('rest.adjust',{workoutId:W,seconds:30,expect:{endAt:input.now+60000}})),'seed');
+  const seeded=t.native.at(-1);assert.equal(seeded.type,'restStart');mark=t.native.length;
+  t.options.failWrite=key=>key==='puls-native-applied';code(t.apply(cmd('rest.skip',{workoutId:W,expect:{endAt:input.now+90000}})),'persist_failed','skip fails');
+  delete t.options.failWrite;assert.equal(workout(t).rest.endAt,input.now+90000);assert.deepEqual(delivered(t,mark),[],'no orphaned workoutActive');
+  t.run('render();save()');t.event('document','visibilitychange');assert.deepEqual(delivered(t,mark),[],'bridge correction to the old state is dropped');
+  ok(t.apply(cmd('rest.skip',{workoutId:W,expect:{endAt:input.now+90000}})),'skip succeeds');
+  assert.deepEqual(t.native.slice(mark).map(x=>[x.type,x.cancelRest]),[['workoutActive',true]],'one workoutActive from the final state');
+  // Failed finish: no restCancel followed by a new restStart.
+  t=started();ok(t.apply(cmd('rest.adjust',{workoutId:W,seconds:30,expect:{endAt:input.now+60000}})),'seed');mark=t.native.length;
+  t.options.failWrite=key=>key==='puls-v1';code(t.apply(cmd('workout.finish',{workoutId:W,confirmUnfinished:true})),'persist_failed','finish fails');
+  delete t.options.failWrite;t.run('render();save()');assert.deepEqual(delivered(t,mark),[],'Live Activity untouched by the failed finish');
+  ok(t.apply(cmd('workout.finish',{workoutId:W,confirmUnfinished:true})),'finish');assert.deepEqual(delivered(t,mark),['restCancel']);
+  // Rollback must not rely on a working render: the later bridge correction is still recognised as the old state.
+  t=started({profile:solo});ok(t.apply(cmd('rest.adjust',{workoutId:W,seconds:30,expect:{endAt:input.now+60000}})),'seed');mark=t.native.length;
+  t.run('var breakRender=false;const keepRender=render;render=function(){if(breakRender)throw Error("render down");return keepRender.apply(this,arguments)}');
+  t.run('breakRender=true');code(t.apply(cmd('set.update',{workoutId:W,exerciseId:BENCH,setIndex:1,done:true,expect:{kg:80,reps:7,done:false}})),'invalid','render down');
+  t.run('breakRender=false');assert.deepEqual(exercise(t,BENCH).sets[1],{kg:80,reps:7,done:false});assert.equal(workout(t).rest.endAt,input.now+90000);
+  t.event('document','visibilitychange');t.run('render()');assert.deepEqual(delivered(t,mark),[],'nothing of the rolled-back rest reaches Native');
+  // Review J/P2: an expired rest that the Web tick has not cleared yet is gone, never revived by ±30 s.
+  t=started();t.clock.now=input.now+60001;const restBefore=clone(workout(t).rest);
+  code(t.apply(cmd('rest.adjust',{workoutId:W,seconds:30,expect:{endAt:input.now+60000}})),'gone','expired rest');
+  assert.deepEqual(workout(t).rest,restBefore);code(t.apply(cmd('rest.adjust',{workoutId:W,seconds:-30,expect:{endAt:input.now+60000}})),'gone','expired rest −30');
+  // Review J/P3: a failed finish restores the completion review flag and the celebration state of the finish chain.
+  t=started();t.run('completionReview=true;finishAudio={xp:true,streak:true};xpCelebrationPending={id:"older",levelup:false}');
+  t.options.failWrite=key=>key==='puls-v1';code(t.apply(cmd('workout.finish',{workoutId:W,confirmUnfinished:true})),'persist_failed','finish fails');delete t.options.failWrite;
+  assert.deepEqual(clone(t.run('[completionReview,finishAudio,xpCelebrationPending]')),[true,{xp:true,streak:true},{id:'older',levelup:false}]);
+  assert.equal(t.run('completionId'),null);
+  ok(t.apply(cmd('workout.finish',{workoutId:W,confirmUnfinished:true})),'finish');assert.equal(t.run('completionReview'),false,'a fresh finish is no review');
+  console.log('PASS: review J: buffered native side effects (superset, rolled-back workoutActive/finish, failing render), no revived rest, restored finish UI state');
+
   // Shared op fixtures decode and apply.
   t=started();
   for(const name of ['apply-training-set-update','apply-training-start']){

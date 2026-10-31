@@ -233,7 +233,8 @@ const ops={
       const target=activeTarget(args);if(target.code)return target;
       if(args.seconds!==30&&args.seconds!==-30)return fail('invalid','Nur +30 oder −30 Sekunden');
       if(!expectHas(args,'endAt')||!finite(args.expect.endAt,0,1e15))return fail('invalid','expect.endAt erforderlich');
-      return target.w.rest?.endAt&&target.w.rest.endAt===args.expect.endAt?{}:fail('gone','Diese Pause läuft nicht mehr');
+      // extendRest would restart an expired rest from now; an ended rest is gone even before the Web tick clears it.
+      return target.w.rest?.endAt&&target.w.rest.endAt===args.expect.endAt&&target.w.rest.endAt>Date.now()?{}:fail('gone','Diese Pause läuft nicht mehr');
     },
     run(args){
       // training.js:extendRest / workout-controls.js:shortenRest; −30 s on a nearly finished rest may end it.
@@ -422,13 +423,20 @@ function captureUi(){
   return {session:typeof sessionWorkoutId!=='undefined'?sessionWorkoutId:undefined,completion:typeof completionId!=='undefined'?completionId:undefined,
     step:typeof completionStep!=='undefined'?completionStep:undefined,tab:typeof trainTab!=='undefined'?trainTab:undefined,page,
     draft:typeof routineDraft!=='undefined'?routineDraft:undefined,picker:typeof exercisePickerContext!=='undefined'?exercisePickerContext:undefined,
-    order:typeof exerciseOrderContext!=='undefined'?exerciseOrderContext:undefined,modal:typeof modal!=='undefined'&&!!modal.open};
+    order:typeof exerciseOrderContext!=='undefined'?exerciseOrderContext:undefined,modal:typeof modal!=='undefined'&&!!modal.open,
+    // Completion/celebration state of the finish chain (training-polish, interactions, workout-polish).
+    review:typeof completionReview!=='undefined'?completionReview:undefined,
+    audio:typeof finishAudio!=='undefined'&&finishAudio?{...finishAudio}:undefined,
+    celebration:typeof xpCelebrationPending!=='undefined'?xpCelebrationPending:undefined};
 }
 function restoreUi(ui){
   if(typeof sessionWorkoutId!=='undefined')sessionWorkoutId=ui.session;if(typeof completionId!=='undefined')completionId=ui.completion;
   if(typeof completionStep!=='undefined')completionStep=ui.step;if(typeof trainTab!=='undefined')trainTab=ui.tab;page=ui.page;
   if(typeof routineDraft!=='undefined')routineDraft=ui.draft;if(typeof exercisePickerContext!=='undefined')exercisePickerContext=ui.picker;
   if(typeof exerciseOrderContext!=='undefined')exerciseOrderContext=ui.order;
+  if(typeof completionReview!=='undefined')completionReview=ui.review;
+  if(typeof finishAudio!=='undefined'&&ui.audio)finishAudio={...ui.audio};
+  if(typeof xpCelebrationPending!=='undefined')xpCelebrationPending=ui.celebration;
   try{if(!ui.modal&&typeof modal!=='undefined'&&modal.open)modal.close()}catch{}
 }
 window.pulsNativeTraining={ops,build,search,captureUi,restoreUi};
