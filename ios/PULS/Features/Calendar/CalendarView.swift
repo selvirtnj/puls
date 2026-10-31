@@ -12,6 +12,12 @@ struct CalendarScreen: View {
     /// Zuletzt geladener Monat; bleibt beim Nachladen sichtbar (kein Flackern beim Tageswechsel).
     @State private var shown: CalendarMonthResult?
     @State private var reload = 0
+    /// Generation (Dokument/Konto) von `shown`; nach einem Wechsel wird nichts Altes gezeigt.
+    @State private var shownGeneration: Int?
+
+    private var current: CalendarMonthResult? {
+        shownGeneration == coordinator.store.progressGeneration ? shown : nil
+    }
 
     var body: some View {
         let text = coordinator.text
@@ -20,10 +26,10 @@ struct CalendarScreen: View {
         List {
             ProgressNoticeSection(coordinator: coordinator)
             Section {
-                MonthHeader(month: month, text: text, isLoading: phase == .loading && shown != nil) { delta in
+                MonthHeader(month: month, text: text, isLoading: phase == .loading && current != nil) { delta in
                     changeMonth(by: delta)
                 }
-                if let result = shown, result.month == month {
+                if let result = current, result.month == month {
                     MonthGrid(result: result, selected: selected, today: coordinator.today, text: text) { day in
                         coordinator.calendarDay = day
                     }
@@ -33,7 +39,7 @@ struct CalendarScreen: View {
                                    retry: { reload += 1 }, openWeb: { coordinator.openWeb(action: "calendar") })
                 }
             }
-            if let result = shown, result.month == month {
+            if let result = current, result.month == month {
                 DayDetailSection(result: result, day: selected, coordinator: coordinator, text: text)
                 if let week = result.weekRecap {
                     RecapSection(recap: week, title: text("Woche", "Week") + " · " + text.range(week.start, week.end), text: text)
@@ -92,6 +98,7 @@ struct CalendarScreen: View {
         case .loaded(let message):
             if case .month(let result)? = message.result, result.month == month {
                 shown = result
+                shownGeneration = coordinator.store.progressGeneration
                 phase = .loaded(result)
             } else {
                 phase = .failed

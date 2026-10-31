@@ -9,17 +9,23 @@ struct WorkoutReviewScreen: View {
     let workoutId: String
     let title: String
     @State private var phase: LoadPhase<WorkoutReviewResult> = .loading
+    /// Nach Dokument-/Kontowechsel nie den alten Inhalt zeigen, auch nicht bis zum Neustart der Abfrage.
+    private var visiblePhase: LoadPhase<WorkoutReviewResult> {
+        phase.value != nil && loadedGeneration != coordinator.store.progressGeneration ? .loading : phase
+    }
     @State private var reload = 0
+    /// Generation (Dokument/Konto), zu der der angezeigte Inhalt gehört.
+    @State private var loadedGeneration: Int?
 
     var body: some View {
         let text = coordinator.text
         List {
-            switch phase {
+            switch visiblePhase {
             case .loaded(let review):
                 content(review, text: text)
             default:
                 Section {
-                    QueryPhaseView(isLoading: phase == .loading, isGone: phase == .gone, text: text,
+                    QueryPhaseView(isLoading: visiblePhase == .loading, isGone: visiblePhase == .gone, text: text,
                                    retry: { reload += 1 },
                                    openWeb: { coordinator.openWeb(action: "reviewWorkout", id: workoutId) })
                 }
@@ -30,13 +36,15 @@ struct WorkoutReviewScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(workoutId)|\(coordinator.dataRevision)|\(reload)") { @MainActor in
             // Beim Nachladen (neuer Snapshot, Rückkehr aus dem Web) bisherigen Inhalt stehen lassen.
-            let hadValue = phase.value != nil
+            // Nur im selben Dokument/Konto; nach einem Wechsel nie alte Daten stehen lassen.
+            let generation = coordinator.store.progressGeneration
+            let hadValue = phase.value != nil && loadedGeneration == generation
             if !hadValue { phase = .loading }
             let outcome = await coordinator.fetch { ProgressQueryRequest.detail(.workout, id: workoutId, requestId: $0) }
             guard !Task.isCancelled else { return }
             switch outcome {
             case .loaded(let message):
-                if case .workout(let review)? = message.result, review.id == workoutId { phase = .loaded(review) } else { phase = .failed }
+                if case .workout(let review)? = message.result, review.id == workoutId { phase = .loaded(review); loadedGeneration = generation } else { phase = .failed }
             case .gone: phase = .gone
             default: if !hadValue { phase = .failed }
             }
@@ -186,17 +194,23 @@ struct RunDetailScreen: View {
     let runId: String
     let title: String
     @State private var phase: LoadPhase<RunDetailResult> = .loading
+    /// Nach Dokument-/Kontowechsel nie den alten Inhalt zeigen, auch nicht bis zum Neustart der Abfrage.
+    private var visiblePhase: LoadPhase<RunDetailResult> {
+        phase.value != nil && loadedGeneration != coordinator.store.progressGeneration ? .loading : phase
+    }
     @State private var reload = 0
+    /// Generation (Dokument/Konto), zu der der angezeigte Inhalt gehört.
+    @State private var loadedGeneration: Int?
 
     var body: some View {
         let text = coordinator.text
         List {
-            switch phase {
+            switch visiblePhase {
             case .loaded(let detail):
                 content(detail, text: text)
             default:
                 Section {
-                    QueryPhaseView(isLoading: phase == .loading, isGone: phase == .gone, text: text,
+                    QueryPhaseView(isLoading: visiblePhase == .loading, isGone: visiblePhase == .gone, text: text,
                                    retry: { reload += 1 },
                                    openWeb: { coordinator.openWeb(action: "runDetail", id: runId) })
                 }
@@ -207,13 +221,15 @@ struct RunDetailScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(runId)|\(coordinator.dataRevision)|\(reload)") { @MainActor in
             // Beim Nachladen (neuer Snapshot, Rückkehr aus dem Web) bisherigen Inhalt stehen lassen.
-            let hadValue = phase.value != nil
+            // Nur im selben Dokument/Konto; nach einem Wechsel nie alte Daten stehen lassen.
+            let generation = coordinator.store.progressGeneration
+            let hadValue = phase.value != nil && loadedGeneration == generation
             if !hadValue { phase = .loading }
             let outcome = await coordinator.fetch { ProgressQueryRequest.detail(.run, id: runId, requestId: $0) }
             guard !Task.isCancelled else { return }
             switch outcome {
             case .loaded(let message):
-                if case .run(let detail)? = message.result, detail.entry.entryId == runId { phase = .loaded(detail) } else { phase = .failed }
+                if case .run(let detail)? = message.result, detail.entry.entryId == runId { phase = .loaded(detail); loadedGeneration = generation } else { phase = .failed }
             case .gone: phase = .gone
             default: if !hadValue { phase = .failed }
             }

@@ -109,6 +109,54 @@ public struct ProjectionInterest: Equatable, Hashable, Sendable {
     }
 }
 
+/// Abgleich zwischen gewünschtem und vom Web bestätigtem Interesse. Höchstens ein Aufruf gleichzeitig; nach jeder
+/// Antwort wird mit dem **neuesten** Wunsch verglichen und bei Abweichung erneut gesendet (A angenommen → B
+/// ausstehend → wieder A gewünscht ⇒ nach B wird A gesendet). Eine abgelehnte Liste wird im selben Hello nicht in
+/// Schleife wiederholt. Jedes neue Hello beginnt von vorn (das Web-Dokument kennt den Stand nicht).
+public struct InterestSync: Equatable, Sendable {
+    public private(set) var hello: Int?
+    public private(set) var desired: ProjectionInterest?
+    public private(set) var inFlight: ProjectionInterest?
+    /// Zuletzt vom Web mit `true` bestätigt (in diesem Hello).
+    public private(set) var confirmed: ProjectionInterest?
+    public private(set) var rejected: ProjectionInterest?
+
+    public init() {}
+
+    /// Neuer Wunsch; Ergebnis = jetzt zu sendende Liste (oder `nil`).
+    public mutating func want(_ interest: ProjectionInterest, hello: Int) -> ProjectionInterest? {
+        if self.hello != hello {
+            self.hello = hello
+            inFlight = nil
+            confirmed = nil
+            rejected = nil
+        }
+        desired = interest
+        return next()
+    }
+
+    /// Antwort auf `interest`; Ergebnis = als Nächstes zu sendende Liste (oder `nil`). Antworten älterer Hellos
+    /// bzw. nicht ausstehender Listen werden ignoriert.
+    public mutating func finished(_ interest: ProjectionInterest, accepted: Bool, hello: Int) -> ProjectionInterest? {
+        guard hello == self.hello, inFlight == interest else { return nil }
+        inFlight = nil
+        if accepted {
+            confirmed = interest
+            rejected = nil
+        } else {
+            // Das Web behält seinen bisherigen Stand (`confirmed`).
+            rejected = interest
+        }
+        return next()
+    }
+
+    private mutating func next() -> ProjectionInterest? {
+        guard inFlight == nil, let desired, desired != confirmed, desired != rejected else { return nil }
+        inFlight = desired
+        return desired
+    }
+}
+
 /// JavaScript für `WKWebView.evaluateJavaScript`. Alle Werte gehen als serialisiertes JSON hinein: Anführungszeichen,
 /// Steuerzeichen und U+2028/U+2029 sind maskiert, Nutzerinhalte (IDs) können den Ausdruck nicht verlassen.
 public enum WebCall {

@@ -500,6 +500,8 @@ private struct ActivitySection: View {
     @State private var mode: String?
     @State private var filter: String?
     @State private var queried: LoadPhase<ActivityView>?
+    /// Generation (Dokument/Konto) des Abfrageergebnisses.
+    @State private var queriedGeneration: Int?
     @State private var reload = 0
 
     var body: some View {
@@ -507,7 +509,8 @@ private struct ActivitySection: View {
         let currentMode = mode ?? base?.mode ?? "week"
         let currentFilter = filter ?? base?.filter ?? "all"
         let usesProjection = (mode == nil || mode == base?.mode) && (filter == nil || filter == base?.filter)
-        let view = usesProjection ? base : queried?.value
+        // Abfrageergebnis nur aus derselben Generation zeigen (nie Daten eines vorherigen Kontos/Dokuments).
+        let view = usesProjection ? base : (queriedGeneration == coordinator.store.progressGeneration ? queried?.value : nil)
         Section {
             Picker(text("Zeitraum", "Period"), selection: Binding(get: { currentMode }, set: { mode = $0; queried = nil })) {
                 Text(text("Woche", "Week")).tag("week")
@@ -557,7 +560,8 @@ private struct ActivitySection: View {
         }
         .task(id: "\(currentMode)|\(currentFilter)|\(usesProjection)|\(coordinator.dataRevision)|\(reload)") { @MainActor in
             guard !usesProjection else { return }
-            let hadValue = queried?.value != nil
+            let generation = coordinator.store.progressGeneration
+            let hadValue = queried?.value != nil && queriedGeneration == generation
             if !hadValue { queried = .loading }
             let today = coordinator.today
             guard let month = CalendarMonth.of(day: today) else { queried = .failed; return }
@@ -567,6 +571,7 @@ private struct ActivitySection: View {
             guard !Task.isCancelled else { return }
             if case .loaded(let message) = outcome, case .month(let result)? = message.result, let view = result.activityView {
                 queried = .loaded(view)
+                queriedGeneration = generation
             } else if !hadValue {
                 queried = .failed
             }

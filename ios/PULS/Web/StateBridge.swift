@@ -129,34 +129,22 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
 
     /// Meldet die Projektionen der sichtbaren nativen Bildschirme (`pulsNativeSetInterest`). Je Dokument/Hello nur bei
     /// Änderung; nach jedem Hello wird neu gemeldet, damit ein neues Web-Dokument den Stand kennt.
+    /// Abgleich und Wiederholung regelt `InterestSync` (PULSCore, getestet).
     func setInterest(_ interest: ProjectionInterest, hello: Int) {
-        let key = InterestKey(interest: interest, hello: hello)
-        // Bereits angenommen oder genau so abgelehnt (in diesem Hello): nicht erneut senden.
-        guard key != acceptedInterest, key != rejectedInterest, key != pendingInterest else { return }
-        pendingInterest = key
+        if let next = interestSync.want(interest, hello: hello) { sendInterest(next, hello: hello) }
+    }
+
+    private func sendInterest(_ interest: ProjectionInterest, hello: Int) {
         evaluate(WebCall.setInterest(interest)) { [weak self] result in
-            guard let self, self.pendingInterest == key else { return }
-            self.pendingInterest = nil
-            if (result as? Bool) == true {
-                self.acceptedInterest = key
-                self.rejectedInterest = nil
-            } else {
-                // Abgelehnt oder älterer Web-Stand ohne Funktion: nicht als gemeldet merken. Eine geänderte Liste bzw.
-                // das nächste Hello wird erneut gesendet; dieselbe abgelehnte Liste nicht in Schleife.
-                self.acceptedInterest = nil
-                self.rejectedInterest = key
+            guard let self else { return }
+            // `false`: abgelehnt oder älterer Web-Stand ohne Funktion (dann gilt dort das bisherige Verhalten).
+            if let next = self.interestSync.finished(interest, accepted: (result as? Bool) == true, hello: hello) {
+                self.sendInterest(next, hello: hello)
             }
         }
     }
 
-    private struct InterestKey: Equatable {
-        var interest: ProjectionInterest
-        var hello: Int
-    }
-
-    private var acceptedInterest: InterestKey?
-    private var rejectedInterest: InterestKey?
-    private var pendingInterest: InterestKey?
+    private var interestSync = InterestSync()
 
     /// `data-scheme` der Web-App (`light`/`dark`, js/color-scheme.js) oder `nil`.
     func readWebScheme(_ completion: @escaping @MainActor (String?) -> Void) {

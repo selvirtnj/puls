@@ -237,6 +237,32 @@ final class ProgressTests: XCTestCase {
         XCTAssertEqual(ProjectionInterest([]).json, ["projections": []])
     }
 
+    func testInterestSyncAlwaysConvergesOnLatestWish() {
+        let a = ProjectionInterest(["overview"]), b = ProjectionInterest(["overview", "progress"])
+        var sync = InterestSync()
+        XCTAssertEqual(sync.want(a, hello: 1), a)
+        XCTAssertNil(sync.want(a, hello: 1), "ausstehend: nicht doppelt senden")
+        XCTAssertNil(sync.finished(a, accepted: true, hello: 1))
+        XCTAssertNil(sync.want(a, hello: 1), "bestätigt: nicht erneut")
+        // A angenommen → B ausstehend → wieder A gewünscht ⇒ nach Antwort auf B wird A gesendet.
+        XCTAssertEqual(sync.want(b, hello: 1), b)
+        XCTAssertNil(sync.want(a, hello: 1))
+        XCTAssertEqual(sync.finished(b, accepted: true, hello: 1), a)
+        XCTAssertNil(sync.finished(a, accepted: true, hello: 1))
+        XCTAssertEqual(sync.confirmed, a)
+        // Abgelehnt: nicht in Schleife, eine andere Liste wird gesendet, das nächste Hello beginnt neu.
+        XCTAssertEqual(sync.want(b, hello: 1), b)
+        XCTAssertNil(sync.finished(b, accepted: false, hello: 1))
+        XCTAssertNil(sync.want(b, hello: 1))
+        XCTAssertEqual(sync.confirmed, a, "Web behält den bisherigen Stand")
+        XCTAssertEqual(sync.want(b, hello: 2), b)
+        // Späte Antwort eines älteren Hellos wird ignoriert.
+        XCTAssertNil(sync.finished(b, accepted: false, hello: 1))
+        XCTAssertEqual(sync.inFlight, b)
+        XCTAssertNil(sync.finished(b, accepted: true, hello: 2))
+        XCTAssertEqual(sync.confirmed, b)
+    }
+
     // MARK: Store
 
     @MainActor

@@ -66,6 +66,7 @@ final class ProgressCoordinator {
 
     @ObservationIgnored private var queryCounter = 0
     @ObservationIgnored private var handledAckSerial = 0
+    @ObservationIgnored private var seenGeneration: Int?
 
     init(store: ProfileStore, bridge: StateBridge) {
         self.store = store
@@ -224,9 +225,21 @@ final class ProgressCoordinator {
     private func observeAcks() {
         withObservationTracking {
             processAcks()
+            resetOnGenerationChange()
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in self?.observeAcks() }
         }
+    }
+
+    /// Neues Dokument, ownerPending oder Kontowechsel: Unterseiten (Rückblick, Aktivität, Übungsverlauf) schließen,
+    /// damit nie Daten des vorherigen Kontos/Dokuments stehen bleiben.
+    private func resetOnGenerationChange() {
+        let generation = store.progressGeneration
+        defer { seenGeneration = generation }
+        guard let seen = seenGeneration, seen != generation else { return }
+        path = []
+        calendarDay = nil
+        notice = nil
     }
 
     /// Fehler eigener Einstellungsbefehle kurz melden. `busy`/`persist_failed`/`readonly`/`not_ready` bleiben in der

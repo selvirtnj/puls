@@ -9,17 +9,23 @@ struct ExerciseHistoryScreen: View {
     let exerciseId: String
     let title: String
     @State private var phase: LoadPhase<ExerciseHistoryResult> = .loading
+    /// Nach Dokument-/Kontowechsel nie den alten Inhalt zeigen, auch nicht bis zum Neustart der Abfrage.
+    private var visiblePhase: LoadPhase<ExerciseHistoryResult> {
+        phase.value != nil && loadedGeneration != coordinator.store.progressGeneration ? .loading : phase
+    }
     @State private var reload = 0
+    /// Generation (Dokument/Konto), zu der der angezeigte Inhalt gehört.
+    @State private var loadedGeneration: Int?
 
     var body: some View {
         let text = coordinator.text
         List {
-            switch phase {
+            switch visiblePhase {
             case .loaded(let history):
                 content(history, text: text)
             default:
                 Section {
-                    QueryPhaseView(isLoading: phase == .loading, isGone: phase == .gone, text: text,
+                    QueryPhaseView(isLoading: visiblePhase == .loading, isGone: visiblePhase == .gone, text: text,
                                    retry: { reload += 1 }, openWeb: { coordinator.openWeb(action: "exerciseHistory", id: exerciseId) })
                 }
             }
@@ -29,13 +35,15 @@ struct ExerciseHistoryScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(exerciseId)|\(coordinator.dataRevision)|\(reload)") { @MainActor in
             // Beim Nachladen (neuer Snapshot, Rückkehr aus dem Web) bisherigen Inhalt stehen lassen.
-            let hadValue = phase.value != nil
+            // Nur im selben Dokument/Konto; nach einem Wechsel nie alte Daten stehen lassen.
+            let generation = coordinator.store.progressGeneration
+            let hadValue = phase.value != nil && loadedGeneration == generation
             if !hadValue { phase = .loading }
             let outcome = await coordinator.fetch { ProgressQueryRequest.detail(.exercise, id: exerciseId, requestId: $0) }
             guard !Task.isCancelled else { return }
             switch outcome {
             case .loaded(let message):
-                if case .exercise(let history)? = message.result, history.id == exerciseId { phase = .loaded(history) } else { phase = .failed }
+                if case .exercise(let history)? = message.result, history.id == exerciseId { phase = .loaded(history); loadedGeneration = generation } else { phase = .failed }
             case .gone: phase = .gone
             default: if !hadValue { phase = .failed }
             }
