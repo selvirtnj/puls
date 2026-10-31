@@ -1,0 +1,41 @@
+{
+  "protocol": 1,
+  "type": "hello",
+  "webVersion": "78",
+  "ops": [
+    "weight.upsert",
+    "weight.delete",
+    "food.add",
+    "food.update",
+    "food.delete",
+    "food.restore",
+    "water.add",
+    "day.complete",
+    "microGoals.set",
+    "waterGoal.set",
+    "product.favorite"
+  ],
+  "screens": [
+    "body",
+    "nutrition"
+  ],
+  "projections": [
+    "overview",
+    "nutrition"
+  ],
+  "features": [
+    "nativeTabs",
+    "nativeNutrition"
+  ],
+  "nutrition": {
+    "stage": "P1",
+    "queries": [
+      "search",
+      "product",
+      "recipe",
+      "entry",
+      "labelParse"
+    ]
+  },
+  "ownerPending": false
+}

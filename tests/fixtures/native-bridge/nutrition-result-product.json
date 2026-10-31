@@ -1,0 +1,114 @@
+{
+  "protocol": 1,
+  "type": "nutritionResult",
+  "requestId": "q",
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "ownerPending": false,
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "language": "de",
+  "kind": "product",
+  "ok": true,
+  "result": {
+    "product": {
+      "ref": {
+        "id": "product"
+      },
+      "name": "Synthetic product",
+      "brand": "",
+      "unit": "g",
+      "kcal": 200,
+      "p": 20,
+      "c": 30,
+      "f": 0,
+      "source": "Eigene Werte",
+      "favorite": true,
+      "complete": true,
+      "reviewRequired": false
+    },
+    "expect": {
+      "id": "product",
+      "name": "Synthetic product",
+      "unit": "g",
+      "kcal": 200,
+      "p": 20,
+      "c": 30,
+      "f": 0,
+      "nutrients": {
+        "water": 40,
+        "vitc": 0
+      },
+      "density": 1.2,
+      "portions": [
+        {
+          "name": "Weighed serving",
+          "amount": 30,
+          "unit": "g",
+          "source": "Synthetic fixture"
+        }
+      ],
+      "favorite": true,
+      "extra": {
+        "keep": true
+      }
+    },
+    "units": [
+      {
+        "key": "g",
+        "label": "g",
+        "factor": 1,
+        "portion": false
+      },
+      {
+        "key": "kg",
+        "label": "kg",
+        "factor": 1000,
+        "portion": false
+      },
+      {
+        "key": "oz",
+        "label": "oz",
+        "factor": 28.349523125,
+        "portion": false
+      },
+      {
+        "key": "ml",
+        "label": "ml",
+        "factor": 1.2,
+        "portion": false
+      },
+      {
+        "key": "l",
+        "label": "l",
+        "factor": 1200,
+        "portion": false
+      },
+      {
+        "key": "p0",
+        "label": "Weighed serving",
+        "factor": 30,
+        "portion": true
+      }
+    ],
+    "nutrients": {
+      "water": 40,
+      "vitc": 0
+    },
+    "warnings": [],
+    "defaultAmount": 100,
+    "base": "g",
+    "newCatalogProduct": false,
+    "density": 1.2,
+    "packageAmount": null
+  }
+}
