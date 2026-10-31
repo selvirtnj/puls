@@ -4,7 +4,7 @@ Stand der Übergabe: 24.10.2026. Dieser Text fasst die wichtigen Produktentschei
 
 ## Ziel und Nutzung
 
-PULS ist Selvirs persönlicher Fitness-, Gewichts- und Ernährungstracker für das iPhone, zusätzlich am PC nutzbar. Die aktive Version ist eine installierbare Web-App auf GitHub Pages. Die App-Oberfläche ist öffentlich abrufbar; private Kontoprofile werden separat über Supabase gespeichert. Seit der Zielklärung am 24.10.2026 ist ausschließlich Selvirs persönliche Nutzung das Produktziel; ein Ausbau für Freunde ist nicht beauftragt. Bestehende Authentifizierung und Synchronisierung erhalten. Aktuell keine Arbeit an nativer iOS-Distribution.
+PULS ist Selvirs persönlicher Fitness-, Gewichts- und Ernährungstracker für das iPhone, zusätzlich am PC nutzbar. Die aktive Version ist eine installierbare Web-App auf GitHub Pages. Die App-Oberfläche ist öffentlich abrufbar; private Kontoprofile werden separat über Supabase gespeichert. Seit der Zielklärung am 24.10.2026 ist ausschließlich Selvirs persönliche Nutzung das Produktziel; ein Ausbau für Freunde ist nicht beauftragt. Bestehende Authentifizierung und Synchronisierung erhalten. Seit 26.10.2026 beauftragt: schrittweise native SwiftUI-Umstellung der iOS-App (Plan `docs/native/`); die Web-App bleibt parallel live und bis Phase B maßgeblich für Daten, Auth und Sync.
 
 Prioritäten: sofort praktisch nutzbar, kompakt und übersichtlich, kostenfrei soweit möglich, Deutsch als Standard mit Englisch als Option, schönes dunkles Originaldesign in Lila. Referenzen sind Cronometer, Liftoff, Hevy und MacroFactor; keine Behauptung einer technischen oder markenrechtlichen Verbindung.
 
@@ -69,7 +69,7 @@ Nicht ungefragt wieder einbauen: Essen-/Meal-Planning, Ernährung-planen-Karte, 
 
 Historische Funktionen/Datenfelder können für Backup-Kompatibilität noch im Code stehen. Sie sind kein Auftrag zur erneuten Anzeige. Existierende Backups nicht beim Aufräumen vernichten.
 
-Native App, echte Dynamic Island, Apple Health/Google Fit/Garmin/Withings und native Widgets sind nicht als funktionierende Web-Features vorhanden. Benutzerwünsche dazu wurden früher diskutiert; aktuell Web-App weiterentwickeln. Auf gesperrtem iPhone sind Hintergrundtimer/-töne nicht garantiert.
+Native App, echte Dynamic Island, Apple Health/Google Fit/Garmin/Withings und native Widgets sind nicht als funktionierende Web-Features vorhanden. Benutzerwünsche dazu wurden früher diskutiert. Die native App wird seit 26.10.2026 schrittweise gebaut (`docs/native/`); Health/Google Fit/Garmin/Withings bleiben nicht beauftragt. Auf gesperrtem iPhone sind Hintergrundtimer/-töne nicht garantiert.
 
 ## Dauerhafte Entwicklungsentscheidungen
 

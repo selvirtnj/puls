@@ -11,7 +11,7 @@ js/                     App-Skripte (globale Funktionen, spätere Dateien umschl
 css/                    Stylesheets (spätere überschreiben frühere)
 catalog/                Gebündelte Lebensmittel- und Portionsdaten (JSON, nach Bedarf geladen)
 backend/                Supabase-SQL und Einrichtungsanleitung (nicht automatisch ausgeführt)
-ios/                    Native iOS-Hülle (Swift, XcodeGen) – nur auf ausdrücklichen Wunsch ändern
+ios/                    Native iOS-App (Swift/SwiftUI, XcodeGen) – schrittweise native Umstellung, siehe docs/native/
 tests/, scripts/        VM-Regressionstests, lokaler Server, KI-Brücken, Worktree-Helfer
 docs/                   Produktwissen, Stand, Team-Ablauf; docs/archive/ = historische Notizen
 .codex/, .claude/       Rollen und Einstellungen für Codex und Claude Code

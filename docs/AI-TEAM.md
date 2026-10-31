@@ -6,7 +6,7 @@ Wenn Selvir stattdessen direkt in Codex arbeitet, gilt dieselbe Aufteilung; Code
 
 ## Grundregeln
 
-- **Nur Web-App.** Gearbeitet wird an der Web-App (`index.html`, `js/`, `css/`), damit Selvir jede Änderung direkt auf dem iPhone testen kann. `ios/` wird nur geändert, wenn Selvir es ausdrücklich sagt; Befunde zu `ios/` werden nur berichtet.
+- **Web-App plus native Umstellung.** Die Web-App (`index.html`, `js/`, `css/`) bleibt live und bis Phase B Datenbesitzer. Seit 26.10.2026 läuft die schrittweise native SwiftUI-Umstellung in `ios/` auf Branch `native-ios`; Plan, Vertrag und Aufgaben in `docs/native/`. Codex übernimmt dort einen großen Teil der Umsetzung, Prüfung immer über Kreuz.
 - **Wer schreibt, prüft nicht selbst.** Jede größere Änderung sieht mindestens eine andere KI.
 - **Höchstens zwei schreibende Agenten gleichzeitig**, nur in getrennten Dateien oder Worktrees.
 - **Nur der Koordinator** integriert, committet und veröffentlicht. Ein Push auf `main` geht sofort live.
