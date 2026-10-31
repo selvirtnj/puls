@@ -169,5 +169,34 @@ const compare=(name,value)=>{if(process.argv.includes('--write-fixtures'))fs.wri
   assert.deepEqual(Object.keys(extra.ctx.window.pulsNativeActivity.ops).sort(),['route.delete','route.save','run.delete','run.discard','run.edit','run.finish','run.lap','run.pause','run.resume','run.start','run.summary.save','runSettings.set']);
   assert(extra.messages.find(m=>m.type==='hello').ops.includes('run.delete'));
   console.log('PASS: lap parity, confirmed haptics, 48 h clamp, stale summary, delete conflict/replay, reload takeover');
+  // Review be4e4a3: stale summary after Web Resume, Web lock on takeover, packet-driven rebuilds, replaced profile, route sheet.
+  const settle=()=>new Promise(resolve=>setImmediate(resolve));
+  const f1=start();const fk=runStart(f1).ack.result.startedAt;f1.clock.now+=5000;
+  const fin=cmd('run.finish',{startedAt:fk});f1.ctx.window.pulsNativeApply(clone(fin));f1.ctx.window.pulsRunGpsReceive({runKey:String(fk),from:0,total:0,points:[]});f1.tick(120);await settle();
+  ok(f1.messages.filter(m=>m.id===fin.id).at(-1));f1.run('runSummaryResume()');assert.equal(f1.run('runSummary.key'),fk,'Web Resume keeps its old summary');
+  assert.equal(f1.ctx.window.pulsNativeSetActivity(true),true);f1.clock.now+=60000;
+  const fin2=cmd('run.finish',{startedAt:fk});f1.ctx.window.pulsNativeApply(clone(fin2));f1.clock.now+=4001;f1.tick(120);await settle();
+  code(f1.messages.filter(m=>m.id===fin2.id).at(-1),'busy');assert.equal(query(f1,'summary').ok,false,'incomplete drain never exposes the old summary');
+  const fin3=cmd('run.finish',{startedAt:fk});f1.ctx.window.pulsNativeApply(clone(fin3));f1.ctx.window.pulsRunGpsReceive({runKey:String(fk),from:0,total:0,points:[]});f1.tick(120);await settle();
+  ok(f1.messages.filter(m=>m.id===fin3.id).at(-1));assert.equal(query(f1,'summary').result.moving,65);
+  const locked=start();const lk2=runStart(locked).ack.result.startedAt;locked.run('runView="live";runLocked=true');locked.clock.now+=5000;
+  assert.equal(locked.ctx.window.pulsNativeSetActivity(true),true);assert.equal(locked.run('runLocked'),false,'Web lock ends with the Web view');
+  ok(locked.apply(cmd('run.lap',{startedAt:lk2,expect:{laps:[]}})));
+  locked.run('runLocked=true');locked.clock.now+=5000;ok(locked.apply(cmd('run.lap',{startedAt:lk2,expect:{laps:[5]}})),'leftover Web lock flag never swallows a native lap');
+  const replaced=start();const rpk=runStart(replaced).ack.result.startedAt;replaced.clock.now+=1000;
+  const rf=cmd('run.finish',{startedAt:rpk});replaced.ctx.window.pulsNativeApply(clone(rf));replaced.run('state=JSON.parse(JSON.stringify(state))');
+  replaced.ctx.window.pulsRunGpsReceive({runKey:String(rpk),from:0,total:0,points:[]});replaced.tick(120);await settle();
+  code(replaced.messages.filter(m=>m.id===rf.id).at(-1),'busy');assert.equal(replaced.state().activeRun.startedAt,rpk);
+  const rf2=cmd('run.finish',{startedAt:rpk});replaced.ctx.window.pulsNativeApply(clone(rf2));replaced.ctx.window.pulsRunGpsReceive({runKey:String(rpk),from:0,total:0,points:[]});replaced.tick(120);await settle();
+  ok(replaced.messages.filter(m=>m.id===rf2.id).at(-1));
+  const packets=start();interest(packets);const pk2=runStart(packets).ack.result.startedAt;
+  packets.run('var builds=0;const pb=window.pulsNativeActivity.build;window.pulsNativeActivity.build=function(...a){builds++;return pb(...a)}');
+  for(let i=0,from=0;i<30;i++,from++){packets.clock.now+=1000;packets.ctx.window.pulsRunGpsReceive({runKey:String(pk2),from,total:from+1,points:[[packets.clock.now,51+from*0.00005,10,8+(i%5),0]]});packets.run('updateRunLive()');packets.tick(1000)}
+  assert(packets.run('builds')<=4,'GPS packets rebuild at most every 10 s: '+packets.run('builds'));
+  const sel=start();interest(sel);const routeId=sel.state().runRoutes[0].id;assert.equal(sel.ctx.window.pulsNativeSetActivity(true),true);
+  sel.run('runSelectRoute('+JSON.stringify(routeId)+')');assert.deepEqual(sel.messages.filter(m=>m.type==='openNative').at(-1),{protocol:1,type:'openNative',screen:'activity',startedAt:null,routeId});
+  assert.equal(sel.run('runView'),null);sel.ctx.window.pulsNativeSetActivity(false);sel.run('runSelectRoute('+JSON.stringify(routeId)+')');
+  assert.equal(sel.run('runView'),'ready');assert.equal(sel.run('runViewRouteId'),routeId,'without confirmation the Web start view opens as before');
+  console.log('PASS: review be4e4a3 stale summary, Web lock, packet rebuilds, replaced profile retry, route sheet to Native');
   console.log('PASS: native activity contract (VM only)');
 })().catch(error=>{console.error(error);process.exit(1)});

@@ -84,7 +84,8 @@ const ops={
       if(!p.run.gps&&p.run.type!=='mma')return fail('invalid','Runden nur bei GPS-Aktivitäten und MMA');
       if(laps.length===a.expect.laps.length+1&&same(laps.slice(0,-1),a.expect.laps))return {noop:true,result:{lap: laps.at(-1)}};
       if(!same(laps,a.expect.laps))return fail('conflict','Runden geändert');
-      const seconds=runElapsed(p.run);if(p.run.pausedAt||runLocked||seconds<=0||seconds>172800||laps.length>=1000||seconds<=(laps.at(-1)||0)||p.run.type==='mma'&&runMmaState(p.run).phase==='done')return fail('gone','Runde derzeit nicht möglich');return busy(p)},
+      // The Web lock overlay is Web UI (an open Web run view makes the op busy anyway); Native has its own lock.
+      const seconds=runElapsed(p.run);if(p.run.pausedAt||seconds<=0||seconds>172800||laps.length>=1000||seconds<=(laps.at(-1)||0)||p.run.type==='mma'&&runMmaState(p.run).phase==='done')return fail('gone','Runde derzeit nicht möglich');return busy(p)},
     run(){return perform(()=>{const n=state.activeRun.laps?.length||0;runLiveLap();if(state.activeRun.laps?.length!==n+1)throw Error('Runde nicht markiert');return {lap:state.activeRun.laps.at(-1)}})},
     effective:(s,a,p,r)=>s?.activeRun?.startedAt===a.startedAt&&same(s.activeRun.laps,[...a.expect.laps,r.lap])
   },
@@ -92,12 +93,15 @@ const ops={
     check(a){if(!fields(a,['startedAt']))return fail('invalid','Nur startedAt erlaubt');const p=target(a);return p.code?p:busy(p)},
     // Preparation deliberately uses the Web finish path: it pauses/saves, stops GPS without clearing, and drains.
     // A failed drain keeps that pause and every local point, just like the Web Finish button; no successful ack.
-    async prepare(a){const run=state.activeRun;let pausedAt;finishingRun=run;try{const pending=perform(()=>finishRunTimer());pausedAt=run.pausedAt;await pending}finally{finishingRun=null}
-      if(state.activeRun!==run)return fail('gone','Aktivität während GPS-Abschluss geändert');
+    // Only a summary created by THIS finish proves a complete drain: a Web "Resume" leaves the old runSummary (same key)
+    // in memory, so identity before/after plus currentSummary() are both required.
+    async prepare(a){const run=state.activeRun,old=runSummary;let pausedAt;finishingRun=run;try{const pending=perform(()=>finishRunTimer());pausedAt=run.pausedAt;await pending}finally{finishingRun=null}
+      // Same run still active (e.g. profile object replaced by a sync): retryable, never a final drop.
+      if(state.activeRun!==run)return state.activeRun?.startedAt===a.startedAt?fail('busy','Profil während GPS-Abschluss neu geladen'):fail('gone','Aktivität während GPS-Abschluss geändert');
       if(!pausedAt||run.pausedAt!==pausedAt)return fail('conflict','Aktivität während GPS-Abschluss fortgesetzt');
-      if(!runSummary||runSummary.key!==a.startedAt)return fail('busy','GPS-Daten kommen noch');
+      if(runSummary===old||!currentSummary()||runSummary.key!==a.startedAt)return fail('busy','GPS-Daten kommen noch');
       return {}},
-    run(a){if(!runSummary||runSummary.key!==a.startedAt||!state.activeRun.pausedAt)throw Error('Zusammenfassung fehlt');return {startedAt:a.startedAt,pausedAt:state.activeRun.pausedAt}},
+    run(a){if(!currentSummary()||runSummary.key!==a.startedAt)throw Error('Zusammenfassung fehlt');return {startedAt:a.startedAt,pausedAt:state.activeRun.pausedAt}},
     effective:(s,a,p,r)=>s?.activeRun?.startedAt===a.startedAt&&s.activeRun.pausedAt===r.pausedAt
   },
   'run.summary.save':{
@@ -190,7 +194,15 @@ function summary(details=false){return currentSummary()?copy({...runSummary,elev
   manualDistanceAllowed:!!state.activeRun.gps&&runSummary.km<.01,...(details?{route:runPendingRoute,splits:runPendingSplits?.splits??[],splitRest:runPendingSplits?.restMeters?[runPendingSplits.restMeters,runPendingSplits.restSeconds]:null,laps:state.activeRun.laps??[]}: {})}):null}
 function compact(r){return {id:r.id,date:r.date,type:r.type??'run',name:text(runTypeName(runTypeInfo(r.type))),startedAt:r.startedAt??null,distanceKm:r.distanceKm,durationSeconds:r.durationSeconds,
   paceText:runPaceText(runPace(r)),kcal:Number.isFinite(r.kcal)?r.kcal:null,hasRoute:!!r.route}}
-function build(){return read(()=>{
+// runGpsKm and runLiveData each filter the whole track with runAcceptedPoints. Within one synchronous build the track
+// cannot change, so share that (unchanged Web) result; restored in finally, never active outside build().
+function sharedFilter(fn){
+  if(typeof runAcceptedPoints!=='function')return fn();
+  const base=runAcceptedPoints;let input=null,length=-1,output=null;
+  runAcceptedPoints=function(points){if(points!==input||points?.length!==length){input=points;length=points?.length;output=base.call(this,points)}return output};
+  try{return fn()}finally{runAcceptedPoints=base}
+}
+function build(){return sharedFilter(()=>read(()=>{
   const run=state.activeRun,types=runTypeList().map(t=>({id:t.id,label:text(runTypeName(t)),icon:t.icon,gps:t.gps,category:t.category}));let active=null;
   if(run){const own=runOwnedHere(run),elapsed=runElapsed(run),km=run.gps&&own?runGpsKm():null,planned=route(run.routeId),data=run.gps&&own||!run.gps?runLiveData(run):null;
     if(data)delete data._round; // internal render helper; the same values are in active.mma
@@ -209,7 +221,7 @@ function build(){return read(()=>{
   // Bound small lists, never truncate active laps/time bases or the summary.
   while(JSON.stringify(model).length>48*1024){const key=model.recent.length?'recent':model.routes.length?'routes':null;if(!key)throw Error('Aktivität zu groß');model[key].pop();model.omitted[key]++}
   return model;
-})}
+}))}
 function query(q){
   if(!fields(q,['requestId','kind','id'])||!['run','route','summary'].includes(q.kind)||q.kind!=='summary'&&!id(q.id)||q.kind==='summary'&&q.id!==undefined)return null;
   let result;
@@ -238,6 +250,9 @@ function restoreUi(v){runView=v.view;runViewType=v.type;runViewRouteId=v.route;r
 function settled(ok){const callbacks=after;after=[];if(ok)for(const fn of callbacks)try{fn()}catch{}}
 function inputKey(){const r=state.activeRun,mma=r?.type==='mma'?runMmaState(r):null;return [r,r?.startedAt,r?.pausedAt,r?.pausedSeconds,r?.segment,r?.laps?.length,runSummary,runLocked,mma?.round,mma?.phase,
   // Running clocks are native; these buckets only refresh Web estimates (current pace 10 s, kcal of timers 30 s), never while paused.
-  r?.gps&&runOwnedHere(r)?runTrackFor(r)?.points.length:null,r&&!r.pausedAt?Math.floor(Date.now()/(r.gps?10000:30000)):null,runGpsState,runGpsAccuracy]}
+  // Live GPS packets (about one per second) do not rebuild on their own: while running the 10 s bucket refreshes
+  // distance/pace; while paused (finish/drain) every arriving point counts. Accuracy only as the Web ok/weak class.
+  r?.gps&&r.pausedAt&&runOwnedHere(r)?runTrackFor(r)?.points.length:null,r&&!r.pausedAt?Math.floor(Date.now()/(r.gps?10000:30000)):null,
+  runGpsState,typeof runAccuracyOk==='function'?runAccuracyOk():null]}
 window.pulsNativeActivity={ops,build,query,actions,navigate,captureUi,restoreUi,settled,inputKey};
 })();

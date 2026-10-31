@@ -426,7 +426,9 @@ async function prepareActivity(cmd,history,adapter,op){
   try{
     const result=await op.prepare(args,plan);
     if(!profileReady()||owner!==userId()){ack(cmd.id,'not_ready','Profilzuordnung geändert');return}
-    if(profile!==state||run!==state.activeRun){ack(cmd.id,'gone','Aktivität während GPS-Abschluss geändert');return}
+    // A replaced profile with the same run still active is retryable (busy); only a different/no run is final (gone).
+    if(profile!==state||run!==state.activeRun){const same=state.activeRun?.startedAt===args.startedAt;
+      ack(cmd.id,same?'busy':'gone',same?'Profil während GPS-Abschluss neu geladen – erneut senden':'Aktivität während GPS-Abschluss geändert');return}
     if(Object.values(flags()).some(Boolean)){ack(cmd.id,'readonly','Profil ist schreibgeschützt');return}
     if(result?.code){ack(cmd.id,result.code,result.message);return}
     // Recheck current args/ownership/dialog state after receiving all points. Only the final synchronous part is atomic.
@@ -517,6 +519,20 @@ function loaded(){
       return base.apply(this,args);
     };
   }
+  if(activityFeature&&typeof runSelectRoute==='function'){
+    // "Use this route" in the Web route sheet sets runView='ready' directly (past openRunView). With confirmed native
+    // activity, Native presents its start view with this route preselected; a running activity is shown as is.
+    const base=runSelectRoute;
+    runSelectRoute=function(id,...args){
+      const routeId=typeof id==='string'&&typeof runRouteById==='function'&&runRouteById(id)?id:null,active=state.activeRun?.startedAt??null;
+      // null (the Web start view's "remove route" chip) stays inside that Web view.
+      if(id!==null&&activityConfirmed&&!openingWeb&&ready&&!pageHidden&&helloOwnerPending===false&&profileReady()&&activityAdapter()&&
+        post({type:'openNative',screen:'activity',startedAt:active,...(active===null&&routeId?{routeId}:{})})){
+        if(typeof modal!=='undefined'&&modal.open)modal.close();return;
+      }
+      return base.call(this,id,...args);
+    };
+  }
   if(trainingFeature&&typeof openWorkoutSession==='function'){
     // Confirmed native training owns the strength session: Web entries (dock, overview, quick add, startRoutine)
     // ask Native to present it. Ops never open a Web session; Native presents after its ack.
@@ -572,7 +588,8 @@ if(activityFeature){
     const current=chromeState(),webRunView=current.reason==='run'&&typeof runView!=='undefined'&&['live','ready'].includes(runView)&&
       typeof closeRunView==='function'&&!webDialogOpen();
     if(current.blocking&&!webRunView)return false;
-    if(webRunView){closeRunView();if(chromeState().blocking)return false}
+    // The Web lock overlay belongs to the Web view; closeRunView keeps runLocked, which would block native laps.
+    if(webRunView){if(typeof runLocked!=='undefined')runLocked=false;closeRunView();if(chromeState().blocking)return false}
     activityConfirmed=true;reportChrome();return true;
   };
   window.pulsNativeActivityQuery=function(request){
