@@ -23,8 +23,20 @@
 - CI: #11 (`192beed`) grün; #12 (`40ecd9e`, Korrekturen) siehe Actions.
 - Web-Seite als **Version 74 auf `main` veröffentlicht** (`1b9a208`), nur Web-Dateien, ohne `ios/`; live geprüft: lädt, wirkungslos im Browser, keine Konsolenfehler. `native-ios` per Merge auf v74 (`dc709f4`).
 
+## M3 Übersicht + Tab-Leiste — gebaut (31.10.2026)
+
+- Web (Codex, Paket H): Projektion `overview`, `chrome`-Meldungen, `pulsNativeSetChrome`/`SetDate`/erweitertes `Navigate`, `css/native-shell.css`; Claude-Review (4× mittel) behoben. Live als **v75**.
+- Native (Claude, Paket I): `Shell/RootTabView.swift` (eine WebView, nie umgehängt; native Leiste + Kopf), `Features/Overview/*`. Codex-Review: 1× P2 behoben. CI #13/#14 grün.
+
+## M4 Routinen + Kraftsession — gebaut (31.10.2026)
+
+- Web (Paket J, Claude `puls-backend` als Codex-Ersatz während Codex-Limit): `js/native-training.js`, 15 Ops, gepufferte Native-Nebenwirkungen. Codex-Review: 2× P2, 1× P3 + 1× P3 Nachprüfung — behoben. `exercise.create {catalogKey}`, übersetzte Muskel-Labels. Live als **v76**.
+- Native (Paket K, Claude): `Features/Training/*` (Tab, Routinen-Editor, Übungswahl, Vollbild-Session, Abschluss-Sheet), `TrainingOps/TrainingMessages/TrainingSession`. Codex-Review: 2× P2, 1× P3 behoben und nachgeprüft. CI #17 grün; Lauf für `a2283e8` siehe Actions.
+- Offen nur auf dem Gerät prüfbar: ob sich `postMessage` am WKWebView-Handler umhüllen lässt (sonst ungepuffertes Altverhalten).
+
 ## Nächste Schritte
 
+0. M5 Kalender + Fortschritt, dann M6 Aktivitäten, M7 Ernährung, M8 Konto/Profil + Phase B.
 1. Selvir testet die Branch-IPA (Actions-Artifact `PULS-ipa-<Lauf>`) auf dem iPhone: Konto → „Körper & Entwicklung“ öffnet den nativen Bildschirm; Gewicht eintragen/bearbeiten/löschen erscheint im Web und auf dem PC; Live-Aktivität und GPS unverändert.
 2. Nach erfolgreichem Gerätetest `native-ios` nach `main` (erzeugt Release-IPA).
 3. M3: native Übersicht + native Tab-Leiste.
