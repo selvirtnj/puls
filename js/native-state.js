@@ -7,9 +7,13 @@ const preview=typeof firstRunPreview!=='undefined'&&firstRunPreview;
 const seqKey='puls-native-seq',appliedKey='puls-native-applied',ownerPendingKey='puls-native-owner-pending';
 const webVersion=document.currentScript?.src?.match(/[?&]v=([^&#]+)/)?.[1]||'';
 let ready=false,seq=0,timer=null,pending=null,contextReason=null,applying=false,rollingBack=false,saveDepth=0,activating=false,activationProfile=null,adoptingLocal=false,helloOwnerPending;
-let projectionTimer=null,projectionSeq=0,lastProjection=null,lastProjectionSection,projectionRevision=0,forceProjection=false,cachedOverview=null,cachedInputs=null;
+let projectionTimer=null,projectionSeq=0,projectionRevision=0;
 let chromeRequested=false,chromeSessionHold=false,pageHidden=false,lastChrome=null,reportedPage;
+let trainingConfirmed=false,trainingApplying=false;
 const feature=name=>Array.isArray(window.pulsNativeFeatures)&&window.pulsNativeFeatures.includes(name);
+// M4: injected at document start; without it no training wrapper, op, projection or global is installed.
+const trainingFeature=feature('nativeTraining');
+const trainingAdapter=()=>trainingFeature&&typeof window.pulsNativeTraining?.build==='function'?window.pulsNativeTraining:null;
 const currentAccountSection=()=>page==='account'&&typeof accountSection==='string'&&accountSection?accountSection:null;
 const copy=value=>JSON.parse(JSON.stringify(value));
 const userId=()=>typeof cloudSession!=='undefined'?cloudSession?.user?.id??null:null;
@@ -19,9 +23,11 @@ if(!preview&&stateOwner!==null)try{if(localStorage.getItem(ownerPendingKey)===st
 const profileReady=()=>!activating&&stateOwner===userId();
 function hello(force=false){
   const ownerPending=!profileReady();
-  if(ownerPending){lastProjection=null;chromeRequested=false;chromeSessionHold=false;syncNativeChrome()}
+  if(ownerPending){for(const view of Object.values(views))view.last=null;chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome()}
   if(!ready||!force&&ownerPending===helloOwnerPending)return;
-  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete'],screens:['body'],projections:['overview'],features:['nativeTabs'],ownerPending})){
+  const training=trainingAdapter();
+  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...(training?Object.keys(training.ops):[])],screens:training?['body','training']:['body'],
+    projections:training?['overview','training']:['overview'],features:training?['nativeTabs','nativeTraining']:['nativeTabs'],ownerPending})){
     helloOwnerPending=ownerPending;
     if(!ownerPending)queueProjection('ready',true);
   }
@@ -52,7 +58,8 @@ function syncNativeChrome(current=chromeState()){
     feature('nativeTabs')&&(chromeRequested||chromeSessionHold&&fullscreen));
 }
 function reportChrome(){
-  if(!ready)return;
+  // A training op briefly opens Web sheets (finish, superset); report only the final state after the op.
+  if(!ready||trainingApplying)return;
   const current=chromeState(),stamp=JSON.stringify(current);syncNativeChrome(current);
   if(stamp!==lastChrome&&post({type:'chrome',...current}))lastChrome=stamp;
 }
@@ -67,7 +74,7 @@ window.pulsNativeSetChrome=function(active){
   chromeRequested=true;chromeSessionHold=false;syncNativeChrome();return true;
 };
 function reportNavigation(forceWeb=false){
-  if(ready&&(page!==reportedPage||forceWeb)&&post({type:'navigate',page,...(openingWeb?{web:true}:{})}))reportedPage=page;
+  if(ready&&!trainingApplying&&(page!==reportedPage||forceWeb)&&post({type:'navigate',page,...(openingWeb?{web:true}:{})}))reportedPage=page;
 }
 // Loaded after account-refresh and page-slide; later scripts do not replace these entry points.
 // Scope the Web escape to this call, never to a later click or the lifetime of the section.
@@ -93,7 +100,8 @@ window.pulsNativeNavigate=function(target){
       quickAdd:()=>{quickAddMenu();return true},
       addFood:()=>{go('food');foodForm();if(typeof foodTab==='function')foodTab('search');return true},
       editFood:()=>{if(!state.foods.some(x=>x.id===target.id&&x.date===date))return false;go('food');editDiaryFood(target.id);return true},
-      resumeWorkout:()=>{const active=activeWorkout();if(!active||active.id!==target.id)return false;if(typeof openWorkoutSession==='function')openWorkoutSession(active.id);else{trainTab='current';go('workout')}return true},
+      // web:true opens the Web session for this call only (native training fallback), never for later entries.
+      resumeWorkout:()=>{const active=activeWorkout();if(!active||active.id!==target.id)return false;if(typeof openWorkoutSession==='function'){const previous=openingWeb;openingWeb=target.web===true;try{openWorkoutSession(active.id)}finally{openingWeb=previous}}else{trainTab='current';go('workout')}return true},
       resumeRun:()=>{if(!state.activeRun||typeof openRunView!=='function')return false;openRunView();return true},
       startRoutine:()=>{if(!state.routines.some(x=>x.id===target.id))return false;go('workout');startRoutine(target.id);return true},
       startWorkout:()=>{go('workout');startWorkout();return true},
@@ -117,26 +125,40 @@ function overviewInputs(){
     state.routines,state.routines?.length,state.runs,state.runs?.length,state.microGoals,state.waterGoal,state.foodLogCompleted,state.foodLogCompleted?.length,
     state.activeRun,state.activeRun?.pausedAt,state.activeRun?.pausedSeconds,typeof dsCurrentScheme==='function'?dsCurrentScheme():null,window.pulsConnectivity?.online];
 }
+function trainingInputs(){
+  // Set edits are in place; every persisted training change passes save()/queue() and bumps projectionRevision.
+  return [projectionRevision,state,today(),state.language,state.workouts,state.workouts?.length,state.routines,state.routines?.length,
+    state.exerciseBook,state.exerciseBook?.length,state.workoutSettings,state.workoutSettings?.restSeconds];
+}
 const sameInputs=(a,b)=>!!b&&a.length===b.length&&a.every((value,index)=>value===b[index]);
+// One cache/dedup record per projection name; projectionSeq is shared and monotonic per document.
+const views={
+  overview:{feature:'nativeOverview',section:true,inputs:overviewInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
+    builder:()=>typeof window.pulsNativeBuildOverview==='function'?window.pulsNativeBuildOverview:null},
+  training:{feature:'nativeTraining',section:false,inputs:trainingInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
+    builder:()=>trainingAdapter()?.build||null}
+};
+const enabledViews=()=>Object.entries(views).filter(([,view])=>feature(view.feature)&&view.builder());
 function projection(reason,force=false){
   clearTimeout(projectionTimer);projectionTimer=null;
-  if(!feature('nativeOverview')||!ready||helloOwnerPending!==false||!profileReady()||applying||rollingBack||saveDepth||typeof window.pulsNativeBuildOverview!=='function')return;
-  try{
-    const inputs=overviewInputs();
-    if(!sameInputs(inputs,cachedInputs)){
-      cachedOverview=window.pulsNativeBuildOverview({seq,revision:projectionRevision});cachedInputs=inputs;
-    }
-    const overview=cachedOverview,status={userId:userId(),flags:flags(),cloud:cloud(),accountSection:currentAccountSection()},stamp=JSON.stringify([status,overview]);
-    if(!force&&!forceProjection&&stamp===lastProjection)return;
-    if(post({type:'projection',name:'overview',projectionSeq:projectionSeq+1,seq,...status,ownerPending:false,reason,overview})){
-      projectionSeq++;lastProjection=stamp;lastProjectionSection=status.accountSection;forceProjection=false;
-    }
-  }catch{ /* A projection failure must not interrupt saving or the existing Web UI. */ }
+  if(!ready||helloOwnerPending!==false||!profileReady()||applying||rollingBack||saveDepth)return;
+  for(const [name,view] of enabledViews()){
+    const build=view.builder();
+    try{
+      const inputs=view.inputs();
+      if(!sameInputs(inputs,view.cachedInputs)){view.cache=build({seq,revision:projectionRevision});view.cachedInputs=inputs}
+      const status={userId:userId(),flags:flags(),cloud:cloud(),...(view.section?{accountSection:currentAccountSection()}:{})},stamp=JSON.stringify([status,view.cache]);
+      if(force!==true&&force!==name&&!view.force&&stamp===view.last)continue;
+      if(post({type:'projection',name,projectionSeq:projectionSeq+1,seq,...status,ownerPending:false,reason,[name]:view.cache})){
+        projectionSeq++;view.last=stamp;view.lastSection=status.accountSection;view.force=false;
+      }
+    }catch{ /* A projection failure must not interrupt saving or the existing Web UI. */ }
+  }
 }
 function queueProjection(reason='render',force=false){
-  if(!feature('nativeOverview'))return;
-  if(force)forceProjection=true;
-  if(!forceProjection&&sameInputs(overviewInputs(),cachedInputs)&&currentAccountSection()===lastProjectionSection)return;
+  const list=enabledViews();if(!list.length)return;
+  if(force)for(const [,view] of list)view.force=true;
+  if(!list.some(([,view])=>view.force||!sameInputs(view.inputs(),view.cachedInputs)||view.section&&currentAccountSection()!==view.lastSection))return;
   clearTimeout(projectionTimer);
   if(ready&&!applying&&!rollingBack)projectionTimer=setTimeout(()=>{if(pending)flush();projection(reason)},300);
 }
@@ -251,7 +273,8 @@ if(typeof signOutCloud==='function'){
   signOutCloud=async function(...args){try{return await base.apply(this,args)}finally{if(userId()===null)claimProfile();queue('cloud')}};
 }
 
-function ack(id,code,message){post({type:'ack',id,ok:!code,seq,...(code?{error:{code,message}}:{})})}
+// Training ops may return a small result (e.g. the Web-generated workout ID); weight acks keep their v1 shape.
+function ack(id,code,message,result){post({type:'ack',id,ok:!code,seq,...(code?{error:{code,message}}:result!==undefined?{result}:{})})}
 function applied(){
   try{
     const rows=JSON.parse(localStorage.getItem(appliedKey)||'[]');
@@ -268,8 +291,10 @@ window.pulsNativeApply=function(cmd){
   if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)||!id||!/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(id)){ack(id,'invalid','Ungültige Befehls-ID');return}
   if(Object.values(flags()).some(Boolean)){ack(id,'readonly','Profil ist schreibgeschützt');return}
   if(cmd.userId!==userId()){ack(id,'wrong_user','Befehl gehört zu einem anderen Konto');return}
-  const history=applied();
-  if(history.some(x=>x.id===id&&x.userId===cmd.userId)){ack(id);queue('apply');flush();return}
+  const history=applied(),known=history.find(x=>x.id===id&&x.userId===cmd.userId);
+  if(known){ack(id,undefined,undefined,known.result);queue('apply');flush();return}
+  const training=trainingAdapter(),trainingOp=training&&typeof cmd.op==='string'&&Object.hasOwn(training.ops,cmd.op)?training.ops[cmd.op]:null;
+  if(trainingOp){applyTraining(cmd,history,training,trainingOp);return}
   if(!['weight.upsert','weight.delete'].includes(cmd.op)){ack(id,'unknown_op','Unbekannter Befehl');return}
   const args=cmd.args;
   const validExpect=value=>value===null||typeof value==='string'&&value.trim().length>0;
@@ -283,19 +308,82 @@ window.pulsNativeApply=function(cmd){
     const actual=state.weights.find(x=>x.id===args.id)?.id??null;
     if(actual!==null&&actual!==args.expect){ack(id,'conflict','Gewicht wurde inzwischen geändert');return}
   }
-  let before,target,raw,oldHistory,metaKey,metaRaw,dirty,message,wrote=false,failed=false,code='persist_failed';
+  // app.js:addWeight removes the day's old entry and appends the new one; finish.js:removeEntry filters by ID.
+  // Native already confirmed the action, so use those exact mutations without opening a Web form/confirmation.
+  commit(cmd,history,{run(){
+    if(cmd.op==='weight.upsert'){
+      state.weights=state.weights.filter(x=>x.id!==args.id&&x.date!==args.date);
+      state.weights.push({id:args.id,date:args.date,kg:args.kg});
+    }else state.weights=state.weights.filter(x=>x.id!==args.id);
+  },verify:stored=>Array.isArray(stored?.weights)&&(cmd.op==='weight.delete'?!stored.weights.some(x=>x.id===args.id):
+    stored.weights.some(x=>x.id===args.id&&x.date===args.date&&x.kg===args.kg)&&stored.weights.filter(x=>x.date===args.date).length===1)});
+};
+// M4: the save/render wrappers of native-bridge.js/insights.js report rest, workout timer and run Live Activity state
+// synchronously. During a training op those messages stay in this document until the op is confirmed: then only the
+// final state per kind is delivered once (if it differs from what Native already has); after a rollback none is.
+// Rest/workout messages are pure state, so an equivalent repeat (the bridge correcting itself) is always dropped.
+const nativeKind=(handler,message)=>handler==='pulsWorkout'?'workout':['restStart','restCancel','workoutActive'].includes(message?.type)?'rest':message?.type==='runActivity'?'run':null;
+// Identity of the rest a restStart describes: same selection as native-bridge.js activeRest(), read when the bridge
+// posts (synchronously from the current state). Two rests with equal end time and label stay different rests.
+const nativeRestKey=()=>{
+  const now=Date.now(),w=(state.workouts||[]).filter(x=>!x.finished&&x.rest?.endAt>now).sort((a,b)=>a.rest.endAt-b.rest.endAt)[0];
+  return w?JSON.stringify([w.id,w.rest.exerciseId??null,w.rest.endAt]):null;
+};
+const nativeSame=(kind,a,b)=>{
+  if(!a||!b)return false;
+  if(kind==='rest'){
+    // Within the same rest identity, startsAt/cancelRest only describe how the bridge reached the state
+    // (e.g. its correction after a rolled-back op). A different rest is always a new restStart.
+    if(a.message.type==='restStart'&&a.key!==b.key)return false;
+    const plainState=({startsAt,cancelRest,...value})=>value;return JSON.stringify(plainState(a.message))===JSON.stringify(plainState(b.message));
+  }
+  return JSON.stringify(a.message)===JSON.stringify(b.message);
+};
+const nativeSent=new Map();let nativeBuffer=null;
+function gateNativeHandler(name){
+  const handler=window.webkit?.messageHandlers?.[name];
+  if(!handler||typeof handler.postMessage!=='function')return;
+  const send=handler.postMessage,deliver=record=>{send.call(handler,record.message);if(record.kind)nativeSent.set(record.kind,{...record,message:copy(record.message)})};
+  try{
+    handler.postMessage=function(message){
+      const kind=nativeKind(name,message),record={kind,message,deliver,key:message?.type==='restStart'?nativeRestKey():null};
+      if(kind&&nativeBuffer){nativeBuffer.push(record);return}
+      if((kind==='rest'||kind==='workout')&&nativeSame(kind,nativeSent.get(kind),record))return;
+      deliver(record);
+    };
+  }catch{ /* A read-only handler keeps the previous, unbuffered behaviour. */ }
+}
+function releaseNative(confirmed){
+  const buffered=nativeBuffer||[];nativeBuffer=null;
+  if(!confirmed)return;
+  const last=new Map();for(const record of buffered){last.delete(record.kind);last.set(record.kind,record)}
+  for(const record of last.values())if(!nativeSame(record.kind,nativeSent.get(record.kind),record))try{record.deliver(record)}catch{}
+}
+if(trainingFeature){gateNativeHandler('pulsNative');gateNativeHandler('pulsWorkout')}
+const webDialogOpen=()=>(typeof modal!=='undefined'&&!!modal.open)||!!document.querySelector('dialog[open]');
+function applyTraining(cmd,history,training,op){
+  const id=cmd.id,args=cmd.args;
+  if(!args||typeof args!=='object'||Array.isArray(args)){ack(id,'invalid','Ungültige Argumente');return}
+  // lifecycle.js closes sessions older than five hours on focus/visibility; do the same before acting on one.
+  try{if(typeof sweepLongWorkouts==='function')sweepLongWorkouts()}catch{}
+  let plan;try{plan=op.check(args)}catch{plan={code:'invalid',message:'Ungültige Argumente'}}
+  if(plan.code){ack(id,plan.code,plan.message);return}
+  // These Web functions close #modal; never discard an unrelated open Web form. Native retries after chrome changes.
+  if(plan.busy&&webDialogOpen()){ack(id,'busy','Ein Web-Dialog ist geöffnet');return}
+  commit(cmd,history,{ui:training,run:()=>plan.noop?plan.result:op.run(args,plan),verify:(stored,result)=>op.effective(stored,args,plan,result)});
+}
+function commit(cmd,history,{run,verify,ui}){
+  const id=cmd.id;
+  let before,target,raw,oldHistory,metaKey,metaRaw,dirty,message,view,result,wrote=false,failed=false,code='persist_failed',reason;
   const previousReason=contextReason,waiting=pending;
   try{
     raw=localStorage.getItem('puls-v1');try{oldHistory=localStorage.getItem(appliedKey)}catch{oldHistory=null}
     metaKey=userId()===null?null:cloudStorageKey(userId());if(metaKey)metaRaw=localStorage.getItem(metaKey);
     dirty=typeof cloudDirty!=='undefined'?cloudDirty:undefined;message=typeof cloudMessage!=='undefined'?cloudMessage:undefined;
-    before=copy(state);target=state;applying=true;contextReason='apply';
-    // app.js:addWeight removes the day's old entry and appends the new one; finish.js:removeEntry filters by ID.
-    // Native already confirmed the action, so use those exact mutations without opening a Web form/confirmation.
-    if(cmd.op==='weight.upsert'){
-      state.weights=state.weights.filter(x=>x.id!==args.id&&x.date!==args.date);
-      state.weights.push({id:args.id,date:args.date,kg:args.kg});
-    }else state.weights=state.weights.filter(x=>x.id!==args.id);
+    before=copy(state);target=state;view=ui?ui.captureUi():undefined;applying=true;trainingApplying=!!ui;contextReason='apply';
+    if(ui)nativeBuffer=[];
+    // Training ops call Web functions; an exception there is a rejected command, not a storage problem.
+    try{result=run()}catch(error){if(ui){code='invalid';reason=error?.message}throw error}
     if(!validData(state)){code='invalid';throw Error('Ungültiges Profil')}
     // The effective render chain invokes adaptiveGoals(), including goal history/calibration and its nested saves.
     // Validate again afterwards and save once more so the final derived state is persisted as well.
@@ -303,19 +391,17 @@ window.pulsNativeApply=function(cmd){
     if(!validData(state)){code='invalid';throw Error('Ungültiges Profil nach Neuberechnung')}
     wrote=true;save();
     const stored=JSON.parse(localStorage.getItem('puls-v1')||'null');
-    const effective=Array.isArray(stored?.weights)&&(cmd.op==='weight.delete'?!stored.weights.some(x=>x.id===args.id):
-      stored.weights.some(x=>x.id===args.id&&x.date===args.date&&x.kg===args.kg)&&stored.weights.filter(x=>x.date===args.date).length===1);
-    if(!effective||JSON.stringify(stored)!==JSON.stringify(state))throw Error('Profil nicht vollständig gespeichert');
-    localStorage.setItem(appliedKey,JSON.stringify([...history,{id,userId:cmd.userId}].slice(-200)));
+    if(!verify(stored,result)||JSON.stringify(stored)!==JSON.stringify(state))throw Error('Profil nicht vollständig gespeichert');
+    localStorage.setItem(appliedKey,JSON.stringify([...history,{id,userId:cmd.userId,...(result!==undefined?{result}:{})}].slice(-200)));
     // Reserve a stored sequence before confirming. WebKit may flush localStorage to disk later (see protocol).
-    const result=snapshot('apply');clearTimeout(timer);timer=null;pending=null;
-    ack(id);
-    post(result);
+    const confirmed=snapshot('apply');clearTimeout(timer);timer=null;pending=null;
+    ack(id,undefined,undefined,result);
+    post(confirmed);
   }catch(error){
     failed=true;
     if(before){
       // Redraw the previous profile, but don't let a rollback render persist derived targets.
-      rollingBack=true;restoreState(target,before);
+      rollingBack=true;restoreState(target,before);if(view)ui.restoreUi(view);
       try{render()}catch{}finally{restoreState(target,before);rollingBack=false}
       // render/adaptiveGoals may already have saved before a later validation or history write failed.
       try{if(wrote||localStorage.getItem('puls-v1')!==raw){if(raw===null)localStorage.removeItem('puls-v1');else localStorage.setItem('puls-v1',raw)}}catch{}
@@ -325,27 +411,62 @@ window.pulsNativeApply=function(cmd){
       try{if(typeof cloudStatusChanged==='function')cloudStatusChanged()}catch{}
     }
     clearTimeout(timer);timer=null;pending=waiting;
-    ack(id,code,code==='invalid'?'Ergebnis ist kein gültiges Profil':'Speichern nicht bestätigt');
-    return;
-  }finally{applying=false;contextReason=previousReason;if(failed&&pending)queue(pending);if(!failed)projection('apply')}
-};
+    ack(id,code,code==='invalid'?(reason?'Web-Ablauf hat den Befehl abgelehnt: '+reason:'Ergebnis ist kein gültiges Profil'):'Speichern nicht bestätigt');
+  }finally{
+    // After the ack: one reconciliation from the final state, or nothing at all after a rollback.
+    if(ui)releaseNative(!failed);
+    applying=false;trainingApplying=false;contextReason=previousReason;if(failed&&pending)queue(pending);if(!failed)projection('apply');
+    if(ui){reportNavigation();reportChrome()}
+  }
+}
 function loaded(){
   if(ready)return;
   // design-system.js replaces home/render AFTER this script; wrap only the final chain on load.
   const baseRender=render;render=function(...args){const result=baseRender.apply(this,args);reportNavigation();reportChrome();queueProjection();return result};
   const baseGo=go;go=function(...args){const previous=reportedPage,result=baseGo.apply(this,args);reportNavigation(openingWeb&&previous===page);return result};
-  const baseDate=setDate;setDate=function(...args){const result=baseDate.apply(this,args);projection('date',true);return result};
+  const baseDate=setDate;setDate=function(...args){const result=baseDate.apply(this,args);projection('date','overview');return result};
   const baseModal=openModal;openModal=function(...args){const result=baseModal.apply(this,args);reportChrome();return result};
   if(typeof renderWorkoutSession==='function'){const base=renderWorkoutSession;renderWorkoutSession=function(...args){const result=base.apply(this,args);reportChrome();return result}}
   if(typeof renderRunView==='function'){const base=renderRunView;renderRunView=function(...args){const result=base.apply(this,args);reportChrome();return result}}
+  if(trainingFeature&&typeof openWorkoutSession==='function'){
+    // Confirmed native training owns the strength session: Web entries (dock, overview, quick add, startRoutine)
+    // ask Native to present it. Ops never open a Web session; Native presents after its ack.
+    const base=openWorkoutSession;
+    openWorkoutSession=function(id,...args){
+      if(trainingApplying)return;
+      if(trainingConfirmed&&!openingWeb&&typeof id==='string'&&activeWorkout()?.id===id&&trainingReady()&&
+        post({type:'openNative',screen:'training',workoutId:id})){if(typeof modal!=='undefined'&&modal.open)modal.close();return}
+      return base.call(this,id,...args);
+    };
+  }
+  // Native shows its own rest-end alert while it owns training; the Web still clears the rest and plays its sound.
+  if(trainingFeature&&typeof showRestPopup==='function'){const base=showRestPopup;showRestPopup=function(...args){if(trainingConfirmed&&trainingReady())return;return base.apply(this,args)}}
   if(typeof MutationObserver==='function'&&document.body)new MutationObserver(reportChrome).observe(document.body,
     {subtree:true,childList:true,attributes:true,attributeFilter:['open','hidden','class']});
   ready=true;hello();reportNavigation();reportChrome();pending='load';flush();
 }
-window.addEventListener('pagehide',()=>{flush();projection('background');pageHidden=true;chromeRequested=false;chromeSessionHold=false;syncNativeChrome()});
+const trainingReady=()=>ready&&!pageHidden&&helloOwnerPending===false&&profileReady()&&!!trainingAdapter();
+if(trainingFeature){
+  // M4: Native confirms that it presents training itself (never persisted). true only without a Web block;
+  // false is always allowed and makes every Web entry open the Web session again (fallback).
+  window.pulsNativeSetTraining=function(active){
+    if(typeof active!=='boolean')return false;
+    if(!active){trainingConfirmed=false;return true}
+    if(!trainingReady()||chromeState().blocking)return false;
+    trainingConfirmed=true;return true;
+  };
+  window.pulsNativeExerciseSearch=function(request){
+    const training=trainingAdapter();
+    if(!training||!ready||helloOwnerPending!==false||!profileReady()||!request||typeof request!=='object'||Array.isArray(request)||
+      typeof request.requestId!=='string'||!request.requestId||request.requestId.length>100)return false;
+    let result;try{result=training.search(request)}catch{return false}
+    return !!result&&post({type:'exerciseSearch',requestId:request.requestId,...result});
+  };
+}
+window.addEventListener('pagehide',()=>{flush();projection('background');pageHidden=true;chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome()});
 window.addEventListener('pageshow',event=>{
   const restored=pageHidden||event.persisted===true;pageHidden=false;
-  if(restored){chromeRequested=false;chromeSessionHold=false;syncNativeChrome();hello(true)}
+  if(restored){chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome();hello(true)}
   reportChrome();queueProjection('foreground');
 });
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flush();projection('background')}else queueProjection()});

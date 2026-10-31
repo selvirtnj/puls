@@ -1,0 +1,236 @@
+{
+ "protocol": 1,
+ "type": "projection",
+ "name": "training",
+ "projectionSeq": 1,
+ "seq": 1,
+ "userId": "a0000000-0000-4000-8000-0000000000aa",
+ "flags": {
+  "preview": false,
+  "recovery": false,
+  "uploadBlocked": false
+ },
+ "cloud": {
+  "signedIn": true,
+  "revision": 17,
+  "dirty": false,
+  "conflict": false
+ },
+ "ownerPending": false,
+ "reason": "load",
+ "training": {
+  "language": "de",
+  "locale": "de-DE",
+  "today": "2026-10-28",
+  "settings": {
+   "restSeconds": 90
+  },
+  "active": {
+   "id": "o0000000-0000-4000-8000-000000000003",
+   "name": "Push",
+   "date": "2026-10-28",
+   "routineId": "t0000000-0000-4000-8000-000000000001",
+   "startedAt": 1793187600000,
+   "autoFinishAt": 1793205600000,
+   "timeApprox": false,
+   "durationXpVersion": 1,
+   "rest": {
+    "endAt": 1793188860000,
+    "exerciseId": "e0000000-0000-4000-8000-000000000011"
+   },
+   "loggedSets": 1,
+   "openSets": 4,
+   "totalSets": 5,
+   "complete": true,
+   "exercises": [
+    {
+     "id": "e0000000-0000-4000-8000-000000000011",
+     "libraryId": "x0000000-0000-4000-8000-000000000001",
+     "name": "Bench Press",
+     "restSeconds": 120,
+     "effectiveRestSeconds": 120,
+     "repMin": 6,
+     "repMax": 10,
+     "superset": "s0000000-0000-4000-8000-000000000002",
+     "supersetWith": [
+      "e0000000-0000-4000-8000-000000000012"
+     ],
+     "previous": {
+      "date": "2026-10-24",
+      "sets": [
+       {
+        "kg": 80,
+        "reps": 8,
+        "shownKg": 80
+       },
+       {
+        "kg": 80,
+        "reps": 7,
+        "shownKg": 80
+       }
+      ]
+     },
+     "sets": [
+      {
+       "kg": 80,
+       "reps": 8,
+       "done": true,
+       "previous": {
+        "kg": 80,
+        "reps": 8,
+        "shownKg": 80
+       }
+      },
+      {
+       "kg": 80,
+       "reps": 7,
+       "done": false,
+       "previous": {
+        "kg": 80,
+        "reps": 7,
+        "shownKg": 80
+       }
+      },
+      {
+       "kg": "",
+       "reps": "",
+       "done": false,
+       "previous": null
+      }
+     ]
+    },
+    {
+     "id": "e0000000-0000-4000-8000-000000000012",
+     "libraryId": "x0000000-0000-4000-8000-000000000002",
+     "name": "Cable Fly",
+     "restSeconds": 90,
+     "effectiveRestSeconds": 90,
+     "repMin": 10,
+     "repMax": 15,
+     "superset": "s0000000-0000-4000-8000-000000000002",
+     "supersetWith": [
+      "e0000000-0000-4000-8000-000000000011"
+     ],
+     "previous": {
+      "date": "2026-10-24",
+      "sets": [
+       {
+        "kg": 15,
+        "reps": 12,
+        "shownKg": 15
+       }
+      ]
+     },
+     "sets": [
+      {
+       "kg": 15,
+       "reps": 12,
+       "done": false,
+       "previous": {
+        "kg": 15,
+        "reps": 12,
+        "shownKg": 15
+       }
+      },
+      {
+       "kg": "",
+       "reps": "",
+       "done": false,
+       "previous": null
+      }
+     ]
+    }
+   ]
+  },
+  "routines": [
+   {
+    "id": "t0000000-0000-4000-8000-000000000001",
+    "name": "Push",
+    "exerciseCount": 2,
+    "setCount": 5,
+    "exercises": [
+     {
+      "libraryId": "x0000000-0000-4000-8000-000000000001",
+      "name": "Bench Press",
+      "sets": 3,
+      "min": 6,
+      "max": 10,
+      "restSeconds": 120,
+      "superset": null
+     },
+     {
+      "libraryId": "x0000000-0000-4000-8000-000000000002",
+      "name": "Cable Fly",
+      "sets": 2,
+      "min": 10,
+      "max": 15,
+      "restSeconds": 90,
+      "superset": "s0000000-0000-4000-8000-000000000001"
+     }
+    ]
+   }
+  ],
+  "routineCount": 1,
+  "recommendation": {
+   "nextRoutineId": "t0000000-0000-4000-8000-000000000001",
+   "last": {
+    "id": "o0000000-0000-4000-8000-000000000001",
+    "name": "Push",
+    "date": "2026-10-24",
+    "routineId": "t0000000-0000-4000-8000-000000000001"
+   }
+  },
+  "library": [
+   {
+    "id": "x0000000-0000-4000-8000-000000000001",
+    "name": "Bench Press",
+    "muscles": [
+     "chest",
+     "triceps"
+    ],
+    "equipment": "barbell",
+    "target": 0,
+    "repMin": 6,
+    "repMax": 10,
+    "loadStep": 2.5
+   },
+   {
+    "id": "x0000000-0000-4000-8000-000000000002",
+    "name": "Cable Fly",
+    "muscles": [],
+    "equipment": "cable",
+    "target": 0,
+    "repMin": null,
+    "repMax": null,
+    "loadStep": null
+   }
+  ],
+  "libraryCount": 2,
+  "recent": [
+   {
+    "id": "o0000000-0000-4000-8000-000000000001",
+    "name": "Push",
+    "date": "2026-10-24",
+    "routineId": "t0000000-0000-4000-8000-000000000001",
+    "durationSeconds": 4200,
+    "sets": 3,
+    "reps": 27,
+    "volume": 1380,
+    "xp": 49,
+    "autoFinished": false
+   }
+  ],
+  "identity": {
+   "level": 1,
+   "current": 107,
+   "needed": 250,
+   "total": 107,
+   "streak": 0
+  },
+  "omitted": {
+   "routines": 0,
+   "library": 0,
+   "recent": 0
+  }
+ }
+}

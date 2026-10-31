@@ -64,3 +64,25 @@ Native Dateibesitz vor Start durch Koordinator festlegen: `ios/PULS/Shell/RootTa
 - Native Datum → `pulsNativeSetDate`, Tabs → Seiten-Navigation, Plus → `{action:'quickAdd'}`. `chrome.blocking` deaktiviert Datum/Tabs/Plus; bei session/run Tab-Bar verbergen und Web-Vollbild zeigen, bei modal/editing Web-Sheet/Formular sichtbar halten. Boolean-Rückgaben respektieren, keine direkte JS-Umgehung. Vor Actions WebView sichtbar machen; `navigate` ist Quelle der aktuellen Seite (nicht die gecachte `projection.overview.page`). Bei `navigate{web:true}` Web-Übersicht bis bewusster nativer Tabwahl zeigen. Verlauf und Essens-Löschen/Undo bleiben Web; M2-Body-Routing erhalten.
 - Vertragsgrenze bestätigt: Wasser-/Tagesabschluss-Ops/Outbox erst **M7**. Alle existierenden Gewichts-Ops bleiben unverändert.
 - Abnahme: Fixture-Decoder und Werteparität; gemeinsamer Web-/Native-Tab-/Modal-/Vollbildfluss; Reload/Cloud/Offline/ungeklärte Zuordnung; Hell/Dunkel, DE/EN, VoiceOver/Dynamic Type und 390 pt. Native Übersicht ohne Daten spätestens nach ca. 3 s mit Web-Ausweichweg. Cross-Review durch andere KI vor Integration; `CURRENT-STATE.md` und Release-Versionierung erledigt der Koordinator gesammelt.
+
+## M4 — Routinen + Kraftsession
+
+### Paket J — Web-Datenschnittstelle Training (Claude `puls-backend` als Ersatz für Codex, high)
+
+Basis `3378933`, Web v75. Dateibesitz: `js/native-state.js`, `js/native-projection.js` (unverändert), neues `js/native-training.js` (Einbindung direkt nach `native-projection.js` in `index.html` und `sw.js`), `tests/check-native-training.cjs` + Eintrag in `scripts/check.cjs`, Fixtures `training-*`, `apply-training-*`, `ack-training-start`, README, Protokoll §9 und dieser Abschnitt. Kein `ios/`, keine Versionserhöhung, kein Commit/Push. Vorhandene Fremdänderung an `CLAUDE.md` erhalten.
+
+- Feature **`nativeTraining`** (zusätzlich zu `stateBridge`); ohne es keinerlei Training-Global, -Wrapper, -Op oder -Projektion, `hello` unverändert (Fixture `hello`).
+- `projection{name:'training'}` (Protokoll §9.2): aktive Session vollständig (Sätze `''`/Zahl, Vorher-Werte aus `previousPerformance`, Vorbelegung nie erledigt, Pause `endAt`, Supersatz-Gruppen, 5-h-Zeitpunkt), alle Routinen, Bibliothek, Empfehlung, letzte 10 Trainings, Level/XP/Serie. Gemeinsamer `projectionSeq`, eigener Cache/Dedup, 48-Ki-Budget ohne Kürzung der aktiven Session.
+- 15 Ops mit Ack (§9.4) über die zuletzt wirksamen Web-Funktionen; gemeinsame Transaktion mit der Gewichts-Op (`commit` in `native-state.js`: Rücknahme inkl. Web-UI-Zustand, Persistenzprüfung, Historie mit `result`). Neue Fehlercodes `gone`, `busy`. 5-h-Regel läuft vor jeder Trainings-Op.
+- Chrome/Session (§9.5): `pulsNativeSetTraining(bool)`, Weiterleitung von `openWorkoutSession` per `openNative{screen:'training'}`, `resumeWorkout` mit `web:true` als Ausweg, Web-Rest-Pop-up entfällt bei bestätigter Übernahme. Übungssuche `pulsNativeExerciseSearch` mit Web-Ranking.
+- Lokal geprüft: `tests/check-native-training.cjs` (VM, echte Trainings-Wrapper-Ketten inkl. `workout-polish`, `tracker-tools`, `rest-popup`, `workout-controls`, `training-polish`, `machine-library`, `native-bridge`) für alle Ops, Idempotenz/Replay, Konflikte, Vorbelegung, 5 h, keine Doppelsession, `restStart`/`restCancel` genau einmal, Abschluss/Verwerfen Web-gleich (XP), Rücknahme, Lesemodi, Chrome-Fluss, Suche, Budget; `node scripts/check.cjs` grün. Nicht geprüft: echtes Layout/Browser/Gerät, Live-Aktivität auf dem iPhone, Swift-Seite. Unabhängiges Review (Codex `reviewer` high) vor Integration veranlassen.
+
+### Paket K — native Routinen- und Session-Oberfläche (Claude `puls-frontend`)
+
+Erst nach J und dessen Review; Dateien vor Start durch Koordinator festlegen (`ios/PULS/Features/Training/*`, Router/StateBridge/BridgeMessages-Erweiterungen und Tests in `PULSCore`).
+
+- `nativeTraining` injizieren; `hello` (Screen `training` + alle Ops) prüfen; `training`-Projektion und neue Nachrichten (`exerciseSearch`, `openNative{screen:'training'}`, `ack.result`, `gone`/`busy`) dekodieren, gegen die Fixtures testen.
+- Nach gültiger Projektion `pulsNativeSetTraining(true)`; bei `false`-Antwort nach `chrome{blocking:false}` erneut. Auf `openNative{screen:'training'}` immer die Session zeigen. Fallback: `pulsNativeSetTraining(false)` + `resumeWorkout` mit `web:true`.
+- Keine Formeln nachbauen: Vorher-Werte, Empfehlung, XP/Level/Serie, Volumen aus der Projektion; Uhr/Restpause lokal aus `startedAt`/`rest.endAt`. Eingaben je Satz bei Abschluss als ein `set.update` mit `expect`. Pausen/Live-Aktivität nur über Web-Nachrichten, kein direkter `RestCoordinator`-Aufruf. Nach `workout.finish` Web-Abschlussansicht zeigen.
+- Outbox: Wirkungsdefinitionen aus §9.4; `gone` verwerfen, `conflict` parken und fragen, `busy`/`persist_failed` halten.
+- Abnahme laut Plan M4 auf dem iPhone: IDs/Sätze erhalten, Vorbelegung nie erledigt, letzter erledigter Satz korrekt, 5-h-Abschluss, Hintergrund/Prozessneustart, Live-Aktivität genau einmal beendet, keine doppelte Session, XP/Abschlussdaten identisch; Hell/Dunkel, DE/EN, VoiceOver, Dynamic Type, 390 pt.
