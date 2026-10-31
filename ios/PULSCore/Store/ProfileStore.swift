@@ -241,6 +241,9 @@ public final class ProfileStore {
     @ObservationIgnored private var pendingProgressQueries: [String: PendingProgressQuery] = [:]
     @ObservationIgnored private var progressResultOrder: [String] = []
     @ObservationIgnored private var lastActivityProjectionSeq: Int?
+    /// Befehls-IDs, die in **dieser** App-Sitzung neu eingereiht wurden. Aus `outbox.json` geladene Befehle gelten
+    /// immer als möglicherweise gesendet (M6: nie „abbrechbar“).
+    @ObservationIgnored private(set) var sessionEnqueuedIds: Set<String> = []
     @ObservationIgnored private var pendingActivityQueries: [String: PendingActivityQuery] = [:]
     @ObservationIgnored private var activityResultOrder: [String] = []
 
@@ -909,6 +912,7 @@ public final class ProfileStore {
         )
         do {
             try outbox.enqueue(apply, at: environment.now())
+            sessionEnqueuedIds.insert(apply.id)
         } catch {
             log("perform op=\(command.op) not persisted")
             throw ProfileStoreError.persistence
@@ -970,6 +974,8 @@ public final class ProfileStore {
     private func send(_ command: ApplyCommand) {
         guard let sender else { return }
         outbox.markSent(id: command.id)
+        // Sendeversuch sofort sichtbar (M6: „nachweislich nicht gesendet“ entscheidet über Abbrechen).
+        syncOutbox()
         sender(command)
     }
 

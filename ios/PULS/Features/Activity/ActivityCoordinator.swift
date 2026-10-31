@@ -167,6 +167,7 @@ final class ActivityCoordinator {
         updateConfirmation()
         processAcks()
         dropLiveConflicts()
+        relinkOutbox()
         if pendingRouteSelection != nil, store.currentActivity != nil { resolvePendingRoute() }
         checkPresentation()
         checkCompletion()
@@ -444,6 +445,10 @@ final class ActivityCoordinator {
             notice = TrainingNotice(text: describe(ProfileStoreError.readOnly))
             return
         }
+        guard !hasPendingStart else {
+            stage = .starting
+            return
+        }
         let seconds = projection?.settings.countdownSeconds ?? 10
         scheduleCountdown(endsAt: Date().addingTimeInterval(TimeInterval(seconds)))
     }
@@ -482,6 +487,11 @@ final class ActivityCoordinator {
         }
         guard let type = currentType else {
             stage = .start
+            return
+        }
+        // Nie ein zweiter Start, solange ein früherer (z. B. aus der letzten App-Sitzung) ungeklärt ist.
+        guard !hasPendingStart else {
+            stage = .starting
             return
         }
         let route = type.gps ? currentRoute?.id : nil
@@ -746,6 +756,36 @@ final class ActivityCoordinator {
         }
     }
 
+    /// Aktionen mit ihren Befehlen in der persistenten Outbox verknüpfen (auch nach App-Neustart): wartender Start bzw.
+    /// wartendes Speichern behalten ihre ursprüngliche ID, Fortschrittsanzeige und „Erneut senden“. Nur echte
+    /// Änderungen zuweisen (jede Zuweisung löst die Beobachtung erneut aus).
+    private func relinkOutbox() {
+        for (key, op) in [("start", ActivityOps.runStart), ("save", ActivityOps.summarySave)] {
+            guard let entry = store.unconfirmedActivityEntries(op: op).first else { continue }
+            let id = entry.command.id
+            if commandIds[key] != id { commandIds[key] = id }
+            if waiting[id] == nil { waiting[id] = key }
+            if !busyActions.contains(key) { busyActions.insert(key) }
+            if entry.lastError != nil, !heldActions.contains(key) { heldActions.insert(key) }
+            if key == "start", isPresented, stage == .start || isCountdown { stage = .starting }
+        }
+    }
+
+    private var isCountdown: Bool {
+        if case .countdown = stage { return true }
+        return false
+    }
+
+    /// Ein früherer Start liegt noch ungeklärt in der Outbox: keinen weiteren Start freigeben.
+    var hasPendingStart: Bool { !store.unconfirmedActivityEntries(op: ActivityOps.runStart).isEmpty }
+
+    /// „Start abbrechen“ nur, solange der Befehl nachweislich noch nie an das Web übergeben wurde. Ist ungewiss, ob er
+    /// ausgeführt wurde, bleibt nur „Minimieren“; ein bestätigter Start wird regulär verworfen.
+    var canCancelStart: Bool {
+        guard let id = commandIds["start"] else { return false }
+        return store.isUnsent(commandId: id)
+    }
+
     /// Gehaltenen Befehl (`start` bzw. `save`) mit derselben Befehls-ID erneut senden.
     func retryHeld(_ key: String) {
         heldActions.remove(key)
@@ -759,9 +799,19 @@ final class ActivityCoordinator {
 
     /// Noch nicht ausgeführten Start verwerfen (gehalten oder ohne Antwort) und zur Artwahl zurück.
     func cancelPendingStart() {
-        if let id = commandIds["start"], store.pending.contains(where: { $0.command.id == id }) {
-            do { try store.discardCommand(id: id) } catch { notice = TrainingNotice(text: describe(error)) }
+        guard canCancelStart, let id = commandIds["start"] else {
+            notice = TrainingNotice(text: text("Der Start wurde schon an PULS übergeben und lässt sich nicht mehr abbrechen. Nach der Bestätigung kannst du die Aktivität verwerfen.",
+                                               "The start was already handed to PULS and can no longer be cancelled. Once confirmed you can discard the activity."))
+            return
         }
+        do {
+            try store.discardCommand(id: id)
+        } catch {
+            notice = TrainingNotice(text: describe(error))
+            return
+        }
+        waiting[id] = nil
+        commandIds["start"] = nil
         busyActions.remove("start")
         heldActions.remove("start")
         if stage == .starting { stage = .start }

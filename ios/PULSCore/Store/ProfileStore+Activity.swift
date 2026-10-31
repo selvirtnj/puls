@@ -14,6 +14,24 @@ extension ProfileStore {
         unconfirmedCommands.contains { ActivityOps.isActivity($0.op) && predicate($0) }
     }
 
+    /// Wartende bzw. vom Web gehaltene (noch nicht bestätigte) Aktivitätsbefehle `op` des aktuellen Kontos aus der
+    /// persistenten Outbox, älteste zuerst; optional nur für die Aktivität `startedAt`. Damit verknüpft die Oberfläche
+    /// nach einem Neustart ihre Aktionen wieder mit der ursprünglichen Befehls-ID.
+    public func unconfirmedActivityEntries(op: String, startedAt: Double? = nil) -> [OutboxEntry] {
+        outboxEntries.filter { entry in
+            entry.status == .pending && entry.command.op == op && entry.command.userId == userId
+                && (startedAt == nil || entry.command.args["startedAt"]?.doubleValue == startedAt)
+        }
+    }
+
+    /// Befehl wurde in **dieser** App-Sitzung neu eingereiht, liegt wartend in der Outbox und wurde nachweislich noch nie an
+    /// das Web übergeben. Nur dann darf er ohne Risiko einer späteren Ausführung verworfen werden. Aus `outbox.json`
+    /// geladene Befehle gelten immer als möglicherweise gesendet (auch ohne gespeicherten Sendeversuch).
+    public func isUnsent(commandId: String) -> Bool {
+        sessionEnqueuedIds.contains(commandId)
+            && outboxEntries.contains { $0.command.id == commandId && $0.status == .pending && $0.attempts == 0 }
+    }
+
     /// Geparkte Aktivitätskonflikte **des aktuellen Kontos**.
     public var activityConflicts: [OutboxEntry] {
         conflicts.filter { ActivityOps.isActivity($0.command.op) && $0.command.userId == userId }

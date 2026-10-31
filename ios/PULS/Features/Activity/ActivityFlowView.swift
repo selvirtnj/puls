@@ -40,6 +40,8 @@ struct ActivityFlowView: View {
             }
         case .countdown(let endsAt):
             ActivityCountdownView(coordinator: coordinator, endsAt: endsAt, label: coordinator.currentType?.label ?? "", text: text)
+        case .starting where projection.active != nil:
+            ActivityActiveView(coordinator: coordinator, projection: projection, text: text)
         case .starting:
             ActivityWaitingView(title: text("Aktivität startet …", "Starting activity …"), coordinator: coordinator, text: text)
         case .active:
@@ -193,8 +195,17 @@ private struct ActivityWaitingView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .buttonBorderShape(.roundedRectangle(radius: 12))
-                    Button(text("Start abbrechen", "Cancel start"), role: .destructive) { coordinator.cancelPendingStart() }
-                        .frame(minHeight: 44)
+                    // Nur solange nachweislich nicht an das Web übergeben; sonst bleibt „Minimieren“ (oben).
+                    if coordinator.canCancelStart {
+                        Button(text("Start abbrechen", "Cancel start"), role: .destructive) { coordinator.cancelPendingStart() }
+                            .frame(minHeight: 44)
+                    } else {
+                        Text(text("Der Start ist an PULS übergeben. Nach der Bestätigung kannst du die Aktivität verwerfen.",
+                                  "The start was handed to PULS. Once confirmed you can discard the activity."))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
                 }
                 .padding(.horizontal, 8)
             }

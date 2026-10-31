@@ -452,6 +452,55 @@ final class ActivityTests: XCTestCase {
         XCTAssertNil(ActivityCommands.start(type: "run", routeId: "a b"))
     }
 
+    /// Review P2: nach einem Neustart findet die Oberfläche den gehaltenen Start mit seiner ursprünglichen ID wieder;
+    /// „nachweislich nicht gesendet“ gilt nur ohne Sendeversuch.
+    @MainActor
+    func testPendingStartIsRelinkedAfterRestart() throws {
+        let directory = try makeTemporaryDirectory()
+        let (store, log) = try connectedStore(session: "app-1", directory: directory)
+        let start = try store.performActivity(XCTUnwrap(ActivityCommands.start(type: "run")), asUser: Self.user)
+        XCTAssertEqual(log.commands.map(\.id), [start.id])
+        XCTAssertFalse(store.isUnsent(commandId: start.id), "bereits an das Web übergeben: kein Abbrechen")
+        store.receive(.ack(AckMessage(id: start.id, ok: false, seq: 1, error: AckError(code: .persistFailed))))
+        XCTAssertEqual(store.unconfirmedActivityEntries(op: ActivityOps.runStart).map(\.command.id), [start.id])
+
+        // Neustart (noch ohne Sender): derselbe Befehl desselben Kontos mit gespeichertem Fehler; der frühere
+        // Sendeversuch ist persistent, also kein „nachweislich nicht gesendet“.
+        let restarted = ProfileStore(environment: StoreEnvironment(directory: directory, now: { fixedNow }, sessionID: "app-2"))
+        restarted.receive(activityHello)
+        restarted.receive(.snapshot(SnapshotMessage(seq: 2, userId: Self.user, state: profile(), reason: "load")))
+        let entries = restarted.unconfirmedActivityEntries(op: ActivityOps.runStart)
+        XCTAssertEqual(entries.map(\.command.id), [start.id])
+        XCTAssertEqual(entries.first?.command.args, start.args)
+        XCTAssertEqual(entries.first?.lastError?.code, .persistFailed)
+        XCTAssertFalse(restarted.isUnsent(commandId: start.id))
+        XCTAssertTrue(restarted.unconfirmedActivityEntries(op: ActivityOps.summarySave).isEmpty)
+        XCTAssertTrue(restarted.unconfirmedActivityEntries(op: ActivityOps.runStart, startedAt: 1).isEmpty)
+
+        // „Erneut senden“: dieselbe ID.
+        let replay = SentLog()
+        restarted.sender = { replay.commands.append($0) }
+        restarted.retryPending()
+        XCTAssertEqual(replay.commands.map(\.id), [start.id])
+
+        // Nie gesendet (Web noch nicht bereit): abbrechbar.
+        let offlineDirectory = try makeTemporaryDirectory()
+        let offline = ProfileStore(environment: StoreEnvironment(directory: offlineDirectory, now: { fixedNow },
+                                                                 makeCommandID: { "c-offline" }, sessionID: "app-1"))
+        offline.receive(activityHello)
+        offline.receive(.snapshot(SnapshotMessage(seq: 1, userId: Self.user, state: profile(), reason: "load")))
+        let unsent = try offline.performActivity(XCTUnwrap(ActivityCommands.start(type: "run")), asUser: Self.user)
+        XCTAssertTrue(offline.isUnsent(commandId: unsent.id), "in dieser Sitzung eingereiht und ohne Sender nie übergeben")
+
+        // Store neu geladen: derselbe Start liegt ohne Sendeversuch auf der Platte, gilt aber als möglicherweise gesendet.
+        let reloaded = ProfileStore(environment: StoreEnvironment(directory: offlineDirectory, now: { fixedNow }, sessionID: "app-2"))
+        reloaded.receive(activityHello)
+        reloaded.receive(.snapshot(SnapshotMessage(seq: 2, userId: Self.user, state: profile(), reason: "load")))
+        XCTAssertEqual(reloaded.unconfirmedActivityEntries(op: ActivityOps.runStart).map(\.command.id), [unsent.id])
+        XCTAssertEqual(reloaded.outboxEntries.first?.attempts, 0, "kein Sendeversuch gespeichert")
+        XCTAssertFalse(reloaded.isUnsent(commandId: unsent.id), "aus outbox.json geladen: nie abbrechbar")
+    }
+
     func testRunStartEffectNeverAllowsSecondStart() throws {
         guard case .ack(let ack)? = try InboundMessage.decode(data: Fixtures.data("ack-run-start")) else { return XCTFail("ack") }
         XCTAssertEqual(ack.id, "a6000000-0000-4000-8000-000000000003")
