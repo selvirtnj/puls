@@ -76,6 +76,46 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
 
     // MARK: Native → Web
 
+    /// M3: `window.pulsNativeNavigate(target)` (Seite oder feste Aktion). Nur auf der eigenen Web-App.
+    /// `completion(false)`, wenn das Web ablehnt (z. B. während `chrome.blocking`) oder nicht erreichbar ist.
+    func navigate(_ target: NavigationTarget, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.navigate(target)) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// `window.pulsNativeSetChrome(visible)`: das Web blendet seine Tab-Leiste erst nach `true` aus.
+    func setChrome(_ visible: Bool, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.setChrome(visible)) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// M3: `window.pulsNativeSetDate(day)`; `completion(false)`, wenn das Web den Tag nicht übernimmt
+    /// (ungültig, noch nicht bereit, ungeklärte Zuordnung). Die neue Ansicht kommt als Projektion `reason:'date'`.
+    func setDate(_ day: String, completion: (@MainActor (Bool) -> Void)? = nil) {
+        guard let script = WebCall.setDate(day) else {
+            completion?(false)
+            return
+        }
+        evaluate(script) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// `data-scheme` der Web-App (`light`/`dark`, js/color-scheme.js) oder `nil`.
+    func readWebScheme(_ completion: @escaping @MainActor (String?) -> Void) {
+        evaluate("document.documentElement.getAttribute('data-scheme')") { result in completion(result as? String) }
+    }
+
+    private func evaluate(_ script: String, completion: (@MainActor (Any?) -> Void)?) {
+        guard let webView, let url = webView.url, url.host == appHost, url.path.hasPrefix(appPath) else {
+            completion?(nil)
+            return
+        }
+        guard let completion else {
+            webView.evaluateJavaScript(script, completionHandler: nil)
+            return
+        }
+        webView.evaluateJavaScript(script) { result, _ in
+            MainActor.assumeIsolated { completion(result) }
+        }
+    }
+
     /// `window.pulsNativeApply(cmd)`; das Argument ist serialisiertes JSON und damit ein sicherer JS-Ausdruck
     /// (Anführungszeichen, Steuerzeichen und U+2028/U+2029 sind maskiert). Ergebnis kommt als `ack`.
     private func send(_ command: ApplyCommand) {

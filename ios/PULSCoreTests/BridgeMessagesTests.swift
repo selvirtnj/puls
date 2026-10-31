@@ -15,6 +15,27 @@ final class BridgeMessagesTests: XCTestCase {
         XCTAssertEqual(hello.ops, ["weight.upsert", "weight.delete"])
         XCTAssertEqual(hello.screens, ["body"])
         XCTAssertFalse(hello.ownerPending)
+        XCTAssertEqual(hello.projections, ["overview"])
+        XCTAssertEqual(hello.features, ["nativeTabs"])
+    }
+
+    func testHelloWithoutM3FieldsStaysValid() throws {
+        let old = try InboundMessage.decode(JSONValue.parse(
+            #"{"type":"hello","protocol":1,"webVersion":"73","ops":[],"screens":["body"],"ownerPending":false}"#
+        ))
+        guard case .hello(let hello)? = old else { return XCTFail("hello erwartet") }
+        XCTAssertEqual(hello.projections, [])
+        XCTAssertEqual(hello.features, [])
+        XCTAssertThrowsError(try InboundMessage.decode(JSONValue.parse(
+            #"{"type":"hello","protocol":1,"ops":[],"screens":[],"ownerPending":false,"features":"nativeTabs"}"#
+        )))
+    }
+
+    func testNavigateWebFlag() throws {
+        let message = try InboundMessage.decode(JSONValue.parse(#"{"type":"navigate","protocol":1,"page":"home","web":true}"#))
+        XCTAssertEqual(message, .navigate(NavigateMessage(page: "home", web: true)))
+        XCTAssertEqual(try InboundMessage.decode(XCTUnwrap(message).json), message)
+        XCTAssertThrowsError(try InboundMessage.decode(JSONValue.parse(#"{"type":"navigate","protocol":1,"page":"home","web":"ja"}"#)))
     }
 
     func testOwnerPendingIsRequired() throws {
@@ -110,7 +131,7 @@ final class BridgeMessagesTests: XCTestCase {
     }
 
     func testInboundMessagesRoundTripThroughJSON() throws {
-        for name in ["hello", "snapshot", "ack-ok", "ack-error", "open-native", "navigate"] {
+        for name in ["hello", "snapshot", "ack-ok", "ack-error", "open-native", "navigate", "projection"] {
             let message = try XCTUnwrap(decode(name), name)
             XCTAssertEqual(try InboundMessage.decode(message.json), message, name)
         }
@@ -165,6 +186,9 @@ final class BridgeMessagesTests: XCTestCase {
             switch name {
             case "profile-full":
                 XCTAssertNotNil(value.objectValue)
+            case "projection-input":
+                // Web-Testeingabe (Profil + Uhr + Tag), keine Brückennachricht.
+                XCTAssertNotNil(value["profile"]?.objectValue)
             case "invalid-message-no-type":
                 XCTAssertNil(try InboundMessage.decode(value))
             case _ where name.hasPrefix("apply-") || name.hasPrefix("invalid-"):

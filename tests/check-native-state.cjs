@@ -10,18 +10,21 @@ const bootstrap=fs.readFileSync('tests/check-premium.cjs','utf8').split('run(`st
   .replace('style:{setProperty(){}}','style:{setProperty(){},removeProperty(){}}');
 function app(options={}){
   const test=vm.runInNewContext('(function(require,options){'+bootstrap+';return {ctx,run,el}})(require,options)',{require,options,console});
-  const {ctx,run,el}=test,messages=[],events={window:{},document:{}},timers=new Map(),writes=[],reads=[];
+  const {ctx,run,el}=test,messages=[],events={window:{},document:{}},timers=new Map(),writes=[],reads=[],observers=[];
+  if(options.now){const RealDate=Date;ctx.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[options.now]))}static now(){return new RealDate(options.now).getTime()}};run('date=today()')}
   const store=options.store||new Map();let time=0,timerId=0;
   const on=(surface,name,fn)=>{(events[surface][name]??=[]).push(fn)};
   const event=(surface,name)=>{for(const fn of events[surface][name]||[])fn({})};
   Object.assign(ctx.localStorage,{getItem(key){reads.push(key);return store.get(key)??null},setItem(key,value){writes.push(key);if(options.failWrite?.(key))throw Error('quota');store.set(key,String(value))},removeItem:key=>store.delete(key)});
   ctx.document.visibilityState='visible';ctx.document.readyState='loading';
+  ctx.document.documentElement.dataset={scheme:'dark'};
   ctx.document.currentScript={src:'http://localhost/js/native-state.js?v='+assetVersion};
   ctx.document.addEventListener=(name,fn)=>on('document',name,fn);
   ctx.window.addEventListener=(name,fn)=>on('window',name,fn);
-  ctx.document.documentElement.classList={add(){}};ctx.document.head={appendChild(){}};
+  const htmlClasses=new Set();ctx.document.documentElement.classList={add:x=>htmlClasses.add(x),remove:x=>htmlClasses.delete(x),toggle(x,on){if(on)htmlClasses.add(x);else htmlClasses.delete(x)},contains:x=>htmlClasses.has(x)};ctx.document.head={appendChild(){}};
   ctx.document.createElement=()=>({content:{querySelector:()=>null}});
   ctx.document.body.classList.toggle=()=>{};
+  ctx.document.body.classList.contains=()=>false;
   for(const id of ['workout-dock','session-root']){el(id).remove=()=>{};el(id).querySelector=()=>null}
   run('render=function(){adaptiveGoals()};dismissSheet=function(){};var navSymbols={workout:""};');
   // Same order as index.html, retaining every file which extends validData and all save wrappers.
@@ -30,7 +33,12 @@ function app(options={}){
   }
   run('var setAppLanguage=function(){},chooseAppIcon=function(){}');
   run(fs.readFileSync('js/account-refresh.js','utf8'));run('render=function(){adaptiveGoals()}');
-  run('state.onboardingComplete=true;state.setupPending=false;setupPending=false;');
+  // Actual final overview providers, including estimated drink water and DS display rounding.
+  run(fs.readFileSync('js/compact.js','utf8'));run('render=function(){adaptiveGoals()}');
+  run(fs.readFileSync('js/app-polish.js','utf8'));run('render=function(){adaptiveGoals()}');
+  ctx.MutationObserver=class{constructor(callback){observers.push(callback)}observe(){}};run('var phIcon=function(){return ""},pulsIcon=phIcon');
+  run(fs.readFileSync('js/design-system.js','utf8'));run('render=function(){adaptiveGoals()}');
+  run('state.onboardingComplete=true;state.setupPending=false;setupPending=false;modal.close();');
   if(options.profile)run('state='+JSON.stringify(options.profile));
   else if(!options.preview&&store.has('puls-v1'))run('state='+store.get('puls-v1'));
   else run('state.weights='+JSON.stringify(fixture('snapshot').state.weights)+';state.xUnknown={keep:true}');
@@ -38,6 +46,7 @@ function app(options={}){
   if(options.signedIn!==false)run('cloudSession={user:{id:'+JSON.stringify(sessionId)+'}};cloudRevision=17;cloudDirty=false;cloudConflict=false');
   ctx.setTimeout=(fn,delay=0)=>{const id=++timerId;timers.set(id,{fn,at:time+delay});return id};
   ctx.clearTimeout=id=>timers.delete(id);
+  ctx.requestAnimationFrame=fn=>fn();
   ctx.console={...console,warn(){}};
   ctx.window.pulsNativeFeatures=options.features??['stateBridge'];
   if(options.handler!==false)ctx.window.webkit={messageHandlers:{pulsState:{postMessage:msg=>messages.push(clone(msg))}}};
@@ -46,8 +55,8 @@ function app(options={}){
   const tick=ms=>{time+=ms;for(const [id,timer] of [...timers])if(timer.at<=time){timers.delete(id);timer.fn()}};
   const apply=cmd=>{ctx.window.pulsNativeApply(clone(cmd));return messages.filter(x=>x.type==='ack').at(-1)};
   const snapshots=()=>messages.filter(x=>x.type==='snapshot');
-  const start=()=>{run(source);if(!options.deferLoad)load()};
-  return {...test,options,store,messages,writes,reads,timers,events,event,tick,load,start,apply,snapshots,state:()=>JSON.parse(run('JSON.stringify(state)'))};
+  const start=()=>{run(source);run(fs.readFileSync('js/native-projection.js','utf8'));if(!options.deferLoad)load()};
+  return {...test,options,store,messages,writes,reads,timers,events,event,tick,load,start,apply,snapshots,mutate:()=>observers.forEach(fn=>fn([])),state:()=>JSON.parse(run('JSON.stringify(state)'))};
 }
 const upsert=()=>fixture('apply-weight-upsert'),del=()=>fixture('apply-weight-delete');
 function started(options){const test=app(options);test.start();return test}
@@ -99,12 +108,13 @@ function latest(test,reason){const snapshot=test.snapshots().at(-1);assert.equal
   n=started({features:bodyFeatures});n.ctx.window.webkit.messageHandlers.pulsState.postMessage=()=>{throw Error('handler unavailable')};
   n.run("go('account');openAccountSection('body')");assert.equal(n.run('accountSection'),'body');
   console.log('PASS: nativeBody readiness/feature gates, readonly routing, one-opening Web escape, current navigation wrappers and invalid destination rejection');
-  for(const options of [{handler:false},{features:[]},{features:'stateBridge'}]){
-    const t=app(options),before=t.run('[save,render,applyCloudProfile,importData,performAccountAction,migrate,closeOverlongWorkouts,cloudStatusChanged,activateCloudSession,signOutCloud,cloudClearUploadBlock,initializeCloudProfile,syncCloud,resolveCloudConflict,openAccountSection,go]');
+  for(const options of [{handler:false},{features:[]},{features:'stateBridge'},{features:['nativeTabs']},{handler:false,features:['stateBridge','nativeTabs']}]){
+    const t=app(options),before=t.run('[save,render,applyCloudProfile,importData,performAccountAction,migrate,closeOverlongWorkouts,cloudStatusChanged,activateCloudSession,signOutCloud,cloudClearUploadBlock,initializeCloudProfile,syncCloud,resolveCloudConflict,openAccountSection,go,setDate,moveDay,quickAddMenu,nutrientTotals]');
     const reads=t.reads.length,writes=t.writes.length,listeners=JSON.stringify(t.events);
     t.start();assert.equal(t.ctx.window.pulsNativeApply,undefined);assert.equal(t.ctx.window.pulsNativeNavigate,undefined);assert.equal(t.messages.length,0);
+    assert.equal(t.ctx.window.pulsNativeSetDate,undefined);assert.equal(t.ctx.window.pulsNativeSetChrome,undefined);assert.equal(t.ctx.window.pulsNativeBuildOverview,undefined);assert.equal(t.ctx.document.documentElement.classList.contains('puls-native-tabs'),false);
     assert.equal(t.reads.length,reads);assert.equal(t.writes.length,writes);assert.equal(JSON.stringify(t.events),listeners);
-    t.run('[save,render,applyCloudProfile,importData,performAccountAction,migrate,closeOverlongWorkouts,cloudStatusChanged,activateCloudSession,signOutCloud,cloudClearUploadBlock,initializeCloudProfile,syncCloud,resolveCloudConflict,openAccountSection,go]').forEach((fn,i)=>assert.equal(fn,before[i]));
+    t.run('[save,render,applyCloudProfile,importData,performAccountAction,migrate,closeOverlongWorkouts,cloudStatusChanged,activateCloudSession,signOutCloud,cloudClearUploadBlock,initializeCloudProfile,syncCloud,resolveCloudConflict,openAccountSection,go,setDate,moveDay,quickAddMenu,nutrientTotals]').forEach((fn,i)=>assert.equal(fn,before[i]));
   }
   let t=started({profile:fixture('profile-full'),restBridge:true,deferLoad:true});
   assert.equal(t.messages.length,0);assert.equal(t.apply(upsert()).error.code,'not_ready');t.load();
@@ -304,4 +314,183 @@ function latest(test,reason){const snapshot=test.snapshots().at(-1);assert.equal
   t.run('cloudConflict=true;fetchCloudProfile=async function(){return {revision:20,payload:'+JSON.stringify(remote)+'}};syncCloud=async function(){cloudRevision=21;cloudDirty=false;cloudConflict=false}');
   await t.run('resolveCloudConflict("local")');t.tick(300);assert.equal(latest(t,'cloud').ownerPending,false);assert.equal(t.store.has('puls-native-owner-pending'),false);
   console.log('PASS: same-revision login recovery via clean upload/local conflict choice, ownerPending hello/snapshot updates and no premature claim on failure/in-flight edits');
+
+  const overviewFeatures=["stateBridge","nativeOverview"];
+  const startedOverview=(options={})=>started({features:overviewFeatures,...options});
+  const projections=t=>t.messages.filter(x=>x.type==='projection'),project=t=>projections(t).at(-1);
+  const input=fixture('projection-input');
+  t=startedOverview({now:input.now,profile:input.profile});t.ctx.window.pulsNativeSetDate(input.date);
+  let view=project(t);
+  assert.deepEqual(view,fixture('projection'),'shared deterministic projection fixture');
+  assert.equal(t.run('validData(state)'),true);
+  const original=t.run('JSON.stringify(state)'),stored=t.store.get('puls-v1');t.ctx.window.pulsNativeBuildOverview();
+  assert.equal(t.run('JSON.stringify(state)'),original,'projection does not mutate working profile');assert.equal(t.store.get('puls-v1'),stored);
+  assert.equal(view.overview.goals.values.kcal,t.run('Math.round(dsDayGoals().kcal)'));
+  assert.equal(view.overview.goals.source,'dayGoals');assert.equal(view.overview.food.complete,true);
+  assert.equal(view.overview.energy.displayValue,t.run('Math.round(Math.abs(dsEnergyFacts(totals(),dsDayGoals()).goal-totals().kcal))'));
+  assert.equal(view.overview.food.entries[0].kcal,t.run('Math.round(state.foods.filter(x=>x.date===date).at(-1).kcal)'));
+  assert.equal(view.overview.food.entries[0].amount,t.run('Number(new Intl.NumberFormat("en-US",{useGrouping:false,maximumFractionDigits:1}).format(state.foods.filter(x=>x.date===date).at(-1).grams))'));
+  assert.equal(view.overview.micros.b12.value,null);assert.equal(view.overview.micros.iron.value,3.4);
+  assert.equal(view.overview.water.estimated,t.run('Math.round(nutrientTotals().estimatedWater||0)'));
+  assert(!t.run('home()').includes('addWaterGlass'));assert(!t.run('home()').includes('markFoodDayComplete'));
+  assert(!t.messages.find(x=>x.type==='hello').ops.includes('water.add'),'overview has no water action');
+  const appliedProjection=startedOverview({now:input.now,profile:input.profile});
+  assert.equal(appliedProjection.apply(upsert()).ok,true);assert.equal(project(appliedProjection).reason,'apply');
+  assert.equal(project(appliedProjection).overview.weight.current.kg,upsert().args.kg);
+  const cloudProjection=clone(input.profile);cloudProjection.language='en';
+  appliedProjection.run('applyCloudProfile({revision:19,payload:'+JSON.stringify(cloudProjection)+'})');appliedProjection.tick(300);
+  assert.equal(project(appliedProjection).reason,'cloud');assert.equal(project(appliedProjection).overview.language,'en');
+  assert.equal(project(appliedProjection).overview.weight.current.kg,83.5);
+  const classicProfile=clone(input.profile);classicProfile.profile.kcalMode='classic';
+  const classicProjection=startedOverview({now:input.now,profile:classicProfile});classicProjection.run('render()');classicProjection.tick(300);
+  assert.equal(project(classicProjection).overview.goals.calorieMode,'classic');assert.equal(project(classicProjection).overview.goals.mode,'auto');
+  assert.equal(project(classicProjection).overview.goals.source,'state.goals');assert.equal(project(classicProjection).overview.goals.values.kcal,classicProjection.run('Math.round(dsDayGoals().kcal)'));
+
+  const oldSeq=view.seq,daySnapshotCount=t.snapshots().length;
+  assert.equal(t.ctx.window.pulsNativeSetDate('2026-02-30'),false);assert.equal(project(t).overview.date,input.date);
+  assert.equal(t.ctx.window.pulsNativeSetDate('2026-10-27'),true);view=project(t);
+  assert.equal(view.overview.date,'2026-10-27');assert.equal(view.seq,oldSeq);assert.equal(t.snapshots().length,daySnapshotCount,'date navigation sends no full profile');
+  assert.equal(view.overview.micros.iron.value,null);assert.equal(view.overview.water.value,null);assert.equal(view.overview.water.displayValue,0);
+  const beforeRender=projections(t).length;t.run('render();render()');t.tick(300);assert.equal(projections(t).length,beforeRender,'unchanged renders are deduplicated');
+  t.run('state.language="en";state.goals={kcal:1900,p:135.5,c:200,f:60};state.plan.mode="manual";save();render()');t.tick(300);
+  view=project(t);assert.equal(view.overview.language,'en');assert.equal(view.overview.goals.source,'state.goals');assert.equal(view.overview.goals.values.kcal,1900);
+  assert.equal(view.overview.goals.values.p,135.5);assert.equal(view.overview.energy.captionKey,'energy.left');
+  t.run('addWaterGlass();markFoodDayComplete()');t.tick(300);view=project(t);
+  assert.equal(view.overview.water.value,250);assert.equal(view.overview.food.complete,true);assert.equal(view.overview.micros.iron.value,null);
+  t.run('state.foods.at(-1).nutrients.iron=0;save()');t.tick(300);assert.equal(project(t).overview.micros.iron.value,0,'known zero differs from unknown');
+  t.run('state.foods.unshift({id:"estimated-drink",date,meal:"Snacks",name:"Drink",grams:100,unit:"ml",kcal:80,p:0,c:20,f:0});save()');t.tick(300);
+  assert.equal(project(t).overview.water.estimated,80);assert.equal(project(t).overview.water.value,330);assert.equal(project(t).overview.water.known,2);
+  assert.equal(project(t).overview.micros.iron.known,1);assert.equal(project(t).overview.micros.iron.total,2);
+  t.run('state.foods.shift()');
+  t.run('state.goals.kcal=1;state.foods.at(-1).kcal=1.5;render()');t.tick(300);view=project(t);
+  assert.equal(view.overview.eaten.kcal,2);assert.equal(view.overview.energy.displayValue,1);assert.equal(view.overview.energy.captionKey,'energy.over');
+  assert.equal(view.overview.remaining.kcal,0,'signed Math.round matches Web even around minus half');
+  assert.equal(t.snapshots().at(-1).seq,view.seq,'projection references latest snapshot without advancing seq');
+
+  // New message types never weaken account ownership or readonly handling.
+  for(const options of [{preview:true},{profile:input.profile,store:new Map([['puls-native-owner-pending',sessionId]])}]){
+    const r=startedOverview({...options,now:input.now,features:[...overviewFeatures,'nativeTabs']});
+    if(options.preview){assert.equal(project(r).flags.preview,true);assert.equal(r.apply(upsert()).error.code,'readonly');assert.equal(r.writes.length,0)}
+    else{assert.equal(projections(r).length,0);assert.equal(r.ctx.window.pulsNativeSetDate(input.date),false);assert.equal(r.ctx.document.documentElement.classList.contains('puls-native-tabs'),false)}
+  }
+  t=startedOverview({now:input.now,features:[...overviewFeatures,'nativeTabs'],signedIn:false});let releaseProjectionLogin;
+  t.ctx.projectionLogin=new Promise(resolve=>{releaseProjectionLogin=resolve});t.run('fetchCloudProfile=function(){return projectionLogin}');
+  const beforeLogin=projections(t).length,pendingLogin=t.run('activateCloudSession')({user:{id:sessionId}});
+  assert.equal(t.ctx.document.documentElement.classList.contains('puls-native-tabs'),false);
+  t.run('save();render()');t.tick(1000);assert.equal(projections(t).length,beforeLogin);
+  releaseProjectionLogin({revision:18,payload:input.profile});await pendingLogin;
+  assert.equal(project(t).userId,sessionId);assert.equal(t.ctx.document.documentElement.classList.contains('puls-native-tabs'),false);
+  assert.equal(t.ctx.window.pulsNativeSetChrome(true),true);assert.equal(t.ctx.document.documentElement.classList.contains('puls-native-tabs'),true);
+
+  // Feature-gated chrome, current function dispatch, safe IDs and real page/date events.
+  t=startedOverview({now:input.now,features:[...overviewFeatures,'nativeTabs']});assert.equal(t.ctx.document.documentElement.classList.contains('puls-native-tabs'),false);
+  assert.equal(t.ctx.window.pulsNativeSetChrome(true),true);assert.equal(t.ctx.document.documentElement.classList.contains('puls-native-tabs'),true);
+  const pageEvents=t.messages.filter(x=>x.type==='navigate').length;t.run("go('food');go('food');go('workout')");
+  assert.equal(t.messages.filter(x=>x.type==='navigate').length,pageEvents+2);assert.equal(t.messages.at(-1).page,'workout');
+  t.ctx.window.pulsNativeNavigate({page:'home',web:true});assert.deepEqual(t.messages.filter(x=>x.type==='navigate').at(-1),{protocol:1,type:'navigate',page:'home',web:true});
+  t.run('var actionCalls=[];quickAddMenu=function(){actionCalls.push("quickAdd")};foodForm=function(){actionCalls.push("food")};foodTab=function(k){actionCalls.push(k)};startRoutine=function(id){actionCalls.push(id)}');
+  for(const target of [{action:'quickAdd'},{action:'addFood'},{action:'startRoutine',id:'unknown'},{action:'__proto__'},{action:'quickAdd',page:'home'}])t.ctx.window.pulsNativeNavigate(target);
+  assert.deepEqual(clone(t.run('actionCalls')),['quickAdd','food','search']);
+  assert.equal(startedOverview({now:input.now}).ctx.document.documentElement.classList.contains('puls-native-tabs'),false);
+  t.run('moveDay(-1)');assert.equal(project(t).reason,'date');
+
+  // Bounded details, exact IDs, no synthetic points and no accidental runList() migration of old backups.
+  t=startedOverview({now:input.now});t.run('delete state.runs;state.plan.mode="manual";state.foods=Array.from({length:250},(_,i)=>({id:"long-food-"+i,date,meal:"Snacks",name:"🥣".repeat(500),grams:100,kcal:1.25,p:0,c:0,f:0}));render()');
+  t.tick(300);view=project(t);assert.equal(view.overview.food.total,250);assert(view.overview.food.omitted>0);
+  assert.equal(view.overview.food.entries[0].id,'long-food-249');assert(view.overview.food.entries.length<=200);
+  assert.equal(view.overview.eaten.kcal,313);assert.equal(t.run('Object.hasOwn(state,"runs")'),false);
+  assert(JSON.stringify(view.overview).length<=48*1024);assert(Buffer.byteLength(JSON.stringify(view),'utf8')<150*1024);
+  t.run('state.foods=[];state.weights=Array.from({length:500},(_,i)=>({id:"chart-"+i,date:localISO(new Date(Date.now()-i*86400000)),kg:80}));state.chartPeriod="all";render()');t.tick(300);view=project(t);
+  assert.equal(view.overview.progress.total,500);assert.equal(view.overview.progress.rows.length,400);assert.equal(view.overview.progress.omitted,100);
+  assert.equal(view.overview.progress.rows.at(-1).date,'2026-10-28');
+  for(const row of view.overview.progress.rows)assert.equal(row.kcal,null);
+  t.run('state.activeRun={type:"run",startedAt:Date.now()-65000,pausedSeconds:5};render()');t.tick(300);
+  assert.equal(project(t).overview.training.activeRun.elapsedSeconds,60);assert.equal(project(t).overview.training.activeRun.paused,false);
+  t.run('state.activeRun.pausedAt=Date.now()-5000;render()');t.tick(300);
+  assert.equal(project(t).overview.training.activeRun.elapsedSeconds,55);assert.equal(project(t).overview.training.activeRun.paused,true);
+  const late=startedOverview({now:input.now,deferLoad:true});
+  late.run('var lateCalls=[];const lateRender=render;render=function(){lateCalls.push("render");return lateRender()};const lateGo=go;go=function(p){lateCalls.push("go");return lateGo(p)};const lateDate=setDate;setDate=function(d){lateCalls.push("date");return lateDate(d)}');
+  late.load();late.ctx.window.pulsNativeSetDate('2026-10-27');late.ctx.window.pulsNativeNavigate({page:'food'});late.tick(300);
+  assert.deepEqual(clone(late.run('lateCalls')),['date','render','go','render'],'wrap final definitions after later scripts');
+  assert.equal(late.messages.filter(x=>x.type==='navigate').at(-1).page,'food');assert.equal(project(late).overview.date,'2026-10-27');
+  for(const rule of fs.readFileSync('css/native-shell.css','utf8').replace(/\/\*[\s\S]*?\*\//g,'').split('}').filter(x=>x.trim())){
+    for(const selector of rule.split('{')[0].split(','))assert(selector.trim().startsWith('html.puls-native-tabs '),'every chrome rule is nativeTabs scoped');
+  }
+  console.log('PASS: projection fixture, actual Web totals/rounding/planning, unknown versus zero, no-write dates, UI routing, nativeTabs gates, ownership/preview isolation and bounded payloads');
+
+  // M1: a refused switch to another account must restore the same projection after the pending hello.
+  t=startedOverview({now:input.now,features:[...overviewFeatures,'nativeTabs']});t.ctx.window.pulsNativeSetChrome(true);
+  const initialProjection=clone(project(t)),beforeAbort=projections(t).length;
+  await assert.rejects(t.run('activateCloudSession')({user:{id:'synthetic-other-user'}}),/Bitte zuerst das bisherige Konto abmelden/);
+  assert.equal(projections(t).length,beforeAbort+1);assert.deepEqual(project(t).overview,initialProjection.overview);
+  assert.deepEqual(t.messages.filter(x=>x.type==='hello').slice(-2).map(x=>x.ownerPending),[true,false]);
+  assert.equal(t.ctx.document.documentElement.classList.contains('puls-native-tabs'),false,'pending revokes the chrome acknowledgement');
+  assert.equal(t.ctx.window.pulsNativeSetChrome(true),true);
+
+  // M2/M3: real modal opening, capture close, generic dialogs/DOM overlays, focused fields and full-screen states.
+  const chrome=t=>t.messages.filter(x=>x.type==='chrome').at(-1),hasNative=t=>t.ctx.document.documentElement.classList.contains('puls-native-tabs');
+  const rejectNavigation=(test,reason)=>{
+    const selected=test.run('date'),currentPage=test.run('page'),stateBefore=test.run('JSON.stringify(state)');
+    assert.equal(test.ctx.window.pulsNativeSetDate('2026-10-27'),false,reason);
+    assert.equal(test.ctx.window.pulsNativeNavigate({page:'food'}),false,reason);
+    assert.equal(test.ctx.window.pulsNativeNavigate({action:'addFood'}),false,reason);
+    assert.equal(test.run('date'),selected);assert.equal(test.run('page'),currentPage);assert.equal(test.run('JSON.stringify(state)'),stateBefore);
+    assert.equal(chrome(test).blocking,true);assert.equal(chrome(test).reason,reason);
+  };
+  t.run('openModal("Synthetic form","<input>")');rejectNavigation(t,'modal');assert.equal(hasNative(t),true);
+  assert.deepEqual(chrome(t),{protocol:1,type:'chrome',blocking:true,reason:'modal',page:'home'});
+  t.run('modal.close()');t.event('document','close');assert.equal(chrome(t).blocking,false);
+  assert.equal(t.ctx.window.pulsNativeSetDate('2026-10-27'),true);
+  // The only permitted action while blocked is closing the quick-add menu itself.
+  t.ctx.document.body.classList.contains=key=>key==='quickaddopen';t.run('openModal("Quick add","");quickAddMenu=function(){modal.close()}');
+  assert.equal(t.ctx.window.pulsNativeNavigate({action:'quickAdd'}),true);assert.equal(chrome(t).blocking,false);
+  t.ctx.document.body.classList.contains=()=>false;
+  t.ctx.document.activeElement={matches:()=>true};t.event('document','focusin');t.tick(0);rejectNavigation(t,'editing');
+  t.ctx.document.activeElement=null;t.event('document','focusout');t.tick(0);assert.equal(chrome(t).blocking,false);
+  const queryBefore=t.ctx.document.querySelector;let overlay='dialog[open]';
+  t.ctx.document.querySelector=selector=>selector===overlay?{getClientRects:()=>[{}]}:queryBefore(selector);
+  t.mutate();rejectNavigation(t,'modal');overlay='#run-root';t.mutate();rejectNavigation(t,'run');
+  overlay='#session-root';t.mutate();rejectNavigation(t,'session');overlay=null;t.mutate();assert.equal(chrome(t).blocking,false);
+  t.run('state.workouts.push({id:"blocking-workout",date:today(),name:"Fixture",finished:false,exercises:[]});openWorkoutSession("blocking-workout")');
+  rejectNavigation(t,'session');assert.equal(t.ctx.window.pulsNativeSetChrome(false),true);assert.equal(hasNative(t),true,'both bars hidden during full-screen session');
+  t.run('minimizeSession()');assert.equal(chrome(t).blocking,false);assert.equal(hasNative(t),false,'session hold ends without implicitly acknowledging native chrome');
+  assert.equal(t.ctx.window.pulsNativeSetChrome(true),true);assert.equal(hasNative(t),true);
+  t.run('completionId="blocking-workout";render()');rejectNavigation(t,'session');
+  t.run('completionId=null;render()');assert.equal(chrome(t).blocking,false);
+  const runChrome=app({now:input.now,features:[...overviewFeatures,'nativeTabs'],deferLoad:true});
+  runChrome.run('var runView=null;var renderRunView=function(){}');runChrome.start();runChrome.load();runChrome.ctx.window.pulsNativeSetChrome(true);
+  runChrome.run('runView="ready";renderRunView()');rejectNavigation(runChrome,'run');runChrome.ctx.window.pulsNativeSetChrome(false);assert.equal(hasNative(runChrome),true);
+  runChrome.run('runView=null;renderRunView()');assert.equal(chrome(runChrome).blocking,false);assert.equal(hasNative(runChrome),false);
+  assert.equal(t.ctx.window.pulsNativeSetChrome(false),true);assert.equal(hasNative(t),false);
+  assert.equal(t.ctx.window.pulsNativeSetChrome('true'),false);t.ctx.window.pulsNativeSetChrome(true);t.event('window','pagehide');assert.equal(hasNative(t),false);
+  assert.equal(t.ctx.window.pulsNativeSetChrome(true),false);t.event('window','pageshow');assert.equal(hasNative(t),false);assert.equal(t.ctx.window.pulsNativeSetChrome(true),true);
+  const reloadedChrome=startedOverview({now:input.now,store:new Map(t.store),features:[...overviewFeatures,'nativeTabs']});assert.equal(hasNative(reloadedChrome),false);
+  assert.equal(startedOverview().ctx.window.pulsNativeSetChrome(true),false,'no takeover without nativeTabs');
+
+  // M4: the M2 IPA neither installs nor invokes the projection; ordinary UI renders have zero builder/chart cost.
+  const m2=started({now:input.now,features:['stateBridge','nativeBody','nativeTabs']});
+  assert.equal(m2.ctx.window.pulsNativeBuildOverview,undefined);m2.run('var forbiddenProjectionCalls=0;trendData=function(){throw Error("unexpected chart calculation")}');
+  m2.ctx.window.pulsNativeBuildOverview=()=>{m2.run('forbiddenProjectionCalls++');throw Error('unexpected builder')};
+  m2.run('save();render();go("food")');m2.ctx.window.pulsNativeSetDate('2026-10-27');m2.tick(300);m2.event('window','pagehide');
+  assert.equal(m2.run('forbiddenProjectionCalls'),0);assert.equal(projections(m2).length,0);
+  t=startedOverview({now:input.now,signedIn:false});
+  t.run('var chartCalls=0,overviewCalls=0;const countTrend=trendData;trendData=function(){chartCalls++;return countTrend()}');
+  const countedBuilder=t.ctx.window.pulsNativeBuildOverview;t.ctx.window.pulsNativeBuildOverview=(...args)=>{t.run('overviewCalls++');return countedBuilder(...args)};
+  for(let i=0;i<5;i++){t.run('go("account");render();go("food");render()');t.tick(300)}
+  assert.equal(t.run('overviewCalls'),0);assert.equal(t.run('chartCalls'),0);
+  t.ctx.window.pulsNativeSetDate('2026-10-27');assert.equal(t.run('overviewCalls'),1);assert.equal(t.run('chartCalls'),0,'selected day reuses the chart cache');
+  t.run('state.language="en";render()');t.tick(300);assert.equal(t.run('overviewCalls'),2);assert.equal(t.run('chartCalls'),0,'language change reuses chart data');
+  t.run('state.chartPeriod="week";render()');t.tick(300);assert.equal(t.run('chartCalls'),1);
+  const beforeDebounce=t.run('chartCalls');t.run('state.xUnknown.changed=true;save();save();render();render()');t.tick(299);assert.equal(t.run('chartCalls'),beforeDebounce);
+  t.tick(1);assert.equal(t.run('chartCalls'),beforeDebounce+1,'one chart computation per debounced saved revision');
+  const unchangedProjection=project(t).projectionSeq;t.run('save()');t.tick(300);
+  assert.equal(project(t).projectionSeq,unchangedProjection);assert(project(t).seq<t.snapshots().at(-1).seq,'projection seq may lag behind the latest snapshot');
+  const beforeDirectPageEvents=t.messages.filter(x=>x.type==='navigate').length;t.run('page="home";render();render()');
+  assert.equal(t.messages.filter(x=>x.type==='navigate').length,beforeDirectPageEvents+1,'page assignment without go is reported once');
+  assert.equal(t.messages.filter(x=>x.type==='navigate').at(-1).page,'home');
+  t.run('state.foods=[{id:"unicode-food",date,meal:"Snacks",name:"a"+"🥣".repeat(128),grams:1,kcal:0,p:0,c:0,f:0}];save()');t.tick(300);
+  const truncatedName=project(t).overview.food.entries[0].name;assert.equal(truncatedName.length,255);assert.equal(truncatedName.isWellFormed(),true);
+  assert.equal(truncatedName,'a'+'🥣'.repeat(127));
+  assert.deepEqual({...fixture('chrome'),page:'home'}, {protocol:1,type:'chrome',blocking:true,reason:'modal',page:'home'});
+  console.log('PASS: M3/H review M1–M4/N5–N8: pending recovery replay, blocking chrome/navigation, explicit chrome acknowledgement, feature/cost gates, chart cache, Unicode boundaries and direct-page reports');
 })().catch(error=>{console.error(error);process.exitCode=1});

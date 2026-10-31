@@ -90,6 +90,13 @@ public enum StoreNotice: Equatable, Sendable {
     case outboxProblem(String)
 }
 
+/// Ein `navigate` des Webs; `token` unterscheidet wiederholte Meldungen derselben Seite.
+public struct WebNavigationEvent: Equatable, Sendable {
+    public var page: String
+    public var web: Bool
+    public var token: Int
+}
+
 public enum DataAuthority: String, Sendable {
     /// Phase A: Web besitzt Zustand, Persistenz, Auth und Sync.
     case web
@@ -139,6 +146,15 @@ public final class ProfileStore {
     public private(set) var requestedScreen: String?
     /// Letzter `navigate`-Seitenwechsel des Webs.
     public private(set) var currentWebPage: String?
+    /// M3: letzter `navigate` als Ereignis (auch wiederholte Seite bei `web:true`), für die native Tab-Leiste.
+    public private(set) var webNavigation: WebNavigationEvent?
+    /// M3: `hello` des **aktuellen** Web-Dokuments (nach `webDocumentDidChange()` bis zum nächsten `hello` `nil`).
+    /// Anders als `webInfo` bleibt es nicht über ein Neuladen hinweg stehen: die Web-Leiste ist dann wieder sichtbar.
+    public private(set) var documentHello: HelloMessage?
+    /// M3: zuletzt angenommene Übersichts-Projektion dieses Dokuments (nicht persistiert).
+    public private(set) var projection: ProjectionMessage?
+    /// M3: letzter `chrome`-Zustand dieses Dokuments (`nil` = nichts blockiert).
+    public private(set) var webChrome: ChromeMessage?
     public let authority: DataAuthority = .web
 
     /// Übergibt einen Befehl an das Web (`StateBridge`). Ohne Sender bleibt er in der Outbox.
@@ -157,6 +173,9 @@ public final class ProfileStore {
     @ObservationIgnored private var mirrorQueued: MirrorRecord?
     @ObservationIgnored private var mirrorTask: Task<Void, Never>?
     @ObservationIgnored public private(set) var lastMirrorError: String?
+    /// Höchste angenommene `projectionSeq` des aktuellen Web-Dokuments.
+    @ObservationIgnored private var lastProjectionSeq: Int?
+    @ObservationIgnored private var navigationCounter = 0
 
     private struct AwaitedCommand {
         var command: ApplyCommand
@@ -229,8 +248,72 @@ public final class ProfileStore {
             return true
         case .navigate(let navigate):
             currentWebPage = navigate.page
+            navigationCounter += 1
+            webNavigation = WebNavigationEvent(page: navigate.page, web: navigate.web, token: navigationCounter)
+            return true
+        case .projection(let projection):
+            return handleProjection(projection)
+        case .chrome(let chrome):
+            webChrome = chrome
             return true
         }
+    }
+
+    /// Ein Web-Modal oder eine Session sperrt Datums- und Tabwechsel.
+    public var webBlocksNavigation: Bool { webChrome?.blocking == true }
+
+    // MARK: M3 Übersicht und native Navigation
+
+    /// Das Web unterstützt die native Tab-Leiste in diesem Dokument und hat die CSS-Klasse `puls-native-tabs`
+    /// gesetzt (Hello mit `features:['nativeTabs']` und `ownerPending:false`).
+    public var webOffersNativeTabs: Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return false }
+        return hello.features.contains(Self.nativeTabsFeature)
+    }
+
+    /// Zusätzlich kündigt das Web die Übersichts-Projektion an.
+    public var webOffersOverview: Bool {
+        webOffersNativeTabs && documentHello?.projections.contains(ProjectionMessage.overviewName) == true
+    }
+
+    /// Anzeigefähige Projektion: aktuelles Dokument, geklärte Zuordnung und derselbe Nutzer wie der Spiegel
+    /// (Vorschau ausgenommen, deren Snapshots nie übernommen werden). Sonst `nil` → Lade-/Web-Ausweichansicht.
+    public var currentProjection: ProjectionMessage? {
+        guard webOffersOverview, let projection = self.projection, !projection.ownerPending else { return nil }
+        guard projection.flags.preview || projection.userId == userId else { return nil }
+        return projection
+    }
+
+    /// Einträge in `window.pulsNativeFeatures` (Native meldet beide; nur mit `nativeOverview` berechnet das Web
+    /// die Projektion). Das Web meldet in `hello.features` nur `nativeTabs`.
+    public static let nativeTabsFeature = "nativeTabs"
+    public static let nativeOverviewFeature = "nativeOverview"
+
+    /// Neues Web-Dokument (Navigation übernommen, Neuladen, Offline-Seite): Dokument-Hello, Projektion und deren
+    /// Sequenzprüfung verwerfen. Spiegel, Outbox und `webInfo` bleiben unverändert (M1/M2-Regeln).
+    public func webDocumentDidChange() {
+        documentHello = nil
+        projection = nil
+        lastProjectionSeq = nil
+        webNavigation = nil
+        webChrome = nil
+        log("web document changed")
+    }
+
+    private func handleProjection(_ message: ProjectionMessage) -> Bool {
+        guard !message.ownerPending else {
+            log("projection ownerPending ignored")
+            return false
+        }
+        // Erste Projektion eines neuen Dokuments, falls der Dokumentwechsel nicht gemeldet wurde.
+        let freshDocument = message.projectionSeq <= 1 && message.reason == "load"
+        if let last = lastProjectionSeq, message.projectionSeq <= last, !freshDocument {
+            log("projection \(message.projectionSeq) stale (have \(last))")
+            return false
+        }
+        lastProjectionSeq = message.projectionSeq
+        projection = message
+        return true
     }
 
     public func consumeScreenRequest() -> String? {
@@ -245,6 +328,9 @@ public final class ProfileStore {
 
     private func handleHello(_ hello: HelloMessage) {
         webInfo = hello
+        documentHello = hello
+        // Ungeklärte Zuordnung oder Anmeldung: alte Übersicht sofort verdecken und verwerfen.
+        if hello.ownerPending { projection = nil }
         acceptAnySnapshotSeq = true
         // Wiederholte Status-Hellos verwerfen weder Spiegel noch Outbox noch gespeicherte Beobachtungen.
         ownerPending = hello.ownerPending

@@ -28,6 +28,10 @@ public enum InboundMessage: Equatable, Sendable {
     case ack(AckMessage)
     case openNative(OpenNativeMessage)
     case navigate(NavigateMessage)
+    /// M3: flüchtige Anzeige-Projektion (nur `name:"overview"`; andere Namen werden ignoriert).
+    case projection(ProjectionMessage)
+    /// M3: Web-Modal/Session sperrt die native Navigation (`blocking`).
+    case chrome(ChromeMessage)
 
     /// `nil` = ignorieren (kein/unbekannter `type`, anderes `protocol`). Wirft bei falscher Form einer bekannten Nachricht.
     public static func decode(_ value: JSONValue) throws -> InboundMessage? {
@@ -41,6 +45,14 @@ public enum InboundMessage: Equatable, Sendable {
         case "ack": return .ack(try AckMessage(json: value))
         case "openNative": return .openNative(try OpenNativeMessage(json: value))
         case "navigate": return .navigate(try NavigateMessage(json: value))
+        case "projection":
+            // Unbekannte Projektionen künftiger Web-Stände sind kein Fehler.
+            guard case .string(ProjectionMessage.overviewName)? = object["name"] else {
+                if case .string? = object["name"] { return nil }
+                throw BridgeDecodingError.invalidField("name")
+            }
+            return .projection(try ProjectionMessage(json: value))
+        case "chrome": return .chrome(try ChromeMessage(json: value))
         default: return nil
         }
     }
@@ -64,7 +76,47 @@ public enum InboundMessage: Equatable, Sendable {
         case .ack(let message): return message.json
         case .openNative(let message): return message.json
         case .navigate(let message): return message.json
+        case .projection(let message): return message.json
+        case .chrome(let message): return message.json
         }
+    }
+}
+
+/// M3: `chrome{blocking, reason?, page?}`. Bei `blocking:true` sperrt Native Datum und Tabwechsel;
+/// bei `reason` `session`/`run` blendet Native seine Leisten aus (Vollbild-Session im Web).
+public struct ChromeMessage: Equatable, Sendable {
+    public static let fullScreenReasons: Set<String> = ["session", "run"]
+
+    public var blocking: Bool
+    /// `modal | session | run | …`; unbekannte Werte bleiben erhalten.
+    public var reason: String?
+    public var page: String?
+
+    public init(blocking: Bool, reason: String? = nil, page: String? = nil) {
+        self.blocking = blocking
+        self.reason = reason
+        self.page = page
+    }
+
+    public init(json: JSONValue) throws {
+        let fields = try Fields(json)
+        blocking = try fields.requiredBool("blocking")
+        reason = try fields.optionalString("reason")
+        page = try fields.optionalString("page")
+    }
+
+    /// Native Leisten weg, solange das Web eine Vollbild-Session zeigt.
+    public var hidesNativeBars: Bool {
+        blocking && reason.map(Self.fullScreenReasons.contains) == true
+    }
+
+    public var json: JSONValue {
+        var object: [String: JSONValue] = [
+            "type": .string("chrome"), "protocol": .number(Double(BridgeProtocol.version)), "blocking": .bool(blocking),
+        ]
+        if let reason { object["reason"] = .string(reason) }
+        if let page { object["page"] = .string(page) }
+        return .object(object)
     }
 }
 
@@ -76,12 +128,19 @@ public struct HelloMessage: Equatable, Sendable {
     public var screens: [String]
     /// Anmeldung läuft bzw. Profilzuordnung ungeklärt: keine Snapshots, Befehle wie `not_ready` (Pflichtfeld).
     public var ownerPending: Bool
+    /// M3: angekündigte Projektionen (`overview`). Fehlt bei älteren Web-Ständen (= leer).
+    public var projections: [String]
+    /// M3: vom Web unterstützte native Navigation (`nativeTabs`). Fehlt bei älteren Web-Ständen (= leer).
+    public var features: [String]
 
-    public init(webVersion: String? = nil, ops: [String] = [], screens: [String] = [], ownerPending: Bool = false) {
+    public init(webVersion: String? = nil, ops: [String] = [], screens: [String] = [], ownerPending: Bool = false,
+                projections: [String] = [], features: [String] = []) {
         self.webVersion = webVersion
         self.ops = ops
         self.screens = screens
         self.ownerPending = ownerPending
+        self.projections = projections
+        self.features = features
     }
 
     public init(json: JSONValue) throws {
@@ -94,17 +153,22 @@ public struct HelloMessage: Equatable, Sendable {
         ops = try fields.stringArray("ops")
         screens = try fields.stringArray("screens")
         ownerPending = try fields.requiredBool("ownerPending")
+        projections = try fields.stringArray("projections")
+        features = try fields.stringArray("features")
     }
 
     public var json: JSONValue {
-        .object([
+        var object: [String: JSONValue] = [
             "type": .string("hello"),
             "protocol": .number(Double(BridgeProtocol.version)),
             "webVersion": webVersion.map(JSONValue.string) ?? .null,
             "ops": .array(ops.map(JSONValue.string)),
             "screens": .array(screens.map(JSONValue.string)),
             "ownerPending": .bool(ownerPending),
-        ])
+        ]
+        if !projections.isEmpty { object["projections"] = .array(projections.map(JSONValue.string)) }
+        if !features.isEmpty { object["features"] = .array(features.map(JSONValue.string)) }
+        return .object(object)
     }
 }
 
@@ -346,17 +410,27 @@ public struct OpenNativeMessage: Equatable, Sendable {
 
 public struct NavigateMessage: Equatable, Sendable {
     public var page: String
+    /// M3: `true`, wenn Native ausdrücklich die Web-Ansicht angefordert hat (`pulsNativeNavigate({…, web:true})`).
+    /// Dann auch bei gleicher Seite gesendet; Native zeigt die Web-Seite statt des nativen Bereichs.
+    public var web: Bool
 
-    public init(page: String) {
+    public init(page: String, web: Bool = false) {
         self.page = page
+        self.web = web
     }
 
     public init(json: JSONValue) throws {
-        page = try Fields(json).nonEmptyString("page")
+        let fields = try Fields(json)
+        page = try fields.nonEmptyString("page")
+        web = try fields.bool("web", default: false)
     }
 
     public var json: JSONValue {
-        .object(["type": .string("navigate"), "protocol": .number(Double(BridgeProtocol.version)), "page": .string(page)])
+        var object: [String: JSONValue] = [
+            "type": .string("navigate"), "protocol": .number(Double(BridgeProtocol.version)), "page": .string(page),
+        ]
+        if web { object["web"] = .bool(true) }
+        return .object(object)
     }
 }
 

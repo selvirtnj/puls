@@ -21,6 +21,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var stateBridge: StateBridge?
     // Native Bereiche als Sheet über der WebView (Shell/NativeRouter.swift); nil ohne Zustandsbrücke.
     private var nativeRouter: NativeRouter?
+    // M3: native Tab-Leiste, Seitenkopf und Übersicht neben der WebView (Shell/RootTabView.swift); nil ohne Brücke.
+    private var tabShell: RootTabShell?
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
@@ -48,7 +50,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         stateBridge?.install(into: config.userContentController)
         // Kennzeichen für native-bridge.js: diese App-Version zeigt die Workout-Zeit in der Live-Aktivität.
         // 'nativeBody' (M2) nur mit Zustandsbrücke: dann leitet das Web „Körper & Gewicht“ per openNative weiter.
-        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody'"
+        // 'nativeTabs'/'nativeOverview' (M3): native Leiste und Übersicht; das Web blendet seine Leiste trotzdem
+        // erst nach pulsNativeSetChrome(true) aus.
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview'"
         config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -57,6 +61,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             let router = NativeRouter(store: store, host: self, webView: webView, appHost: Self.appHost, appPath: Self.appPath)
             nativeRouter = router
             stateBridge.onOpenNative = { [weak router] screen in router?.open(screen) }
+            let shell = RootTabShell(store: store, bridge: stateBridge)
+            shell.openBody = { [weak router] in router?.open(NativeRouter.bodyScreen) }
+            shell.onStyleChange = { [weak self] in self?.setNeedsStatusBarAppearanceUpdate() }
+            tabShell = shell
         }
         webView.navigationDelegate = self
         webView.uiDelegate = self
@@ -66,15 +74,26 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // Die Web-App nutzt viewport-fit=cover und env(safe-area-inset-*) selbst.
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         if #available(iOS 16.4, *) { webView.isInspectable = true }
-        view = webView
+        // Behälter statt `view = webView`: die WebView bleibt dauerhaft dessen Unteransicht (nie umgehängt);
+        // ohne aktive native Leiste füllt sie ihn wie bisher vollständig aus.
+        let container = UIView()
+        container.backgroundColor = Self.background
+        webView.frame = container.bounds
+        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        container.addSubview(webView)
+        view = container
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        tabShell?.install(in: self, webView: webView)
         webView.load(URLRequest(url: Self.home))
     }
 
-    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        guard let tabShell, tabShell.isActive else { return .lightContent }
+        return tabShell.style == .light ? .darkContent : .lightContent
+    }
 
     private func isAppURL(_ url: URL) -> Bool {
         if ["blob", "data", "about"].contains(url.scheme ?? "") { return true }
@@ -275,6 +294,12 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
         download.delegate = self
+    }
+
+    /// Neues Dokument (Laden, Neuladen, Offline-Seite): Dokument-Hello, Projektion und `chrome` gelten nicht mehr;
+    /// bis zum nächsten Hello zeigt das neue Dokument seine eigene Leiste.
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        environment.store?.webDocumentDidChange()
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
