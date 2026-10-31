@@ -16,10 +16,18 @@
 - Web-Regel „ein Gewicht pro Tag“ im Code bestätigt (`addWeight`).
 - CI-Lauf #10 (https://github.com/selvirtnj/puls/actions/runs/40371349741): grün — XcodeGen, `xcodebuild test` PULSCore, Release-Build, IPA-Artifact `PULS-ipa-10`. Anzahl ausgeführter Tests im Log nicht eingesehen (Log nur angemeldet sichtbar).
 
+## M2 Körper & Gewicht — gebaut, Gerätetest offen (31.10.2026)
+
+- Paket F (Codex): Weiterleitung Konto → „Körper & Entwicklung“ per `openNative{screen:'body'}` (nur mit `nativeBody`), `window.pulsNativeNavigate({page,section,web:true})`. Claude-Review: kein Fehler; Pflicht „Native zeigt auf openNative immer etwas“ in den Vertrag aufgenommen.
+- Paket E+G (Claude `puls-frontend`): `ios/PULS/Features/Body/*` (Übersicht, Swift-Charts-Verlauf 30T/90T/1J/Alle, Liste, Editor-Sheet, Wischen + Rückgängig, Konfliktdialog, Nur-lesen, Lade-/Leerzustand, DE/EN), `PULSCore/Model/WeightEntry.swift`, `Bridge/WeightOps.swift`, `Store/ProfileStore+Weight.swift`, `Shell/AppEnvironment.swift`, `Shell/NativeRouter.swift`. Codex-Review: 1×P1 (Konflikt im falschen Konto), 3×P2 (ID beim Bearbeiten, Rückgängig, Gerätekalender) — behoben und von Codex nachgeprüft.
+- CI: #11 (`192beed`) grün; #12 (`40ecd9e`, Korrekturen) siehe Actions.
+- Web-Seite als **Version 74 auf `main` veröffentlicht** (`1b9a208`), nur Web-Dateien, ohne `ios/`; live geprüft: lädt, wirkungslos im Browser, keine Konsolenfehler. `native-ios` per Merge auf v74 (`dc709f4`).
+
 ## Nächste Schritte
 
-1. M2 Körper & Gewicht: native Liste, Sheet, Swift-Charts-Verlauf, Reducer für `weight.upsert`/`weight.delete`, `openNative{screen:'body'}`, Store nach `AppDelegate`/`AppEnvironment`.
-2. Branch-IPA auf Selvirs iPhone: App unverändert, Spiegel wird geschrieben.
+1. Selvir testet die Branch-IPA (Actions-Artifact `PULS-ipa-<Lauf>`) auf dem iPhone: Konto → „Körper & Entwicklung“ öffnet den nativen Bildschirm; Gewicht eintragen/bearbeiten/löschen erscheint im Web und auf dem PC; Live-Aktivität und GPS unverändert.
+2. Nach erfolgreichem Gerätetest `native-ios` nach `main` (erzeugt Release-IPA).
+3. M3: native Übersicht + native Tab-Leiste.
 
 ## Nicht verifiziert / offen
 
