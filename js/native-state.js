@@ -323,31 +323,41 @@ window.pulsNativeApply=function(cmd){
 // final state per kind is delivered once (if it differs from what Native already has); after a rollback none is.
 // Rest/workout messages are pure state, so an equivalent repeat (the bridge correcting itself) is always dropped.
 const nativeKind=(handler,message)=>handler==='pulsWorkout'?'workout':['restStart','restCancel','workoutActive'].includes(message?.type)?'rest':message?.type==='runActivity'?'run':null;
+// Identity of the rest a restStart describes: same selection as native-bridge.js activeRest(), read when the bridge
+// posts (synchronously from the current state). Two rests with equal end time and label stay different rests.
+const nativeRestKey=()=>{
+  const now=Date.now(),w=(state.workouts||[]).filter(x=>!x.finished&&x.rest?.endAt>now).sort((a,b)=>a.rest.endAt-b.rest.endAt)[0];
+  return w?JSON.stringify([w.id,w.rest.exerciseId??null,w.rest.endAt]):null;
+};
 const nativeSame=(kind,a,b)=>{
   if(!a||!b)return false;
-  // startsAt/cancelRest only describe how the bridge reached a state, not the state Native shows.
-  if(kind==='rest'){const plainState=({startsAt,cancelRest,...value})=>value;return JSON.stringify(plainState(a))===JSON.stringify(plainState(b))}
-  return JSON.stringify(a)===JSON.stringify(b);
+  if(kind==='rest'){
+    // Within the same rest identity, startsAt/cancelRest only describe how the bridge reached the state
+    // (e.g. its correction after a rolled-back op). A different rest is always a new restStart.
+    if(a.message.type==='restStart'&&a.key!==b.key)return false;
+    const plainState=({startsAt,cancelRest,...value})=>value;return JSON.stringify(plainState(a.message))===JSON.stringify(plainState(b.message));
+  }
+  return JSON.stringify(a.message)===JSON.stringify(b.message);
 };
 const nativeSent=new Map();let nativeBuffer=null;
 function gateNativeHandler(name){
   const handler=window.webkit?.messageHandlers?.[name];
   if(!handler||typeof handler.postMessage!=='function')return;
-  const send=handler.postMessage,deliver=(kind,message)=>{send.call(handler,message);if(kind)nativeSent.set(kind,copy(message))};
+  const send=handler.postMessage,deliver=record=>{send.call(handler,record.message);if(record.kind)nativeSent.set(record.kind,{...record,message:copy(record.message)})};
   try{
     handler.postMessage=function(message){
-      const kind=nativeKind(name,message);
-      if(kind&&nativeBuffer){nativeBuffer.push({kind,message,deliver});return}
-      if((kind==='rest'||kind==='workout')&&nativeSame(kind,nativeSent.get(kind),message))return;
-      deliver(kind,message);
+      const kind=nativeKind(name,message),record={kind,message,deliver,key:message?.type==='restStart'?nativeRestKey():null};
+      if(kind&&nativeBuffer){nativeBuffer.push(record);return}
+      if((kind==='rest'||kind==='workout')&&nativeSame(kind,nativeSent.get(kind),record))return;
+      deliver(record);
     };
   }catch{ /* A read-only handler keeps the previous, unbuffered behaviour. */ }
 }
 function releaseNative(confirmed){
   const buffered=nativeBuffer||[];nativeBuffer=null;
   if(!confirmed)return;
-  const last=new Map();for(const entry of buffered){last.delete(entry.kind);last.set(entry.kind,entry)}
-  for(const {kind,message,deliver} of last.values())if(!nativeSame(kind,nativeSent.get(kind),message))try{deliver(kind,message)}catch{}
+  const last=new Map();for(const record of buffered){last.delete(record.kind);last.set(record.kind,record)}
+  for(const record of last.values())if(!nativeSame(record.kind,nativeSent.get(record.kind),record))try{record.deliver(record)}catch{}
 }
 if(trainingFeature){gateNativeHandler('pulsNative');gateNativeHandler('pulsWorkout')}
 const webDialogOpen=()=>(typeof modal!=='undefined'&&!!modal.open)||!!document.querySelector('dialog[open]');

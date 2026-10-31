@@ -359,6 +359,20 @@ const TRAINING_OPS=['workout.start','set.update','set.add','set.remove','exercis
   assert.deepEqual(clone(t.run('[completionReview,finishAudio,xpCelebrationPending]')),[true,{xp:true,streak:true},{id:'older',levelup:false}]);
   assert.equal(t.run('completionId'),null);
   ok(t.apply(cmd('workout.finish',{workoutId:W,confirmUnfinished:true})),'finish');assert.equal(t.run('completionReview'),false,'a fresh finish is no review');
+  // Review J/P3b: a new rest with the same end time and label (A 120 s, after 60 s B 60 s, same name) is a new restStart.
+  const twin=clone(input.profile),A='e0000000-0000-4000-8000-0000000000a1',B='e0000000-0000-4000-8000-0000000000b1';
+  twin.workouts[1].rest=null;twin.workouts[1].exercises=[A,B].map((id,i)=>({id,exerciseId:'x0000000-0000-4000-8000-000000000001',name:'Bench Press',restSeconds:i?60:120,
+    sets:[{kg:80,reps:8,done:false},{kg:80,reps:8,done:false}]}));
+  for(const viaOp of [true,false]){
+    t=started({profile:twin});const t0=input.now,doneSet=id=>viaOp?ok(t.apply(cmd('set.update',{workoutId:W,exerciseId:id,setIndex:0,done:true,expect:{kg:80,reps:8,done:false}})),'done '+id):t.run(`setValue('${W}','${id}',0,'done',true)`);
+    doneSet(A);let rest=t.native.filter(x=>x.type==='restStart').at(-1);assert.deepEqual([rest.endsAt,rest.startsAt],[t0+120000,t0]);
+    t.clock.now=t0+60000;mark=t.native.length;doneSet(B);
+    assert.deepEqual(workout(t).rest,{endAt:t0+120000,exerciseId:B});
+    const starts=t.native.slice(mark).filter(x=>x.type==='restStart');
+    assert.equal(starts.length,1,'rest switch reaches Native '+(viaOp?'(op)':'(Web)'));assert.deepEqual([starts[0].endsAt,starts[0].startsAt],[t0+120000,t0+60000],'new time base');
+    assert.deepEqual((({startsAt,...x})=>x)(starts[0]),(({startsAt,...x})=>x)(rest),'identical end time and label');
+    t.run('render();save()');assert.equal(t.native.slice(mark).filter(x=>x.type==='restStart').length,1,'no repeat afterwards');
+  }
   console.log('PASS: review J: buffered native side effects (superset, rolled-back workoutActive/finish, failing render), no revived rest, restored finish UI state');
 
   // Shared op fixtures decode and apply.
