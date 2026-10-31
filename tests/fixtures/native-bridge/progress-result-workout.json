@@ -1,0 +1,92 @@
+{
+  "protocol": 1,
+  "type": "progressResult",
+  "requestId": "q",
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "ownerPending": false,
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "language": "de",
+  "kind": "workout",
+  "ok": true,
+  "result": {
+    "id": "o0000000-0000-4000-8000-000000000001",
+    "name": "Push",
+    "date": "2026-10-24",
+    "durationSeconds": 4200,
+    "durationClock": "1:10:00",
+    "timeApprox": false,
+    "autoFinished": false,
+    "exerciseCount": 2,
+    "count": 1,
+    "sets": 3,
+    "reps": 27,
+    "volume": 1380,
+    "duration": 4200,
+    "average": 4200,
+    "timed": 1,
+    "averageClock": "1:10:00",
+    "xp": 49,
+    "durationXp": 49,
+    "wins": [],
+    "winsOmitted": 0,
+    "bodyweight": null,
+    "exercises": [
+      {
+        "id": "e0000000-0000-4000-8000-000000000001",
+        "libraryId": "x0000000-0000-4000-8000-000000000001",
+        "name": "Bench Press",
+        "sets": [
+          {
+            "kg": 80,
+            "reps": 8,
+            "done": true,
+            "shownKg": 80,
+            "e1rm": 101.3
+          },
+          {
+            "kg": 80,
+            "reps": 7,
+            "done": true,
+            "shownKg": 80,
+            "e1rm": 98.7
+          },
+          {
+            "kg": "",
+            "reps": "",
+            "done": false,
+            "shownKg": null,
+            "e1rm": null
+          }
+        ],
+        "omitted": 0
+      },
+      {
+        "id": "e0000000-0000-4000-8000-000000000002",
+        "libraryId": "x0000000-0000-4000-8000-000000000002",
+        "name": "Cable Fly",
+        "sets": [
+          {
+            "kg": 15,
+            "reps": 12,
+            "done": true,
+            "shownKg": 15,
+            "e1rm": null
+          }
+        ],
+        "omitted": 0
+      }
+    ],
+    "omitted": 0
+  }
+}

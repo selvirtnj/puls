@@ -14,6 +14,8 @@ const feature=name=>Array.isArray(window.pulsNativeFeatures)&&window.pulsNativeF
 // M4: injected at document start; without it no training wrapper, op, projection or global is installed.
 const trainingFeature=feature('nativeTraining');
 const trainingAdapter=()=>trainingFeature&&typeof window.pulsNativeTraining?.build==='function'?window.pulsNativeTraining:null;
+const progressFeature=feature('nativeProgress');
+const progressAdapter=()=>progressFeature&&typeof window.pulsNativeProgress?.build==='function'?window.pulsNativeProgress:null;
 const currentAccountSection=()=>page==='account'&&typeof accountSection==='string'&&accountSection?accountSection:null;
 const copy=value=>JSON.parse(JSON.stringify(value));
 const userId=()=>typeof cloudSession!=='undefined'?cloudSession?.user?.id??null:null;
@@ -25,9 +27,11 @@ function hello(force=false){
   const ownerPending=!profileReady();
   if(ownerPending){for(const view of Object.values(views))view.last=null;chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome()}
   if(!ready||!force&&ownerPending===helloOwnerPending)return;
-  const training=trainingAdapter();
-  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...(training?Object.keys(training.ops):[])],screens:training?['body','training']:['body'],
-    projections:training?['overview','training']:['overview'],features:training?['nativeTabs','nativeTraining']:['nativeTabs'],ownerPending})){
+  const training=trainingAdapter(),progress=progressAdapter();
+  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...(training?Object.keys(training.ops):[]),...(progress?Object.keys(progress.ops):[])],
+    screens:['body',...(training?['training']:[]),...(progress?['calendar','progress']:[])],
+    projections:['overview',...(training?['training']:[]),...(progress?['progress']:[])],
+    features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[])],ownerPending})){
     helloOwnerPending=ownerPending;
     if(!ownerPending)queueProjection('ready',true);
   }
@@ -97,6 +101,7 @@ window.pulsNativeNavigate=function(target){
     if(!ready||!profileReady()||typeof target.action!=='string'||target.page!==undefined||target.section!==undefined)return false;
     // These are Web UI entry points, never an eval string or a second mutation API.
     const actions={
+      ...(progressAdapter()?Object.fromEntries(progressAdapter().actions.map(action=>[action,()=>progressAdapter().navigate(target)])):{}),
       quickAdd:()=>{quickAddMenu();return true},
       addFood:()=>{go('food');foodForm();if(typeof foodTab==='function')foodTab('search');return true},
       editFood:()=>{if(!state.foods.some(x=>x.id===target.id&&x.date===date))return false;go('food');editDiaryFood(target.id);return true},
@@ -109,7 +114,8 @@ window.pulsNativeNavigate=function(target){
       addWeight:()=>{weightForm();return true}
     };
     if(!Object.hasOwn(actions,target.action))return false;
-    try{return actions[target.action]()}finally{reportChrome()}
+    const previous=openingWeb;openingWeb=target.web===true;
+    try{return actions[target.action]()}finally{openingWeb=previous;reportChrome()}
   }
   if(!['workout','home','food','account'].includes(target.page))return false;
   if(target.section!==undefined&&(target.page!=='account'||typeof accountSections==='undefined'||
@@ -130,13 +136,22 @@ function trainingInputs(){
   return [projectionRevision,state,today(),state.language,state.workouts,state.workouts?.length,state.routines,state.routines?.length,
     state.exerciseBook,state.exerciseBook?.length,state.workoutSettings,state.workoutSettings?.restSeconds];
 }
+function progressInputs(){
+  return [projectionRevision,state,today(),state.language,state.progressView,state.progressView?.group,state.progressView?.range,state.progressView?.metric,
+    state.chartPeriod,...['weight','strength','kcal'].map(k=>state.chartLines?.[k]),state.workouts,state.workouts?.length,state.runs,state.runs?.length,
+    state.exerciseBook,state.exerciseBook?.length,state.weights,state.weights?.length,state.foods,state.foods?.length,state.measurements,state.measurements?.length,
+    state.runSettings,state.profile,typeof recapMode==='string'?recapMode:null,typeof recapOffset==='number'?recapOffset:null,
+    typeof actMode==='string'?actMode:null,typeof actOffset==='number'?actOffset:null,typeof actFilter==='string'?actFilter:null];
+}
 const sameInputs=(a,b)=>!!b&&a.length===b.length&&a.every((value,index)=>value===b[index]);
 // One cache/dedup record per projection name; projectionSeq is shared and monotonic per document.
 const views={
   overview:{feature:'nativeOverview',section:true,inputs:overviewInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
     builder:()=>typeof window.pulsNativeBuildOverview==='function'?window.pulsNativeBuildOverview:null},
   training:{feature:'nativeTraining',section:false,inputs:trainingInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
-    builder:()=>trainingAdapter()?.build||null}
+    builder:()=>trainingAdapter()?.build||null},
+  progress:{feature:'nativeProgress',section:false,inputs:progressInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
+    builder:()=>progressAdapter()?.build||null}
 };
 const enabledViews=()=>Object.entries(views).filter(([,view])=>feature(view.feature)&&view.builder());
 function projection(reason,force=false){
@@ -295,6 +310,8 @@ window.pulsNativeApply=function(cmd){
   if(known){ack(id,undefined,undefined,known.result);queue('apply');flush();return}
   const training=trainingAdapter(),trainingOp=training&&typeof cmd.op==='string'&&Object.hasOwn(training.ops,cmd.op)?training.ops[cmd.op]:null;
   if(trainingOp){applyTraining(cmd,history,training,trainingOp);return}
+  const progress=progressAdapter(),progressOp=progress&&typeof cmd.op==='string'&&Object.hasOwn(progress.ops,cmd.op)?progress.ops[cmd.op]:null;
+  if(progressOp){applyTraining(cmd,history,progress,progressOp);return}
   if(!['weight.upsert','weight.delete'].includes(cmd.op)){ack(id,'unknown_op','Unbekannter Befehl');return}
   const args=cmd.args;
   const validExpect=value=>value===null||typeof value==='string'&&value.trim().length>0;
@@ -365,11 +382,11 @@ function applyTraining(cmd,history,training,op){
   const id=cmd.id,args=cmd.args;
   if(!args||typeof args!=='object'||Array.isArray(args)){ack(id,'invalid','Ungültige Argumente');return}
   // lifecycle.js closes sessions older than five hours on focus/visibility; do the same before acting on one.
-  try{if(typeof sweepLongWorkouts==='function')sweepLongWorkouts()}catch{}
+  try{if(training===trainingAdapter()&&typeof sweepLongWorkouts==='function')sweepLongWorkouts()}catch{}
   let plan;try{plan=op.check(args)}catch{plan={code:'invalid',message:'Ungültige Argumente'}}
   if(plan.code){ack(id,plan.code,plan.message);return}
   // These Web functions close #modal; never discard an unrelated open Web form. Native retries after chrome changes.
-  if(plan.busy&&webDialogOpen()){ack(id,'busy','Ein Web-Dialog ist geöffnet');return}
+  if(plan.busy&&(webDialogOpen()||training===progressAdapter()&&chromeState().blocking)){ack(id,'busy','Ein Web-Ablauf ist geöffnet');return}
   commit(cmd,history,{ui:training,run:()=>plan.noop?plan.result:op.run(args,plan),verify:(stored,result)=>op.effective(stored,args,plan,result)});
 }
 function commit(cmd,history,{run,verify,ui}){
@@ -463,6 +480,15 @@ if(trainingFeature){
     return !!result&&post({type:'exerciseSearch',requestId:request.requestId,...result});
   };
 }
+if(progressFeature)window.pulsNativeProgressQuery=function(request){
+  const adapter=progressAdapter();
+  if(!adapter||!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||saveDepth||
+    !request||typeof request!=='object'||Array.isArray(request)||typeof request.requestId!=='string'||
+    !request.requestId.trim()||request.requestId.length>100)return false;
+  let result;try{result=adapter.query(request,{seq,revision:projectionRevision})}catch{return false}
+  return !!result&&post({type:'progressResult',requestId:request.requestId,seq,userId:userId(),ownerPending:false,
+    flags:flags(),cloud:cloud(),language:state.language==='en'?'en':'de',...result});
+};
 window.addEventListener('pagehide',()=>{flush();projection('background');pageHidden=true;chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome()});
 window.addEventListener('pageshow',event=>{
   const restored=pageHidden||event.persisted===true;pageHidden=false;

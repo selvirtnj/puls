@@ -1,0 +1,524 @@
+{
+  "now": 1793188800000,
+  "profile": {
+    "version": 2,
+    "goals": {
+      "kcal": 2300,
+      "p": 160,
+      "c": 240,
+      "f": 70,
+      "xFutureGoalField": "keep-me"
+    },
+    "foods": [
+      {
+        "id": "f0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-25",
+        "name": "Haferflocken",
+        "meal": "Frühstück",
+        "grams": 80,
+        "kcal": 297.6,
+        "p": 10.6,
+        "c": 46.9,
+        "f": 5.6,
+        "unit": "g",
+        "nutrients": {
+          "fiber": 8,
+          "iron": 3.4,
+          "magnesium": 104
+        },
+        "source": "catalog",
+        "foodRef": "cat:oats",
+        "loggedAt": 1761375600000
+      },
+      {
+        "id": "f0000000-0000-4000-8000-000000000002",
+        "date": "2026-10-25",
+        "name": "Milch 1,5 %",
+        "meal": "Frühstück",
+        "grams": 250,
+        "kcal": 117.5,
+        "p": 8.5,
+        "c": 12,
+        "f": 3.8,
+        "unit": "ml",
+        "nutrients": {
+          "water": 222,
+          "calcium": 300
+        },
+        "barcode": "4000000000000",
+        "loggedAt": 1761375660000,
+        "xUnknownFoodField": {
+          "nested": [
+            1,
+            2.5,
+            null,
+            true
+          ]
+        }
+      },
+      {
+        "id": "f0000000-0000-4000-8000-000000000003",
+        "date": "2026-10-25",
+        "name": "Wasser",
+        "meal": "Snacks",
+        "grams": 250,
+        "kcal": 0,
+        "p": 0,
+        "c": 0,
+        "f": 0,
+        "unit": "ml",
+        "nutrients": {
+          "water": 250
+        }
+      },
+      {
+        "id": "f0000000-0000-4000-8000-000000000004",
+        "date": "2026-10-26",
+        "name": "Chili sin Carne",
+        "meal": "Mittagessen",
+        "grams": 400,
+        "kcal": 412,
+        "p": 22,
+        "c": 58,
+        "f": 9,
+        "recipeId": "r0000000-0000-4000-8000-000000000001",
+        "loggedAt": 1761476400000
+      }
+    ],
+    "weights": [
+      {
+        "id": "w0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-20",
+        "kg": 84.2
+      },
+      {
+        "id": "w0000000-0000-4000-8000-000000000002",
+        "date": "2026-10-23",
+        "kg": 83.9
+      },
+      {
+        "id": "w0000000-0000-4000-8000-000000000003",
+        "date": "2026-10-26",
+        "kg": 83.5,
+        "xWeightNote": "unknown-field"
+      }
+    ],
+    "workouts": [
+      {
+        "id": "o0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-24",
+        "name": "Push",
+        "finished": true,
+        "routineId": "t0000000-0000-4000-8000-000000000001",
+        "startedAt": 1761300000000,
+        "finishedAt": 1761304200000,
+        "durationSeconds": 4200,
+        "rest": null,
+        "durationXpVersion": 1,
+        "exercises": [
+          {
+            "id": "e0000000-0000-4000-8000-000000000001",
+            "name": "Bench Press",
+            "exerciseId": "x0000000-0000-4000-8000-000000000001",
+            "restSeconds": 120,
+            "repMin": 6,
+            "repMax": 10,
+            "sets": [
+              {
+                "kg": 80,
+                "reps": 8,
+                "done": true
+              },
+              {
+                "kg": 80,
+                "reps": 7,
+                "done": true
+              },
+              {
+                "kg": "",
+                "reps": "",
+                "done": false
+              }
+            ]
+          },
+          {
+            "id": "e0000000-0000-4000-8000-000000000002",
+            "name": "Cable Fly",
+            "exerciseId": "x0000000-0000-4000-8000-000000000002",
+            "superset": "s0000000-0000-4000-8000-000000000001",
+            "sets": [
+              {
+                "kg": 15,
+                "reps": 12,
+                "done": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "o0000000-0000-4000-8000-000000000003",
+        "date": "2026-10-28",
+        "name": "Push",
+        "routineId": "t0000000-0000-4000-8000-000000000001",
+        "startedAt": 1793187600000,
+        "durationXpVersion": 1,
+        "finished": false,
+        "rest": {
+          "endAt": 1793188860000,
+          "exerciseId": "e0000000-0000-4000-8000-000000000011"
+        },
+        "exercises": [
+          {
+            "id": "e0000000-0000-4000-8000-000000000011",
+            "exerciseId": "x0000000-0000-4000-8000-000000000001",
+            "name": "Bench Press",
+            "superset": "s0000000-0000-4000-8000-000000000002",
+            "restSeconds": 120,
+            "repMin": 6,
+            "repMax": 10,
+            "sets": [
+              {
+                "kg": 80,
+                "reps": 8,
+                "done": true
+              },
+              {
+                "kg": 80,
+                "reps": 7,
+                "done": false
+              },
+              {
+                "kg": "",
+                "reps": "",
+                "done": false
+              }
+            ]
+          },
+          {
+            "id": "e0000000-0000-4000-8000-000000000012",
+            "exerciseId": "x0000000-0000-4000-8000-000000000002",
+            "name": "Cable Fly",
+            "superset": "s0000000-0000-4000-8000-000000000002",
+            "restSeconds": 90,
+            "repMin": 10,
+            "repMax": 15,
+            "sets": [
+              {
+                "kg": 15,
+                "reps": 12,
+                "done": false
+              },
+              {
+                "kg": "",
+                "reps": "",
+                "done": false
+              }
+            ]
+          }
+        ],
+        "xSession": {
+          "keep": true
+        }
+      }
+    ],
+    "custom": [
+      {
+        "id": "p0000000-0000-4000-8000-000000000001",
+        "name": "Skyr Natur",
+        "brand": "Testmarke",
+        "kcal": 63,
+        "p": 11,
+        "c": 4,
+        "f": 0.2,
+        "unit": "g",
+        "barcode": "4000000000013",
+        "source": "openfoodfacts",
+        "favorite": true,
+        "packageAmount": 450,
+        "packageUnit": "g",
+        "packageChecked": true,
+        "portions": [
+          {
+            "name": "Becher",
+            "amount": 150,
+            "unit": "g",
+            "source": "label"
+          }
+        ],
+        "verified": true,
+        "fetched": 1761200000000
+      },
+      {
+        "id": "p0000000-0000-4000-8000-000000000002",
+        "name": "Olivenöl",
+        "kcal": 884,
+        "p": 0,
+        "c": 0,
+        "f": 100,
+        "unit": "ml",
+        "density": 0.91,
+        "labelReviewed": true,
+        "nutrients": {
+          "potassium": 1
+        }
+      }
+    ],
+    "profile": {
+      "age": 30,
+      "sex": "male",
+      "height": 180,
+      "weight": 84,
+      "target": 78,
+      "activity": 1.55,
+      "method": "mifflin",
+      "rmr": 0,
+      "special": false,
+      "kcalMode": "baseline",
+      "baselineFactor": 1.3
+    },
+    "plan": {
+      "mode": "auto",
+      "direction": "lose",
+      "pace": "medium",
+      "macroMode": "auto",
+      "protein": 2,
+      "fat": 0.8,
+      "adaptive": true,
+      "learnTdee": true
+    },
+    "routines": [
+      {
+        "id": "t0000000-0000-4000-8000-000000000001",
+        "name": "Push",
+        "exercises": [
+          {
+            "exerciseId": "x0000000-0000-4000-8000-000000000001",
+            "sets": 3,
+            "min": 6,
+            "max": 10,
+            "restSeconds": 120
+          },
+          {
+            "exerciseId": "x0000000-0000-4000-8000-000000000002",
+            "sets": 2,
+            "min": 10,
+            "max": 15,
+            "superset": "s0000000-0000-4000-8000-000000000001",
+            "restSeconds": 90
+          }
+        ]
+      }
+    ],
+    "exerciseBook": [
+      {
+        "id": "x0000000-0000-4000-8000-000000000001",
+        "name": "Bench Press",
+        "target": 0,
+        "muscles": [
+          "chest",
+          "triceps"
+        ],
+        "equipment": "barbell",
+        "repMin": 6,
+        "repMax": 10,
+        "loadStep": 2.5
+      },
+      {
+        "id": "x0000000-0000-4000-8000-000000000002",
+        "name": "Cable Fly",
+        "target": 0,
+        "equipment": "cable"
+      }
+    ],
+    "recipes": [
+      {
+        "id": "r0000000-0000-4000-8000-000000000001",
+        "name": "Chili sin Carne",
+        "yield": 1600,
+        "ingredients": [
+          {
+            "name": "Kidneybohnen",
+            "unit": "g",
+            "amount": 500,
+            "kcal": 450,
+            "p": 30,
+            "c": 70,
+            "f": 2,
+            "source": "catalog"
+          },
+          {
+            "name": "Tomaten",
+            "unit": "g",
+            "amount": 800,
+            "kcal": 144,
+            "p": 7,
+            "c": 28,
+            "f": 2
+          }
+        ],
+        "importNotes": [
+          "Endgewicht manuell geprüft"
+        ]
+      }
+    ],
+    "workoutSettings": {
+      "restSeconds": 90
+    },
+    "profileHistory": [
+      {
+        "date": "2026-09-01",
+        "age": 30,
+        "sex": "male",
+        "height": 180,
+        "weight": 87,
+        "target": 78,
+        "activity": 1.55,
+        "method": "mifflin",
+        "rmr": 0,
+        "special": false
+      }
+    ],
+    "goalHistory": [
+      {
+        "date": "2026-09-01",
+        "kcal": 2400,
+        "p": 165,
+        "c": 250,
+        "f": 72,
+        "weight": 87
+      }
+    ],
+    "measurements": [
+      {
+        "id": "m0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-20",
+        "waist": 88.5,
+        "neck": 39,
+        "bodyfat": 18.2,
+        "restingHR": 58
+      }
+    ],
+    "microGoals": {
+      "fiber": 35,
+      "water": 3000,
+      "vitc": 110
+    },
+    "waterGoal": 3000,
+    "foodLogCompleted": [
+      "2026-10-24",
+      "2026-10-25"
+    ],
+    "tdeeCalibration": {
+      "date": "2026-10-20",
+      "value": 2650,
+      "base": 2580,
+      "activity": 1.55,
+      "windowStart": "2026-09-22",
+      "windowEnd": "2026-10-19"
+    },
+    "displayName": "Testnutzer",
+    "language": "de",
+    "iconColor": "dark",
+    "appDesign": "apple",
+    "soundEnabled": true,
+    "soundVolume": 0.6,
+    "setupPending": false,
+    "onboardingComplete": true,
+    "tutorialVersion": 1,
+    "chartPeriod": "90",
+    "chartLines": {
+      "weight": true,
+      "strength": false,
+      "kcal": true
+    },
+    "progressView": {
+      "group": "training",
+      "range": "all",
+      "metric": "strength"
+    },
+    "runs": [
+      {
+        "id": "r0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-26",
+        "type": "run",
+        "distanceKm": 5.123,
+        "durationSeconds": 1547,
+        "createdAt": 1793102400000,
+        "durationXpVersion": 1,
+        "splits": [
+          300,
+          301,
+          302,
+          303,
+          304
+        ],
+        "kcal": 401,
+        "note": "Fixture",
+        "pauseSeconds": 12
+      },
+      {
+        "id": "r0000000-0000-4000-8000-000000000002",
+        "date": "2026-10-27",
+        "type": "other",
+        "distanceKm": 0,
+        "durationSeconds": 1200,
+        "createdAt": 1793188799000,
+        "durationXpVersion": 1
+      }
+    ],
+    "activeRun": null,
+    "runRoutes": [
+      {
+        "id": "q0000000-0000-4000-8000-000000000001",
+        "name": "Parkrunde",
+        "line": "52.5,13.4;52.51,13.41;52.5,13.4",
+        "waypoints": "52.5,13.4;52.51,13.41",
+        "distanceKm": 3.1,
+        "ascentM": 12,
+        "createdAt": 1761000000000
+      }
+    ],
+    "runSettings": {
+      "weeklyGoalKm": 20,
+      "weekMinutesGoal": 150,
+      "xFutureSetting": {
+        "keep": true
+      }
+    },
+    "fasts": [
+      {
+        "id": "z0000000-0000-4000-8000-000000000001",
+        "startedAt": 1750000000000,
+        "targetHours": 16,
+        "endedAt": 1750057600000
+      }
+    ],
+    "mealPlans": [],
+    "checkins": [
+      {
+        "id": "k0000000-0000-4000-8000-000000000001",
+        "date": "2026-05-01",
+        "energy": 3,
+        "hunger": 2,
+        "note": ""
+      }
+    ],
+    "xFutureTopLevel": {
+      "deep": {
+        "deeper": [
+          {
+            "a": 1
+          },
+          {
+            "b": "zwei"
+          }
+        ],
+        "big": 1761480000000,
+        "neg": -12.75,
+        "empty": {},
+        "emptyList": []
+      }
+    }
+  }
+}

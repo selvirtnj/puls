@@ -1,0 +1,610 @@
+{
+  "protocol": 1,
+  "type": "projection",
+  "name": "progress",
+  "projectionSeq": 1,
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "ownerPending": false,
+  "reason": "load",
+  "progress": {
+    "language": "de",
+    "locale": "de-DE",
+    "today": "2026-10-28",
+    "settings": {
+      "progressView": {
+        "group": "training",
+        "range": "all",
+        "metric": "strength"
+      },
+      "chartPeriod": "90",
+      "chartLines": {
+        "weight": true,
+        "strength": false,
+        "kcal": true
+      }
+    },
+    "identity": {
+      "level": 1,
+      "current": 109,
+      "needed": 250,
+      "total": 109,
+      "streak": 3,
+      "weekStreak": 2
+    },
+    "stats": {
+      "count": 1,
+      "sets": 3,
+      "reps": 27,
+      "volume": 1380,
+      "duration": 4200,
+      "average": 4200,
+      "timed": 1,
+      "averageClock": "1:10:00",
+      "durationClock": "1:10:00"
+    },
+    "records": [
+      {
+        "id": "x0000000-0000-4000-8000-000000000001",
+        "name": "Bench Press",
+        "target": 0,
+        "best": {
+          "date": "2026-10-24",
+          "e1rm": 101.3
+        },
+        "heaviest": {
+          "date": "2026-10-24",
+          "kg": 80,
+          "reps": 8
+        },
+        "rank": {
+          "level": 0,
+          "name": "Ziel setzen",
+          "percent": 0
+        },
+        "forecast": "Setze ein persönliches e1RM-Ziel für deine Rangprognose.",
+        "suggestion": "Bereich 6–10 Reps. Letztes Training: 80 × 8 / 80 × 7. Erst nach zwei vollständigen Trainings am oberen Ende erhöhen."
+      },
+      {
+        "id": "x0000000-0000-4000-8000-000000000002",
+        "name": "Cable Fly",
+        "target": 0,
+        "best": null,
+        "heaviest": {
+          "date": "2026-10-24",
+          "kg": 15,
+          "reps": 12
+        },
+        "rank": {
+          "level": 0,
+          "name": "Ziel setzen",
+          "percent": 0
+        },
+        "forecast": "Setze ein persönliches e1RM-Ziel für deine Rangprognose.",
+        "suggestion": "Bereich 6–10 Reps. Letztes Training: 15 × 12. Erst nach zwei vollständigen Trainings am oberen Ende erhöhen."
+      }
+    ],
+    "recordCount": 2,
+    "metrics": {
+      "group": "training",
+      "range": "all",
+      "metric": "strength",
+      "groups": [
+        {
+          "key": "training",
+          "label": "Training"
+        },
+        {
+          "key": "food",
+          "label": "Ernährung"
+        },
+        {
+          "key": "body",
+          "label": "Körper"
+        },
+        {
+          "key": "muscles",
+          "label": "Muskelgruppen"
+        }
+      ],
+      "ranges": [
+        {
+          "key": "week",
+          "label": "Woche"
+        },
+        {
+          "key": "month",
+          "label": "Monat"
+        },
+        {
+          "key": "half",
+          "label": "Halbjahr"
+        },
+        {
+          "key": "year",
+          "label": "Jahr"
+        },
+        {
+          "key": "all",
+          "label": "Gesamt"
+        }
+      ],
+      "definitions": [
+        {
+          "key": "workouts",
+          "label": "Workouts pro Trainingstag",
+          "unit": "",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "totalWorkouts",
+          "label": "Workouts insgesamt",
+          "unit": "",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "sets",
+          "label": "Abgeschlossene Sätze",
+          "unit": "Sätze",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "reps",
+          "label": "Wiederholungen",
+          "unit": "Reps",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "volume",
+          "label": "Trainingsvolumen",
+          "unit": "kg",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "totalVolume",
+          "label": "Volumen insgesamt",
+          "unit": "kg",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "duration",
+          "label": "Trainingszeit",
+          "unit": "min",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "averageDuration",
+          "label": "Ø Workoutdauer",
+          "unit": "min",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "load",
+          "label": "Ø Last pro Wiederholung",
+          "unit": "kg",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "repsPerSet",
+          "label": "Ø Wiederholungen pro Satz",
+          "unit": "Reps",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "density",
+          "label": "Volumen pro Trainingsminute",
+          "unit": "kg/min",
+          "note": "Nur Workouts mit bekannter Dauer; Dauer umfasst Pausen."
+        },
+        {
+          "key": "exercises",
+          "label": "Verschiedene Übungen",
+          "unit": "",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "xp",
+          "label": "Verdiente XP",
+          "unit": "XP",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "totalXP",
+          "label": "XP insgesamt",
+          "unit": "XP",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "level",
+          "label": "Level",
+          "unit": "",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "wins",
+          "label": "Persönliche Verbesserungen",
+          "unit": "",
+          "note": "Nur abgeschlossene Workouts. Volumen und Last verwenden das eingetragene externe Gewicht."
+        },
+        {
+          "key": "strength",
+          "label": "Persönlicher Kraftindex",
+          "unit": "Index",
+          "note": "Mittel relativer e1RM-Rekorde je Übung gegenüber der ersten Messung. Neue Übungen können den Index verändern."
+        },
+        {
+          "key": "streak",
+          "label": "Trainingsserie am Trainingstag",
+          "unit": "Tage",
+          "note": "Serie an erfassten Trainingstagen. Nach drei vollständigen Ruhetagen beginnt sie neu."
+        }
+      ],
+      "points": [
+        {
+          "date": "2026-10-24",
+          "value": 100
+        }
+      ],
+      "total": 1,
+      "omitted": 0,
+      "definitionsOmitted": 0,
+      "latest": 100,
+      "average": 100,
+      "high": 100
+    },
+    "chart": {
+      "period": "90",
+      "lines": {
+        "weight": true,
+        "strength": false,
+        "kcal": true
+      },
+      "rows": [
+        {
+          "date": "2026-10-20",
+          "weight": null,
+          "strength": null,
+          "kcal": null
+        },
+        {
+          "date": "2026-10-23",
+          "weight": 84.1,
+          "strength": null,
+          "kcal": null
+        },
+        {
+          "date": "2026-10-24",
+          "weight": null,
+          "strength": 100,
+          "kcal": null
+        },
+        {
+          "date": "2026-10-25",
+          "weight": null,
+          "strength": null,
+          "kcal": 415
+        },
+        {
+          "date": "2026-10-26",
+          "weight": 83.5,
+          "strength": null,
+          "kcal": 412
+        },
+        {
+          "date": "2026-10-28",
+          "weight": null,
+          "strength": 100,
+          "kcal": null
+        }
+      ],
+      "total": 6,
+      "omitted": 0
+    },
+    "recap": {
+      "mode": "week",
+      "offset": 0,
+      "start": "2026-10-26",
+      "end": "2026-11-01",
+      "stats": {
+        "count": 0,
+        "sets": 0,
+        "reps": 0,
+        "volume": 0,
+        "duration": 0,
+        "average": null,
+        "timed": 0,
+        "averageClock": null,
+        "durationClock": "00:00"
+      },
+      "xp": 60,
+      "muscles": [],
+      "activity": {
+        "count": 2,
+        "durationSeconds": 2747,
+        "durationLabel": "46 min",
+        "minutes": 46,
+        "distanceKm": 5.1,
+        "recapDistanceKm": 5.1,
+        "kcal": 401,
+        "unknownDurationCount": 0,
+        "unknownKcalCount": 1
+      }
+    },
+    "recaps": [
+      {
+        "mode": "week",
+        "offset": 0,
+        "start": "2026-10-26",
+        "end": "2026-11-01",
+        "stats": {
+          "count": 0,
+          "sets": 0,
+          "reps": 0,
+          "volume": 0,
+          "duration": 0,
+          "average": null,
+          "timed": 0,
+          "averageClock": null,
+          "durationClock": "00:00"
+        },
+        "xp": 60,
+        "muscles": [],
+        "activity": {
+          "count": 2,
+          "durationSeconds": 2747,
+          "durationLabel": "46 min",
+          "minutes": 46,
+          "distanceKm": 5.1,
+          "recapDistanceKm": 5.1,
+          "kcal": 401,
+          "unknownDurationCount": 0,
+          "unknownKcalCount": 1
+        }
+      },
+      {
+        "mode": "month",
+        "offset": 0,
+        "start": "2026-10-01",
+        "end": "2026-10-31",
+        "stats": {
+          "count": 1,
+          "sets": 3,
+          "reps": 27,
+          "volume": 1380,
+          "duration": 4200,
+          "average": 4200,
+          "timed": 1,
+          "averageClock": "1:10:00",
+          "durationClock": "1:10:00"
+        },
+        "xp": 109,
+        "muscles": [
+          {
+            "key": "chest",
+            "label": "Brust",
+            "sets": 3
+          },
+          {
+            "key": "triceps",
+            "label": "Trizeps",
+            "sets": 2
+          }
+        ],
+        "activity": {
+          "count": 3,
+          "durationSeconds": 6947,
+          "durationLabel": "1 h 56 min",
+          "minutes": 116,
+          "distanceKm": 5.1,
+          "recapDistanceKm": 5.1,
+          "kcal": 744,
+          "unknownDurationCount": 0,
+          "unknownKcalCount": 1
+        }
+      }
+    ],
+    "activity": {
+      "mode": "week",
+      "offset": 0,
+      "filter": "all",
+      "start": "2026-10-26",
+      "end": "2026-11-01",
+      "summary": {
+        "count": 2,
+        "durationSeconds": 2747,
+        "durationLabel": "46 min",
+        "minutes": 46,
+        "distanceKm": 5.1,
+        "recapDistanceKm": 5.1,
+        "kcal": 401,
+        "unknownDurationCount": 0,
+        "unknownKcalCount": 1
+      },
+      "activeDays": [
+        "2026-10-26",
+        "2026-10-27"
+      ],
+      "types": [
+        {
+          "type": "gym",
+          "label": "Gym"
+        },
+        {
+          "type": "run",
+          "label": "Laufen"
+        },
+        {
+          "type": "other",
+          "label": "Sonstiges"
+        }
+      ],
+      "byType": [
+        {
+          "type": "run",
+          "label": "Laufen",
+          "count": 1,
+          "durationSeconds": 1547,
+          "durationLabel": "26 min",
+          "minutes": 26,
+          "distanceKm": 5.1,
+          "recapDistanceKm": 5.1,
+          "kcal": 401,
+          "unknownDurationCount": 0,
+          "unknownKcalCount": 0
+        },
+        {
+          "type": "other",
+          "label": "Sonstiges",
+          "count": 1,
+          "durationSeconds": 1200,
+          "durationLabel": "20 min",
+          "minutes": 20,
+          "distanceKm": 0,
+          "recapDistanceKm": 0,
+          "kcal": 0,
+          "unknownDurationCount": 0,
+          "unknownKcalCount": 1
+        }
+      ],
+      "entries": [
+        {
+          "kind": "activity",
+          "type": "other",
+          "id": "r0000000-0000-4000-8000-000000000002",
+          "date": "2026-10-27",
+          "name": "Sonstiges",
+          "durationSeconds": 1200,
+          "durationClock": "20:00",
+          "distanceKm": 0,
+          "kcal": null,
+          "estimatedKcal": true
+        },
+        {
+          "kind": "activity",
+          "type": "run",
+          "id": "r0000000-0000-4000-8000-000000000001",
+          "date": "2026-10-26",
+          "name": "Laufen",
+          "durationSeconds": 1547,
+          "durationClock": "25:47",
+          "distanceKm": 5.12,
+          "kcal": 401,
+          "estimatedKcal": true
+        }
+      ],
+      "omitted": 0
+    },
+    "weeklyGoals": {
+      "weeklyGoalKm": 20,
+      "weekMinutesGoal": 150,
+      "start": "2026-10-26",
+      "end": "2026-11-01",
+      "activeMinutes": 45,
+      "runKm": 5.1
+    },
+    "running": {
+      "count": 1,
+      "totalKm": 5.1,
+      "monthKm": 5.1,
+      "monthPaceText": "5:02 /km",
+      "longest": {
+        "id": "r0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-26",
+        "distanceKm": 5.12
+      },
+      "fastest": {
+        "id": "r0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-26",
+        "paceText": "5:02 /km"
+      },
+      "weeks": [
+        {
+          "start": "2026-09-07",
+          "end": "2026-09-13",
+          "km": 0
+        },
+        {
+          "start": "2026-09-14",
+          "end": "2026-09-20",
+          "km": 0
+        },
+        {
+          "start": "2026-09-21",
+          "end": "2026-09-27",
+          "km": 0
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-04",
+          "km": 0
+        },
+        {
+          "start": "2026-10-05",
+          "end": "2026-10-11",
+          "km": 0
+        },
+        {
+          "start": "2026-10-12",
+          "end": "2026-10-18",
+          "km": 0
+        },
+        {
+          "start": "2026-10-19",
+          "end": "2026-10-25",
+          "km": 0
+        },
+        {
+          "start": "2026-10-26",
+          "end": "2026-11-01",
+          "km": 5.12
+        }
+      ]
+    },
+    "runRecords": [
+      {
+        "km": 1,
+        "seconds": 300,
+        "clock": "05:00",
+        "runId": "r0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-26"
+      },
+      {
+        "km": 5,
+        "seconds": 1510,
+        "clock": "25:10",
+        "runId": "r0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-26"
+      }
+    ],
+    "omitted": {
+      "records": 0,
+      "muscles": 0,
+      "activityTypes": 0
+    },
+    "navigation": {
+      "calendar": {
+        "action": "calendar"
+      },
+      "progress": {
+        "action": "progress"
+      },
+      "records": {
+        "action": "records"
+      },
+      "weeklyGoals": {
+        "action": "weeklyGoals"
+      }
+    }
+  }
+}

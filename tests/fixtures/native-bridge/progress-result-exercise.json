@@ -1,0 +1,70 @@
+{
+  "protocol": 1,
+  "type": "progressResult",
+  "requestId": "q",
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "ownerPending": false,
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "language": "de",
+  "kind": "exercise",
+  "ok": true,
+  "result": {
+    "id": "x0000000-0000-4000-8000-000000000001",
+    "name": "Bench Press",
+    "target": 0,
+    "best": 101.3,
+    "heaviest": {
+      "date": "2026-10-24",
+      "kg": 80,
+      "reps": 8
+    },
+    "rank": {
+      "level": 0,
+      "name": "Ziel setzen",
+      "percent": 0
+    },
+    "forecast": "Setze ein persönliches e1RM-Ziel für deine Rangprognose.",
+    "suggestion": "Bereich 6–10 Reps. Letztes Training: 80 × 8 / 80 × 7. Erst nach zwei vollständigen Trainings am oberen Ende erhöhen.",
+    "history": [
+      {
+        "workoutId": "o0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-24",
+        "name": "Push",
+        "e1rm": 101.3,
+        "volume": 1200,
+        "sets": [
+          {
+            "kg": 80,
+            "reps": 8
+          },
+          {
+            "kg": 80,
+            "reps": 7
+          }
+        ],
+        "omitted": 0
+      }
+    ],
+    "total": 1,
+    "omitted": 0,
+    "points": [
+      {
+        "date": "2026-10-24",
+        "workoutId": "o0000000-0000-4000-8000-000000000001",
+        "value": 101.3
+      }
+    ],
+    "pointsOmitted": 0
+  }
+}

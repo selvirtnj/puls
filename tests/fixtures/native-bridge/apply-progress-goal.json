@@ -1,0 +1,14 @@
+{
+  "id": "d5000000-0000-4000-8000-000000000003",
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "baseSeq": 1,
+  "op": "progress.goal.set",
+  "args": {
+    "weeklyGoalKm": 25.15,
+    "weekMinutesGoal": 180,
+    "expect": {
+      "weeklyGoalKm": 20,
+      "weekMinutesGoal": 150
+    }
+  }
+}
