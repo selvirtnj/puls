@@ -106,6 +106,27 @@ public enum WebCall {
         "(typeof window.pulsNativeSetChrome==='function')?window.pulsNativeSetChrome(\(visible ? "true" : "false"))!==false:false"
     }
 
+    /// M4 `window.pulsNativeSetTraining(active)`: `true` erst, wenn Native Trainingsbildschirme für den aktuellen
+    /// Nutzer zeigen kann; das Web lehnt bei offenem Web-Ablauf (`chrome.blocking`) ab. `false` ist immer erlaubt.
+    public static func setTraining(_ active: Bool) -> String {
+        "(typeof window.pulsNativeSetTraining==='function')?window.pulsNativeSetTraining(\(active ? "true" : "false"))===true:false"
+    }
+
+    /// M4 Ausweg: Web-Session für genau diesen Aufruf (`{action:'resumeWorkout', id, web:true}`). `nil` ohne ID.
+    public static func resumeWorkoutInWeb(id: String) -> String? {
+        guard !id.isEmpty else { return nil }
+        let argument = JSONValue.object([
+            "action": .string("resumeWorkout"), "id": .string(id), "web": .bool(true),
+        ]).serializedString()
+        return "(typeof window.pulsNativeNavigate==='function')?window.pulsNativeNavigate(\(argument))!==false:false"
+    }
+
+    /// M4 `window.pulsNativeExerciseSearch(request)`; Ergebnis kommt als `exerciseSearch`-Nachricht.
+    /// Der Ausdruck liefert `true`, wenn das Web die Suche gesendet hat.
+    public static func exerciseSearch(_ request: ExerciseSearchRequest) -> String {
+        "(typeof window.pulsNativeExerciseSearch==='function')?window.pulsNativeExerciseSearch(\(request.json.serializedString()))===true:false"
+    }
+
     /// `nil` für keinen streng gültigen Kalendertag (`YYYY-MM-DD`, existierendes Datum).
     /// Ergebnis des Ausdrucks: `true`, wenn das Web den Tag übernommen hat, sonst `false`.
     public static func setDate(_ day: String) -> String? {

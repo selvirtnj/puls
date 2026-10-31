@@ -32,6 +32,10 @@ public enum InboundMessage: Equatable, Sendable {
     case projection(ProjectionMessage)
     /// M3: Web-Modal/Session sperrt die native Navigation (`blocking`).
     case chrome(ChromeMessage)
+    /// M4: `projection{name:"training"}` (Routinen, laufende Session, Bibliothek).
+    case trainingProjection(TrainingProjectionMessage)
+    /// M4: Antwort auf `pulsNativeExerciseSearch` (keine Mutation).
+    case exerciseSearch(ExerciseSearchMessage)
 
     /// `nil` = ignorieren (kein/unbekannter `type`, anderes `protocol`). Wirft bei falscher Form einer bekannten Nachricht.
     public static func decode(_ value: JSONValue) throws -> InboundMessage? {
@@ -47,12 +51,14 @@ public enum InboundMessage: Equatable, Sendable {
         case "navigate": return .navigate(try NavigateMessage(json: value))
         case "projection":
             // Unbekannte Projektionen künftiger Web-Stände sind kein Fehler.
-            guard case .string(ProjectionMessage.overviewName)? = object["name"] else {
-                if case .string? = object["name"] { return nil }
-                throw BridgeDecodingError.invalidField("name")
+            guard case .string(let name)? = object["name"] else { throw BridgeDecodingError.invalidField("name") }
+            switch name {
+            case ProjectionMessage.overviewName: return .projection(try ProjectionMessage(json: value))
+            case TrainingProjectionMessage.trainingName: return .trainingProjection(try TrainingProjectionMessage(json: value))
+            default: return nil
             }
-            return .projection(try ProjectionMessage(json: value))
         case "chrome": return .chrome(try ChromeMessage(json: value))
+        case "exerciseSearch": return .exerciseSearch(try ExerciseSearchMessage(json: value))
         default: return nil
         }
     }
@@ -78,6 +84,8 @@ public enum InboundMessage: Equatable, Sendable {
         case .navigate(let message): return message.json
         case .projection(let message): return message.json
         case .chrome(let message): return message.json
+        case .trainingProjection(let message): return message.json
+        case .exerciseSearch(let message): return message.json
         }
     }
 }
@@ -311,6 +319,11 @@ public enum AckErrorCode: Hashable, Sendable {
     case unknownOp
     case persistFailed
     case notReady
+    /// M4: Ziel nicht mehr anwendbar (Workout beendet, Satz/Übung/Routine fehlt, Pause abgelaufen).
+    /// Befehl endgültig verwerfen, nicht erneut senden.
+    case gone
+    /// M4: Ein Web-Dialog ist offen. Halten und nach `chrome` ohne `reason:'modal'` erneut senden.
+    case busy
     case other(String)
 
     public init(code: String) {
@@ -322,6 +335,8 @@ public enum AckErrorCode: Hashable, Sendable {
         case "unknown_op": self = .unknownOp
         case "persist_failed": self = .persistFailed
         case "not_ready": self = .notReady
+        case "gone": self = .gone
+        case "busy": self = .busy
         default: self = .other(code)
         }
     }
@@ -335,6 +350,8 @@ public enum AckErrorCode: Hashable, Sendable {
         case .unknownOp: return "unknown_op"
         case .persistFailed: return "persist_failed"
         case .notReady: return "not_ready"
+        case .gone: return "gone"
+        case .busy: return "busy"
         case .other(let code): return code
         }
     }
@@ -365,12 +382,15 @@ public struct AckMessage: Equatable, Sendable {
     public var ok: Bool
     public var seq: Int?
     public var error: AckError?
+    /// M4: kleines Ergebnis-Objekt bei `ok:true` (z. B. `{workoutId, started}`). Nur Objekte; sonst `nil`.
+    public var result: JSONValue?
 
-    public init(id: String, ok: Bool, seq: Int? = nil, error: AckError? = nil) {
+    public init(id: String, ok: Bool, seq: Int? = nil, error: AckError? = nil, result: JSONValue? = nil) {
         self.id = id
         self.ok = ok
         self.seq = seq
         self.error = error
+        self.result = result
     }
 
     public init(json: JSONValue) throws {
@@ -382,6 +402,8 @@ public struct AckMessage: Equatable, Sendable {
         case nil, .null?: error = nil
         case let value?: error = try AckError(json: value)
         }
+        // Nachsichtig: ein unerwartetes `result` darf das Ack selbst nicht verwerfen (sonst bliebe der Befehl offen).
+        if case .object? = fields["result"] { result = fields["result"] } else { result = nil }
     }
 
     public var json: JSONValue {
@@ -393,23 +415,33 @@ public struct AckMessage: Equatable, Sendable {
         ]
         if let seq { object["seq"] = .number(Double(seq)) }
         if let error { object["error"] = error.json }
+        if let result { object["result"] = result }
         return .object(object)
     }
 }
 
 public struct OpenNativeMessage: Equatable, Sendable {
     public var screen: String
+    /// M4: `screen:"training"` nennt das aktive Workout.
+    public var workoutId: String?
 
-    public init(screen: String) {
+    public init(screen: String, workoutId: String? = nil) {
         self.screen = screen
+        self.workoutId = workoutId
     }
 
     public init(json: JSONValue) throws {
-        screen = try Fields(json).nonEmptyString("screen")
+        let fields = try Fields(json)
+        screen = try fields.nonEmptyString("screen")
+        workoutId = try fields.optionalString("workoutId")
     }
 
     public var json: JSONValue {
-        .object(["type": .string("openNative"), "protocol": .number(Double(BridgeProtocol.version)), "screen": .string(screen)])
+        var object: [String: JSONValue] = [
+            "type": .string("openNative"), "protocol": .number(Double(BridgeProtocol.version)), "screen": .string(screen),
+        ]
+        if let workoutId { object["workoutId"] = .string(workoutId) }
+        return .object(object)
     }
 }
 

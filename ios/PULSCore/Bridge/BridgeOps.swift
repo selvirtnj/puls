@@ -5,23 +5,32 @@ import Foundation
 /// hintereinander dieselbe Reihenfolge wie im Web erwarten.
 public typealias CommandPreparer = @Sendable (_ args: JSONValue, _ document: ProfileDocument) -> JSONValue
 
-/// Prüft, ob ein bestätigter Befehl im Profil wirksam ist (Protokoll Abschnitt 7).
-public typealias EffectCheck = @Sendable (_ args: JSONValue, _ state: JSONValue) -> Bool
+/// Prüft, ob ein bestätigter Befehl im Profil wirksam ist (Protokoll Abschnitt 7). `result` ist das gespeicherte
+/// `ack.result` (M4, z. B. `{workoutId}`), sonst `nil`.
+public typealias EffectCheck = @Sendable (_ args: JSONValue, _ state: JSONValue, _ result: JSONValue?) -> Bool
 
-/// Op-spezifische Regeln aus NATIVE-BRIDGE-PROTOCOL.md Abschnitt 5 und 7.
+/// Op-spezifische Regeln aus NATIVE-BRIDGE-PROTOCOL.md Abschnitt 5, 7 und 9.
 public enum BridgeOps {
     public static let weightUpsert = "weight.upsert"
     public static let weightDelete = "weight.delete"
 
-    public static let defaultPreparers: [String: CommandPreparer] = [
-        weightUpsert: prepareWeightUpsert,
-        weightDelete: prepareWeightDelete,
-    ]
+    public static let defaultPreparers: [String: CommandPreparer] = {
+        var map: [String: CommandPreparer] = [
+            weightUpsert: prepareWeightUpsert,
+            weightDelete: prepareWeightDelete,
+        ]
+        map.merge(trainingPreparers) { first, _ in first }
+        return map
+    }()
 
-    public static let defaultEffectChecks: [String: EffectCheck] = [
-        weightUpsert: weightUpsertIsEffective,
-        weightDelete: weightDeleteIsEffective,
-    ]
+    public static let defaultEffectChecks: [String: EffectCheck] = {
+        var map: [String: EffectCheck] = [
+            weightUpsert: { args, state, _ in weightUpsertIsEffective(args, state) },
+            weightDelete: { args, state, _ in weightDeleteIsEffective(args, state) },
+        ]
+        map.merge(trainingEffectChecks) { first, _ in first }
+        return map
+    }()
 
     /// `expect` = ID des Eintrags, den Native für `date` sieht, sonst `null`. Ein vom Aufrufer gesetztes
     /// `expect` bleibt unverändert. Mehrere Einträge am selben Tag: erste ID (das Web meldet dann `conflict`).

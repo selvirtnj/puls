@@ -15,6 +15,8 @@ final class AppEnvironment {
         }
         // Optimistische Vorschau für die Gewichts-Ops (gleiche Mutation wie das Web).
         environment.reducers.merge(BridgeOps.weightReducers) { _, new in new }
+        // M4: Vorschau nur für eindeutig vorhersagbare Trainings-Ops (Satzwerte, Entfernen, Verschieben, Pause beenden).
+        environment.reducers.merge(BridgeOps.trainingReducers) { _, new in new }
         store = ProfileStore(environment: environment)
     }
 }

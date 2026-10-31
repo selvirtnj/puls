@@ -27,7 +27,7 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
 
     /// Nach jedem `openNative` mit dem gewünschten Bereich (`NativeRouter.open`). Der Store merkt sich den Wunsch
     /// zusätzlich in `requestedScreen`.
-    var onOpenNative: ((String) -> Void)?
+    var onOpenNative: ((OpenNativeMessage) -> Void)?
 
     /// Registriert den Handler `pulsState` (ein vorhandener gleichen Namens wird vorher entfernt) und lädt den
     /// letzten Spiegel.
@@ -65,7 +65,7 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
         case .message(let message):
             store.receive(message)
             if case .openNative(let open) = message {
-                onOpenNative?(open.screen)
+                onOpenNative?(open)
             }
         case .ignored:
             break
@@ -95,6 +95,25 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
             return
         }
         evaluate(script) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// M4 `window.pulsNativeSetTraining(active)`; `completion(true)` nur, wenn das Web die Übernahme bestätigt.
+    func setTraining(_ active: Bool, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.setTraining(active)) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// M4 Ausweg in die Web-Session dieses Workouts (`resumeWorkout` mit `web:true`).
+    func resumeWorkoutInWeb(id: String, completion: (@MainActor (Bool) -> Void)? = nil) {
+        guard let script = WebCall.resumeWorkoutInWeb(id: id) else {
+            completion?(false)
+            return
+        }
+        evaluate(script) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// M4 Übungssuche; das Ergebnis kommt als `exerciseSearch` in den Store. `completion(false)`: nicht gesendet.
+    func searchExercises(_ request: ExerciseSearchRequest, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.exerciseSearch(request)) { result in completion?((result as? Bool) == true) }
     }
 
     /// `data-scheme` der Web-App (`light`/`dark`, js/color-scheme.js) oder `nil`.

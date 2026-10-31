@@ -98,12 +98,16 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     private let statusFill = UIView()
     private var headerHost: UIHostingController<ShellHeaderHost>?
     private var overviewHost: UIHostingController<OverviewHost>?
+    /// M4: nativer Trainings-Tab (Routinen, laufende Session als Banner); nur mit `TrainingCoordinator`.
+    private var trainingHost: UIHostingController<TrainingHomeHost>?
     private var activeConstraints: [NSLayoutConstraint] = []
     private var inactiveConstraints: [NSLayoutConstraint] = []
 
     /// „Übersicht“ ist ausgewählt, zeigt aber die Web-Seite (nach einer Aktion mit Web-Modal/Session,
     /// nach `navigate{web:true}` oder per Ausweichknopf), bis die native Übersicht bewusst wieder gewählt wird.
     private var homeShowsWeb = false
+    /// „Training“ ist ausgewählt, zeigt aber die Web-Trainingsseite (Kalender, Rekorde, `navigate{web:true}`).
+    private var workoutShowsWeb = false
     private var handledNavigation = 0
     private var handledHello = 0
     private var itemsKey = ""
@@ -126,6 +130,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     var onStyleChange: (() -> Void)?
     /// Öffnet den nativen Körperbereich (M2, `NativeRouter`).
     var openBody: (() -> Void)?
+    /// M4: native Routinen und Session. Vor `install` setzen.
+    var training: TrainingCoordinator?
 
     init(store: ProfileStore, bridge: StateBridge) {
         self.store = store
@@ -152,6 +158,15 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         let overview = UIHostingController(rootView: OverviewHost(store: store, actions: actions))
         headerHost = header
         overviewHost = overview
+        let trainingView: UIView?
+        if let training {
+            let hosting = UIHostingController(rootView: TrainingHomeHost(coordinator: training))
+            hosting.view.backgroundColor = .systemGroupedBackground
+            trainingHost = hosting
+            trainingView = hosting.view
+        } else {
+            trainingView = nil
+        }
 
         statusFill.backgroundColor = .systemGroupedBackground
         header.view.backgroundColor = .systemGroupedBackground
@@ -166,14 +181,24 @@ final class RootTabShell: NSObject, UITabBarDelegate {
 
         host.addChild(header)
         host.addChild(overview)
+        if let trainingHost { host.addChild(trainingHost) }
         webView.translatesAutoresizingMaskIntoConstraints = false
-        for view in [statusFill, header.view!, overview.view!, tabBar] {
+        for view in ([statusFill, header.view, overview.view, trainingView, tabBar] as [UIView?]).compactMap({ $0 }) {
             view.translatesAutoresizingMaskIntoConstraints = false
             view.isHidden = true
             root.addSubview(view)
         }
         header.didMove(toParent: host)
         overview.didMove(toParent: host)
+        trainingHost?.didMove(toParent: host)
+        if let trainingView {
+            NSLayoutConstraint.activate([
+                trainingView.topAnchor.constraint(equalTo: header.view.bottomAnchor),
+                trainingView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                trainingView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                trainingView.bottomAnchor.constraint(equalTo: tabBar.topAnchor),
+            ])
+        }
 
         let headerView: UIView = header.view
         let overviewView: UIView = overview.view
@@ -318,12 +343,31 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             && store.webOffersOverview
     }
 
+    /// M4: nativer Trainings-Tab; nie über einem offenen Web-Ablauf oder der Web-Abschlussansicht.
+    private var showsNativeTraining: Bool {
+        guard let training, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .workout,
+              !workoutShowsWeb else { return false }
+        return training.isAvailable && !training.awaitingWebCompletion
+    }
+
     private func updateVisibility() {
         let showOverview = showsNativeOverview
+        let showTraining = showsNativeTraining
         overviewHost?.view.isHidden = !showOverview
+        trainingHost?.view.isHidden = !showTraining
         // Verdeckte Web-Inhalte nicht für VoiceOver erreichbar lassen; die WebView selbst bleibt sichtbar.
-        webView?.accessibilityElementsHidden = showOverview
+        webView?.accessibilityElementsHidden = showOverview || showTraining
         syncSelection()
+    }
+
+    /// M4: Trainings-Tab wählen (z. B. „Alle Routinen“ aus der Übersicht).
+    func selectWorkoutTab() {
+        if let target = NavigationTarget(page: "workout") { perform(target) }
+    }
+
+    /// M4: Web-Trainingsseite (Kalender, Rekorde, Rückblick) zeigen, bis der Tab bewusst neu gewählt wird.
+    func showWebWorkout() {
+        if let target = NavigationTarget(page: "workout", web: true) { perform(target) }
     }
 
     // MARK: Tab-Leiste
@@ -386,6 +430,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         // `go` meldet nur echte Seitenwechsel: ein `home` ohne `web` heißt „Übersicht wurde betreten“.
         // Mit `web:true` bleibt die Web-Übersicht sichtbar (Protokoll: Echo darf sie nicht überdecken).
         if tab == .home { homeShowsWeb = navigation.web }
+        if tab == .workout { workoutShowsWeb = navigation.web }
     }
 
     // MARK: Native → Web
@@ -395,6 +440,10 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     /// Lehnt das Web ab (`false`, z. B. während `chrome.blocking`), kehrt die Auswahl zum vorherigen Stand zurück.
     func perform(_ target: NavigationTarget) {
         guard !state.isBlocked else { return }
+        // M4: Trainings-Einstiege (Fortsetzen, Routine starten, freies Training, Routinen) nativ, wenn verfügbar.
+        if case .action(let action, let id) = target, let training, training.handleOverviewAction(action, id: id) {
+            return
+        }
         let previousTab = state.selected
         let previousShowsWeb = homeShowsWeb
         // Rückkehr nur vormerken, wenn die Aktion aus der sichtbaren nativen Übersicht startet
@@ -406,6 +455,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             if let tab = RootTab(rawValue: page), tab != .add {
                 state.selected = tab
                 if tab == .home { homeShowsWeb = web }
+                if tab == .workout { workoutShowsWeb = web }
             }
         case .action:
             // Vor dem Aufruf ausblenden, damit Modal/Session sofort sichtbar sind (das `chrome` kommt später).
@@ -464,11 +514,12 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     }
 
     private func applyStyle(_ newStyle: UIUserInterfaceStyle) {
-        for view in [statusFill, tabBar, headerHost?.view, overviewHost?.view] as [UIView?] {
+        for view in [statusFill, tabBar, headerHost?.view, overviewHost?.view, trainingHost?.view] as [UIView?] {
             view?.overrideUserInterfaceStyle = newStyle
         }
         headerHost?.overrideUserInterfaceStyle = newStyle
         overviewHost?.overrideUserInterfaceStyle = newStyle
+        trainingHost?.overrideUserInterfaceStyle = newStyle
         guard newStyle != style else { return }
         style = newStyle
         onStyleChange?()

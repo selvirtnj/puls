@@ -22,15 +22,18 @@ public struct OutboxEntry: Equatable, Sendable {
     /// Nur für `acked` (Protokoll Abschnitt 7): ob der letzte gültige Snapshot desselben Nutzers in der
     /// Ack-Sitzung die Wirkung zeigte. `nil` = seit dem Ack noch kein gültiger Snapshot.
     public var lastSeenEffect: Bool?
+    /// M4: `ack.result` (z. B. `{workoutId}`), persistent für die Wirkungsprüfung nach einem Neustart.
+    public var result: JSONValue?
 
     public init(command: ApplyCommand, status: Status = .pending, createdAt: Date, attempts: Int = 0,
-                lastError: AckError? = nil, lastSeenEffect: Bool? = nil) {
+                lastError: AckError? = nil, lastSeenEffect: Bool? = nil, result: JSONValue? = nil) {
         self.command = command
         self.status = status
         self.createdAt = createdAt
         self.attempts = attempts
         self.lastError = lastError
         self.lastSeenEffect = lastSeenEffect
+        self.result = result
     }
 
     public var isAcked: Bool {
@@ -71,6 +74,10 @@ public struct OutboxEntry: Equatable, Sendable {
         case .bool(let seen)?: lastSeenEffect = seen
         default: throw BridgeDecodingError.invalidField("lastSeenEffect")
         }
+        switch fields["result"] {
+        case nil, .null?: result = nil
+        case let value?: result = value
+        }
     }
 
     var json: JSONValue {
@@ -91,6 +98,7 @@ public struct OutboxEntry: Equatable, Sendable {
         }
         if let lastError { object["lastError"] = lastError.json }
         if let lastSeenEffect { object["lastSeenEffect"] = .bool(lastSeenEffect) }
+        if let result { object["result"] = result }
         return .object(object)
     }
 }
@@ -105,8 +113,10 @@ public enum AckResolution: Equatable, Sendable {
     case rejected(ApplyCommand, AckError)
     /// `wrong_user`, `unknown_op`, `conflict`: geparkt, nicht gelöscht.
     case parked(ApplyCommand, AckError)
-    /// `readonly`, `persist_failed`, `not_ready` und unbekannte Codes: bleibt zum späteren Senden.
+    /// `readonly`, `persist_failed`, `not_ready`, `busy` und unbekannte Codes: bleibt zum späteren Senden.
     case held(ApplyCommand, AckError)
+    /// M4 `gone`: Ziel nicht mehr anwendbar, endgültig entfernt (nicht erneut senden), Anzeige zurückrollen.
+    case discarded(ApplyCommand, AckError)
 }
 
 public enum OutboxError: Error, Equatable, Sendable {
@@ -266,6 +276,7 @@ public final class Outbox {
             if !entries[index].isAcked { entries[index].lastSeenEffect = nil }
             entries[index].status = .acked(session: session)
             entries[index].lastError = nil
+            if let result = ack.result { entries[index].result = result }
             saveQuietly()
             return .confirmed(command)
         }
@@ -275,12 +286,16 @@ public final class Outbox {
             entries.remove(at: index)
             saveQuietly()
             return .rejected(command, error)
+        case .gone:
+            entries.remove(at: index)
+            saveQuietly()
+            return .discarded(command, error)
         case .wrongUser, .unknownOp, .conflict:
             entries[index].status = .parked(error.code)
             entries[index].lastError = error
             saveQuietly()
             return .parked(command, error)
-        case .readonly, .persistFailed, .notReady, .other:
+        case .readonly, .persistFailed, .notReady, .busy, .other:
             entries[index].status = .pending
             entries[index].lastError = error
             saveQuietly()

@@ -23,6 +23,8 @@ public struct StoreEnvironment: Sendable {
 
     public static let defaultScreenRequirements: [String: Set<String>] = [
         "body": [BridgeOps.weightUpsert, BridgeOps.weightDelete],
+        // M4: der native Trainingsbereich braucht alle 15 Trainings-Ops (Protokoll §9.1).
+        "training": TrainingOps.all,
     ]
 
     public init(
@@ -86,6 +88,8 @@ public enum StoreNotice: Equatable, Sendable {
     case commandParked(id: String, op: String, code: AckErrorCode)
     /// `conflict`: Befehl geparkt, Anzeige zurückgerollt; Nutzer muss den gewünschten Stand wählen.
     case commandConflict(id: String, op: String)
+    /// M4 `gone`: Ziel existiert nicht mehr (z. B. Workout beendet); Befehl verworfen, Anzeige zurückgerollt.
+    case commandGone(id: String, op: String, message: String?)
     /// Outbox-Datei war nicht lesbar oder beschädigt.
     case outboxProblem(String)
 }
@@ -95,6 +99,19 @@ public struct WebNavigationEvent: Equatable, Sendable {
     public var page: String
     public var web: Bool
     public var token: Int
+}
+
+/// Ein verarbeitetes `ack` (für Oberflächen, die auf das Ergebnis eines eigenen Befehls warten).
+public struct AckEvent: Equatable, Sendable {
+    /// Fortlaufend je App-Sitzung.
+    public var serial: Int
+    public var commandId: String
+    public var op: String
+    public var args: JSONValue
+    public var ok: Bool
+    public var result: JSONValue?
+    public var code: AckErrorCode?
+    public var message: String?
 }
 
 public enum DataAuthority: String, Sendable {
@@ -158,6 +175,19 @@ public final class ProfileStore {
     public private(set) var projection: ProjectionMessage?
     /// M3: letzter `chrome`-Zustand dieses Dokuments (`nil` = nichts blockiert).
     public private(set) var webChrome: ChromeMessage?
+    /// Steigt mit jeder `chrome`-Meldung (auch inhaltsgleich), z. B. für einen erneuten Bestätigungsversuch.
+    public private(set) var chromeCount = 0
+    /// M4: zuletzt angenommene `training`-Projektion dieses Dokuments (nicht persistiert).
+    public private(set) var trainingProjection: TrainingProjectionMessage?
+    /// M4: letzte Antwort der Übungssuche.
+    public private(set) var exerciseSearch: ExerciseSearchMessage?
+    /// M4: Workout aus dem letzten `openNative{screen:'training'}`.
+    public private(set) var requestedWorkoutId: String?
+    /// M4: ein Befehl wartet mit `busy` auf das Schließen eines Web-Dialogs (wird nach `chrome` ohne `modal`
+    /// erneut gesendet).
+    public private(set) var isWaitingForWebDialog = false
+    /// M4: zuletzt verarbeitete Acks (höchstens 40, älteste zuerst).
+    public private(set) var recentAcks: [AckEvent] = []
     public let authority: DataAuthority = .web
 
     /// Übergibt einen Befehl an das Web (`StateBridge`). Ohne Sender bleibt er in der Outbox.
@@ -178,7 +208,10 @@ public final class ProfileStore {
     @ObservationIgnored public private(set) var lastMirrorError: String?
     /// Höchste angenommene `projectionSeq` des aktuellen Web-Dokuments.
     @ObservationIgnored private var lastProjectionSeq: Int?
+    @ObservationIgnored private var lastTrainingProjectionSeq: Int?
     @ObservationIgnored private var navigationCounter = 0
+    @ObservationIgnored private var replayAfterWebDialog = false
+    @ObservationIgnored private var ackSerial = 0
 
     private struct AwaitedCommand {
         var command: ApplyCommand
@@ -247,6 +280,7 @@ public final class ProfileStore {
             return true
         case .openNative(let open):
             requestedScreen = open.screen
+            requestedWorkoutId = open.workoutId
             log("openNative \(open.screen)")
             return true
         case .navigate(let navigate):
@@ -258,6 +292,19 @@ public final class ProfileStore {
             return handleProjection(projection)
         case .chrome(let chrome):
             webChrome = chrome
+            chromeCount += 1
+            // `busy`: der Web-Dialog ist zu, sobald `chrome` nicht mehr `modal` meldet.
+            if replayAfterWebDialog, chrome.reason != "modal" {
+                replayAfterWebDialog = false
+                isWaitingForWebDialog = false
+                log("web dialog closed, replay")
+                replayOutbox()
+            }
+            return true
+        case .trainingProjection(let projection):
+            return handleTrainingProjection(projection)
+        case .exerciseSearch(let search):
+            exerciseSearch = search
             return true
         }
     }
@@ -306,7 +353,69 @@ public final class ProfileStore {
         lastProjectionSeq = nil
         webNavigation = nil
         webChrome = nil
+        trainingProjection = nil
+        lastTrainingProjectionSeq = nil
+        exerciseSearch = nil
+        // Ein neues Dokument hat keinen offenen Dialog; Hello und Lade-Snapshot spielen die Outbox ohnehin ein.
+        replayAfterWebDialog = false
+        isWaitingForWebDialog = false
         log("web document changed")
+    }
+
+    // MARK: M4 Training
+
+    /// Das aktuelle Dokument bietet den nativen Trainingsbereich an: Screen `training`, Projektion `training`,
+    /// alle Trainings-Ops und geklärte Zuordnung.
+    public var webOffersTraining: Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return false }
+        return hello.screens.contains(Self.trainingScreen)
+            && hello.projections.contains(TrainingProjectionMessage.trainingName)
+            && availableScreens.contains(Self.trainingScreen)
+    }
+
+    /// Anzeigefähige Trainings-Projektion desselben Nutzers wie der Spiegel (sonst `nil` → Web-Training).
+    public var currentTraining: TrainingProjectionMessage? {
+        guard webOffersTraining, let projection = trainingProjection, !projection.ownerPending else { return nil }
+        guard projection.flags.preview || projection.userId == userId else { return nil }
+        return projection
+    }
+
+    public static let trainingScreen = "training"
+    /// Eintrag in `window.pulsNativeFeatures` für M4 (nur zusammen mit `stateBridge`).
+    public static let nativeTrainingFeature = "nativeTraining"
+
+    /// Noch nicht vom Web bestätigte oder bestätigte, aber noch nicht im Snapshot sichtbare Befehle.
+    public var unconfirmedCommands: [ApplyCommand] {
+        // `outboxEntries`/`document` werden beobachtet und ändern sich zusammen mit `awaitingSnapshot`.
+        _ = document
+        return awaitingSnapshot.map(\.command) + outboxEntries.filter { $0.status == .pending }.map(\.command)
+    }
+
+    public func consumeWorkoutRequest() -> String? {
+        defer { requestedWorkoutId = nil }
+        return requestedWorkoutId
+    }
+
+    private func handleTrainingProjection(_ message: TrainingProjectionMessage) -> Bool {
+        guard !message.ownerPending else {
+            log("training projection ownerPending ignored")
+            return false
+        }
+        let freshDocument = message.projectionSeq <= 1 && message.reason == "load"
+        if let last = lastTrainingProjectionSeq, message.projectionSeq <= last, !freshDocument {
+            log("training projection \(message.projectionSeq) stale (have \(last))")
+            return false
+        }
+        lastTrainingProjectionSeq = message.projectionSeq
+        trainingProjection = message
+        return true
+    }
+
+    private func recordAck(_ ack: AckMessage, command: ApplyCommand, code: AckErrorCode?, message: String?) {
+        ackSerial += 1
+        recentAcks.append(AckEvent(serial: ackSerial, commandId: command.id, op: command.op, args: command.args,
+                                   ok: ack.ok, result: ack.result, code: code, message: message))
+        if recentAcks.count > 40 { recentAcks.removeFirst(recentAcks.count - 40) }
     }
 
     private func handleProjection(_ message: ProjectionMessage) -> Bool {
@@ -340,7 +449,10 @@ public final class ProfileStore {
         documentHello = hello
         helloCount += 1
         // Ungeklärte Zuordnung oder Anmeldung: alte Übersicht sofort verdecken und verwerfen.
-        if hello.ownerPending { projection = nil }
+        if hello.ownerPending {
+            projection = nil
+            trainingProjection = nil
+        }
         acceptAnySnapshotSeq = true
         // Wiederholte Status-Hellos verwerfen weder Spiegel noch Outbox noch gespeicherte Beobachtungen.
         ownerPending = hello.ownerPending
@@ -426,7 +538,7 @@ public final class ProfileStore {
                 log("acked op=\(entry.command.op) without effect check, kept")
                 continue
             }
-            let visible = check(entry.command.args, snapshot.state)
+            let visible = check(entry.command.args, snapshot.state, entry.result)
             if session == environment.sessionID {
                 seen[entry.command.id] = visible
             } else if decides {
@@ -466,10 +578,18 @@ public final class ProfileStore {
             }
             let seqText = ack.seq.map { String($0) } ?? "-"
             log("ack ok op=\(command.op) seq=\(seqText)")
+            recordAck(ack, command: command, code: nil, message: nil)
         case .rejected(let command, let error):
             notice = .commandRejected(id: command.id, op: command.op, message: error.message)
             log("ack invalid op=\(command.op)")
+            recordAck(ack, command: command, code: error.code, message: error.message)
+        case .discarded(let command, let error):
+            // `gone`: nicht erneut senden; die Anzeige folgt wieder dem Web-Stand.
+            notice = .commandGone(id: command.id, op: command.op, message: error.message)
+            log("ack gone op=\(command.op) discarded")
+            recordAck(ack, command: command, code: error.code, message: error.message)
         case .parked(let command, let error):
+            recordAck(ack, command: command, code: error.code, message: error.message)
             switch error.code {
             case .unknownOp:
                 unsupportedOps.insert(command.op)
@@ -489,10 +609,15 @@ public final class ProfileStore {
                 replayWhenWritable = true
             case .readonly, .persistFailed:
                 replayWhenWritable = true
+            case .busy:
+                // Erst nach `chrome` ohne `reason:'modal'` erneut senden (nicht blockierend).
+                replayAfterWebDialog = true
+                isWaitingForWebDialog = true
             default:
                 break
             }
             log("ack \(error.code.code) op=\(command.op) held")
+            recordAck(ack, command: command, code: error.code, message: error.message)
         }
         syncOutbox()
         rebuildDisplay()

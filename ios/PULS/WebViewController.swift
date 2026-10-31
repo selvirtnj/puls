@@ -23,6 +23,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var nativeRouter: NativeRouter?
     // M3: native Tab-Leiste, Seitenkopf und Übersicht neben der WebView (Shell/RootTabView.swift); nil ohne Brücke.
     private var tabShell: RootTabShell?
+    // M4: native Routinen und Kraftsession (Features/Training); nil ohne Brücke.
+    private var trainingCoordinator: TrainingCoordinator?
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
@@ -52,7 +54,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // 'nativeBody' (M2) nur mit Zustandsbrücke: dann leitet das Web „Körper & Gewicht“ per openNative weiter.
         // 'nativeTabs'/'nativeOverview' (M3): native Leiste und Übersicht; das Web blendet seine Leiste trotzdem
         // erst nach pulsNativeSetChrome(true) aus.
-        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview'"
+        // 'nativeTraining' (M4): Routinen und Kraftsession nativ; nur zusammen mit 'stateBridge'. Das Web leitet seine
+        // Session-Einstiege erst nach pulsNativeSetTraining(true) per openNative{screen:'training'} weiter.
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining'"
         config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -60,10 +64,25 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         if let store = environment.store, let stateBridge {
             let router = NativeRouter(store: store, host: self, webView: webView, appHost: Self.appHost, appPath: Self.appPath)
             nativeRouter = router
-            stateBridge.onOpenNative = { [weak router] screen in router?.open(screen) }
+            let training = TrainingCoordinator(store: store, bridge: stateBridge, host: self)
+            trainingCoordinator = training
+            stateBridge.onOpenNative = { [weak router, weak training] open in
+                if open.screen == TrainingCoordinator.screen {
+                    training?.openFromWeb(workoutId: open.workoutId)
+                } else {
+                    router?.open(open.screen)
+                }
+            }
             let shell = RootTabShell(store: store, bridge: stateBridge)
             shell.openBody = { [weak router] in router?.open(NativeRouter.bodyScreen) }
             shell.onStyleChange = { [weak self] in self?.setNeedsStatusBarAppearanceUpdate() }
+            shell.training = training
+            training.onSelectWorkoutTab = { [weak shell] in shell?.selectWorkoutTab() }
+            training.onShowWebWorkout = { [weak shell] in shell?.showWebWorkout() }
+            training.styleProvider = { [weak shell] in
+                guard let shell, shell.isActive else { return .dark }
+                return shell.style
+            }
             tabShell = shell
         }
         webView.navigationDelegate = self

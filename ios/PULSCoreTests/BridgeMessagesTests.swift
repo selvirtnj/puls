@@ -131,7 +131,8 @@ final class BridgeMessagesTests: XCTestCase {
     }
 
     func testInboundMessagesRoundTripThroughJSON() throws {
-        for name in ["hello", "snapshot", "ack-ok", "ack-error", "open-native", "navigate", "projection"] {
+        for name in ["hello", "snapshot", "ack-ok", "ack-error", "open-native", "navigate", "projection",
+                     "training-projection", "ack-training-start"] {
             let message = try XCTUnwrap(decode(name), name)
             XCTAssertEqual(try InboundMessage.decode(message.json), message, name)
         }
@@ -186,7 +187,7 @@ final class BridgeMessagesTests: XCTestCase {
             switch name {
             case "profile-full":
                 XCTAssertNotNil(value.objectValue)
-            case "projection-input":
+            case "projection-input", "training-input":
                 // Web-Testeingabe (Profil + Uhr + Tag), keine Brückennachricht.
                 XCTAssertNotNil(value["profile"]?.objectValue)
             case "invalid-message-no-type":
@@ -200,7 +201,8 @@ final class BridgeMessagesTests: XCTestCase {
     }
 
     func testAckErrorCodes() {
-        let codes = ["invalid", "wrong_user", "conflict", "readonly", "unknown_op", "persist_failed", "not_ready", "future_code"]
+        let codes = ["invalid", "wrong_user", "conflict", "readonly", "unknown_op", "persist_failed", "not_ready",
+                     "gone", "busy", "future_code"]
         for code in codes {
             XCTAssertEqual(AckErrorCode(code: code).code, code)
         }
