@@ -7,13 +7,25 @@ const preview=typeof firstRunPreview!=='undefined'&&firstRunPreview;
 const seqKey='puls-native-seq',appliedKey='puls-native-applied',ownerPendingKey='puls-native-owner-pending';
 const webVersion=document.currentScript?.src?.match(/[?&]v=([^&#]+)/)?.[1]||'';
 let ready=false,seq=0,timer=null,pending=null,contextReason=null,applying=false,rollingBack=false,saveDepth=0,activating=false,activationProfile=null,adoptingLocal=false,helloOwnerPending;
+let projectionTimer=null,projectionSeq=0,lastProjection=null,lastProjectionSection,projectionRevision=0,forceProjection=false,cachedOverview=null,cachedInputs=null;
+let chromeRequested=false,chromeSessionHold=false,pageHidden=false,lastChrome=null,reportedPage;
+const feature=name=>Array.isArray(window.pulsNativeFeatures)&&window.pulsNativeFeatures.includes(name);
+const currentAccountSection=()=>page==='account'&&typeof accountSection==='string'&&accountSection?accountSection:null;
 const copy=value=>JSON.parse(JSON.stringify(value));
 const userId=()=>typeof cloudSession!=='undefined'?cloudSession?.user?.id??null:null;
 let stateOwner=userId();
 // A failed login persists its Auth session before fetching the profile. Keep that ambiguity across reloads.
 if(!preview&&stateOwner!==null)try{if(localStorage.getItem(ownerPendingKey)===stateOwner)stateOwner=undefined}catch{stateOwner=undefined}
 const profileReady=()=>!activating&&stateOwner===userId();
-function hello(){const ownerPending=!profileReady();if(!ready||ownerPending===helloOwnerPending)return;if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete'],screens:['body'],ownerPending}))helloOwnerPending=ownerPending}
+function hello(force=false){
+  const ownerPending=!profileReady();
+  if(ownerPending){lastProjection=null;chromeRequested=false;chromeSessionHold=false;syncNativeChrome()}
+  if(!ready||!force&&ownerPending===helloOwnerPending)return;
+  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete'],screens:['body'],projections:['overview'],features:['nativeTabs'],ownerPending})){
+    helloOwnerPending=ownerPending;
+    if(!ownerPending)queueProjection('ready',true);
+  }
+}
 function claimProfile(){stateOwner=userId();if(!preview)try{localStorage.removeItem(ownerPendingKey)}catch{}hello()}
 const uploadConfirmed=(user,revision)=>user!==null&&user===userId()&&cloudRevision>revision&&!cloudDirty&&!cloudConflict;
 function restoreState(target,backup){for(const key of Object.keys(target))if(!Object.hasOwn(backup,key))delete target[key];Object.assign(target,copy(backup))}
@@ -23,6 +35,40 @@ function flags(){return {preview:!!preview,
 function cloud(){return {signedIn:userId()!==null,revision:typeof cloudRevision!=='undefined'?cloudRevision:0,
   dirty:typeof cloudDirty!=='undefined'&&!!cloudDirty,conflict:typeof cloudConflict!=='undefined'&&!!cloudConflict}}
 function post(message){try{bridge.postMessage({protocol:1,...message});return true}catch(error){console.warn('PULS state bridge',error);return false}}
+function chromeState(){
+  const visible=selector=>{const node=document.querySelector(selector);return !!node&&!node.hidden&&!!node.getClientRects?.().length};
+  let reason='none';
+  if((typeof runView!=='undefined'&&runView)||visible('#run-root'))reason='run';
+  else if((typeof sessionWorkoutId!=='undefined'&&sessionWorkoutId)||(typeof completionId!=='undefined'&&completionId)||
+    (typeof activityDoneId!=='undefined'&&activityDoneId)||visible('#session-root'))reason='session';
+  else if((typeof modal!=='undefined'&&modal.open)||document.querySelector('dialog[open]'))reason='modal';
+  else if(typeof calendarEditing==='function'&&calendarEditing())reason='editing';
+  return {blocking:reason!=='none',reason,page,accountSection:currentAccountSection()};
+}
+function syncNativeChrome(current=chromeState()){
+  const fullscreen=current.reason==='session'||current.reason==='run';
+  if(!fullscreen)chromeSessionHold=false;
+  document.documentElement.classList.toggle('puls-native-tabs',!pageHidden&&ready&&helloOwnerPending===false&&profileReady()&&
+    feature('nativeTabs')&&(chromeRequested||chromeSessionHold&&fullscreen));
+}
+function reportChrome(){
+  if(!ready)return;
+  const current=chromeState(),stamp=JSON.stringify(current);syncNativeChrome(current);
+  if(stamp!==lastChrome&&post({type:'chrome',...current}))lastChrome=stamp;
+}
+window.pulsNativeSetChrome=function(active){
+  if(typeof active!=='boolean')return false;
+  if(!active){
+    const current=chromeState();
+    chromeSessionHold=(chromeRequested||chromeSessionHold)&&(current.reason==='session'||current.reason==='run');
+    chromeRequested=false;syncNativeChrome(current);return true;
+  }
+  if(!ready||pageHidden||helloOwnerPending!==false||!profileReady()||!feature('nativeTabs'))return false;
+  chromeRequested=true;chromeSessionHold=false;syncNativeChrome();return true;
+};
+function reportNavigation(forceWeb=false){
+  if(ready&&(page!==reportedPage||forceWeb)&&post({type:'navigate',page,...(openingWeb?{web:true}:{})}))reportedPage=page;
+}
 // Loaded after account-refresh and page-slide; later scripts do not replace these entry points.
 // Scope the Web escape to this call, never to a later click or the lifetime of the section.
 let openingWeb=false;
@@ -36,12 +82,64 @@ if(typeof openAccountSection==='function'){
   };
 }
 window.pulsNativeNavigate=function(target){
-  if(!target||typeof target!=='object'||Array.isArray(target)||!['workout','home','food','account'].includes(target.page))return;
+  if(!target||typeof target!=='object'||Array.isArray(target))return false;
+  const current=chromeState();reportChrome();
+  const closingQuickAdd=target.action==='quickAdd'&&current.reason==='modal'&&document.body.classList.contains('quickaddopen');
+  if(current.blocking&&!closingQuickAdd)return false;
+  if(target.action!==undefined){
+    if(!ready||!profileReady()||typeof target.action!=='string'||target.page!==undefined||target.section!==undefined)return false;
+    // These are Web UI entry points, never an eval string or a second mutation API.
+    const actions={
+      quickAdd:()=>{quickAddMenu();return true},
+      addFood:()=>{go('food');foodForm();if(typeof foodTab==='function')foodTab('search');return true},
+      editFood:()=>{if(!state.foods.some(x=>x.id===target.id&&x.date===date))return false;go('food');editDiaryFood(target.id);return true},
+      resumeWorkout:()=>{const active=activeWorkout();if(!active||active.id!==target.id)return false;if(typeof openWorkoutSession==='function')openWorkoutSession(active.id);else{trainTab='current';go('workout')}return true},
+      resumeRun:()=>{if(!state.activeRun||typeof openRunView!=='function')return false;openRunView();return true},
+      startRoutine:()=>{if(!state.routines.some(x=>x.id===target.id))return false;go('workout');startRoutine(target.id);return true},
+      startWorkout:()=>{go('workout');startWorkout();return true},
+      routines:()=>{trainTab='routines';go('workout');return true},
+      addWeight:()=>{weightForm();return true}
+    };
+    if(!Object.hasOwn(actions,target.action))return false;
+    try{return actions[target.action]()}finally{reportChrome()}
+  }
+  if(!['workout','home','food','account'].includes(target.page))return false;
   if(target.section!==undefined&&(target.page!=='account'||typeof accountSections==='undefined'||
-    !accountSections.some(entry=>entry.key===target.section)||typeof openAccountSection!=='function'))return;
+    !accountSections.some(entry=>entry.key===target.section)||typeof openAccountSection!=='function'))return false;
   const previous=openingWeb;openingWeb=target.web===true;
-  try{go(target.page);if(target.section!==undefined)openAccountSection(target.section)}finally{openingWeb=previous}
+  try{go(target.page);if(target.section!==undefined)openAccountSection(target.section);return true}finally{openingWeb=previous;reportChrome()}
 };
+window.pulsNativeSetDate=function(day){reportChrome();if(!ready||!profileReady()||chromeState().blocking||!validDay(day))return false;setDate(day);return true};
+function overviewInputs(){
+  // References/counts and explicit view settings are cheap. In-place profile mutations invalidate via save/queue.
+  return [projectionRevision,state,date,today(),state.language,state.chartPeriod,...['weight','strength','kcal'].map(k=>state.chartLines?.[k]),
+    state.goals,state.profile,state.plan,state.foods,state.foods.length,state.weights,state.weights.length,state.workouts,state.workouts.length,
+    state.routines,state.routines?.length,state.runs,state.runs?.length,state.microGoals,state.waterGoal,state.foodLogCompleted,state.foodLogCompleted?.length,
+    state.activeRun,state.activeRun?.pausedAt,state.activeRun?.pausedSeconds,typeof dsCurrentScheme==='function'?dsCurrentScheme():null,window.pulsConnectivity?.online];
+}
+const sameInputs=(a,b)=>!!b&&a.length===b.length&&a.every((value,index)=>value===b[index]);
+function projection(reason,force=false){
+  clearTimeout(projectionTimer);projectionTimer=null;
+  if(!feature('nativeOverview')||!ready||helloOwnerPending!==false||!profileReady()||applying||rollingBack||saveDepth||typeof window.pulsNativeBuildOverview!=='function')return;
+  try{
+    const inputs=overviewInputs();
+    if(!sameInputs(inputs,cachedInputs)){
+      cachedOverview=window.pulsNativeBuildOverview({seq,revision:projectionRevision});cachedInputs=inputs;
+    }
+    const overview=cachedOverview,status={userId:userId(),flags:flags(),cloud:cloud(),accountSection:currentAccountSection()},stamp=JSON.stringify([status,overview]);
+    if(!force&&!forceProjection&&stamp===lastProjection)return;
+    if(post({type:'projection',name:'overview',projectionSeq:projectionSeq+1,seq,...status,ownerPending:false,reason,overview})){
+      projectionSeq++;lastProjection=stamp;lastProjectionSection=status.accountSection;forceProjection=false;
+    }
+  }catch{ /* A projection failure must not interrupt saving or the existing Web UI. */ }
+}
+function queueProjection(reason='render',force=false){
+  if(!feature('nativeOverview'))return;
+  if(force)forceProjection=true;
+  if(!forceProjection&&sameInputs(overviewInputs(),cachedInputs)&&currentAccountSection()===lastProjectionSection)return;
+  clearTimeout(projectionTimer);
+  if(ready&&!applying&&!rollingBack)projectionTimer=setTimeout(()=>{if(pending)flush();projection(reason)},300);
+}
 function readSeq(){if(preview)return seq;let value=Number(localStorage.getItem(seqKey));return Number.isSafeInteger(value)&&value>=0?value:0}
 try{seq=readSeq()}catch{}
 function persistedProfile(){
@@ -70,9 +168,10 @@ function snapshot(reason){
 function flush(){
   clearTimeout(timer);timer=null;
   if(!ready||!pending||applying||!profileReady())return;
-  try{const message=snapshot(pending);pending=null;post(message)}catch(error){console.warn('PULS state snapshot',error)}
+  try{const message=snapshot(pending);pending=null;post(message);projection(message.reason)}catch(error){console.warn('PULS state snapshot',error)}
 }
 function queue(reason='save'){
+  projectionRevision++;
   // A render nested inside a cloud/import/apply action must not hide its more specific reason.
   if(reason!=='save'||!pending)pending=reason;
   clearTimeout(timer);timer=null;
@@ -228,10 +327,30 @@ window.pulsNativeApply=function(cmd){
     clearTimeout(timer);timer=null;pending=waiting;
     ack(id,code,code==='invalid'?'Ergebnis ist kein gültiges Profil':'Speichern nicht bestätigt');
     return;
-  }finally{applying=false;contextReason=previousReason;if(failed&&pending)queue(pending)}
+  }finally{applying=false;contextReason=previousReason;if(failed&&pending)queue(pending);if(!failed)projection('apply')}
 };
-function loaded(){if(ready)return;ready=true;hello();pending='load';flush()}
-window.addEventListener('pagehide',flush);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
+function loaded(){
+  if(ready)return;
+  // design-system.js replaces home/render AFTER this script; wrap only the final chain on load.
+  const baseRender=render;render=function(...args){const result=baseRender.apply(this,args);reportNavigation();reportChrome();queueProjection();return result};
+  const baseGo=go;go=function(...args){const previous=reportedPage,result=baseGo.apply(this,args);reportNavigation(openingWeb&&previous===page);return result};
+  const baseDate=setDate;setDate=function(...args){const result=baseDate.apply(this,args);projection('date',true);return result};
+  const baseModal=openModal;openModal=function(...args){const result=baseModal.apply(this,args);reportChrome();return result};
+  if(typeof renderWorkoutSession==='function'){const base=renderWorkoutSession;renderWorkoutSession=function(...args){const result=base.apply(this,args);reportChrome();return result}}
+  if(typeof renderRunView==='function'){const base=renderRunView;renderRunView=function(...args){const result=base.apply(this,args);reportChrome();return result}}
+  if(typeof MutationObserver==='function'&&document.body)new MutationObserver(reportChrome).observe(document.body,
+    {subtree:true,childList:true,attributes:true,attributeFilter:['open','hidden','class']});
+  ready=true;hello();reportNavigation();reportChrome();pending='load';flush();
+}
+window.addEventListener('pagehide',()=>{flush();projection('background');pageHidden=true;chromeRequested=false;chromeSessionHold=false;syncNativeChrome()});
+window.addEventListener('pageshow',event=>{
+  const restored=pageHidden||event.persisted===true;pageHidden=false;
+  if(restored){chromeRequested=false;chromeSessionHold=false;syncNativeChrome();hello(true)}
+  reportChrome();queueProjection('foreground');
+});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flush();projection('background')}else queueProjection()});
+for(const event of ['close','toggle'])document.addEventListener(event,reportChrome,true);
+for(const event of ['focusin','focusout'])document.addEventListener(event,()=>setTimeout(reportChrome,0),true);
+window.addEventListener('puls:connectivity',()=>queueProjection('connectivity'));
 if(document.readyState==='complete')loaded();else window.addEventListener('load',loaded,{once:true});
 })();

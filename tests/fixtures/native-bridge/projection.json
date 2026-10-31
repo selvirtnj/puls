@@ -1,0 +1,350 @@
+{
+  "protocol": 1,
+  "type": "projection",
+  "name": "overview",
+  "projectionSeq": 2,
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": true,
+    "conflict": false
+  },
+  "ownerPending": false,
+  "reason": "date",
+  "overview": {
+    "date": "2026-10-25",
+    "today": "2026-10-28",
+    "isToday": false,
+    "language": "de",
+    "locale": "de-DE",
+    "colorScheme": "system",
+    "connectivity": {
+      "online": null
+    },
+    "page": "home",
+    "tabs": [
+      {
+        "id": "workout",
+        "icon": "barbell",
+        "labelKey": "tab.workout"
+      },
+      {
+        "id": "home",
+        "icon": "house",
+        "labelKey": "tab.home"
+      },
+      {
+        "id": "add",
+        "icon": "plus-circle",
+        "labelKey": "tab.add"
+      },
+      {
+        "id": "food",
+        "icon": "fork-knife",
+        "labelKey": "tab.food"
+      },
+      {
+        "id": "account",
+        "icon": "user-circle",
+        "labelKey": "tab.account"
+      }
+    ],
+    "goals": {
+      "values": {
+        "kcal": 2010,
+        "p": 168,
+        "c": 184,
+        "f": 67
+      },
+      "mode": "auto",
+      "macroMode": "auto",
+      "calorieMode": "baseline",
+      "source": "dayGoals"
+    },
+    "eaten": {
+      "kcal": 415,
+      "p": 19,
+      "c": 59,
+      "f": 9
+    },
+    "remaining": {
+      "kcal": 1595,
+      "p": 149,
+      "c": 125,
+      "f": 58
+    },
+    "energy": {
+      "hasGoal": true,
+      "over": false,
+      "percent": 20.65174129353234,
+      "displayValue": 1595,
+      "captionKey": "energy.left"
+    },
+    "macros": {
+      "p": {
+        "over": false,
+        "percent": 11.36904761904762
+      },
+      "c": {
+        "over": false,
+        "percent": 32.01086956521739
+      },
+      "f": {
+        "over": false,
+        "percent": 14.029850746268654
+      }
+    },
+    "micros": {
+      "fiber": {
+        "labelKey": "nutrient.fiber",
+        "unit": "g",
+        "value": 8,
+        "known": 1,
+        "total": 3,
+        "target": 35,
+        "targetSource": "custom"
+      },
+      "vitc": {
+        "labelKey": "nutrient.vitc",
+        "unit": "mg",
+        "value": 0,
+        "known": 1,
+        "total": 3,
+        "target": 110,
+        "targetSource": "custom"
+      },
+      "iron": {
+        "labelKey": "nutrient.iron",
+        "unit": "mg",
+        "value": 3.4,
+        "known": 1,
+        "total": 3,
+        "target": 11,
+        "targetSource": "reference"
+      },
+      "calcium": {
+        "labelKey": "nutrient.calcium",
+        "unit": "mg",
+        "value": 300,
+        "known": 1,
+        "total": 3,
+        "target": 1000,
+        "targetSource": "reference"
+      },
+      "b12": {
+        "labelKey": "nutrient.b12",
+        "unit": "µg",
+        "value": null,
+        "known": 0,
+        "total": 3,
+        "target": 4,
+        "targetSource": "reference"
+      },
+      "folate": {
+        "labelKey": "nutrient.folate",
+        "unit": "µg",
+        "value": null,
+        "known": 0,
+        "total": 3,
+        "target": 300,
+        "targetSource": "reference"
+      },
+      "potassium": {
+        "labelKey": "nutrient.potassium",
+        "unit": "mg",
+        "value": null,
+        "known": 0,
+        "total": 3,
+        "target": 4000,
+        "targetSource": "reference"
+      },
+      "magnesium": {
+        "labelKey": "nutrient.magnesium",
+        "unit": "mg",
+        "value": 104,
+        "known": 1,
+        "total": 3,
+        "target": 350,
+        "targetSource": "reference"
+      }
+    },
+    "water": {
+      "value": 472,
+      "displayValue": 472,
+      "known": 2,
+      "total": 3,
+      "target": 3000,
+      "estimated": 0,
+      "unknownDrinks": 0
+    },
+    "food": {
+      "total": 3,
+      "entries": [
+        {
+          "id": "f0000000-0000-4000-8000-000000000003",
+          "name": "Wasser",
+          "amount": 250,
+          "unit": "ml",
+          "kcal": 0,
+          "meal": "Snacks"
+        },
+        {
+          "id": "f0000000-0000-4000-8000-000000000002",
+          "name": "Milch 1,5 %",
+          "amount": 250,
+          "unit": "ml",
+          "kcal": 118,
+          "meal": "Frühstück"
+        },
+        {
+          "id": "f0000000-0000-4000-8000-000000000001",
+          "name": "Haferflocken",
+          "amount": 80,
+          "unit": "g",
+          "kcal": 298,
+          "meal": "Frühstück"
+        }
+      ],
+      "previewIds": [
+        "f0000000-0000-4000-8000-000000000003",
+        "f0000000-0000-4000-8000-000000000002",
+        "f0000000-0000-4000-8000-000000000001"
+      ],
+      "omitted": 0,
+      "complete": true
+    },
+    "training": {
+      "activeWorkout": {
+        "id": "o0000000-0000-4000-8000-000000000002",
+        "name": "Pull",
+        "date": "2026-10-26",
+        "routineId": null
+      },
+      "activeRun": null,
+      "routines": [
+        {
+          "id": "t0000000-0000-4000-8000-000000000001",
+          "name": "Push",
+          "exerciseCount": 2
+        }
+      ],
+      "routineCount": 1,
+      "lastWorkout": {
+        "id": "o0000000-0000-4000-8000-000000000001",
+        "name": "Push",
+        "date": "2026-10-24",
+        "routineId": "t0000000-0000-4000-8000-000000000001"
+      },
+      "nextRoutine": {
+        "id": "t0000000-0000-4000-8000-000000000001",
+        "name": "Push",
+        "exerciseCount": 2
+      },
+      "week": {
+        "start": "2026-10-26",
+        "end": "2026-11-01",
+        "sessions": 0,
+        "workouts": 0,
+        "activities": 0,
+        "activeMinutes": 0,
+        "minutesGoal": 240,
+        "runKm": 0
+      }
+    },
+    "weight": {
+      "current": {
+        "id": "w0000000-0000-4000-8000-000000000003",
+        "date": "2026-10-26",
+        "kg": 83.5
+      },
+      "trend": {
+        "date": "2026-10-26",
+        "kg": 83.9
+      },
+      "weeklyMean": {
+        "start": "2026-10-26",
+        "kg": 83.5,
+        "count": 1
+      },
+      "weeklyChange": {
+        "kg": -0.6,
+        "from": "2026-10-19",
+        "to": "2026-10-26"
+      }
+    },
+    "progress": {
+      "period": "90",
+      "lines": {
+        "weight": true,
+        "strength": false,
+        "kcal": true
+      },
+      "rows": [
+        {
+          "date": "2026-10-20",
+          "weight": null,
+          "strength": null,
+          "kcal": null
+        },
+        {
+          "date": "2026-10-23",
+          "weight": 84.1,
+          "strength": null,
+          "kcal": null
+        },
+        {
+          "date": "2026-10-24",
+          "weight": null,
+          "strength": 100,
+          "kcal": null
+        },
+        {
+          "date": "2026-10-25",
+          "weight": null,
+          "strength": null,
+          "kcal": 415
+        },
+        {
+          "date": "2026-10-26",
+          "weight": 83.5,
+          "strength": 100,
+          "kcal": 412
+        }
+      ],
+      "total": 5,
+      "omitted": 0,
+      "navigation": {
+        "page": "home",
+        "web": true
+      }
+    },
+    "actions": {
+      "addFood": {
+        "action": "addFood"
+      },
+      "diary": {
+        "page": "food"
+      },
+      "routines": {
+        "action": "routines"
+      },
+      "startWorkout": {
+        "action": "startWorkout"
+      },
+      "addWeight": {
+        "action": "addWeight"
+      },
+      "quickAdd": {
+        "action": "quickAdd"
+      }
+    }
+  },
+  "accountSection": null
+}

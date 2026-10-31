@@ -1,0 +1,21 @@
+/* Native owns the tab bar, page title and diary date controls only in this negotiated mode. */
+html.puls-native-tabs body > aside,
+html.puls-native-tabs body #nav,
+html.puls-native-tabs body main > header,
+html.puls-native-tabs body main .titleline,
+html.puls-native-tabs body main .datebar {
+  display: none !important;
+}
+html.puls-native-tabs body main {
+  margin-left: 0 !important;
+  padding-top: 12px !important;
+  padding-bottom: 16px !important;
+}
+html.puls-native-tabs body.hasworkoutdock main { padding-bottom: 88px !important; }
+html.puls-native-tabs body #ds-connectivity { bottom: 8px !important; }
+/* The WebView ends above the native bar; it owns no bottom safe area or Web tab-bar reserve. */
+html.puls-native-tabs body #workout-dock { bottom: 8px !important; }
+html.puls-native-tabs body #toast { top: auto !important; bottom: 12px !important; }
+html.puls-native-tabs body #diary-undo { bottom: 12px !important; }
+html.puls-native-tabs body.hasworkoutdock #toast,
+html.puls-native-tabs body.hasworkoutdock #diary-undo { bottom: 80px !important; }
