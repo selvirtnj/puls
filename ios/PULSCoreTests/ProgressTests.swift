@@ -237,6 +237,24 @@ final class ProgressTests: XCTestCase {
         XCTAssertEqual(ProjectionInterest([]).json, ["projections": []])
     }
 
+    /// Werte mit `node -e` gegen V8 abgeglichen (`Math.round(x*10)/10`).
+    func testJSRoundingParity() {
+        XCTAssertEqual(JSMath.round1(25.15), 25.2, "25.15*10 ist als Double genau 251.5")
+        XCTAssertEqual(JSMath.round1(0.05), 0.1)
+        XCTAssertEqual(JSMath.round1(2.675), 2.7)
+        XCTAssertEqual(JSMath.round1(1.005), 1)
+        XCTAssertEqual(JSMath.round1(81.25), 81.3)
+        XCTAssertEqual(JSMath.round1(81.24), 81.2)
+        // Negative Hälften Richtung +∞ wie Math.round (nicht vom Nullpunkt weg).
+        XCTAssertEqual(JSMath.round1(-2.25), -2.2)
+        XCTAssertEqual(JSMath.round1(-0.25), -0.2)
+        XCTAssertEqual(JSMath.round(-2.5), -2)
+        XCTAssertEqual(JSMath.round(2.5), 3)
+        XCTAssertEqual(JSMath.round(0.49999999999999994), 0, "nicht floor(x+0.5)")
+        XCTAssertEqual(WeightMath.round1(-0.25), -0.2, "Gewichtsdifferenz wie Web round()")
+        XCTAssertEqual(ProgressOps.roundedKm(25.15), 25.2)
+    }
+
     func testInterestSyncAlwaysConvergesOnLatestWish() {
         let a = ProjectionInterest(["overview"]), b = ProjectionInterest(["overview", "progress"])
         var sync = InterestSync()
@@ -407,7 +425,7 @@ final class ProgressTests: XCTestCase {
         XCTAssertEqual(goal.args, try ApplyCommand(json: Fixtures.value("apply-progress-goal")).args)
         // Andere Lauf-Einstellungen bleiben in der Anzeige erhalten.
         XCTAssertEqual(goalStore.document["runSettings"]?["xFutureSetting"], ["keep": true])
-        XCTAssertEqual(goalStore.document["runSettings"]?["weeklyGoalKm"], 25.1)
+        XCTAssertEqual(goalStore.document["runSettings"]?["weeklyGoalKm"], 25.2)
     }
 
     func testCommandBoundaries() {
@@ -444,8 +462,8 @@ final class ProgressTests: XCTestCase {
         let goalCheck = try XCTUnwrap(BridgeOps.defaultEffectChecks[ProgressOps.goalSet])
         XCTAssertFalse(goalCheck(goalArgs, state, nil))
         changed = state
-        changed["runSettings"] = ["weeklyGoalKm": 25.1, "weekMinutesGoal": 180, "xFutureSetting": ["keep": true]]
-        XCTAssertTrue(goalCheck(goalArgs, changed, nil), "auf 0,1 km gerundet wie Math.round(km*10)/10")
+        changed["runSettings"] = ["weeklyGoalKm": 25.2, "weekMinutesGoal": 180, "xFutureSetting": ["keep": true]]
+        XCTAssertTrue(goalCheck(goalArgs, changed, nil), "wie Math.round(25.15*10)/10 = 25.2 (25.15*10 ist als Double 251.5)")
         // Fehlende Minuten gelten wie im Web als 150.
         XCTAssertEqual(ProgressOps.effectiveGoals(["runSettings": ["weeklyGoalKm": 0]]), ["weeklyGoalKm": .null, "weekMinutesGoal": 150])
     }
@@ -458,7 +476,7 @@ final class ProgressTests: XCTestCase {
                                               asUser: Self.user)
         store.receive(.ack(AckMessage(id: apply.id, ok: true, seq: 2)))
         var after = try profile()
-        after["runSettings"] = ["weeklyGoalKm": 25.1, "weekMinutesGoal": 180, "xFutureSetting": ["keep": true]]
+        after["runSettings"] = ["weeklyGoalKm": 25.2, "weekMinutesGoal": 180, "xFutureSetting": ["keep": true]]
         store.receive(.snapshot(SnapshotMessage(seq: 2, userId: Self.user, state: after, reason: "apply")))
         XCTAssertEqual(store.outboxEntries.first?.lastSeenEffect, true)
 

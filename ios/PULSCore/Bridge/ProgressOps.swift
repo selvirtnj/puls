@@ -47,9 +47,9 @@ public enum ProgressOps {
         value ?? .null
     }
 
-    /// Wie `Math.round(km*10)/10` im Web (positive Werte).
+    /// Wie `Math.round(km*10)/10` in `saveRunGoal` (gemeinsame `JSMath.round1`).
     public static func roundedKm(_ km: Double) -> Double {
-        (km * 10).rounded(.toNearestOrAwayFromZero) / 10
+        JSMath.round1(km)
     }
 
     // MARK: Zielwerte

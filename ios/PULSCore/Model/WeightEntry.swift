@@ -282,6 +282,6 @@ public enum WeightMath {
 
     /// `round()` der Web-App: eine Nachkommastelle.
     public static func round1(_ value: Double) -> Double {
-        (value * 10).rounded() / 10
+        JSMath.round1(value)
     }
 }
