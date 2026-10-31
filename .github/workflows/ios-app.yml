@@ -117,11 +117,12 @@ jobs:
 
       - name: PULSCore-Tests
         working-directory: ios
-        run: >
-          xcodebuild test -project PULS.xcodeproj -scheme PULSCore
-          -destination "id=${SIMULATOR_UDID}" -derivedDataPath build-tests
-          -resultBundlePath TestResults.xcresult
-          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+        run: |
+          set -o pipefail
+          xcodebuild test -project PULS.xcodeproj -scheme PULSCore \
+            -destination "id=${SIMULATOR_UDID}" -derivedDataPath build-tests \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" 2>&1 | tee test.log
 
       - name: Testergebnis sichern
         if: failure()
@@ -133,12 +134,27 @@ jobs:
 
       - name: Bauen
         working-directory: ios
-        run: >
-          xcodebuild -project PULS.xcodeproj -scheme PULS -configuration Release
-          -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build
-          CURRENT_PROJECT_VERSION=${{ github.run_number }}
-          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
-          build
+        run: |
+          set -o pipefail
+          xcodebuild -project PULS.xcodeproj -scheme PULS -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee build.log
+
+      # Fehler öffentlich lesbar auf der Laufseite (Job-Zusammenfassung), ohne Anmeldung an die Logs.
+      - name: Fehlerzusammenfassung
+        if: failure()
+        working-directory: ios
+        run: |
+          {
+            echo "## Fehler (Compiler und Tests)"
+            echo '```'
+            cat test.log build.log 2>/dev/null \
+              | grep -E "error:|: error|failed \(|XCTAssert|Test Case .* failed|\*\* (TEST|BUILD) FAILED" \
+              | sed -E "s#^.*/ios/##" | sort -u | head -n 80
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: IPA packen
         working-directory: ios
