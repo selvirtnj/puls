@@ -187,7 +187,7 @@ final class BridgeMessagesTests: XCTestCase {
             switch name {
             case "profile-full":
                 XCTAssertNotNil(value.objectValue)
-            case "projection-input", "training-input", "progress-input":
+            case "projection-input", "training-input", "progress-input", "nutrition-input":
                 // Web-Testeingabe (Profil + Uhr + Tag), keine Brückennachricht.
                 XCTAssertNotNil(value["profile"]?.objectValue)
             case "invalid-message-no-type":

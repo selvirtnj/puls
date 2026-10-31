@@ -44,6 +44,10 @@ public enum InboundMessage: Equatable, Sendable {
     case activityProjection(ActivityProjectionMessage)
     /// M6: Antwort auf `pulsNativeActivityQuery` (keine Mutation, kein Ack).
     case activityResult(ActivityResultMessage)
+    /// M7: `projection{name:"nutrition"}` (Tagebuch, Ziele, Mikros, Wasser, Favoriten/Zuletzt/Rezepte).
+    case nutritionProjection(NutritionProjectionMessage)
+    /// M7: Antwort auf `pulsNativeNutritionQuery` (keine Mutation, kein Ack).
+    case nutritionResult(NutritionResultMessage)
 
     /// `nil` = ignorieren (kein/unbekannter `type`, anderes `protocol`). Wirft bei falscher Form einer bekannten Nachricht.
     public static func decode(_ value: JSONValue) throws -> InboundMessage? {
@@ -65,12 +69,14 @@ public enum InboundMessage: Equatable, Sendable {
             case TrainingProjectionMessage.trainingName: return .trainingProjection(try TrainingProjectionMessage(json: value))
             case ProgressProjectionMessage.progressName: return .progressProjection(try ProgressProjectionMessage(json: value))
             case ActivityProjectionMessage.activityName: return .activityProjection(try ActivityProjectionMessage(json: value))
+            case NutritionProjectionMessage.nutritionName: return .nutritionProjection(try NutritionProjectionMessage(json: value))
             default: return nil
             }
         case "chrome": return .chrome(try ChromeMessage(json: value))
         case "exerciseSearch": return .exerciseSearch(try ExerciseSearchMessage(json: value))
         case "progressResult": return .progressResult(try ProgressResultMessage(json: value))
         case "activityResult": return .activityResult(try ActivityResultMessage(json: value))
+        case "nutritionResult": return .nutritionResult(try NutritionResultMessage(json: value))
         default: return nil
         }
     }
@@ -102,6 +108,8 @@ public enum InboundMessage: Equatable, Sendable {
         case .progressResult(let message): return message.json
         case .activityProjection(let message): return message.json
         case .activityResult(let message): return message.json
+        case .nutritionProjection(let message): return message.json
+        case .nutritionResult(let message): return message.json
         }
     }
 }
@@ -161,15 +169,18 @@ public struct HelloMessage: Equatable, Sendable {
     public var projections: [String]
     /// M3: vom Web unterstützte native Navigation (`nativeTabs`). Fehlt bei älteren Web-Ständen (= leer).
     public var features: [String]
+    /// M7: `{stage, queries}` der Ernährungsschnittstelle; `nil` ohne `nativeNutrition` bzw. bei älterem Web.
+    public var nutrition: NutritionCapabilities?
 
     public init(webVersion: String? = nil, ops: [String] = [], screens: [String] = [], ownerPending: Bool = false,
-                projections: [String] = [], features: [String] = []) {
+                projections: [String] = [], features: [String] = [], nutrition: NutritionCapabilities? = nil) {
         self.webVersion = webVersion
         self.ops = ops
         self.screens = screens
         self.ownerPending = ownerPending
         self.projections = projections
         self.features = features
+        self.nutrition = nutrition
     }
 
     public init(json: JSONValue) throws {
@@ -184,6 +195,8 @@ public struct HelloMessage: Equatable, Sendable {
         ownerPending = try fields.requiredBool("ownerPending")
         projections = try fields.stringArray("projections")
         features = try fields.stringArray("features")
+        // Nachsichtig: eine unerwartete Form schaltet nur den Ernährungsbereich nicht frei.
+        nutrition = NutritionCapabilities(json: fields["nutrition"])
     }
 
     public var json: JSONValue {
@@ -197,6 +210,7 @@ public struct HelloMessage: Equatable, Sendable {
         ]
         if !projections.isEmpty { object["projections"] = .array(projections.map(JSONValue.string)) }
         if !features.isEmpty { object["features"] = .array(features.map(JSONValue.string)) }
+        if let nutrition { object["nutrition"] = nutrition.json }
         return .object(object)
     }
 }

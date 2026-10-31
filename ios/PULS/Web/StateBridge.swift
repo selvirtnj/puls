@@ -143,6 +143,12 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
         evaluate(WebCall.activityNavigate(target)) { result in completion?((result as? Bool) == true) }
     }
 
+    /// M7 Ernährungs-Query; die Antwort kommt als `nutritionResult` in den Store. `completion(false)`: nicht gesendet
+    /// bzw. nicht angenommen (Web nicht bereit, laufende Transaktion, ausgeblendet, ungültig, alter Web-Stand).
+    func nutritionQuery(_ request: NutritionQueryRequest, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.nutritionQuery(request)) { result in completion?((result as? Bool) == true) }
+    }
+
     /// Meldet die Projektionen der sichtbaren nativen Bildschirme (`pulsNativeSetInterest`). Je Dokument/Hello nur bei
     /// Änderung; nach jedem Hello wird neu gemeldet, damit ein neues Web-Dokument den Stand kennt.
     /// Abgleich und Wiederholung regelt `InterestSync` (PULSCore, getestet).

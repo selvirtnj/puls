@@ -21,6 +21,8 @@ final class AppEnvironment {
         environment.reducers.merge(BridgeOps.progressReducers) { _, new in new }
         // M6: nur eindeutige Aktivitäts-Wirkungen (Verwerfen, Bearbeiten, Löschen, Einstellungen, Route löschen).
         environment.reducers.merge(BridgeOps.activityReducers) { _, new in new }
+        // M7: nur eindeutige Ernährungs-Wirkungen (Löschen/Wiederherstellen, Wasser, Tagesabschluss, Ziele, Favorit).
+        environment.reducers.merge(BridgeOps.nutritionReducers) { _, new in new }
         store = ProfileStore(environment: environment)
     }
 }

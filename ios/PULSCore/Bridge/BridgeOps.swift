@@ -22,6 +22,7 @@ public enum BridgeOps {
         map.merge(trainingPreparers) { first, _ in first }
         map.merge(progressPreparers) { first, _ in first }
         map.merge(activityPreparers) { first, _ in first }
+        map.merge(nutritionPreparers) { first, _ in first }
         return map
     }()
 
@@ -33,6 +34,7 @@ public enum BridgeOps {
         map.merge(trainingEffectChecks) { first, _ in first }
         map.merge(progressEffectChecks) { first, _ in first }
         map.merge(activityEffectChecks) { first, _ in first }
+        map.merge(nutritionEffectChecks) { first, _ in first }
         return map
     }()
 

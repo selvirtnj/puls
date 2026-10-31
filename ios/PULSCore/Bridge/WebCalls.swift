@@ -96,7 +96,8 @@ public enum NavigationTarget: Equatable, Hashable, Sendable {
 /// Ohne Meldung berechnet das Web `overview`/`training` wie bisher, `progress` dagegen nie.
 public struct ProjectionInterest: Equatable, Hashable, Sendable {
     public static let allowed: Set<String> = [ProjectionMessage.overviewName, TrainingProjectionMessage.trainingName,
-                                              ProgressProjectionMessage.progressName, ActivityProjectionMessage.activityName]
+                                              ProgressProjectionMessage.progressName, ActivityProjectionMessage.activityName,
+                                              NutritionProjectionMessage.nutritionName]
 
     public let projections: [String]
 
@@ -218,6 +219,12 @@ public enum WebCall {
     /// M6 Web-Ausweg (§11.5, `web:true` nur für diesen Aufruf; ohne würde der Einstieg wieder nativ umgeleitet).
     public static func activityNavigate(_ target: ActivityNavigation) -> String {
         "(typeof window.pulsNativeNavigate==='function')?window.pulsNativeNavigate(\(target.json.serializedString()))!==false:false"
+    }
+
+    /// M7 `window.pulsNativeNutritionQuery(request)`; Antwort kommt als `nutritionResult` mit derselben `requestId`.
+    /// `true` bei Versand bzw. (Suche) bei Annahme; eine abgelöste Suche bleibt ohne Antwort.
+    public static func nutritionQuery(_ request: NutritionQueryRequest) -> String {
+        "(typeof window.pulsNativeNutritionQuery==='function')?window.pulsNativeNutritionQuery(\(request.json.serializedString()))===true:false"
     }
 
     /// `window.pulsNativeSetInterest({projections})`: nur die Projektionen sichtbarer nativer Bildschirme berechnen.

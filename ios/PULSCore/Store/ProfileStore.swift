@@ -30,6 +30,8 @@ public struct StoreEnvironment: Sendable {
         "progress": ProgressOps.all,
         // M6: die native Aktivitätsoberfläche braucht alle Aktivitäts-Ops (§11.1/§11.4).
         "activity": ActivityOps.all,
+        // M7/P1: die native Ernährung braucht alle neun P1-Ops (§12.1/§12.4).
+        "nutrition": NutritionOps.all,
     ]
 
     public init(
@@ -213,6 +215,12 @@ public final class ProfileStore {
     public private(set) var requestedActivityStartedAt: Double?
     /// M6: vorgewählte Route aus dem letzten `openNative{screen:'activity', routeId}`.
     public private(set) var requestedActivityRouteId: String?
+    /// M7: zuletzt angenommene `nutrition`-Projektion dieses Dokuments (nicht persistiert).
+    public private(set) var nutritionProjection: NutritionProjectionMessage?
+    /// M7: angenommene `nutritionResult`-Antworten (nach `requestId`), höchstens 16, nie persistiert.
+    public private(set) var nutritionResults: [String: NutritionResultMessage] = [:]
+    /// M7: steigt bei neuem Dokument, `hello.ownerPending:true` und Nutzerwechsel (wie `progressGeneration`).
+    public private(set) var nutritionGeneration = 0
     public let authority: DataAuthority = .web
 
     /// Übergibt einen Befehl an das Web (`StateBridge`). Ohne Sender bleibt er in der Outbox.
@@ -246,6 +254,15 @@ public final class ProfileStore {
     @ObservationIgnored private(set) var sessionEnqueuedIds: Set<String> = []
     @ObservationIgnored private var pendingActivityQueries: [String: PendingActivityQuery] = [:]
     @ObservationIgnored private var activityResultOrder: [String] = []
+    @ObservationIgnored private var lastNutritionProjectionSeq: Int?
+    @ObservationIgnored private var pendingNutritionQueries: [String: PendingNutritionQuery] = [:]
+    @ObservationIgnored private var nutritionResultOrder: [String] = []
+
+    private struct PendingNutritionQuery {
+        var request: NutritionQueryRequest
+        var userId: String?
+        var generation: Int
+    }
 
     private struct PendingActivityQuery {
         var request: ActivityQueryRequest
@@ -364,6 +381,10 @@ public final class ProfileStore {
             return handleActivityProjection(projection)
         case .activityResult(let result):
             return handleActivityResult(result)
+        case .nutritionProjection(let projection):
+            return handleNutritionProjection(projection)
+        case .nutritionResult(let result):
+            return handleNutritionResult(result)
         }
     }
 
@@ -416,6 +437,7 @@ public final class ProfileStore {
         exerciseSearch = nil
         resetProgress()
         resetActivity()
+        resetNutrition()
         // Ein neues Dokument hat keinen offenen Dialog; Hello und Lade-Snapshot spielen die Outbox ohnehin ein.
         replayAfterWebDialog = false
         isWaitingForWebDialog = false
@@ -669,6 +691,112 @@ public final class ProfileStore {
         activityGeneration += 1
     }
 
+    // MARK: M7 Ernährung
+
+    public static let nutritionScreen = "nutrition"
+    /// Eintrag in `window.pulsNativeFeatures` für M7 (nur zusammen mit `stateBridge`).
+    public static let nativeNutritionFeature = "nativeNutrition"
+
+    /// Ernährungsfähigkeiten des **aktuellen** Dokuments (`hello.nutrition`), sonst `nil`.
+    public var nutritionCapabilities: NutritionCapabilities? {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return nil }
+        return hello.nutrition
+    }
+
+    /// Das aktuelle Dokument bietet die native Ernährung an: Screen und Projektion `nutrition`, `hello.nutrition`,
+    /// alle P1-Ops und geklärte Zuordnung. In der Vorschau nur lesbar (Schreiben sperrt `perform`).
+    public var webOffersNutrition: Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending, hello.nutrition != nil else { return false }
+        return hello.screens.contains(Self.nutritionScreen)
+            && hello.projections.contains(NutritionProjectionMessage.nutritionName)
+            && readableScreens.contains(Self.nutritionScreen)
+    }
+
+    /// Anzeigefähige Ernährungs-Projektion desselben Nutzers wie der Spiegel (sonst `nil` → Lade-/Web-Ausweg).
+    public var currentNutrition: NutritionProjectionMessage? {
+        guard webOffersNutrition, let projection = nutritionProjection, !projection.ownerPending else { return nil }
+        guard projection.flags.preview || projection.userId == userId else { return nil }
+        return projection
+    }
+
+    /// Vor dem Senden einer Ernährungs-Query aufrufen; nur registrierte Anfragen dieses Dokuments/Nutzers werden angenommen.
+    public func registerNutritionQuery(_ request: NutritionQueryRequest) {
+        pendingNutritionQueries[request.requestId] = PendingNutritionQuery(
+            request: request, userId: userId, generation: nutritionGeneration
+        )
+    }
+
+    /// Anfrage aufgeben (neue Eingabe, Zeitlimit, Ansicht geschlossen). Eine spätere Antwort wird verworfen.
+    public func forgetNutritionQuery(_ requestId: String) {
+        pendingNutritionQueries[requestId] = nil
+        if nutritionResults[requestId] != nil {
+            nutritionResults[requestId] = nil
+            nutritionResultOrder.removeAll { $0 == requestId }
+        }
+    }
+
+    public func isNutritionQueryPending(_ requestId: String) -> Bool {
+        pendingNutritionQueries[requestId] != nil
+    }
+
+    public func nutritionResult(_ requestId: String?) -> NutritionResultMessage? {
+        guard let requestId else { return nil }
+        return nutritionResults[requestId]
+    }
+
+    private func handleNutritionProjection(_ message: NutritionProjectionMessage) -> Bool {
+        guard !message.ownerPending else {
+            log("nutrition projection ownerPending ignored")
+            return false
+        }
+        let freshDocument = message.projectionSeq <= 1 && message.reason == "load"
+        if let last = lastNutritionProjectionSeq, message.projectionSeq <= last, !freshDocument {
+            log("nutrition projection \(message.projectionSeq) stale (have \(last))")
+            return false
+        }
+        lastNutritionProjectionSeq = message.projectionSeq
+        nutritionProjection = message
+        return true
+    }
+
+    private func handleNutritionResult(_ message: NutritionResultMessage) -> Bool {
+        guard !message.ownerPending, let pending = pendingNutritionQueries[message.requestId] else {
+            log("nutrition result dropped")
+            return false
+        }
+        guard pending.generation == nutritionGeneration, pending.request.kind.rawValue == message.kind,
+              message.flags.preview || (message.userId == pending.userId && message.userId == userId) else {
+            pendingNutritionQueries[message.requestId] = nil
+            log("nutrition result for other user/document dropped")
+            return false
+        }
+        // P2: eine Suche kann für dieselbe `requestId` zuerst `phase:'local'` und später `complete` melden; bis dahin
+        // bleibt sie registriert und jede Antwort ersetzt den ganzen bisherigen Ergebnisstand.
+        if case .search(let search)? = message.result, !search.isFinal {
+            pendingNutritionQueries[message.requestId] = pending
+        } else {
+            pendingNutritionQueries[message.requestId] = nil
+        }
+        nutritionResults[message.requestId] = message
+        nutritionResultOrder.removeAll { $0 == message.requestId }
+        nutritionResultOrder.append(message.requestId)
+        while nutritionResultOrder.count > 16 {
+            nutritionResults[nutritionResultOrder.removeFirst()] = nil
+        }
+        return true
+    }
+
+    private func resetNutrition(keepProjection: Bool = false) {
+        if !keepProjection {
+            nutritionProjection = nil
+            lastNutritionProjectionSeq = nil
+        }
+        pendingNutritionQueries.removeAll()
+        nutritionResults.removeAll()
+        nutritionResultOrder.removeAll()
+        nutritionGeneration += 1
+    }
+
     private func recordAck(_ ack: AckMessage, command: ApplyCommand, code: AckErrorCode?, message: String?) {
         ackSerial += 1
         recentAcks.append(AckEvent(serial: ackSerial, commandId: command.id, op: command.op, args: command.args,
@@ -713,6 +841,7 @@ public final class ProfileStore {
             // §10.3: angezeigte Ergebnisse verdecken, ausstehende Anfragen verwerfen.
             resetProgress()
             resetActivity()
+            resetNutrition()
         }
         acceptAnySnapshotSeq = true
         // Wiederholte Status-Hellos verwerfen weder Spiegel noch Outbox noch gespeicherte Beobachtungen.
@@ -760,6 +889,7 @@ public final class ProfileStore {
             if hasDocument {
                 resetProgress(keepProjection: true)
                 resetActivity(keepProjection: true)
+                resetNutrition(keepProjection: true)
             }
         }
         acceptAnySnapshotSeq = false

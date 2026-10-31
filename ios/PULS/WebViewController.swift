@@ -29,6 +29,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var progressCoordinator: ProgressCoordinator?
     // M6: native Aktivitäten (Features/Activity); nil ohne Brücke. GPS und Live-Aktivität bleiben unten bei pulsNative.
     private var activityCoordinator: ActivityCoordinator?
+    // M7: native Ernährung (Features/Nutrition); nil ohne Brücke.
+    private var nutritionCoordinator: NutritionCoordinator?
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
@@ -65,7 +67,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // 'nativeActivity' (M6): Aktivitäten nativ (Start, Countdown, Live, Abschluss, Details, Routen). GPS bleibt
         // RunTracker, Live-Aktivität bleibt runActivity aus running.js; das Web leitet openRunView erst nach
         // pulsNativeSetActivity(true) per openNative{screen:'activity'} weiter.
-        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress','nativeActivity'"
+        // 'nativeNutrition' (M7): Essen-Tab nativ (Tagebuch, Suche, Ziele, ab P2 Barcode/Etikett/eigene Werte); das Web
+        // berechnet die Projektion 'nutrition' nur nach pulsNativeSetInterest. Kamera/Vision liefern nur Code bzw. Text.
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress','nativeActivity','nativeNutrition'"
         config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -106,6 +110,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                 guard let shell, shell.isActive else { return .dark }
                 return shell.style
             }
+            let nutrition = NutritionCoordinator(store: store, bridge: stateBridge)
+            nutritionCoordinator = nutrition
+            shell.nutrition = nutrition
+            nutrition.onOpenWeb = { [weak shell] target in shell?.openNutritionWeb(target) }
+            nutrition.onSelectFoodTab = { [weak shell] in shell?.selectFoodTab() }
             tabShell = shell
         }
         webView.navigationDelegate = self

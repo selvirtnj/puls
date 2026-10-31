@@ -101,6 +101,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     /// M4: nativer Trainings-Tab (Routinen, laufende Session als Banner); nur mit `TrainingCoordinator`.
     /// M5: zusätzlich Kalender und Fortschritt als Bereiche desselben Tabs (ProgressCoordinator).
     private var trainingHost: UIHostingController<WorkoutTabHost>?
+    /// M7: nativer Essen-Tab (Tagebuch, Suche, Ziele); nur mit `NutritionCoordinator`.
+    private var nutritionHost: UIHostingController<NutritionHost>?
     private var activeConstraints: [NSLayoutConstraint] = []
     private var inactiveConstraints: [NSLayoutConstraint] = []
 
@@ -137,6 +139,14 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     var progress: ProgressCoordinator?
     /// M6: native Aktivitäten (Karte im Trainings-Tab, Vollbild-Ablauf). Vor `install` setzen.
     var activity: ActivityCoordinator?
+    /// M7: native Ernährung im Essen-Tab. Vor `install` setzen.
+    var nutrition: NutritionCoordinator?
+    /// „Essen“ ist ausgewählt, zeigt aber die Web-Seite (`navigate{web:true}`, Web-Tagebuch), bis der Tab neu gewählt wird.
+    private var foodShowsWeb = false
+    /// Ein Web-Dialog aus dem nativen Essen-Tab (Essensdialog, Bearbeiten) läuft: native Ansicht bis zu dessen Ende verdecken.
+    private var foodFlowHidden = false
+    private var foodFlowSawBlocking = false
+    private var foodFlowToken = 0
     /// M5: Ein Web-Ausweg aus Kalender/Fortschritt (Review, Aktivität, Übungsverlauf …) läuft: native Trainingsansicht
     /// verdecken, bis der Web-Ablauf endet (`chrome` blocking true → false) bzw. nach 3 s ohne Web-Ablauf.
     private var workoutFlowHidden = false
@@ -178,6 +188,16 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             trainingView = nil
         }
 
+        let nutritionView: UIView?
+        if let nutrition {
+            let hosting = UIHostingController(rootView: NutritionHost(coordinator: nutrition))
+            hosting.view.backgroundColor = .systemGroupedBackground
+            nutritionHost = hosting
+            nutritionView = hosting.view
+        } else {
+            nutritionView = nil
+        }
+
         statusFill.backgroundColor = .systemGroupedBackground
         header.view.backgroundColor = .systemGroupedBackground
         overview.view.backgroundColor = .systemGroupedBackground
@@ -192,8 +212,9 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         host.addChild(header)
         host.addChild(overview)
         if let trainingHost { host.addChild(trainingHost) }
+        if let nutritionHost { host.addChild(nutritionHost) }
         webView.translatesAutoresizingMaskIntoConstraints = false
-        for view in ([statusFill, header.view, overview.view, trainingView, tabBar] as [UIView?]).compactMap({ $0 }) {
+        for view in ([statusFill, header.view, overview.view, trainingView, nutritionView, tabBar] as [UIView?]).compactMap({ $0 }) {
             view.translatesAutoresizingMaskIntoConstraints = false
             view.isHidden = true
             root.addSubview(view)
@@ -201,6 +222,15 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         header.didMove(toParent: host)
         overview.didMove(toParent: host)
         trainingHost?.didMove(toParent: host)
+        nutritionHost?.didMove(toParent: host)
+        if let nutritionView {
+            NSLayoutConstraint.activate([
+                nutritionView.topAnchor.constraint(equalTo: header.view.bottomAnchor),
+                nutritionView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                nutritionView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                nutritionView.bottomAnchor.constraint(equalTo: tabBar.topAnchor),
+            ])
+        }
         if let trainingView {
             NSLayoutConstraint.activate([
                 trainingView.topAnchor.constraint(equalTo: header.view.bottomAnchor),
@@ -278,6 +308,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         let chrome = store.webChrome
         state.isBlocked = chrome?.blocking == true
         updateWorkoutFlow()
+        updateFoodFlow()
         if restoreOverviewAfterFlow {
             if state.isBlocked {
                 flowWasBlocking = true
@@ -362,6 +393,58 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         // M6: nach dem Speichern einer Aktivität zeigt das Web seinen Endscreen; bis dahin nicht überdecken.
         return (training.isAvailable || progress?.offersAny == true) && !training.awaitingWebCompletion
             && activity?.awaitingWebCompletion != true
+    }
+
+    /// M7: nativer Essen-Tab; nie über einem offenen Web-Ablauf.
+    private var showsNativeNutrition: Bool {
+        guard let nutrition, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .food,
+              !foodShowsWeb, !foodFlowHidden else { return false }
+        return nutrition.isOffered
+    }
+
+    /// M7 Web-Ausweg aus dem Essen-Tab. Seiten (Web-Tagebuch, Planziele) zeigen die Web-Seite bis zur bewussten Tabwahl;
+    /// Aktionen (Essensdialog, Eintrag bearbeiten) verdecken die native Ansicht nur für die Dauer des Web-Dialogs.
+    func openNutritionWeb(_ target: NavigationTarget) {
+        guard !state.isBlocked else { return }
+        if case .page = target {
+            perform(target)
+            return
+        }
+        foodFlowHidden = true
+        foodFlowSawBlocking = false
+        foodFlowToken += 1
+        let token = foodFlowToken
+        updateVisibility()
+        bridge.navigate(target) { [weak self] accepted in
+            guard let self, !accepted else { return }
+            self.foodFlowHidden = false
+            self.updateVisibility()
+            if let nutrition = self.nutrition {
+                nutrition.notice = TrainingNotice(text: nutrition.text("Das ist in PULS gerade nicht möglich.",
+                                                                       "This is not possible in PULS right now."))
+            }
+        }
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard let self, self.foodFlowToken == token, !self.foodFlowSawBlocking, self.foodFlowHidden else { return }
+            self.foodFlowHidden = false
+            self.updateVisibility()
+        }
+    }
+
+    private func updateFoodFlow() {
+        guard foodFlowHidden else { return }
+        if state.isBlocked {
+            foodFlowSawBlocking = true
+        } else if foodFlowSawBlocking {
+            foodFlowHidden = false
+            foodFlowSawBlocking = false
+        }
+    }
+
+    /// M7: Essen-Tab wählen (z. B. „Essen eintragen“ aus der Übersicht), nativ.
+    func selectFoodTab() {
+        if let target = NavigationTarget(page: "food") { perform(target) }
     }
 
     /// M6 Web-Ausweg aus den Aktivitäten (Routenplaner, Web-Detail). Native Ansichten sind bereits geschlossen.
@@ -476,18 +559,22 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         if workoutVisible, !sessionOpen, progress?.needsProgressProjection == true {
             names.insert(ProgressProjectionMessage.progressName)
         }
+        // M7: Ernährung nur, solange der native Essen-Tab sichtbar ist (bei Verlassen widerrufen).
+        if showsNativeNutrition { names.insert(NutritionProjectionMessage.nutritionName) }
         bridge.setInterest(ProjectionInterest(names.intersection(offered)), hello: store.helloCount)
     }
 
     private func updateVisibility() {
         let showOverview = showsNativeOverview
         let showTraining = showsNativeTraining
+        let showNutrition = showsNativeNutrition
+        nutritionHost?.view.isHidden = !showNutrition
         overviewHost?.view.isHidden = !showOverview
         // M5: Rückkehr aus einem Web-Ablauf/anderen Tab: sichtbare Monate/Details neu laden (Web könnte geändert haben).
         if showTraining, trainingHost?.view.isHidden == true { progress?.refreshToken += 1 }
         trainingHost?.view.isHidden = !showTraining
         // Verdeckte Web-Inhalte nicht für VoiceOver erreichbar lassen; die WebView selbst bleibt sichtbar.
-        webView?.accessibilityElementsHidden = showOverview || showTraining
+        webView?.accessibilityElementsHidden = showOverview || showTraining || showNutrition
         syncSelection()
         reportInterest()
     }
@@ -563,6 +650,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         // Mit `web:true` bleibt die Web-Übersicht sichtbar (Protokoll: Echo darf sie nicht überdecken).
         if tab == .home { homeShowsWeb = navigation.web }
         if tab == .workout { workoutShowsWeb = navigation.web }
+        if tab == .food { foodShowsWeb = navigation.web }
     }
 
     // MARK: Native → Web
@@ -574,6 +662,10 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         guard !state.isBlocked else { return }
         // M4: Trainings-Einstiege (Fortsetzen, Routine starten, freies Training, Routinen) nativ, wenn verfügbar.
         if case .action(let action, let id) = target, let training, training.handleOverviewAction(action, id: id) {
+            return
+        }
+        // M7: „Essen eintragen“/„Bearbeiten“ aus der Übersicht nativ, wenn verfügbar.
+        if case .action(let action, let id) = target, let nutrition, nutrition.handleOverviewAction(action, id: id) {
             return
         }
         // M6: laufende Aktivität aus der Übersicht direkt nativ fortsetzen.
@@ -592,6 +684,10 @@ final class RootTabShell: NSObject, UITabBarDelegate {
                 state.selected = tab
                 if tab == .home { homeShowsWeb = web }
                 if tab == .workout { workoutShowsWeb = web }
+                if tab == .food {
+                    foodShowsWeb = web
+                    foodFlowHidden = false
+                }
             }
         case .action:
             // Vor dem Aufruf ausblenden, damit Modal/Session sofort sichtbar sind (das `chrome` kommt später).
@@ -650,12 +746,13 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     }
 
     private func applyStyle(_ newStyle: UIUserInterfaceStyle) {
-        for view in [statusFill, tabBar, headerHost?.view, overviewHost?.view, trainingHost?.view] as [UIView?] {
+        for view in [statusFill, tabBar, headerHost?.view, overviewHost?.view, trainingHost?.view, nutritionHost?.view] as [UIView?] {
             view?.overrideUserInterfaceStyle = newStyle
         }
         headerHost?.overrideUserInterfaceStyle = newStyle
         overviewHost?.overrideUserInterfaceStyle = newStyle
         trainingHost?.overrideUserInterfaceStyle = newStyle
+        nutritionHost?.overrideUserInterfaceStyle = newStyle
         guard newStyle != style else { return }
         style = newStyle
         onStyleChange?()
