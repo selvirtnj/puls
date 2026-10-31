@@ -1,0 +1,43 @@
+{
+  "protocol": 1,
+  "type": "activityResult",
+  "requestId": "q",
+  "seq": 10,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "ownerPending": false,
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": true,
+    "conflict": false
+  },
+  "language": "de",
+  "kind": "summary",
+  "ok": true,
+  "result": {
+    "key": 1793188800000,
+    "type": "run",
+    "km": 0.06,
+    "moving": 23,
+    "pause": 4,
+    "elev": null,
+    "maxSpeed": null,
+    "feeling": null,
+    "terrain": null,
+    "note": "",
+    "manualKm": "",
+    "kcal": 5,
+    "manualDistanceAllowed": false,
+    "route": "51.00000,10.00000;51.00050,10.00000",
+    "splits": [],
+    "splitRest": null,
+    "laps": [
+      23
+    ]
+  }
+}

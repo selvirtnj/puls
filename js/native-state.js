@@ -12,12 +12,15 @@ let progressTimer=null,progressIdle=false;
 let interests=new Set(['overview','training']);
 let chromeRequested=false,chromeSessionHold=false,pageHidden=false,lastChrome=null,reportedPage;
 let trainingConfirmed=false,trainingApplying=false;
+let activityConfirmed=false,activityPreparing=false;
 const feature=name=>Array.isArray(window.pulsNativeFeatures)&&window.pulsNativeFeatures.includes(name);
 // M4: injected at document start; without it no training wrapper, op, projection or global is installed.
 const trainingFeature=feature('nativeTraining');
 const trainingAdapter=()=>trainingFeature&&typeof window.pulsNativeTraining?.build==='function'?window.pulsNativeTraining:null;
 const progressFeature=feature('nativeProgress');
 const progressAdapter=()=>progressFeature&&typeof window.pulsNativeProgress?.build==='function'?window.pulsNativeProgress:null;
+const activityFeature=feature('nativeActivity');
+const activityAdapter=()=>activityFeature&&typeof window.pulsNativeActivity?.build==='function'?window.pulsNativeActivity:null;
 const currentAccountSection=()=>page==='account'&&typeof accountSection==='string'&&accountSection?accountSection:null;
 const copy=value=>JSON.parse(JSON.stringify(value));
 const userId=()=>typeof cloudSession!=='undefined'?cloudSession?.user?.id??null:null;
@@ -27,13 +30,13 @@ if(!preview&&stateOwner!==null)try{if(localStorage.getItem(ownerPendingKey)===st
 const profileReady=()=>!activating&&stateOwner===userId();
 function hello(force=false){
   const ownerPending=!profileReady();
-  if(ownerPending){for(const view of Object.values(views))view.last=null;chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome()}
+  if(ownerPending){for(const view of Object.values(views))view.last=null;chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;activityConfirmed=false;syncNativeChrome()}
   if(!ready||!force&&ownerPending===helloOwnerPending)return;
-  const training=trainingAdapter(),progress=progressAdapter();
-  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...(training?Object.keys(training.ops):[]),...(progress?Object.keys(progress.ops):[])],
-    screens:['body',...(training?['training']:[]),...(progress?['calendar','progress']:[])],
-    projections:['overview',...(training?['training']:[]),...(progress?['progress']:[])],
-    features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[])],ownerPending})){
+  const training=trainingAdapter(),progress=progressAdapter(),activity=activityAdapter();
+  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...(training?Object.keys(training.ops):[]),...(progress?Object.keys(progress.ops):[]),...(activity?Object.keys(activity.ops):[])],
+    screens:['body',...(training?['training']:[]),...(progress?['calendar','progress']:[]),...(activity?['activity']:[])],
+    projections:['overview',...(training?['training']:[]),...(progress?['progress']:[]),...(activity?['activity']:[])],
+    features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[]),...(activity?['nativeActivity']:[])],ownerPending})){
     helloOwnerPending=ownerPending;
     if(!ownerPending)queueProjection('ready',true);
   }
@@ -104,6 +107,7 @@ window.pulsNativeNavigate=function(target){
     // These are Web UI entry points, never an eval string or a second mutation API.
     const actions={
       ...(progressAdapter()?Object.fromEntries(progressAdapter().actions.map(action=>[action,()=>progressAdapter().navigate(target)])):{}),
+      ...(activityAdapter()?Object.fromEntries(activityAdapter().actions.map(action=>[action,()=>activityAdapter().navigate(target)])):{}),
       quickAdd:()=>{quickAddMenu();return true},
       addFood:()=>{go('food');foodForm();if(typeof foodTab==='function')foodTab('search');return true},
       editFood:()=>{if(!state.foods.some(x=>x.id===target.id&&x.date===date))return false;go('food');editDiaryFood(target.id);return true},
@@ -145,6 +149,7 @@ function progressInputs(){
     state.runSettings,state.profile,typeof recapMode==='string'?recapMode:null,typeof recapOffset==='number'?recapOffset:null,
     typeof actMode==='string'?actMode:null,typeof actOffset==='number'?actOffset:null,typeof actFilter==='string'?actFilter:null];
 }
+function activityInputs(){return [projectionRevision,state,today(),state.language,state.runSettings,state.runRoutes,state.runs,...activityAdapter().inputKey()]}
 const sameInputs=(a,b)=>!!b&&a.length===b.length&&a.every((value,index)=>value===b[index]);
 // One cache/dedup record per projection name; projectionSeq is shared and monotonic per document.
 const views={
@@ -153,7 +158,9 @@ const views={
   training:{feature:'nativeTraining',section:false,inputs:trainingInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
     builder:()=>trainingAdapter()?.build||null},
   progress:{feature:'nativeProgress',section:false,inputs:progressInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
-    builder:()=>progressAdapter()?.build||null}
+    builder:()=>progressAdapter()?.build||null},
+  activity:{feature:'nativeActivity',section:false,inputs:activityInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
+    builder:()=>activityAdapter()?.build||null}
 };
 const supportedViews=()=>Object.entries(views).filter(([,view])=>feature(view.feature)&&view.builder());
 const enabledViews=()=>supportedViews().filter(([name])=>interests.has(name));
@@ -165,7 +172,7 @@ function scheduleProgress(){
 }
 window.pulsNativeSetInterest=function(request){
   if(!ready||pageHidden||!profileReady()||!request||typeof request!=='object'||Array.isArray(request)||Object.keys(request).length!==1||!Object.hasOwn(request,'projections')||
-    !Array.isArray(request.projections)||request.projections.length>3||new Set(request.projections).size!==request.projections.length||
+    !Array.isArray(request.projections)||request.projections.length>(activityFeature?4:3)||new Set(request.projections).size!==request.projections.length||
     Array.from(request.projections).some(name=>typeof name!=='string'||!supportedViews().some(([key])=>key===name)))return false;
   const previous=interests;interests=new Set(request.projections);
   for(const [name,view] of supportedViews())if(interests.has(name)&&!previous.has(name))view.force=true;
@@ -177,6 +184,7 @@ function projection(reason,force=false){
   clearTimeout(projectionTimer);projectionTimer=null;
   if(!ready||helloOwnerPending!==false||!profileReady()||applying||rollingBack||saveDepth)return;
   for(const [name,view] of enabledViews()){
+    if(name==='activity'&&(pageHidden||activityPreparing))continue;
     if(name==='progress'&&(!progressIdle||setInputActive()||pageHidden))continue;
     const build=view.builder();
     try{
@@ -328,12 +336,15 @@ window.pulsNativeApply=function(cmd){
   if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)||!id||!/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(id)){ack(id,'invalid','Ungültige Befehls-ID');return}
   if(Object.values(flags()).some(Boolean)){ack(id,'readonly','Profil ist schreibgeschützt');return}
   if(cmd.userId!==userId()){ack(id,'wrong_user','Befehl gehört zu einem anderen Konto');return}
+  if(activityPreparing){ack(id,'busy','GPS-Abschluss läuft');return}
   const history=applied(),known=history.find(x=>x.id===id&&x.userId===cmd.userId);
   if(known){ack(id,undefined,undefined,known.result);queue('apply');flush();return}
   const training=trainingAdapter(),trainingOp=training&&typeof cmd.op==='string'&&Object.hasOwn(training.ops,cmd.op)?training.ops[cmd.op]:null;
   if(trainingOp){applyTraining(cmd,history,training,trainingOp);return}
   const progress=progressAdapter(),progressOp=progress&&typeof cmd.op==='string'&&Object.hasOwn(progress.ops,cmd.op)?progress.ops[cmd.op]:null;
   if(progressOp){applyTraining(cmd,history,progress,progressOp);return}
+  const activity=activityAdapter(),activityOp=activity&&typeof cmd.op==='string'&&Object.hasOwn(activity.ops,cmd.op)?activity.ops[cmd.op]:null;
+  if(activityOp){if(activityOp.prepare)void prepareActivity(cmd,history,activity,activityOp);else applyTraining(cmd,history,activity,activityOp);return}
   if(!['weight.upsert','weight.delete'].includes(cmd.op)){ack(id,'unknown_op','Unbekannter Befehl');return}
   const args=cmd.args;
   const validExpect=value=>value===null||typeof value==='string'&&value.trim().length>0;
@@ -361,7 +372,8 @@ window.pulsNativeApply=function(cmd){
 // synchronously. During a training op those messages stay in this document until the op is confirmed: then only the
 // final state per kind is delivered once (if it differs from what Native already has); after a rollback none is.
 // Rest/workout messages are pure state, so an equivalent repeat (the bridge correcting itself) is always dropped.
-const nativeKind=(handler,message)=>handler==='pulsWorkout'?'workout':['restStart','restCancel','workoutActive'].includes(message?.type)?'rest':message?.type==='runActivity'?'run':null;
+const nativeKind=(handler,message)=>handler==='pulsWorkout'?'workout':['restStart','restCancel','workoutActive'].includes(message?.type)?'rest':message?.type==='runActivity'?'run':
+  activityFeature&&['runGpsStart','runGpsStop'].includes(message?.type)?'gps':activityFeature&&message?.type==='runGpsSync'?'gpsSync':activityFeature&&message?.type==='haptic'?'haptic':null;
 // Identity of the rest a restStart describes: same selection as native-bridge.js activeRest(), read when the bridge
 // posts (synchronously from the current state). Two rests with equal end time and label stay different rests.
 const nativeRestKey=()=>{
@@ -396,10 +408,32 @@ function releaseNative(confirmed){
   const buffered=nativeBuffer||[];nativeBuffer=null;
   if(!confirmed)return;
   const last=new Map();for(const record of buffered){last.delete(record.kind);last.set(record.kind,record)}
-  for(const record of last.values())if(!nativeSame(record.kind,nativeSent.get(record.kind),record))try{record.deliver(record)}catch{}
+  // A haptic is an event, not a state: an equal earlier haptic never suppresses the confirmed one.
+  for(const record of last.values())if(record.kind==='haptic'||!nativeSame(record.kind,nativeSent.get(record.kind),record))try{record.deliver(record)}catch{}
 }
-if(trainingFeature){gateNativeHandler('pulsNative');gateNativeHandler('pulsWorkout')}
+if(trainingFeature||activityFeature){gateNativeHandler('pulsNative');gateNativeHandler('pulsWorkout')}
 const webDialogOpen=()=>(typeof modal!=='undefined'&&!!modal.open)||!!document.querySelector('dialog[open]');
+// Finish pauses/persists exactly as the Web button and asynchronously drains the existing native recorder.
+// Never hold a rollback copy across await: a cloud takeover or Web edit must not be undone by an old command.
+async function prepareActivity(cmd,history,adapter,op){
+  const args=cmd.args;
+  if(!args||typeof args!=='object'||Array.isArray(args)){ack(cmd.id,'invalid','Ungültige Argumente');return}
+  let plan;try{plan=op.check(args)}catch{plan={code:'invalid',message:'Ungültige Argumente'}}
+  if(plan.code){ack(cmd.id,plan.code,plan.message);return}
+  if(webDialogOpen()||['run','session'].includes(chromeState().reason)){ack(cmd.id,'busy','Ein Web-Ablauf ist geöffnet');return}
+  const owner=userId(),profile=state,run=state.activeRun;
+  activityPreparing=true;
+  try{
+    const result=await op.prepare(args,plan);
+    if(!profileReady()||owner!==userId()){ack(cmd.id,'not_ready','Profilzuordnung geändert');return}
+    if(profile!==state||run!==state.activeRun){ack(cmd.id,'gone','Aktivität während GPS-Abschluss geändert');return}
+    if(Object.values(flags()).some(Boolean)){ack(cmd.id,'readonly','Profil ist schreibgeschützt');return}
+    if(result?.code){ack(cmd.id,result.code,result.message);return}
+    // Recheck current args/ownership/dialog state after receiving all points. Only the final synchronous part is atomic.
+    applyTraining(cmd,history,adapter,op);
+  }catch{ack(cmd.id,'busy','GPS-Abschluss noch nicht bestätigt')}
+  finally{activityPreparing=false;reportChrome();queueProjection('activity')}
+}
 function applyTraining(cmd,history,training,op){
   const id=cmd.id,args=cmd.args;
   if(!args||typeof args!=='object'||Array.isArray(args)){ack(id,'invalid','Ungültige Argumente');return}
@@ -412,7 +446,7 @@ function applyTraining(cmd,history,training,op){
   }catch{plan={code:'invalid',message:'Ungültige Argumente'}}
   if(plan.code){ack(id,plan.code,plan.message);return}
   // These Web functions close #modal; never discard an unrelated open Web form. Native retries after chrome changes.
-  if(plan.busy&&(webDialogOpen()||training===progressAdapter()&&['run','session'].includes(chromeState().reason))){ack(id,'busy','Ein Web-Ablauf ist geöffnet');return}
+  if(plan.busy&&(webDialogOpen()||(training===progressAdapter()||training===activityAdapter())&&['run','session'].includes(chromeState().reason))){ack(id,'busy','Ein Web-Ablauf ist geöffnet');return}
   commit(cmd,history,{ui:training,run:()=>plan.noop?plan.result:op.run(args,plan),verify:(stored,result)=>op.effective(stored,args,plan,result)});
 }
 function commit(cmd,history,{run,verify,ui}){
@@ -458,6 +492,7 @@ function commit(cmd,history,{run,verify,ui}){
   }finally{
     // After the ack: one reconciliation from the final state, or nothing at all after a rollback.
     if(ui)releaseNative(!failed);
+    if(ui?.settled)ui.settled(!failed);
     applying=false;trainingApplying=false;contextReason=previousReason;if(failed&&pending)queue(pending);if(!failed)projection('apply');
     if(ui){reportNavigation();reportChrome()}
   }
@@ -471,6 +506,17 @@ function loaded(){
   const baseModal=openModal;openModal=function(...args){const result=baseModal.apply(this,args);reportChrome();return result};
   if(typeof renderWorkoutSession==='function'){const base=renderWorkoutSession;renderWorkoutSession=function(...args){const result=base.apply(this,args);reportChrome();return result}}
   if(typeof renderRunView==='function'){const base=renderRunView;renderRunView=function(...args){const result=base.apply(this,args);reportChrome();return result}}
+  if(activityFeature&&typeof updateRunLive==='function'){const base=updateRunLive;updateRunLive=function(...args){const result=base.apply(this,args);if(interests.has('activity'))queueProjection('activity');return result}}
+  if(activityFeature&&typeof openRunView==='function'){
+    const base=openRunView;
+    openRunView=function(...args){
+      if(activityConfirmed&&!openingWeb&&ready&&!pageHidden&&helloOwnerPending===false&&profileReady()&&activityAdapter()&&
+        post({type:'openNative',screen:'activity',startedAt:state.activeRun?.startedAt??null})){
+        if(typeof modal!=='undefined'&&modal.open)modal.close();return;
+      }
+      return base.apply(this,args);
+    };
+  }
   if(trainingFeature&&typeof openWorkoutSession==='function'){
     // Confirmed native training owns the strength session: Web entries (dock, overview, quick add, startRoutine)
     // ask Native to present it. Ops never open a Web session; Native presents after its ack.
@@ -515,10 +561,33 @@ if(progressFeature)window.pulsNativeProgressQuery=function(request){
   return !!result&&post({type:'progressResult',requestId:request.requestId,seq,userId:userId(),ownerPending:false,
     flags:flags(),cloud:cloud(),language:state.language==='en'?'en':'de',...result});
 };
-window.addEventListener('pagehide',()=>{pageHidden=true;flush();projection('background');chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome()});
+if(activityFeature){
+  window.pulsNativeSetActivity=function(active){
+    if(typeof active!=='boolean')return false;
+    if(!active){activityConfirmed=false;return true}
+    if(!ready||pageHidden||helloOwnerPending!==false||!profileReady()||!activityAdapter())return false;
+    // After a reload the Web reopens its live view by itself (run-session.js). That view and the start view hold no
+    // unsaved input, so Native may minimise them exactly like the Web close button. Countdown, summary, dialogs,
+    // workout sessions and the activity end screen keep blocking.
+    const current=chromeState(),webRunView=current.reason==='run'&&typeof runView!=='undefined'&&['live','ready'].includes(runView)&&
+      typeof closeRunView==='function'&&!webDialogOpen();
+    if(current.blocking&&!webRunView)return false;
+    if(webRunView){closeRunView();if(chromeState().blocking)return false}
+    activityConfirmed=true;reportChrome();return true;
+  };
+  window.pulsNativeActivityQuery=function(request){
+    const adapter=activityAdapter();
+    if(!adapter||!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||activityPreparing||saveDepth||
+      !request||typeof request!=='object'||Array.isArray(request)||typeof request.requestId!=='string'||!request.requestId.trim()||request.requestId.length>100)return false;
+    let result;try{result=adapter.query(request)}catch{return false}
+    return !!result&&post({type:'activityResult',requestId:request.requestId,seq,userId:userId(),ownerPending:false,
+      flags:flags(),cloud:cloud(),language:state.language==='en'?'en':'de',...result});
+  };
+}
+window.addEventListener('pagehide',()=>{pageHidden=true;flush();projection('background');chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;activityConfirmed=false;syncNativeChrome()});
 window.addEventListener('pageshow',event=>{
   const restored=pageHidden||event.persisted===true;pageHidden=false;
-  if(restored){chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;syncNativeChrome();hello(true)}
+  if(restored){chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;activityConfirmed=false;syncNativeChrome();hello(true)}
   reportChrome();queueProjection('foreground');
 });
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flush();projection('background')}else queueProjection()});

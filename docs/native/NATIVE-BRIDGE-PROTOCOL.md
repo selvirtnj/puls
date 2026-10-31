@@ -414,3 +414,85 @@ Zusätzlich zur M3-Whitelist, nur bei `nativeProgress`: `pulsNativeNavigate({act
 | `runDetail` / `editRun`, `id` | `runDetail(id)` / `runEditForm(id)` für vorhandene Aktivität |
 
 Bewusste M5-Grenze: historische Workouts wiederöffnen/löschen/bearbeiten, Aktivitätsart/Gefühl/Untergrund/Notiz ändern, Progressionsziele/Muskelzuordnung, theoretischer Satzgewichtsrechner sowie Teilen/Download bleiben Web. Keine zusätzlichen direkten Mutations-Ops, keine neue Wiederöffnungslogik, keine rückwirkenden XP-Marker. Karten, Routen, GPS und Live-Aktivitäten gehören zu M6. Für gekürzte oder unbekannte Details immer vollständigen Web-Ausweg anbieten.
+
+## 11. M6 — Aktivitäten, Live-Aufzeichnung und Routen (`nativeActivity`, additive v1-Erweiterung)
+
+Paket N: `js/native-activity.js`, direkt nach `native-progress.js`. Phase A unverändert: Web besitzt Profil, Formeln, IDs, Auth, Sync und die einzige Persistenz. **GPS-Aufzeichnung bleibt `RunTracker.swift` (einziger Recorder)**; die Web-Kette `runGpsStart/Stop/Sync` → `pulsRunGpsReceive` → `drainRunGps` und die Web-GPS-Regeln (Genauigkeit ≤ 35 m, Schritte < 4 m, Sprünge > 12 m/s, Abschnitte) bleiben der Datenweg. Native rechnet weder Distanz, Pace, kcal, Höhe, Splits noch MMA-Phasen nach; es zeigt nur Werte aus Projektion/Query und führt Uhren aus Zeitbasen fort.
+
+### 11.1 Aktivierung, Lebenszyklus, Interesse
+
+Native injiziert `stateBridge` + **`nativeActivity`** (dazu wie bisher `runGps`, `runActivity`, `runActivityEndState`, `runLocate`, `haptics`). `hello` ergänzt additiv `screens:['activity']`, `projections:['activity']`, `features:['nativeActivity']` und die Ops aus 11.4. Ohne Feature/Handler: keine Globals (`pulsNativeActivity`, `pulsNativeSetActivity`, `pulsNativeActivityQuery`), keine Ops, Wrapper, Navigation oder Berechnung (VM-geprüft).
+
+`activity` wird **nur bei Interesse** gebaut (`pulsNativeSetInterest`, mit `nativeActivity` bis zu vier Namen). Hülle wie Progress (ohne `accountSection`), gemeinsame `projectionSeq`, gleiche Nutzer-/ownerPending-/Flag-Regeln. Neuberechnung bei Speicherpfaden (`projectionRevision`), Tag/Sprache, Laufzustand (Start/Pause/Abschnitt/Runden/Zusammenfassung/Sperre), MMA-Runde/Phase, neuen GPS-Punkten, GPS-Status/-Genauigkeit sowie während laufender (nicht pausierter) Aktivität höchstens alle 10 s (GPS, aktuelle Pace) bzw. 30 s (Timer-Arten, kcal-Schätzung). Der sekündliche Web-Takt prüft nur diesen kleinen Schlüssel. Kein Bau bei ausgeblendetem Dokument oder während des GPS-Abschlusses. Budget `JSON.stringify(activity).length <= 48*1024`; gekürzt werden nur `recent`, dann `routes` (gezählt in `omitted`), nie `active`/`summary`.
+
+### 11.2 `projection{name:'activity'}`
+
+Fixtures: `activity-projection.json` (ohne Lauf), `activity-live.json` (GPS-Lauf mit Punkten).
+
+| Feld | Inhalt / Web-Quelle |
+|---|---|
+| `language, locale, today` | wie Training |
+| `types[]` | `runTypeList()` (= `runPickableActivities`, 8 Arten, Web-Reihenfolge): `{id,label,icon,gps,category}` |
+| `settings` | `{lastType,rounds:runRoundsSettings(),countdownSeconds:10}`. **Keine** Erwartung für Ops: `runSettings.set.expect` ist das rohe `runSettings` aus dem Snapshot (inkl. Wochenziele/unbekannter Felder). |
+| `active` | `null` oder `{startedAt,paused,pausedAt,pausedSeconds,segment,segmentStartedAt,type,gps,recordingDevice,controlsEnabled,locked,laps,rounds,mma,routeId,routeProgress,distanceKm,paceText,currentPaceText,values,gpsLabel,elapsedSeconds,observedAt,durationLimitSeconds}` |
+| Zeitbasis | Uhr = `runElapsed`: `floor(((pausedAt ?? jetzt) − startedAt)/1000 − pausedSeconds)`. `elapsedSeconds`/`observedAt` sind nur Momentaufnahme. `laps` = kumulative aktive Sekunden. |
+| `recordingDevice` | `runOwnedHere()` (lokales `puls-run-device`). `gps && !recordingDevice` → `controlsEnabled:false`, `distanceKm/values:null`: Native zeigt wie Web „Auf dem aufzeichnenden Gerät beenden“ und sendet keine Steuer-Ops (Web antwortet sonst `conflict`). |
+| `mma` | nur Typ `mma`: `runMmaState()` `{round,count,phase:'work'|'rest'|'done',remainingSeconds,phaseSeconds,elapsedSeconds,observedAt}`; `rounds` = beim Start gespeicherte `{work,rest,count}`. Native darf die Restsekunde aus `elapsedSeconds/observedAt` herunterzählen; Phasenwechsel kommen per Projektion. **Ton/Vibration beim Phasenwechsel bleiben Web** (`runRoundWatch` → `runBeep`/`pulsHaptic`), Native signalisiert nicht zusätzlich. |
+| `routeProgress` | bei `routeId`: `{distanceKm,routeKm,fraction}` (fraction ≤ 1, `null` ohne Distanz) |
+| `distanceKm, paceText, currentPaceText, values` | `runGpsKm()` auf 0,01 km; `values` = `runLiveData()` (formatierte Web-Werte `time,clock,dist,pace,avgpace,gain,alt,speed,kcal,lap|phase,roundleft`, `–` = unbekannt). Pace-Texte hier ohne „ /km“. `values.time/clock` sind Momentaufnahmen. |
+| `gpsLabel` | `runGpsLabel()` (übersetzter Web-Statustext) |
+| `durationLimitSeconds` | 172800: Speichern kappt Dauer/Pause wie `runSummarySave` auf 48 h. Für Aktivitäten gibt es **keine** 5-h-Regel (nur Kraft). |
+| `summary` | `null` oder Abschluss-Entwurf des **aktuell pausierten** Laufs nach `run.finish` (`runSummary`): `{key,type,km,moving,pause,elev,maxSpeed,kcal,feeling,terrain,note,manualKm,manualDistanceAllowed}`. Eine alte Web-Zusammenfassung nach „Weiter“ gilt nicht. |
+| `routes[]` | `{id,name,distanceKm,ascentM|null,editable}` (`editable` = hat `waypoints`, wie Web-„Bearbeiten“) |
+| `recent[]` | letzte 20 `state.runs`, neueste zuerst: `{id,date,type,name,startedAt,distanceKm,durationSeconds,paceText,kcal,hasRoute}` |
+| `omitted` | `{routes,recent}` |
+| `navigation` | `{start:{action:'activity'},routes:{action:'activityRoutes'},planner:{action:'routePlanner'}}` |
+| `planner` | `{provider:'brouter',url,profile:'hiking-mountain',maxWaypoints:60,maxLinePoints:800,typicalPaceSeconds|null,native:true}` |
+
+### 11.3 Queries `window.pulsNativeActivityQuery({requestId,kind,id?})` → `activityResult`
+
+Gleiche Regeln/Hülle wie `progressResult` (10.3), `type:'activityResult'`, Boolean-Rückgabe, nicht während Transaktion/GPS-Abschluss. Nur die Felder `requestId,kind,id`.
+
+| Request | `result` |
+|---|---|
+| `{kind:'summary'}` | `summary` wie oben plus `route` (kodierte Strecke aus `runRouteString`, `null` unter 0,01 km), `splits`, `splitRest`, `laps`. Fixture `activity-result-summary.json`. |
+| `{kind:'run',id}` | gespeicherte Aktivität: kompakte Zeile + `feeling,terrain,note,route,laps,splits,splitRest,pauseSeconds,maxSpeed,elevationGain,elevationMax,navigation:{action:'runDetail',id},editExpect:{type,feeling,terrain,note}` |
+| `{kind:'route',id}` | `{id,name,line,waypoints|null,distanceKm,ascentM|null,createdAt|null}` (Web-Strings `lat,lon;…`) |
+
+Fehlendes Ziel: `ok:false,error:{code:'gone'}`.
+
+### 11.4 Ops (gemeinsame Transaktion aus 4/9.4)
+
+Prüfreihenfolge wie 9.4; zusätzlich während eines laufenden GPS-Abschlusses **jede** Op → `busy`. Alle Ops mit Mutation sind `busy` bei offenem Web-Dialog oder Web-Session-/Run-Vollbild (`chrome.reason:'session'|'run'`). Ziel-Ops verlangen `startedAt` = aktive Aktivität, sonst `gone`; GPS-Aktivität eines anderen Geräts → `conflict`. Web-Bestätigungen (`confirm`) gelten als in Native erteilt. Native Nachrichten (`runGpsStart/Stop`, `runGpsSync`, `runActivity`, `haptic`) und Web-Ton (`runBeep`) laufen erst nach bestätigtem Ack, je Art der Endzustand; nach Rollback keine (z. B. kein `runGpsStop{clear:true}` bei fehlgeschlagenem Verwerfen). Haptik ist ein Ereignis und wird nie als „gleich wie zuletzt“ verworfen.
+
+| Op | args | Web-Funktion | Ergebnis / Fehler | Wirkung im Snapshot (§7) |
+|---|---|---|---|---|
+| `run.start` | `{type,routeId?:id|null,rounds?:{work 10–3600,rest 0–1800,count 1–100} (nur mma),expect:{lastRunId:id|null}}` | `runSetRounds` (persistiert Runden wie Web-Formular) + `runCountdownGo` (Countdown ist native UI; danach exakt Web-Start inkl. MMA-Signal/Haptik, `claimRunGps`, `runGpsStart`, Live-Aktivität) | `{startedAt,started}`. Aktive Aktivität → ok `started:false` mit deren `startedAt` (nie zweiter Start/Recorder). `expect.lastRunId` ≠ letzte `runs`-ID → `conflict` (verhindert Neustart nach erledigtem Lauf ohne Historie; Native zeigt den neuen Stand und lässt neu starten). Route bei Nicht-GPS-Art/fehlend → `gone`; Web-Countdown läuft → `busy` | `activeRun.startedAt` = Ergebnis **oder** gespeicherte Aktivität mit diesem `startedAt` |
+| `run.pause` | `{startedAt,expect:{pausedAt:null,segment}}` | `toggleRunPause` | `{startedAt,pausedAt,segment}`; schon pausiert im selben Abschnitt → noop; anderer Stand → `conflict` | pausiert mit `result.pausedAt` |
+| `run.resume` | `{startedAt,expect:{pausedAt,segment ≤ 9999}}` | wie `runSummaryResume`: `toggleRunPause` (neuer Abschnitt, `runGpsStart`, beendete Insel wieder aktiv) | `{startedAt,pausedAt:null,segment}`; `segment = expect+1` und läuft → noop | läuft, `segment` = Ergebnis |
+| `run.lap` | `{startedAt,expect:{laps:[…]}}` | `runLiveLap` (GPS-Runde bzw. MMA „Nächste Runde“) | `{lap}`; nur GPS-Arten (aufzeichnendes Gerät) und MMA, sonst `invalid`; pausiert/≤ letzte Runde/MMA fertig/1000 Runden → `gone`; `laps = expect+[x]` → noop | `laps = expect + [result.lap]` |
+| `run.finish` | `{startedAt}` | **asynchron** `finishRunTimer`: pausiert/speichert sofort, `runGpsStop{clear:false}`, `drainRunGps` (≤ 4 s, alle nativen Punkte), dann `runOpenSummary` ohne Web-Ansicht | Ack erst nach vollständigem Abholen: ok `{startedAt,pausedAt}`, danach `summary` per Projektion/Query. Unvollständig → `busy` (Pause und alle Punkte bleiben wie beim Web-Button; erneut senden). Während des Wartens geändert/übernommen → `gone`/`conflict`/`not_ready`, kein Rollback über das Warten hinweg. Wiederholung bei bereits pausiertem Lauf ist harmlos (frischer Entwurf). | pausiert mit `result.pausedAt` |
+| `run.summary.save` | `{startedAt,pausedAt,feeling:1–5|null,terrain:key|null,note ≤ 200,manualKm?:0–1000|''}` | `runSummarySave` → `commitRunActivity` (ID `uid()`, Route/Splits/Laps, kcal, XP, `runGpsStop{clear:true}`, Live-Aktivität beendet, Web-Endscreen) | `{runId,startedAt}`. Zusammenfassung fehlt/veraltet (z. B. nach Neuladen) → `gone`: erneut `run.finish`. `pausedAt` ≠ aktuell → `conflict`. `manualKm` nur bei GPS ohne Strecke (`manualDistanceAllowed`), sonst `invalid`; `''`/fehlend = keine Eingabe, `0` = ausdrücklich 0 km. Schon gespeichert mit gleichen Werten → noop, abweichend → `conflict`. | Aktivität `runId` mit `startedAt`, keine aktive mit diesem `startedAt` |
+| `run.discard` | `{startedAt}` | `runSummaryDiscard`/`discardRunTimer` | nicht mehr aktiv → noop; bereits gespeichert → `gone` | keine aktive mit `startedAt` |
+| `run.edit` | `{id,type,feeling,terrain,note,expect:editExpect}` | `runEditSave` (Typ, Gefühl, Untergrund, Notiz; kcal-Snapshot bleibt) | Typ aus Liste oder bisheriger; Ziel schon erreicht → noop; anderer Stand → `conflict`; fehlt → `gone` | Felder = Ziel |
+| `run.delete` | `{id,expect:editExpect}` | `deleteRun` (Web-„Aktivität löschen“) | fehlt → noop; geändert → `conflict` | Aktivität fehlt |
+| `runSettings.set` | `{lastType?,rounds?,expect:runSettings|null}` | `runChooseType` / `runSetRounds` | Ziel schon → noop; abweichend → `conflict`; unbekannte Felder bleiben | `runSettings` = expect + Felder |
+| `route.save` | `{route:{id,name 1–60,line:[[lat,lon]] 2–800,waypoints:[[lat,lon]] 2–60,distanceKm 0–1000,ascentM?},expect:route|null}` | `runPlannerSave` mit festem `runPlan` und **von Native erzeugter stabiler ID** | `{routeId}`; höchstens 200 Routen; gleicher Inhalt → noop; abweichend → `conflict` | Route = gespeicherte Web-Form (5 Nachkommastellen, gerundet) |
+| `route.delete` | `{id,expect:route}` | `runDeleteRoute` | fehlt → noop; abweichend → `conflict` | Route fehlt |
+
+Rohe `runSettings`, Routen und Aktivitäten für `expect` stammen aus dem Snapshot bzw. der Query, nicht aus der gekürzten Projektion. Fixtures: `apply-run-start.json`, `ack-run-start.json`.
+
+### 11.5 Chrome, Vollbild, Fallback
+
+- `window.pulsNativeSetActivity(active:boolean)` wie `pulsNativeSetTraining`: `true` nur nach Laden, geklärter Zuordnung, sichtbarer Seite. Einzige Erweiterung: Zeigt das Web nur seine Live- oder Startansicht (`runView` `live`/`ready`, z. B. weil `run-session.js` sie nach einem Neuladen selbst öffnet) und keinen Dialog, minimiert das Web diese Ansicht (`closeRunView`) und bestätigt. Countdown, Web-Zusammenfassung, Dialoge, Sessions und Endscreen → `false`; Native wiederholt nach `chrome{blocking:false}`. Widerruf bei ownerPending/pagehide/bfcache, nie gespeichert.
+- Bestätigt: jeder Web-Einstieg `openRunView` (Aktivitätskarte, Übersicht, Plus-Menü, `resumeRun`) sendet `{"type":"openNative","protocol":1,"screen":"activity","startedAt":…|null}` statt der Web-Vollbildansicht; Native zeigt Start- bzw. Live-Ansicht. Ops öffnen nie die Web-Ansicht.
+- Nach `run.summary.save` zeigt das Web wie bisher seinen Aktivitäts-Endscreen (`activityDoneId`, `chrome.reason:'session'`); Native schließt seine Ansicht, zeigt die WebView und kehrt nach `chrome{blocking:false}` zurück (wie `workout.finish`).
+- Fallback: `pulsNativeSetActivity(false)` + `pulsNativeNavigate({action:'activity',web:true})`. **Ohne `web:true` würde der Einstieg wieder nativ umgeleitet.** Weitere Web-Auswege (nur `web:true`): `activityRoutes` (`runRoutesSheet`), `routePlanner` mit optionaler editierbarer Routen-ID (`runPlanner`), `runDetail`/`editRun` mit ID.
+- Live-Aktivität/Dynamic Island und km-Mitteilungen bleiben über `runActivity` aus `running.js` gesteuert; Native-UI ruft `RunActivityCoordinator`/`RunTracker` nicht direkt. Sperre (Bildschirm-Lock) ist reine Native-UI.
+
+### 11.6 Was im Web bleibt (Entscheidung Paket N)
+
+- **GPS-Rohpunkte, Filterregeln, Distanz/Pace/kcal/Höhe/Splits/MMA-Phasen**: eine Rechenquelle, sonst weichen Live-Wert und gespeicherter Wert ab. Punkte liegen lokal (`puls-run-track`), nicht im Profil.
+- **Routenplaner-Rechnung**: Native darf den Planer mit MapKit darstellen und **denselben kostenlosen, schlüssellosen BRouter-Dienst** mit identischen Parametern aufrufen (`lonlats` lon,lat|…, `profile=hiking-mountain`, `alternativeidx=0`, `format=geojson`; Distanz aus `track-length`, Anstieg aus `filtered ascend`; ohne Netz gerade Linien). Das ist derselbe Drittanbieter, den die WebView schon nutzt; keine neuen Kosten oder Schlüssel. Native kürzt die Linie wie `runPlannerSave` auf ≤ 800 Punkte und speichert über `route.save`. OSM-Kacheln/Waymarked-Trails sind für MapKit optional (Apple-Karte genügt; bei Trails-Overlay Quellenangabe CC BY-SA). Wer das nicht nativ bauen will, nutzt `routePlanner` mit `web:true`.
+- **„Als Route sichern“ aus einer gespeicherten Aktivität** (`runSaveRouteFromRun`): bleibt Web-Tap im `runDetail` (Web erzeugt die ID mit `uid()`; ohne stabile ID wäre ein Replay nicht idempotent).
+- Teilen, Kartenansicht im Web-Detail, Wochenziele (M5 `progress.goal.set`), Statistik-Auswertung (M5 Progress) und manuelle Aktivitätserfassung (nicht portieren).
