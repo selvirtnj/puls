@@ -62,7 +62,7 @@ final class ProgressTests: XCTestCase {
         XCTAssertEqual(message.projectionSeq, 1)
         XCTAssertEqual(message.seq, 1)
         XCTAssertEqual(message.userId, Self.user)
-        XCTAssertEqual(message.reason, "load")
+        XCTAssertEqual(message.reason, "idle")
         XCTAssertNil(message.raw["accountSection"])
         XCTAssertEqual(message.json, try Fixtures.value("progress-projection"))
         let data = try JSONEncoder().encode(message)
