@@ -20,6 +20,8 @@ final class ProjectionTests: XCTestCase {
         XCTAssertEqual(message.userId, Fixtures.sessionUser)
         XCTAssertFalse(message.ownerPending)
         XCTAssertEqual(message.reason, "date")
+        XCTAssertNil(message.accountSection)
+        XCTAssertEqual(message.raw["accountSection"], .null, "Fixture enthält accountSection ausdrücklich als null")
         XCTAssertEqual(message.flags, .none)
         XCTAssertEqual(message.cloud, CloudStatus(signedIn: true, revision: 17, dirty: true, conflict: false))
     }
@@ -311,6 +313,46 @@ final class ProjectionTests: XCTestCase {
         XCTAssertFalse(ChromeMessage(blocking: false, reason: "session").hidesNativeBars)
         XCTAssertThrowsError(try InboundMessage.decode(JSONValue.parse(#"{"type":"chrome","protocol":1}"#)))
         XCTAssertEqual(try InboundMessage.decode(chrome.json), .chrome(ChromeMessage(blocking: true, reason: "session", page: "workout")))
+    }
+
+    func testChromeFixturesWithAccountSection() throws {
+        guard case .chrome(let modal)? = try InboundMessage.decode(data: Fixtures.data("chrome")) else { return XCTFail("chrome") }
+        XCTAssertEqual(modal, ChromeMessage(blocking: true, reason: "modal", page: "food", accountSection: nil))
+        XCTAssertFalse(modal.hidesNativeBars)
+        guard case .chrome(let account)? = try InboundMessage.decode(data: Fixtures.data("chrome-account")) else { return XCTFail("chrome") }
+        XCTAssertEqual(account, ChromeMessage(blocking: false, reason: "none", page: "account", accountSection: "plan"))
+        XCTAssertEqual(try InboundMessage.decode(account.json), .chrome(account))
+        XCTAssertThrowsError(try InboundMessage.decode(JSONValue.parse(
+            #"{"type":"chrome","protocol":1,"blocking":false,"accountSection":5}"#
+        )))
+    }
+
+    @MainActor
+    func testAccountSectionPrefersChromeOverProjection() throws {
+        let store = try makeStore()
+        store.receive(try InboundMessage.decode(data: Fixtures.data("hello"))!)
+        store.receive(snapshot(userId: Fixtures.sessionUser))
+        var value = try Fixtures.value("projection")
+        value["accountSection"] = "body"
+        store.receive(try XCTUnwrap(InboundMessage.decode(value)))
+        XCTAssertEqual(store.currentProjection?.accountSection, "body")
+        XCTAssertEqual(store.webAccountSection, "body")
+        store.receive(try InboundMessage.decode(data: Fixtures.data("chrome-account"))!)
+        XCTAssertEqual(store.webAccountSection, "plan")
+        store.receive(.chrome(ChromeMessage(blocking: false, reason: "none", page: "account", accountSection: nil)))
+        XCTAssertNil(store.webAccountSection)
+    }
+
+    @MainActor
+    func testEveryHelloIsCountedEvenIfIdentical() throws {
+        let store = try makeStore()
+        let hello = try XCTUnwrap(InboundMessage.decode(data: Fixtures.data("hello")))
+        store.receive(hello)
+        XCTAssertEqual(store.helloCount, 1)
+        // bfcache/pageshow: inhaltsgleiches Hello ohne neues Dokument → neue Bestätigung nötig.
+        store.receive(hello)
+        XCTAssertEqual(store.helloCount, 2)
+        XCTAssertTrue(store.webOffersNativeTabs)
     }
 
     @MainActor

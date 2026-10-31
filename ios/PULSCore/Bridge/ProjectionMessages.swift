@@ -23,6 +23,8 @@ public struct ProjectionMessage: Equatable, Sendable {
     public var cloud: CloudStatus
     /// `load | date | render | background | save | cloud | …`; unbekannte Werte bleiben erhalten.
     public var reason: String
+    /// Schlüssel der Web-Kontounterseite beim Versand oder `nil` (liegt im Umschlag, nicht im `overview`).
+    public var accountSection: String?
     public var overview: OverviewProjection
     /// Die vollständige Nachricht wie empfangen.
     public var raw: JSONValue
@@ -38,6 +40,7 @@ public struct ProjectionMessage: Equatable, Sendable {
         flags = try StateFlags(json: fields["flags"])
         cloud = try CloudStatus(json: fields["cloud"])
         reason = try fields.optionalString("reason") ?? "unknown"
+        accountSection = try fields.optionalString("accountSection")
         guard let overview = fields["overview"] else { throw BridgeDecodingError.missingField("overview") }
         self.overview = try OverviewProjection(json: overview)
         raw = json

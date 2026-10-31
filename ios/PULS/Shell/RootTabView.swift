@@ -105,6 +105,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     /// nach `navigate{web:true}` oder per Ausweichknopf), bis die native Übersicht bewusst wieder gewählt wird.
     private var homeShowsWeb = false
     private var handledNavigation = 0
+    private var handledHello = 0
     private var itemsKey = ""
     private var schemeKey = ""
     /// Zuletzt an `pulsNativeSetChrome` gemeldeter Wert in diesem Dokument.
@@ -226,6 +227,15 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             chromeSent = nil
             chromeRejected = false
         }
+        // Jedes Hello (auch inhaltsgleich nach pagehide/pageshow) widerruft im Web die Bestätigung:
+        // erneut bestätigen, sobald die Leiste sichtbar ist; eine frühere Ablehnung gilt nicht mehr.
+        var reconfirm = false
+        if store.helloCount != handledHello {
+            handledHello = store.helloCount
+            chromeSent = nil
+            chromeRejected = false
+            reconfirm = true
+        }
         // Abgelehnte Übernahme gilt bis zum nächsten Bereitschaftswechsel (neues Hello/Dokument).
         if !store.webOffersNativeTabs { chromeRejected = false }
         let active = store.webOffersNativeTabs && !chromeRejected
@@ -254,7 +264,11 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         rebuildItems(language: projection?.overview.language ?? state.fallbackLanguage)
         for item in tabBar.items ?? [] { item.isEnabled = !state.isBlocked }
         if active { updateScheme(projection) }
-        if active != isActive || hideBars != barsHiddenForSession { setActive(active, hideBars: hideBars) }
+        if active != isActive || hideBars != barsHiddenForSession {
+            setActive(active, hideBars: hideBars)
+        } else if reconfirm, isActive, !barsHiddenForSession {
+            sendChrome(true)
+        }
         // Liest `webOffersOverview` innerhalb der Beobachtung.
         updateVisibility()
     }
@@ -383,6 +397,9 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         guard !state.isBlocked else { return }
         let previousTab = state.selected
         let previousShowsWeb = homeShowsWeb
+        // Rückkehr nur vormerken, wenn die Aktion aus der sichtbaren nativen Übersicht startet
+        // (nicht aus der Web-Übersicht nach „Verlauf ansehen“ o. Ä.).
+        let startedFromNativeOverview = showsNativeOverview
         switch target {
         case .page(let page, _, let web):
             restoreOverviewAfterFlow = false
@@ -392,11 +409,9 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             }
         case .action:
             // Vor dem Aufruf ausblenden, damit Modal/Session sofort sichtbar sind (das `chrome` kommt später).
-            if state.selected == .home {
-                homeShowsWeb = true
-                restoreOverviewAfterFlow = true
-                flowWasBlocking = false
-            }
+            if state.selected == .home { homeShowsWeb = true }
+            restoreOverviewAfterFlow = startedFromNativeOverview
+            flowWasBlocking = false
         }
         updateVisibility()
         bridge.navigate(target) { [weak self] accepted in
@@ -405,6 +420,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             if self.state.selected == (RootTab(rawValue: target.pageName ?? "") ?? previousTab) {
                 self.state.selected = previousTab
                 self.homeShowsWeb = previousShowsWeb
+                self.restoreOverviewAfterFlow = false
+                self.flowWasBlocking = false
                 self.updateVisibility()
             }
         }
@@ -503,7 +520,8 @@ struct ShellHeader: View {
     }
 
     private func title(_ text: OverviewText) -> some View {
-        Text(state.selected.label(text))
+        let section = state.selected == .account ? store.webAccountSection : nil
+        return Text(section.flatMap(text.accountSectionTitle) ?? state.selected.label(text))
             .font(.largeTitle.bold())
             .lineLimit(1)
             .minimumScaleFactor(0.7)

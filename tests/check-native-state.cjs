@@ -14,7 +14,7 @@ function app(options={}){
   if(options.now){const RealDate=Date;ctx.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[options.now]))}static now(){return new RealDate(options.now).getTime()}};run('date=today()')}
   const store=options.store||new Map();let time=0,timerId=0;
   const on=(surface,name,fn)=>{(events[surface][name]??=[]).push(fn)};
-  const event=(surface,name)=>{for(const fn of events[surface][name]||[])fn({})};
+  const event=(surface,name,data={})=>{for(const fn of events[surface][name]||[])fn(data)};
   Object.assign(ctx.localStorage,{getItem(key){reads.push(key);return store.get(key)??null},setItem(key,value){writes.push(key);if(options.failWrite?.(key))throw Error('quota');store.set(key,String(value))},removeItem:key=>store.delete(key)});
   ctx.document.visibilityState='visible';ctx.document.readyState='loading';
   ctx.document.documentElement.dataset={scheme:'dark'};
@@ -438,7 +438,7 @@ function latest(test,reason){const snapshot=test.snapshots().at(-1);assert.equal
     assert.equal(chrome(test).blocking,true);assert.equal(chrome(test).reason,reason);
   };
   t.run('openModal("Synthetic form","<input>")');rejectNavigation(t,'modal');assert.equal(hasNative(t),true);
-  assert.deepEqual(chrome(t),{protocol:1,type:'chrome',blocking:true,reason:'modal',page:'home'});
+  assert.deepEqual(chrome(t),{protocol:1,type:'chrome',blocking:true,reason:'modal',page:'home',accountSection:null});
   t.run('modal.close()');t.event('document','close');assert.equal(chrome(t).blocking,false);
   assert.equal(t.ctx.window.pulsNativeSetDate('2026-10-27'),true);
   // The only permitted action while blocked is closing the quick-add menu itself.
@@ -491,6 +491,51 @@ function latest(test,reason){const snapshot=test.snapshots().at(-1);assert.equal
   t.run('state.foods=[{id:"unicode-food",date,meal:"Snacks",name:"a"+"🥣".repeat(128),grams:1,kcal:0,p:0,c:0,f:0}];save()');t.tick(300);
   const truncatedName=project(t).overview.food.entries[0].name;assert.equal(truncatedName.length,255);assert.equal(truncatedName.isWellFormed(),true);
   assert.equal(truncatedName,'a'+'🥣'.repeat(127));
-  assert.deepEqual({...fixture('chrome'),page:'home'}, {protocol:1,type:'chrome',blocking:true,reason:'modal',page:'home'});
+  assert.deepEqual({...fixture('chrome'),page:'home'}, {protocol:1,type:'chrome',blocking:true,reason:'modal',page:'home',accountSection:null});
   console.log('PASS: M3/H review M1–M4/N5–N8: pending recovery replay, blocking chrome/navigation, explicit chrome acknowledgement, feature/cost gates, chart cache, Unicode boundaries and direct-page reports');
+
+  // Same-document restoration must announce that chrome needs a new acknowledgement.
+  const restored=startedOverview({now:input.now,features:[...overviewFeatures,'nativeTabs']});
+  restored.run('var restoreChartCalls=0;const restoreTrend=trendData;trendData=function(){restoreChartCalls++;return restoreTrend()}');
+  const beforeRestoreHellos=restored.messages.filter(x=>x.type==='hello').length,beforeRestoreSnapshots=restored.snapshots().length,
+    beforeRestoreProjection=project(restored).projectionSeq,beforeRestoreWrites=restored.writes.length;
+  restored.ctx.window.pulsNativeSetChrome(true);restored.event('window','pagehide',{persisted:true});assert.equal(hasNative(restored),false);
+  restored.event('window','pageshow',{persisted:true});
+  assert.equal(restored.messages.filter(x=>x.type==='hello').length,beforeRestoreHellos+1);
+  assert.equal(restored.messages.filter(x=>x.type==='hello').at(-1).ownerPending,false);assert.equal(hasNative(restored),false);
+  restored.tick(300);assert.equal(project(restored).projectionSeq,beforeRestoreProjection+1,'projection sequence continues in the same document');
+  assert.equal(restored.snapshots().length,beforeRestoreSnapshots);assert.equal(restored.writes.length,beforeRestoreWrites);
+  assert.equal(restored.run('restoreChartCalls'),0,'fresh handshake reuses the overview/chart cache');
+  assert.equal(restored.ctx.window.pulsNativeSetChrome(true),true);assert.equal(hasNative(restored),true);
+  restored.event('window','pageshow',{persisted:false});assert.equal(hasNative(restored),true);
+  assert.equal(restored.messages.filter(x=>x.type==='hello').length,beforeRestoreHellos+1,'ordinary initial pageshow does not restart the handshake');
+  restored.event('window','pagehide');restored.event('window','pageshow');
+  assert.equal(restored.messages.filter(x=>x.type==='hello').length,beforeRestoreHellos+2,'return after pagehide also announces without a persisted flag');
+  assert.equal(hasNative(restored),false);
+  const pendingRestore=startedOverview({now:input.now,features:[...overviewFeatures,'nativeTabs'],store:new Map([['puls-native-owner-pending',sessionId]])});
+  const pendingHelloCount=pendingRestore.messages.filter(x=>x.type==='hello').length;
+  pendingRestore.event('window','pagehide',{persisted:true});pendingRestore.event('window','pageshow',{persisted:true});pendingRestore.tick(300);
+  assert.equal(pendingRestore.messages.filter(x=>x.type==='hello').length,pendingHelloCount+1);
+  assert.equal(pendingRestore.messages.filter(x=>x.type==='hello').at(-1).ownerPending,true);
+  assert.equal(projections(pendingRestore).length,0);assert.equal(pendingRestore.ctx.window.pulsNativeSetChrome(true),false);
+
+  // Account section is current envelope context, independent of the expensive, cached overview body.
+  const sections=startedOverview({now:input.now});
+  sections.run('var sectionChartCalls=0,sectionOverviewCalls=0;const sectionTrend=trendData;trendData=function(){sectionChartCalls++;return sectionTrend()}');
+  const sectionBuilder=sections.ctx.window.pulsNativeBuildOverview;
+  sections.ctx.window.pulsNativeBuildOverview=(...args)=>{sections.run('sectionOverviewCalls++');return sectionBuilder(...args)};
+  assert.equal(chrome(sections).accountSection,null);assert.equal(project(sections).accountSection,null);
+  assert.equal(sections.ctx.window.pulsNativeNavigate({page:'account',section:'plan',web:true}),true);
+  assert.deepEqual(chrome(sections),fixture('chrome-account'));sections.tick(300);
+  assert.equal(project(sections).accountSection,'plan');assert.equal(sections.run('sectionOverviewCalls'),0);assert.equal(sections.run('sectionChartCalls'),0);
+  sections.run("openAccountSection('body')");assert.equal(chrome(sections).accountSection,'body');sections.tick(300);
+  assert.equal(project(sections).accountSection,'body');
+  sections.run('closeAccountSection()');assert.equal(chrome(sections).accountSection,null);sections.tick(300);assert.equal(project(sections).accountSection,null);
+  sections.run("openAccountSection('plan')");sections.tick(300);assert.equal(project(sections).accountSection,'plan');
+  sections.ctx.window.pulsNativeNavigate({page:'food'});assert.equal(chrome(sections).accountSection,null);sections.tick(300);assert.equal(project(sections).accountSection,null);
+  sections.run('accountSection="plan";render()');sections.tick(300);assert.equal(chrome(sections).accountSection,null,'no account title on another tab');
+  assert.equal(project(sections).accountSection,null);assert.equal(sections.run('sectionOverviewCalls'),0);assert.equal(sections.run('sectionChartCalls'),0);
+  const chromeOnly=started({now:input.now,features:['stateBridge','nativeTabs']});
+  chromeOnly.ctx.window.pulsNativeNavigate({page:'account',section:'plan',web:true});assert.equal(chrome(chromeOnly).accountSection,'plan');assert.equal(projections(chromeOnly).length,0);
+  console.log('PASS: same-document/bfcache hello re-handshake, unchanged owner gates/sequences/cost, live accountSection in chrome/projection without rebuilding overview/chart');
 })().catch(error=>{console.error(error);process.exitCode=1});

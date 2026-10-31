@@ -7,19 +7,20 @@ const preview=typeof firstRunPreview!=='undefined'&&firstRunPreview;
 const seqKey='puls-native-seq',appliedKey='puls-native-applied',ownerPendingKey='puls-native-owner-pending';
 const webVersion=document.currentScript?.src?.match(/[?&]v=([^&#]+)/)?.[1]||'';
 let ready=false,seq=0,timer=null,pending=null,contextReason=null,applying=false,rollingBack=false,saveDepth=0,activating=false,activationProfile=null,adoptingLocal=false,helloOwnerPending;
-let projectionTimer=null,projectionSeq=0,lastProjection=null,projectionRevision=0,forceProjection=false,cachedOverview=null,cachedInputs=null;
+let projectionTimer=null,projectionSeq=0,lastProjection=null,lastProjectionSection,projectionRevision=0,forceProjection=false,cachedOverview=null,cachedInputs=null;
 let chromeRequested=false,chromeSessionHold=false,pageHidden=false,lastChrome=null,reportedPage;
 const feature=name=>Array.isArray(window.pulsNativeFeatures)&&window.pulsNativeFeatures.includes(name);
+const currentAccountSection=()=>page==='account'&&typeof accountSection==='string'&&accountSection?accountSection:null;
 const copy=value=>JSON.parse(JSON.stringify(value));
 const userId=()=>typeof cloudSession!=='undefined'?cloudSession?.user?.id??null:null;
 let stateOwner=userId();
 // A failed login persists its Auth session before fetching the profile. Keep that ambiguity across reloads.
 if(!preview&&stateOwner!==null)try{if(localStorage.getItem(ownerPendingKey)===stateOwner)stateOwner=undefined}catch{stateOwner=undefined}
 const profileReady=()=>!activating&&stateOwner===userId();
-function hello(){
+function hello(force=false){
   const ownerPending=!profileReady();
   if(ownerPending){lastProjection=null;chromeRequested=false;chromeSessionHold=false;syncNativeChrome()}
-  if(!ready||ownerPending===helloOwnerPending)return;
+  if(!ready||!force&&ownerPending===helloOwnerPending)return;
   if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete'],screens:['body'],projections:['overview'],features:['nativeTabs'],ownerPending})){
     helloOwnerPending=ownerPending;
     if(!ownerPending)queueProjection('ready',true);
@@ -42,7 +43,7 @@ function chromeState(){
     (typeof activityDoneId!=='undefined'&&activityDoneId)||visible('#session-root'))reason='session';
   else if((typeof modal!=='undefined'&&modal.open)||document.querySelector('dialog[open]'))reason='modal';
   else if(typeof calendarEditing==='function'&&calendarEditing())reason='editing';
-  return {blocking:reason!=='none',reason,page};
+  return {blocking:reason!=='none',reason,page,accountSection:currentAccountSection()};
 }
 function syncNativeChrome(current=chromeState()){
   const fullscreen=current.reason==='session'||current.reason==='run';
@@ -125,17 +126,17 @@ function projection(reason,force=false){
     if(!sameInputs(inputs,cachedInputs)){
       cachedOverview=window.pulsNativeBuildOverview({seq,revision:projectionRevision});cachedInputs=inputs;
     }
-    const overview=cachedOverview,status={userId:userId(),flags:flags(),cloud:cloud()},stamp=JSON.stringify([status,overview]);
+    const overview=cachedOverview,status={userId:userId(),flags:flags(),cloud:cloud(),accountSection:currentAccountSection()},stamp=JSON.stringify([status,overview]);
     if(!force&&!forceProjection&&stamp===lastProjection)return;
     if(post({type:'projection',name:'overview',projectionSeq:projectionSeq+1,seq,...status,ownerPending:false,reason,overview})){
-      projectionSeq++;lastProjection=stamp;forceProjection=false;
+      projectionSeq++;lastProjection=stamp;lastProjectionSection=status.accountSection;forceProjection=false;
     }
   }catch{ /* A projection failure must not interrupt saving or the existing Web UI. */ }
 }
 function queueProjection(reason='render',force=false){
   if(!feature('nativeOverview'))return;
   if(force)forceProjection=true;
-  if(!forceProjection&&sameInputs(overviewInputs(),cachedInputs))return;
+  if(!forceProjection&&sameInputs(overviewInputs(),cachedInputs)&&currentAccountSection()===lastProjectionSection)return;
   clearTimeout(projectionTimer);
   if(ready&&!applying&&!rollingBack)projectionTimer=setTimeout(()=>{if(pending)flush();projection(reason)},300);
 }
@@ -342,7 +343,11 @@ function loaded(){
   ready=true;hello();reportNavigation();reportChrome();pending='load';flush();
 }
 window.addEventListener('pagehide',()=>{flush();projection('background');pageHidden=true;chromeRequested=false;chromeSessionHold=false;syncNativeChrome()});
-window.addEventListener('pageshow',()=>{pageHidden=false;reportChrome();queueProjection('foreground')});
+window.addEventListener('pageshow',event=>{
+  const restored=pageHidden||event.persisted===true;pageHidden=false;
+  if(restored){chromeRequested=false;chromeSessionHold=false;syncNativeChrome();hello(true)}
+  reportChrome();queueProjection('foreground');
+});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flush();projection('background')}else queueProjection()});
 for(const event of ['close','toggle'])document.addEventListener(event,reportChrome,true);
 for(const event of ['focusin','focusout'])document.addEventListener(event,()=>setTimeout(reportChrome,0),true);

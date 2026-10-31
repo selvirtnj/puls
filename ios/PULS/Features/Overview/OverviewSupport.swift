@@ -61,6 +61,19 @@ struct OverviewText {
         return date.formatted(.dateTime.day().month(.abbreviated).locale(locale))
     }
 
+    /// Titel der Web-Kontounterseiten (`accountSections` in js/account-refresh.js); unbekannt → `nil` (dann „Konto“).
+    func accountSectionTitle(_ key: String) -> String? {
+        switch key {
+        case "plan": return self("Dein Plan", "Your plan")
+        case "body": return self("Körper & Entwicklung", "Body & development")
+        case "adaptive": return self("Adaptiver Erhalt", "Adaptive maintenance")
+        case "design": return self("Sprache & App-Icon", "Language & app icon")
+        case "sounds": return self("Klänge & Feedback", "Sounds & feedback")
+        case "manage": return self("Konto verwalten", "Manage account")
+        default: return nil
+        }
+    }
+
     func macroLabel(_ key: String) -> String {
         switch key {
         case "p": return self("Eiweiß", "Protein")

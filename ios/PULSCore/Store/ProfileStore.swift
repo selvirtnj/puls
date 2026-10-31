@@ -151,6 +151,9 @@ public final class ProfileStore {
     /// M3: `hello` des **aktuellen** Web-Dokuments (nach `webDocumentDidChange()` bis zum nächsten `hello` `nil`).
     /// Anders als `webInfo` bleibt es nicht über ein Neuladen hinweg stehen: die Web-Leiste ist dann wieder sichtbar.
     public private(set) var documentHello: HelloMessage?
+    /// Steigt mit **jedem** empfangenen `hello`, auch mit identischem Inhalt (z. B. nach `pageshow`/bfcache).
+    /// Das Web hat dann eine Chrome-Bestätigung widerrufen; die sichtbare native Leiste bestätigt erneut.
+    public private(set) var helloCount = 0
     /// M3: zuletzt angenommene Übersichts-Projektion dieses Dokuments (nicht persistiert).
     public private(set) var projection: ProjectionMessage?
     /// M3: letzter `chrome`-Zustand dieses Dokuments (`nil` = nichts blockiert).
@@ -259,6 +262,12 @@ public final class ProfileStore {
         }
     }
 
+    /// Aktuelle Web-Kontounterseite: `chrome` ist sofort aktuell, die Projektion folgt verzögert.
+    public var webAccountSection: String? {
+        if let webChrome { return webChrome.accountSection }
+        return currentProjection?.accountSection
+    }
+
     /// Ein Web-Modal oder eine Session sperrt Datums- und Tabwechsel.
     public var webBlocksNavigation: Bool { webChrome?.blocking == true }
 
@@ -329,6 +338,7 @@ public final class ProfileStore {
     private func handleHello(_ hello: HelloMessage) {
         webInfo = hello
         documentHello = hello
+        helloCount += 1
         // Ungeklärte Zuordnung oder Anmeldung: alte Übersicht sofort verdecken und verwerfen.
         if hello.ownerPending { projection = nil }
         acceptAnySnapshotSeq = true

@@ -91,11 +91,14 @@ public struct ChromeMessage: Equatable, Sendable {
     /// `modal | session | run | …`; unbekannte Werte bleiben erhalten.
     public var reason: String?
     public var page: String?
+    /// Schlüssel der offenen Web-Kontounterseite (`plan`, `body`, …) oder `nil` (Übersicht/anderer Tab).
+    public var accountSection: String?
 
-    public init(blocking: Bool, reason: String? = nil, page: String? = nil) {
+    public init(blocking: Bool, reason: String? = nil, page: String? = nil, accountSection: String? = nil) {
         self.blocking = blocking
         self.reason = reason
         self.page = page
+        self.accountSection = accountSection
     }
 
     public init(json: JSONValue) throws {
@@ -103,6 +106,7 @@ public struct ChromeMessage: Equatable, Sendable {
         blocking = try fields.requiredBool("blocking")
         reason = try fields.optionalString("reason")
         page = try fields.optionalString("page")
+        accountSection = try fields.optionalString("accountSection")
     }
 
     /// Native Leisten weg, solange das Web eine Vollbild-Session zeigt.
@@ -116,6 +120,7 @@ public struct ChromeMessage: Equatable, Sendable {
         ]
         if let reason { object["reason"] = .string(reason) }
         if let page { object["page"] = .string(page) }
+        object["accountSection"] = accountSection.map(JSONValue.string) ?? .null
         return .object(object)
     }
 }
