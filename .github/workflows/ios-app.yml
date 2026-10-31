@@ -147,14 +147,17 @@ jobs:
         if: failure()
         working-directory: ios
         run: |
+          cat test.log build.log 2>/dev/null \
+            | grep -E "error:|: error|failed \(|XCTAssert|Test Case .* failed|\*\* (TEST|BUILD) FAILED" \
+            | sed -E "s#^.*/ios/##" | awk '!seen[$0]++' | head -n 80 > errors.txt || true
           {
             echo "## Fehler (Compiler und Tests)"
             echo '```'
-            cat test.log build.log 2>/dev/null \
-              | grep -E "error:|: error|failed \(|XCTAssert|Test Case .* failed|\*\* (TEST|BUILD) FAILED" \
-              | sed -E "s#^.*/ios/##" | sort -u | head -n 80
+            cat errors.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          # Annotationen sind auch ohne Anmeldung sichtbar.
+          head -n 45 errors.txt | while IFS= read -r line; do echo "::error::${line//%/%25}"; done
 
       - name: IPA packen
         working-directory: ios
