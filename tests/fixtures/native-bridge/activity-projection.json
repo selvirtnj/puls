@@ -1,0 +1,154 @@
+{
+  "protocol": 1,
+  "type": "projection",
+  "name": "activity",
+  "projectionSeq": 1,
+  "seq": 2,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": true,
+    "conflict": false
+  },
+  "ownerPending": false,
+  "reason": "interest",
+  "activity": {
+    "language": "de",
+    "locale": "de-DE",
+    "today": "2026-10-28",
+    "types": [
+      {
+        "id": "run",
+        "label": "Laufen",
+        "icon": "run",
+        "gps": true,
+        "category": "run"
+      },
+      {
+        "id": "walk",
+        "label": "Spazieren",
+        "icon": "walk",
+        "gps": true,
+        "category": "walk"
+      },
+      {
+        "id": "hike",
+        "label": "Wandern",
+        "icon": "hike",
+        "gps": true,
+        "category": "walk"
+      },
+      {
+        "id": "mountain",
+        "label": "Berggehen",
+        "icon": "mountain",
+        "gps": true,
+        "category": "walk"
+      },
+      {
+        "id": "tabletennis",
+        "label": "Tischtennis",
+        "icon": "tabletennis",
+        "gps": false,
+        "category": "other"
+      },
+      {
+        "id": "soccer",
+        "label": "Fußball",
+        "icon": "soccer",
+        "gps": false,
+        "category": "other"
+      },
+      {
+        "id": "mma",
+        "label": "MMA",
+        "icon": "mma",
+        "gps": false,
+        "category": "other"
+      },
+      {
+        "id": "padel",
+        "label": "Padel",
+        "icon": "padel",
+        "gps": false,
+        "category": "other"
+      }
+    ],
+    "settings": {
+      "lastType": "run",
+      "rounds": {
+        "work": 180,
+        "rest": 60,
+        "count": 5
+      },
+      "countdownSeconds": 10
+    },
+    "active": null,
+    "summary": null,
+    "routes": [
+      {
+        "id": "q0000000-0000-4000-8000-000000000001",
+        "name": "Parkrunde",
+        "distanceKm": 3.1,
+        "ascentM": 12,
+        "editable": true
+      }
+    ],
+    "recent": [
+      {
+        "id": "r0000000-0000-4000-8000-000000000002",
+        "date": "2026-10-27",
+        "type": "other",
+        "name": "Sonstiges",
+        "startedAt": null,
+        "distanceKm": 0,
+        "durationSeconds": 1200,
+        "paceText": "–",
+        "kcal": null,
+        "hasRoute": false
+      },
+      {
+        "id": "r0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-26",
+        "type": "run",
+        "name": "Laufen",
+        "startedAt": null,
+        "distanceKm": 5.123,
+        "durationSeconds": 1547,
+        "paceText": "5:02 /km",
+        "kcal": 401,
+        "hasRoute": false
+      }
+    ],
+    "omitted": {
+      "routes": 0,
+      "recent": 0
+    },
+    "navigation": {
+      "start": {
+        "action": "activity"
+      },
+      "routes": {
+        "action": "activityRoutes"
+      },
+      "planner": {
+        "action": "routePlanner"
+      }
+    },
+    "planner": {
+      "provider": "brouter",
+      "url": "https://brouter.de/brouter",
+      "profile": "hiking-mountain",
+      "maxWaypoints": 60,
+      "maxLinePoints": 800,
+      "typicalPaceSeconds": 301.9715010735897,
+      "native": true
+    }
+  }
+}

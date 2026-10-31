@@ -118,3 +118,25 @@ Erst nach Paket L und dessen Cross-Review. Dateibesitz durch Koordinator vor Sta
 - Reproduzierbare Messung `node tests/perf-native-projections.cjs 300`, gültige synthetische Daten (300 abgeschlossene Workouts + aktive Session, 1500 Foods, 150 Runs): Progress kalt 502,65 ms, unveränderter Folgeaufruf 5,95 ms, Overview frisch 42,52 ms, Training 3,40 ms. Tatsächliches `set.update`: Projektionskosten bei Interesse Training 3,36 ms; bei Overview + Training 47,68 ms, kein Progress-Build. Kein Geräte-/Layoutnachweis. Einmaliger kalter Progress-Aufbau bleibt deutlich über 50 ms und wird daher nur bei explizitem Interesse nach Ruhezeit ausgeführt.
 - Vorgegebene `perf.cjs 300`/`perf2.cjs 300` ebenfalls ausgeführt: unveränderte Progress-Builds 4,49–4,76 ms, Training ca. 3 ms, Overview ca. 44 ms; erster Progress-Aufbau 481–494 ms. Diese Skripte erzeugen ein laut `validData` ungültiges Testprofil; der erfolgreiche Satz-Op-Nachweis stammt deshalb aus dem zusätzlichen gültigen Benchmark oben. Messungen gelten für lokale Node-VM, nicht für iPhone-WebKit.
 - Tests erweitern Feature-/Interesse-/Ruhezeit-/Input-Grenzen, unveränderte Werte, granularen Cache bei aktiven und historischen Änderungen, Metrikschlüssel ohne Explorer-Build, DE/EN-Chip-Reihenfolge und Query-Schema. Gesamtsuite und abschließendes Cross-Review durch Koordinator beachten. Fremde parallele Native-Änderungen bleiben unangetastet; kein Commit/Push/Versionswechsel.
+
+## M6 — Aktivitäten (Start, Live, Abschluss, Details, Routen)
+
+### Paket N — Web-Datenschnittstelle (Codex `backend`, high; nach Codex-Limit von Claude `puls-backend` fertiggestellt)
+
+Basis `741ba11`, Web v77, Branch `native-ios`. Dateibesitz: `js/native-state.js`, neues `js/native-activity.js` (in `index.html` direkt nach `native-progress.js`, Asset in `sw.js`), neues `tests/check-native-activity.cjs` + Eintrag in `scripts/check.cjs`, Fixtures `activity-*`/`apply-run-start`/`ack-run-start`, Protokoll §11 und dieser Abschnitt. Keine Versionserhöhung, kein Commit/Push, nichts in `ios/`, keine neuen Dienste/Schlüssel.
+
+- Feature **`nativeActivity`**; ohne Feature/Handler keine Globals/Ops/Wrapper/Berechnung. `RunTracker` bleibt einziger GPS-Recorder; Web-Datenweg `runGpsSync`/`drainRunGps` unverändert.
+- `projection{name:'activity'}` nur bei Interesse: Arten (8), Einstellungen, aktive Aktivität mit Zeitbasen, Aufzeichnungsgerät, Runden/MMA-Phase, Route/Fortschritt, Web-Livewerte, Abschluss-Entwurf, Routen und letzte Aktivitäten (≤ 48 Ki). Query `activityResult` für `summary`/`run`/`route`.
+- Ops über die gemeinsame Transaktion: `run.start/pause/resume/lap/finish/summary.save/discard/edit/delete`, `runSettings.set`, `route.save/delete`. `run.finish` wartet asynchron auf alle nativen GPS-Punkte (Web-`finishRunTimer`), sonst `busy`. Native Nachrichten/Töne erst nach bestätigtem Ack, Haptik als Ereignis.
+- `pulsNativeSetActivity`/`openNative{screen:'activity'}`/Web-Fallback mit `web:true`; Web-Live-/Startansicht (z. B. nach Neuladen) wird bei Bestätigung minimiert.
+- Lokal VM-geprüft: Isolation, Interesse/Renderkosten, alte Profile ohne `runs`/`runRoutes`, Start ohne Doppelstart/-Recorder, fremdes Gerät, Segmente, Runden-Replay, Abholen vor Ack/Timeout/Übernahme während des Wartens, Zusammenfassung/Speichern/ID/Route/Laps, 0 km vs. leer, 48-h-Kappung, keine 5-h-Regel, MMA-Phasen und Pause 0, Rollback ohne Recorder-Löschung, readonly/Dialog/Kontozuordnung/bfcache, Routen stabile IDs/Replay/200er-Grenze, Löschen/Bearbeiten mit Konflikt. Kein Geräte-, Swift-, Layout- oder Live-RLS-Nachweis. Unabhängiges Review vor Integration.
+
+### Paket O — Native Aktivitätsoberfläche (Claude UI)
+
+Erst nach Paket N und dessen Cross-Review. Dateibesitz legt der Koordinator fest (`ios/PULS/Features/Activity/*`, nötige BridgeMessages/StateBridge/Router/Outbox- und PULSCoreTests-Erweiterungen). Keine Änderungen an N-Dateien oder Fixtures.
+
+- `nativeActivity` injizieren, Hello prüfen, alle §11-Nachrichten und Fixtures dekodieren; Interesse `activity` während Start/Live/Abschluss/Routen setzen.
+- Artwahl (8), Start mit nativem Countdown (10 s, +10 s, „Jetzt starten“, Abbrechen) → `run.start`; Live-Ansicht mit Uhr aus Zeitbasen, Werten aus der Projektion, Pause/Weiter/Runde/Beenden (zweistufig), Sperre als Native-UI; fremdes Aufzeichnungsgerät nur lesbar. MMA-Rundenanzeige aus `mma`, keine eigenen Signale.
+- Abschluss nach `run.finish`-Ack: Entwurf per Query, Gefühl/Untergrund/Notiz/Ersatzdistanz, Speichern/Verwerfen/Weiter; danach Web-Endscreen wie M4.
+- Details/Bearbeiten/Löschen über `run`-Query und Ops; Routenliste, Routen-Vorschau, Planer mit MapKit + BRouter (§11.6) oder Web-Ausweg.
+- Outbox: Wirkungen aus §11.4, `gone` verwerfen, `conflict` parken und fragen, `busy`/`persist_failed` halten. Abnahme auf dem iPhone: echter Lauf mit Pause/Abschnitten, Hintergrund/Sperre, App-Neustart während Lauf, Abschluss mit allen Punkten, Live-Aktivität genau einmal beendet, zweites Gerät, MMA, Hell/Dunkel, DE/EN, VoiceOver, 390 pt. Codex-Review vor Integration.

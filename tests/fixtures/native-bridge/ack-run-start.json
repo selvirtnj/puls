@@ -1,0 +1,11 @@
+{
+  "protocol": 1,
+  "type": "ack",
+  "id": "a6000000-0000-4000-8000-000000000003",
+  "ok": true,
+  "seq": 2,
+  "result": {
+    "startedAt": 1793188800000,
+    "started": true
+  }
+}
