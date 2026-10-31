@@ -245,6 +245,33 @@ final class ActivityTests: XCTestCase {
         XCTAssertEqual(ActivityOps.limitedNote(long).utf16.count, 199)
     }
 
+    /// Review P2: ein nach Neustart mit `gone` abgelehnter `run.summary.save` gibt seine Eingaben verlustfrei zurück.
+    func testRejectedSaveKeepsInputs() throws {
+        let save = try XCTUnwrap(ActivityCommands.saveSummary(startedAt: Self.startedAt, pausedAt: 1_793_188_830_000, feeling: 4,
+                                                              terrain: "trail", note: "  Intervalle  ", manualKm: .km(0)))
+        let inputs = try XCTUnwrap(ActivityCommands.summaryInputs(from: save.args))
+        XCTAssertEqual(inputs, ActivitySummaryInputs(startedAt: Self.startedAt, feeling: 4, terrain: "trail", note: "Intervalle",
+                                                     manualKm: .km(0)))
+        let empty = try XCTUnwrap(ActivityCommands.saveSummary(startedAt: Self.startedAt, pausedAt: 1, feeling: nil, terrain: nil,
+                                                               note: "", manualKm: ManualDistance.none))
+        let restored = try XCTUnwrap(ActivityCommands.summaryInputs(from: empty.args))
+        XCTAssertEqual(restored.manualKm, ManualDistance.none, "keine Eingabe bleibt keine Eingabe, nicht 0")
+        XCTAssertNil(restored.feeling)
+        XCTAssertNil(ActivityCommands.summaryInputs(from: ["note": "x"]), "ohne startedAt nicht zuordenbar")
+    }
+
+    /// Review P2: Routenvorwahl vor/ohne GPS-Art wählt beim Eintreffen der Projektion eine GPS-Art.
+    func testRouteSelectionResolvesGpsType() throws {
+        let activity = try projection().activity
+        XCTAssertEqual(activity.gpsType(preferring: "mma")?.id, "run", "MMA hat kein GPS: zuletzt genutzte GPS-Art")
+        XCTAssertEqual(activity.gpsType(preferring: "hike")?.id, "hike")
+        var json = try Fixtures.value("activity-projection")
+        json["activity"]?["settings"]?["lastType"] = "padel"
+        guard case .activityProjection(let message)? = try InboundMessage.decode(json) else { return XCTFail("projection") }
+        XCTAssertEqual(message.activity.gpsType(preferring: "mma")?.id, "run", "sonst die erste GPS-Art")
+        XCTAssertEqual(message.activity.gpsType(preferring: nil)?.id, "run")
+    }
+
     func testRunAndRouteResults() throws {
         let runJSON: JSONValue = [
             "type": "activityResult", "protocol": 1, "requestId": "r", "kind": "run", "ownerPending": false, "ok": true,

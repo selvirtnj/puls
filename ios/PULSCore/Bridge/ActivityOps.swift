@@ -377,6 +377,23 @@ extension BridgeOps {
 
 // MARK: - Befehle
 
+/// Eingaben der Abschlussansicht, an die Aktivität `startedAt` gebunden.
+public struct ActivitySummaryInputs: Equatable, Sendable {
+    public var startedAt: Double
+    public var feeling: Int?
+    public var terrain: String?
+    public var note: String
+    public var manualKm: ManualDistance
+
+    public init(startedAt: Double, feeling: Int?, terrain: String?, note: String, manualKm: ManualDistance) {
+        self.startedAt = startedAt
+        self.feeling = feeling
+        self.terrain = terrain
+        self.note = note
+        self.manualKm = manualKm
+    }
+}
+
 /// Befehle der nativen Aktivitätsoberfläche. `expect` ergänzt der Store aus der aktuellen Anzeige.
 /// `nil` = das Web würde `invalid` antworten (Grenzen aus §11.4 schon nativ geprüft).
 public enum ActivityCommands {
@@ -425,6 +442,16 @@ public enum ActivityCommands {
             args["manualKm"] = .number(km)
         }
         return Command(op: ActivityOps.summarySave, args: args)
+    }
+
+    /// Eingaben eines (z. B. nach Neustart mit `gone` abgelehnten) `run.summary.save` zurückgewinnen, damit sie
+    /// nach erneutem `run.finish` den frischen Entwurf vorbelegen. `nil` bei fremder/ungültiger Form.
+    public static func summaryInputs(from args: JSONValue) -> ActivitySummaryInputs? {
+        guard let startedAt = args["startedAt"]?.doubleValue, startedAt.isFinite else { return nil }
+        let feeling = args["feeling"]?.intValue.flatMap { (1...5).contains($0) ? $0 : nil }
+        let terrain = args["terrain"]?.stringValue.flatMap { ActivityOps.terrains.contains($0) ? $0 : nil }
+        return ActivitySummaryInputs(startedAt: startedAt, feeling: feeling, terrain: terrain,
+                                     note: args["note"]?.stringValue ?? "", manualKm: ManualDistance(json: args["manualKm"]))
     }
 
     /// `expect` = beim Öffnen gesehenes `editExpect` (roh); ein inzwischen geänderter Stand führt zu `conflict`.

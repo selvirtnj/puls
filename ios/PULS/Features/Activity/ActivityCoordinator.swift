@@ -68,6 +68,9 @@ final class ActivityCoordinator {
     private(set) var awaitingWebCompletion = false
     /// `run.finish` wartet mehrfach auf GPS-Punkte (`busy`): Knopf „Erneut versuchen“ anbieten.
     private(set) var finishStalled = false
+    /// Ein eigener Befehl wird vom Web gehalten (`persist_failed`, `readonly`, `not_ready`, `busy`): Hinweis plus
+    /// Ausweg (erneut senden mit derselben Befehls-ID, Abbrechen bzw. Minimieren). Schlüssel `start` bzw. `save`.
+    private(set) var heldActions: Set<String> = []
     var summaryForm: ActivitySummaryForm?
     /// Entwurf mit Strecke/Splits/Runden (Query `summary`) für die Aktivität `key`.
     private(set) var summaryDetails: ActivitySummaryDraft?
@@ -102,6 +105,10 @@ final class ActivityCoordinator {
     @ObservationIgnored private var queryCounter = 0
     @ObservationIgnored private var summaryQueryKey: Double?
     @ObservationIgnored private var discardingConflicts: Set<String> = []
+    /// Befehls-ID je Aktionsschlüssel (für Wiederholen/Abbrechen gehaltener Befehle).
+    @ObservationIgnored private var commandIds: [String: String] = [:]
+    /// Vom Web vorgewählte Route, deren Art erst mit der Projektion aufgelöst werden kann.
+    @ObservationIgnored private var pendingRouteSelection: String?
 
     init(store: ProfileStore, bridge: StateBridge, host: UIViewController) {
         self.store = store
@@ -160,6 +167,7 @@ final class ActivityCoordinator {
         updateConfirmation()
         processAcks()
         dropLiveConflicts()
+        if pendingRouteSelection != nil, store.currentActivity != nil { resolvePendingRoute() }
         checkPresentation()
         checkCompletion()
     }
@@ -303,9 +311,22 @@ final class ActivityCoordinator {
 
     /// Route vorwählen; eine Route gilt nur für GPS-Arten, daher ggf. die erste GPS-Art wählen (nicht gespeichert,
     /// erst die bewusste Artwahl speichert `lastType`).
+    /// Kommt die Wahl vor der ersten Projektion (z. B. `openNative{routeId}` direkt nach dem Öffnen), wird die Art
+    /// beim Eintreffen der Projektion aufgelöst (`resolvePendingRoute`).
     func preselect(route id: String) {
         selectedRouteId = id
-        if currentType?.gps != true, let gps = projection?.types.first(where: { $0.gps }) { selectedType = gps.id }
+        pendingRouteSelection = id
+        resolvePendingRoute()
+    }
+
+    private func resolvePendingRoute() {
+        guard let id = pendingRouteSelection, let projection else { return }
+        pendingRouteSelection = nil
+        guard selectedRouteId == id else { return }
+        if let type = projection.gpsType(preferring: selectedType ?? projection.settings.lastType), selectedType != type.id,
+           currentType?.gps != true {
+            selectedType = type.id
+        }
     }
 
     func open(stage requested: ActivityStage) {
@@ -608,7 +629,9 @@ final class ActivityCoordinator {
             let apply = try store.performActivity(command, asUser: store.userId)
             if let busyKey {
                 busyActions.insert(busyKey)
+                heldActions.remove(busyKey)
                 waiting[apply.id] = busyKey
+                commandIds[busyKey] = apply.id
             }
             return apply
         } catch {
@@ -647,7 +670,12 @@ final class ActivityCoordinator {
         let held = event.code.map(Self.heldCodes.contains) ?? false
         if !held {
             waiting[event.commandId] = nil
-            if let key { busyActions.remove(key) }
+            if let key {
+                busyActions.remove(key)
+                heldActions.remove(key)
+            }
+        } else {
+            noteHeld(event, key: key)
         }
         if event.code == .conflict, ActivityOps.liveControl.contains(event.op) {
             // Koordinator-Entscheidung: nicht parken, den neuen Stand zeigen und die Aktion neu anbieten.
@@ -687,6 +715,56 @@ final class ActivityCoordinator {
             // Bearbeiten/Löschen/Routen: Konflikte bleiben geparkt und erscheinen in der Liste.
             if !event.ok, !held, event.code != .conflict { show(event) }
         }
+    }
+
+    /// Gehaltene Befehle (§6: in der Outbox, später erneut): nie ein Warte-Zustand ohne Ausweg. Start und Speichern
+    /// zeigen Hinweis plus „Erneut senden“ (dieselbe Befehls-ID); Steuerknöpfe werden wieder bedienbar (eine
+    /// Wiederholung ist im Web ein Noop: gleicher `expect`).
+    private func noteHeld(_ event: AckEvent, key: String?) {
+        let reason: String
+        switch event.code {
+        case .persistFailed?: reason = text("PULS konnte gerade nicht speichern.", "PULS could not save right now.")
+        case .readonly?: reason = text("PULS ist gerade nur lesbar.", "PULS is read only right now.")
+        case .notReady?: reason = text("PULS ist noch nicht bereit.", "PULS is not ready yet.")
+        default: reason = text("In PULS ist gerade ein anderer Ablauf offen.", "Another flow is open in PULS right now.")
+        }
+        switch event.op {
+        case ActivityOps.runStart:
+            heldActions.insert("start")
+            notice = TrainingNotice(text: reason + " " + text("Der Start ist noch nicht bestätigt.", "The start is not confirmed yet."))
+        case ActivityOps.summarySave:
+            heldActions.insert("save")
+            notice = TrainingNotice(text: reason + " " + text("Die Aktivität ist noch nicht gespeichert.", "The activity is not saved yet."))
+        case ActivityOps.runFinish where event.code != .busy:
+            finishStalled = true
+            notice = TrainingNotice(text: reason)
+        case ActivityOps.runPause, ActivityOps.runResume, ActivityOps.runLap:
+            if let key { busyActions.remove(key) }
+            notice = TrainingNotice(text: reason + " " + text("Wird erneut gesendet.", "Will be sent again."))
+        default:
+            break
+        }
+    }
+
+    /// Gehaltenen Befehl (`start` bzw. `save`) mit derselben Befehls-ID erneut senden.
+    func retryHeld(_ key: String) {
+        heldActions.remove(key)
+        guard let id = commandIds[key], store.hasUnconfirmedActivity({ $0.id == id }) else {
+            busyActions.remove(key)
+            if key == "start", stage == .starting { stage = .start }
+            return
+        }
+        store.retryPending()
+    }
+
+    /// Noch nicht ausgeführten Start verwerfen (gehalten oder ohne Antwort) und zur Artwahl zurück.
+    func cancelPendingStart() {
+        if let id = commandIds["start"], store.pending.contains(where: { $0.command.id == id }) {
+            do { try store.discardCommand(id: id) } catch { notice = TrainingNotice(text: describe(error)) }
+        }
+        busyActions.remove("start")
+        heldActions.remove("start")
+        if stage == .starting { stage = .start }
     }
 
     private func handleStart(_ event: AckEvent, held: Bool) {
@@ -763,14 +841,7 @@ final class ActivityCoordinator {
         }
         switch event.code {
         case .gone?:
-            // Entwurf fehlt (z. B. nach Neuladen): einmal erneut beenden, Eingaben bleiben erhalten.
-            if let active, active.paused, refinishedFor != active.startedAt, let command = ActivityCommands.finish(startedAt: active.startedAt) {
-                refinishedFor = active.startedAt
-                perform(command, busyKey: "finish")
-                notice = TrainingNotice(text: text("Bitte noch einmal speichern.", "Please save again."), isWarning: false)
-            } else {
-                show(event)
-            }
+            restoreSummary(from: event)
         case .conflict?:
             notice = TrainingNotice(text: text("Die Aktivität wurde inzwischen fortgesetzt oder anders gespeichert.",
                                                "The activity was resumed or saved differently in the meantime."))
@@ -779,6 +850,32 @@ final class ActivityCoordinator {
         default:
             show(event)
         }
+    }
+
+    /// `run.summary.save` → `gone` (Web-Entwurf fehlt, z. B. Replay nach App-Neustart): Eingaben aus dem abgelehnten
+    /// Befehl wiederherstellen (an `startedAt` gebunden), einmal erneut `run.finish` senden; der frische Entwurf wird
+    /// dann mit diesen Eingaben vorbelegt (`checkPresentation` behält ein Formular mit passendem `key`).
+    private func restoreSummary(from event: AckEvent) {
+        guard let inputs = ActivityCommands.summaryInputs(from: event.args) else {
+            show(event)
+            return
+        }
+        let raw = store.document["activeRun"]
+        guard raw?["startedAt"]?.doubleValue == inputs.startedAt else {
+            notice = TrainingNotice(text: text("Die Aktivität ist nicht mehr aktiv.", "The activity is no longer active."))
+            return
+        }
+        summaryForm = ActivitySummaryForm(key: inputs.startedAt, feeling: inputs.feeling, terrain: inputs.terrain, note: inputs.note,
+                                          manualKmText: ManualKmInput.text(inputs.manualKm, locale: text.locale))
+        if refinishedFor != inputs.startedAt, let command = ActivityCommands.finish(startedAt: inputs.startedAt) {
+            refinishedFor = inputs.startedAt
+            finishRetries = 0
+            finishStalled = false
+            perform(command, busyKey: "finish")
+        }
+        notice = TrainingNotice(text: text("Bitte noch einmal speichern. Deine Eingaben bleiben erhalten.",
+                                           "Please save again. Your entries are kept."), isWarning: false)
+        if !isPresented { open(stage: .active) }
     }
 
     private func show(_ event: AckEvent) {

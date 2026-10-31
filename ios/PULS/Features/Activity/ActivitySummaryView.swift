@@ -68,6 +68,14 @@ struct ActivitySummaryView: View {
                         .disabled(coordinator.isBusy("resume") || coordinator.isBusy("save"))
                         .accessibilityHint(text("Setzt die Aktivität fort", "Resumes the activity"))
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        coordinator.close()
+                    } label: {
+                        Image(systemName: "chevron.down")
+                    }
+                    .accessibilityLabel(text("Minimieren", "Minimise"))
+                }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button(text("Fertig", "Done")) { focused = false }
@@ -180,6 +188,19 @@ struct ActivitySummaryView: View {
 
     private var saveBar: some View {
         VStack(spacing: 8) {
+            if coordinator.heldActions.contains("save") {
+                // Gehalten (z. B. Speichern im Web fehlgeschlagen): mit derselben Befehls-ID erneut senden.
+                Button(text("Speichern erneut senden", "Send save again")) { coordinator.retryHeld("save") }
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.roundedRectangle(radius: 8))
+                    .frame(minHeight: 44)
+            }
+            if coordinator.finishStalled {
+                Button(text("Abschluss erneut versuchen", "Try finishing again")) { coordinator.retryFinish() }
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.roundedRectangle(radius: 8))
+                    .frame(minHeight: 44)
+            }
             Button {
                 focused = false
                 coordinator.saveSummary()
@@ -290,7 +311,9 @@ struct ActivitySplitsSection: View {
                     }
                 }
                 if let rest = splitRest {
-                    LabeledContent(text.km(rest[0] / 1000) + " km") {
+                    // Das Web zeigt hier eine Pace; Native rechnet keine Pace nach und zeigt die gelieferte Restzeit
+                    // ausdrücklich als eigene Kennzahl.
+                    LabeledContent(text("Rest", "Remainder") + " " + text.km(rest[0] / 1000) + " km · " + text("Zeit", "time")) {
                         Text(text.clock(rest[1])).monospacedDigit()
                     }
                 }

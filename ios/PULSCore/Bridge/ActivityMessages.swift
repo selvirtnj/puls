@@ -93,6 +93,14 @@ public struct ActivityProjection: Equatable, Sendable {
         return types.first { $0.id == id }
     }
 
+    /// Art für eine vorgewählte Route (Routen gelten nur für GPS-Arten): die gewünschte, sonst die zuletzt genutzte,
+    /// sonst die erste GPS-Art. `nil`, wenn es keine GPS-Art gibt.
+    public func gpsType(preferring id: String?) -> ActivityTypeInfo? {
+        if let wanted = type(id), wanted.gps { return wanted }
+        if let last = type(settings.lastType), last.gps { return last }
+        return types.first { $0.gps }
+    }
+
     public func route(_ id: String?) -> ActivityRouteRow? {
         guard let id else { return nil }
         return routes.first { $0.id == id }

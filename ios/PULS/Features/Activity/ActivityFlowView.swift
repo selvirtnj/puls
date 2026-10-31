@@ -163,8 +163,16 @@ private struct ActivityWaitingView: View {
     let coordinator: ActivityCoordinator
     let text: ActivityText
 
+    /// Nach einigen Sekunden ohne Antwort ebenfalls Auswege anbieten (kein Warte-Zustand ohne Ausweg).
+    @State private var slow = false
+
     var body: some View {
+        let starting = coordinator.stage == .starting
         VStack(spacing: 16) {
+            HStack {
+                ActivityCloseButton(label: text("Minimieren", "Minimise")) { coordinator.close() }
+                Spacer()
+            }
             ActivityNoticeBanner(coordinator: coordinator, text: text)
             Spacer()
             ProgressView()
@@ -176,7 +184,25 @@ private struct ActivityWaitingView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+            if starting, slow || coordinator.heldActions.contains("start") {
+                VStack(spacing: 12) {
+                    Button {
+                        coordinator.retryHeld("start")
+                    } label: {
+                        Text(text("Erneut senden", "Send again")).font(.headline).frame(maxWidth: .infinity, minHeight: 52)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.roundedRectangle(radius: 12))
+                    Button(text("Start abbrechen", "Cancel start"), role: .destructive) { coordinator.cancelPendingStart() }
+                        .frame(minHeight: 44)
+                }
+                .padding(.horizontal, 8)
+            }
             Spacer()
+        }
+        .task {
+            try? await Task.sleep(for: .seconds(6))
+            slow = true
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
