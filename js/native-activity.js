@@ -39,7 +39,17 @@ for(const key of ['runDetail','runRouteSheet','runRoutesSheet']){
 }
 const baseView=renderRunView;renderRunView=function(...args){if(performing)runView=null;return baseView.apply(this,args)};
 const baseBeep=runBeep;runBeep=function(...args){if(performing){after.push(()=>baseBeep.apply(this,args));return}return baseBeep.apply(this,args)};
-const baseSummary=runOpenSummary;runOpenSummary=function(run,...args){return finishingRun===run?perform(()=>baseSummary.call(this,run,...args)):baseSummary.call(this,run,...args)};
+// Seal of the state a summary was computed from (this pause, segment, received/stored GPS points). Points arriving
+// later (late native buffer) or a Web Resume + new pause invalidate the draft: it must never be saved, because saving
+// clears the track and native buffers (runGpsStop clear:true) without those points.
+let sealed=null;
+const trackMark=run=>{if(!run?.gps)return [0,0];const t=runTrackFor(run);return [t.points.length,t.native]};
+const baseSummary=runOpenSummary;runOpenSummary=function(run,...args){
+  const open=()=>{const result=baseSummary.call(this,run,...args);
+    if(runSummary?.key===run.startedAt){const [points,received]=trackMark(run);sealed={startedAt:run.startedAt,pausedAt:run.pausedAt??null,segment:run.segment||0,points,received,moving:runSummary.moving}}
+    return result};
+  return finishingRun===run?perform(open):open();
+};
 const ops={
   'run.start':{
     check(a){
@@ -114,7 +124,8 @@ const ops={
         return {noop:true,result:{runId:existing.id,startedAt:a.startedAt}}}
       const p=target(a);if(p.code)return p;
       if(p.run.pausedAt!==a.pausedAt)return fail('conflict','Aktivität inzwischen fortgesetzt');
-      if(!runSummary||runSummary.key!==a.startedAt||runSummary.moving!==Math.max(1,runElapsed(p.run)))return fail('gone','Bitte erneut Beenden wählen');
+      // Bound to the sealed finish state (pause, segment, GPS points); otherwise finish again (never clear unsaved points).
+      if(!currentSummary()||runSummary.key!==a.startedAt)return fail('gone','Bitte erneut Beenden wählen');
       if(a.manualKm!==undefined&&a.manualKm!==''&&(!p.run.gps||runSummary.km>=.01))return fail('invalid','Ersatzdistanz nur bei GPS ohne Strecke');
       // Durations above 48 h are clamped by runSummarySave exactly as in the Web; only an impossible distance is rejected.
       if(runSummary.km>1000)return fail('invalid','Web-Distanzlimit überschritten');
@@ -189,7 +200,12 @@ const ops={
 };
 function coordinates(x,max){return Array.isArray(x)&&x.length>=2&&x.length<=max&&x.every(p=>Array.isArray(p)&&p.length===2&&finite(p[0],-90,90)&&finite(p[1],-180,180))}
 // A Web "Resume" keeps its old runSummary in memory; only a summary of the current pause is a valid draft basis.
-const currentSummary=()=>!!runSummary&&state.activeRun?.startedAt===runSummary.key&&!!state.activeRun.pausedAt&&runSummary.moving===Math.max(1,runElapsed(state.activeRun));
+function currentSummary(){
+  const run=state.activeRun;
+  if(!runSummary||!run||!sealed||!run.pausedAt||runSummary.key!==run.startedAt||sealed.startedAt!==run.startedAt||sealed.pausedAt!==run.pausedAt||
+    sealed.segment!==(run.segment||0)||runSummary.moving!==sealed.moving||runSummary.moving!==Math.max(1,runElapsed(run)))return false;
+  const [points,received]=trackMark(run);return points===sealed.points&&received===sealed.received;
+}
 function summary(details=false){return currentSummary()?copy({...runSummary,elev:runSummary.elev??null,maxSpeed:runSummary.maxSpeed??null,kcal:runSummary.kcal??null,
   manualDistanceAllowed:!!state.activeRun.gps&&runSummary.km<.01,...(details?{route:runPendingRoute,splits:runPendingSplits?.splits??[],splitRest:runPendingSplits?.restMeters?[runPendingSplits.restMeters,runPendingSplits.restSeconds]:null,laps:state.activeRun.laps??[]}: {})}):null}
 function compact(r){return {id:r.id,date:r.date,type:r.type??'run',name:text(runTypeName(runTypeInfo(r.type))),startedAt:r.startedAt??null,distanceKm:r.distanceKm,durationSeconds:r.durationSeconds,

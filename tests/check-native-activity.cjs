@@ -198,5 +198,29 @@ const compare=(name,value)=>{if(process.argv.includes('--write-fixtures'))fs.wri
   assert.equal(sel.run('runView'),null);sel.ctx.window.pulsNativeSetActivity(false);sel.run('runSelectRoute('+JSON.stringify(routeId)+')');
   assert.equal(sel.run('runView'),'ready');assert.equal(sel.run('runViewRouteId'),routeId,'without confirmation the Web start view opens as before');
   console.log('PASS: review be4e4a3 stale summary, Web lock, packet rebuilds, replaced profile retry, route sheet to Native');
+  // Review eae0ce8 (P2): a draft is bound to the sealed finish state; late GPS points must never be cleared unsaved.
+  const late=start();const lt=runStart(late).ack.result.startedAt;late.clock.now+=5000;
+  const lf1=cmd('run.finish',{startedAt:lt});late.ctx.window.pulsNativeApply(clone(lf1));late.ctx.window.pulsRunGpsReceive({runKey:String(lt),from:0,total:0,points:[]});late.tick(120);await settle();
+  ok(late.messages.filter(m=>m.id===lf1.id).at(-1));late.run('runSummaryResume()');assert.equal(late.ctx.window.pulsNativeSetActivity(true),true);
+  const resumedAt=late.clock.now;late.clock.now+=900;
+  const lf2=cmd('run.finish',{startedAt:lt});late.ctx.window.pulsNativeApply(clone(lf2));late.clock.now+=4001;late.tick(120);await settle();
+  code(late.messages.filter(m=>m.id===lf2.id).at(-1),'busy');
+  late.ctx.window.pulsRunGpsReceive({runKey:String(lt),from:0,total:2,points:[[resumedAt+100,51,10,8,1],[resumedAt+3100,51.0003,10,8,1]]});late.tick(120);
+  assert.equal(late.run('runTrackFor(state.activeRun).points.length'),2);const nativeBeforeSave=late.native.length;
+  assert.equal(query(late,'summary').ok,false,'old 0 km draft is not offered after late points');
+  code(late.apply(cmd('run.summary.save',{startedAt:lt,pausedAt:late.state().activeRun.pausedAt,feeling:null,terrain:null,note:''})),'gone');
+  assert.equal(late.state().runs.some(r=>r.startedAt===lt),false);assert(!late.native.slice(nativeBeforeSave).some(m=>m.type==='runGpsStop'&&m.clear===true),'track and native buffer kept');
+  assert.equal(late.run('runTrackFor(state.activeRun).points.length'),2);
+  // Counter-check: a fresh finish includes the late points, then saving is allowed and stores them.
+  const lf3=cmd('run.finish',{startedAt:lt});late.ctx.window.pulsNativeApply(clone(lf3));late.ctx.window.pulsRunGpsReceive({runKey:String(lt),from:2,total:2,points:[]});late.tick(120);await settle();
+  ok(late.messages.filter(m=>m.id===lf3.id).at(-1));const lateSummary=query(late,'summary').result;assert(lateSummary.km>0,'late points counted: '+lateSummary.km);
+  const lsaved=ok(late.apply(cmd('run.summary.save',{startedAt:lt,pausedAt:late.state().activeRun.pausedAt,feeling:null,terrain:null,note:''})));
+  assert.equal(late.state().runs.find(r=>r.id===lsaved.result.runId).distanceKm,lateSummary.km);assert(late.native.some(m=>m.type==='runGpsStop'&&m.clear===true));
+  // Same pause, points after a complete drain: the draft is stale as well.
+  const after=start();const ak=runStart(after).ack.result.startedAt;after.clock.now+=5000;
+  const af=cmd('run.finish',{startedAt:ak});after.ctx.window.pulsNativeApply(clone(af));after.ctx.window.pulsRunGpsReceive({runKey:String(ak),from:0,total:0,points:[]});after.tick(120);await settle();
+  ok(after.messages.filter(m=>m.id===af.id).at(-1));after.ctx.window.pulsRunGpsReceive({runKey:String(ak),from:0,total:1,points:[[ak+1000,51,10,8,0]]});
+  assert.equal(query(after,'summary').ok,false);code(after.apply(cmd('run.summary.save',{startedAt:ak,pausedAt:after.state().activeRun.pausedAt,feeling:null,terrain:null,note:''})),'gone');
+  console.log('PASS: review eae0ce8 draft sealed to pause/segment/GPS points, late points never cleared, fresh finish saves them');
   console.log('PASS: native activity contract (VM only)');
 })().catch(error=>{console.error(error);process.exit(1)});
