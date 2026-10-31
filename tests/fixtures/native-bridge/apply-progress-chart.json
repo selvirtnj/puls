@@ -1,0 +1,22 @@
+{
+  "id": "d5000000-0000-4000-8000-000000000002",
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "baseSeq": 1,
+  "op": "progress.chart.set",
+  "args": {
+    "period": "week",
+    "lines": {
+      "weight": false,
+      "strength": true,
+      "kcal": false
+    },
+    "expect": {
+      "period": "90",
+      "lines": {
+        "weight": true,
+        "strength": false,
+        "kcal": true
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "protocol": 1,
+  "type": "progressResult",
+  "requestId": "q",
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "ownerPending": false,
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "language": "de",
+  "kind": "run",
+  "ok": true,
+  "result": {
+    "kind": "activity",
+    "type": "run",
+    "id": "r0000000-0000-4000-8000-000000000001",
+    "date": "2026-10-26",
+    "name": "Laufen",
+    "durationSeconds": 1547,
+    "durationClock": "25:47",
+    "distanceKm": 5.12,
+    "kcal": 401,
+    "estimatedKcal": true,
+    "paceText": "5:02 /km",
+    "maxSpeed": null,
+    "elevationGain": null,
+    "elevationMax": null,
+    "pauseSeconds": 12,
+    "note": "Fixture",
+    "feeling": null,
+    "terrain": null,
+    "hasRoute": false,
+    "xp": 60,
+    "durationXp": 60,
+    "wins": [],
+    "winsOmitted": 0,
+    "navigation": {
+      "action": "runDetail",
+      "id": "r0000000-0000-4000-8000-000000000001"
+    }
+  }
+}

@@ -1,0 +1,436 @@
+{
+  "protocol": 1,
+  "type": "progressResult",
+  "requestId": "q",
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "ownerPending": false,
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "language": "de",
+  "kind": "month",
+  "ok": true,
+  "result": {
+    "month": "2026-10",
+    "start": "2026-10-01",
+    "end": "2026-10-31",
+    "days": [
+      {
+        "date": "2026-10-01",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-02",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-03",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-04",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-05",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-06",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-07",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-08",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-09",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-10",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-11",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-12",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-13",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-14",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-15",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-16",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-17",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-18",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-19",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-20",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-21",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-22",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-23",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-24",
+        "workouts": 1,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-25",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-26",
+        "workouts": 0,
+        "activities": 1
+      },
+      {
+        "date": "2026-10-27",
+        "workouts": 0,
+        "activities": 1
+      },
+      {
+        "date": "2026-10-28",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-29",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-30",
+        "workouts": 0,
+        "activities": 0
+      },
+      {
+        "date": "2026-10-31",
+        "workouts": 0,
+        "activities": 0
+      }
+    ],
+    "entries": [
+      {
+        "kind": "workout",
+        "type": "gym",
+        "id": "o0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-24",
+        "name": "Push",
+        "durationSeconds": 4200,
+        "durationClock": "1:10:00",
+        "distanceKm": null,
+        "kcal": 343,
+        "estimatedKcal": true
+      },
+      {
+        "kind": "activity",
+        "type": "run",
+        "id": "r0000000-0000-4000-8000-000000000001",
+        "date": "2026-10-26",
+        "name": "Laufen",
+        "durationSeconds": 1547,
+        "durationClock": "25:47",
+        "distanceKm": 5.12,
+        "kcal": 401,
+        "estimatedKcal": true
+      },
+      {
+        "kind": "activity",
+        "type": "other",
+        "id": "r0000000-0000-4000-8000-000000000002",
+        "date": "2026-10-27",
+        "name": "Sonstiges",
+        "durationSeconds": 1200,
+        "durationClock": "20:00",
+        "distanceKm": 0,
+        "kcal": null,
+        "estimatedKcal": true
+      }
+    ],
+    "total": 3,
+    "omitted": 0,
+    "stats": {
+      "count": 1,
+      "sets": 3,
+      "reps": 27,
+      "volume": 1380,
+      "duration": 4200,
+      "average": 4200,
+      "timed": 1,
+      "averageClock": "1:10:00",
+      "durationClock": "1:10:00"
+    },
+    "activity": {
+      "count": 3,
+      "durationSeconds": 6947,
+      "durationLabel": "1 h 56 min",
+      "minutes": 116,
+      "distanceKm": 5.1,
+      "recapDistanceKm": 5.1,
+      "kcal": 744,
+      "unknownDurationCount": 0,
+      "unknownKcalCount": 1
+    },
+    "recaps": {
+      "month": {
+        "mode": "month",
+        "offset": null,
+        "start": "2026-10-01",
+        "end": "2026-10-31",
+        "stats": {
+          "count": 1,
+          "sets": 3,
+          "reps": 27,
+          "volume": 1380,
+          "duration": 4200,
+          "average": 4200,
+          "timed": 1,
+          "averageClock": "1:10:00",
+          "durationClock": "1:10:00"
+        },
+        "xp": 109,
+        "muscles": [
+          {
+            "key": "chest",
+            "label": "Brust",
+            "sets": 3
+          },
+          {
+            "key": "triceps",
+            "label": "Trizeps",
+            "sets": 2
+          }
+        ],
+        "activity": {
+          "count": 3,
+          "durationSeconds": 6947,
+          "durationLabel": "1 h 56 min",
+          "minutes": 116,
+          "distanceKm": 5.1,
+          "recapDistanceKm": 5.1,
+          "kcal": 744,
+          "unknownDurationCount": 0,
+          "unknownKcalCount": 1
+        }
+      },
+      "week": {
+        "mode": "week",
+        "offset": null,
+        "start": "2026-09-28",
+        "end": "2026-10-04",
+        "stats": {
+          "count": 0,
+          "sets": 0,
+          "reps": 0,
+          "volume": 0,
+          "duration": 0,
+          "average": null,
+          "timed": 0,
+          "averageClock": null,
+          "durationClock": "00:00"
+        },
+        "xp": 0,
+        "muscles": [],
+        "activity": {
+          "count": 0,
+          "durationSeconds": 0,
+          "durationLabel": "0 min",
+          "minutes": 0,
+          "distanceKm": 0,
+          "recapDistanceKm": 0,
+          "kcal": 0,
+          "unknownDurationCount": 0,
+          "unknownKcalCount": 0
+        }
+      }
+    },
+    "activityView": {
+      "mode": "month",
+      "offset": null,
+      "filter": "all",
+      "start": "2026-10-01",
+      "end": "2026-10-31",
+      "summary": {
+        "count": 3,
+        "durationSeconds": 6947,
+        "durationLabel": "1 h 56 min",
+        "minutes": 116,
+        "distanceKm": 5.1,
+        "recapDistanceKm": 5.1,
+        "kcal": 744,
+        "unknownDurationCount": 0,
+        "unknownKcalCount": 1
+      },
+      "activeDays": [
+        "2026-10-24",
+        "2026-10-26",
+        "2026-10-27"
+      ],
+      "types": [
+        {
+          "type": "gym",
+          "label": "Gym"
+        },
+        {
+          "type": "run",
+          "label": "Laufen"
+        },
+        {
+          "type": "other",
+          "label": "Sonstiges"
+        }
+      ],
+      "byType": [
+        {
+          "type": "gym",
+          "label": "Gym",
+          "count": 1,
+          "durationSeconds": 4200,
+          "durationLabel": "1 h 10 min",
+          "minutes": 70,
+          "distanceKm": 0,
+          "recapDistanceKm": 0,
+          "kcal": 343,
+          "unknownDurationCount": 0,
+          "unknownKcalCount": 0
+        },
+        {
+          "type": "run",
+          "label": "Laufen",
+          "count": 1,
+          "durationSeconds": 1547,
+          "durationLabel": "26 min",
+          "minutes": 26,
+          "distanceKm": 5.1,
+          "recapDistanceKm": 5.1,
+          "kcal": 401,
+          "unknownDurationCount": 0,
+          "unknownKcalCount": 0
+        },
+        {
+          "type": "other",
+          "label": "Sonstiges",
+          "count": 1,
+          "durationSeconds": 1200,
+          "durationLabel": "20 min",
+          "minutes": 20,
+          "distanceKm": 0,
+          "recapDistanceKm": 0,
+          "kcal": 0,
+          "unknownDurationCount": 0,
+          "unknownKcalCount": 1
+        }
+      ],
+      "entries": [
+        {
+          "kind": "activity",
+          "type": "other",
+          "id": "r0000000-0000-4000-8000-000000000002",
+          "date": "2026-10-27",
+          "name": "Sonstiges",
+          "durationSeconds": 1200,
+          "durationClock": "20:00",
+          "distanceKm": 0,
+          "kcal": null,
+          "estimatedKcal": true
+        },
+        {
+          "kind": "activity",
+          "type": "run",
+          "id": "r0000000-0000-4000-8000-000000000001",
+          "date": "2026-10-26",
+          "name": "Laufen",
+          "durationSeconds": 1547,
+          "durationClock": "25:47",
+          "distanceKm": 5.12,
+          "kcal": 401,
+          "estimatedKcal": true
+        },
+        {
+          "kind": "workout",
+          "type": "gym",
+          "id": "o0000000-0000-4000-8000-000000000001",
+          "date": "2026-10-24",
+          "name": "Push",
+          "durationSeconds": 4200,
+          "durationClock": "1:10:00",
+          "distanceKm": null,
+          "kcal": 343,
+          "estimatedKcal": true
+        }
+      ],
+      "omitted": 0
+    }
+  }
+}

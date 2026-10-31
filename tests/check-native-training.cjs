@@ -416,4 +416,14 @@ const TRAINING_OPS=['workout.start','set.update','set.add','set.remove','exercis
   t=started();t.run('for(let i=0;i<900;i++)state.exerciseBook.push({id:"bulk-"+i,name:"Übung "+"x".repeat(60)+i,target:0});save()');t.tick(300);
   const big=t.training();assert(JSON.stringify(big.training).length<=48*1024);assert(big.training.omitted.library>0);assert.equal(big.training.active.exercises.length,2,'active session never shortened');
   console.log('PASS: shared training op fixtures and bounded projection budget');
+  t=started();t.run('render()');t.tick(300);
+  const oldRecent=clone(t.training().training.recent),oldLibrary=clone(t.training().training.library),oldRoutines=clone(t.training().training.routines);
+  t.run('var cacheAwardCalls=0,cachePreviousCalls=0;const cacheAwards=workoutAwards,cachePrevious=previousPerformance;workoutAwards=function(...args){cacheAwardCalls++;return cacheAwards(...args)};previousPerformance=function(...args){cachePreviousCalls++;return cachePrevious(...args)}');
+  ok(t.apply(cmd('set.update',{workoutId:W,exerciseId:BENCH,setIndex:1,kg:81,expect:{kg:80,reps:7,done:false}})),'cached active edit');
+  assert.equal(t.run('cacheAwardCalls'),0);assert.equal(t.run('cachePreviousCalls'),0);
+  assert.deepEqual(t.training().training.recent,oldRecent);assert.deepEqual(t.training().training.library,oldLibrary);assert.deepEqual(t.training().training.routines,oldRoutines);
+  t.run('state.workouts.find(w=>w.finished).exercises[0].sets[0].kg+=5;save()');t.tick(300);
+  assert.equal(t.run('cacheAwardCalls'),1);assert(t.run('cachePreviousCalls')>0,'historical edits refresh previous values');
+  assert.notDeepEqual(t.training().training.recent,oldRecent);
+  console.log('PASS: granular training caches skip awards/history/library on active edits, invalidate in-place historical changes');
 })().catch(error=>{console.error(error);process.exitCode=1});
