@@ -1,0 +1,51 @@
+{
+ "protocol": 1,
+ "type": "exerciseSearch",
+ "requestId": "fixture",
+ "query": "Seitheben",
+ "equipment": "machine",
+ "total": 3,
+ "canCreate": true,
+ "language": "de",
+ "items": [
+  {
+   "id": "puls_machine_machine_lateral_raise",
+   "name": "Machine Lateral Raise",
+   "muscles": [
+    "shoulders"
+   ],
+   "muscleLabels": [
+    "Schultern"
+   ],
+   "equipment": "machine",
+   "equipmentLabel": "machine",
+   "inLibrary": false
+  },
+  {
+   "id": "puls_machine_single_arm_machine_lateral_raise",
+   "name": "Single-Arm Machine Lateral Raise",
+   "muscles": [
+    "shoulders"
+   ],
+   "muscleLabels": [
+    "Schultern"
+   ],
+   "equipment": "machine",
+   "equipmentLabel": "machine",
+   "inLibrary": false
+  },
+  {
+   "id": "puls_machine_machine_leg_raise",
+   "name": "Machine Leg Raise",
+   "muscles": [
+    "abdominals"
+   ],
+   "muscleLabels": [
+    "Bauch"
+   ],
+   "equipment": "machine",
+   "equipmentLabel": "machine",
+   "inLibrary": false
+  }
+ ]
+}

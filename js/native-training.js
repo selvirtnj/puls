@@ -329,12 +329,28 @@ const ops={
   },
   'exercise.create':{
     check(args){
+      const byName=Object.hasOwn(args,'name'),byCatalog=Object.hasOwn(args,'catalogKey');
+      if(byName===byCatalog)return fail('invalid','Genau eines von name oder catalogKey');
+      if(byCatalog){
+        // catalogKey is an item id from pulsNativeExerciseSearch: a catalog ID or an existing library ID.
+        if(!isId(args.catalogKey))return fail('invalid','Ungültige Katalogübung');
+        if(exerciseBookItem(args.catalogKey))return {noop:true,result:{libraryId:args.catalogKey,created:false}};
+        const source=exerciseCatalog.find(x=>x.id===args.catalogKey);if(!source)return fail('invalid','Unbekannte Katalogübung');
+        const existing=bookByName(source.name);
+        return existing?{noop:true,result:{libraryId:existing.id,created:false}}:{catalogKey:args.catalogKey};
+      }
       const name=typeof args.name==='string'?args.name.trim():'';
       if(!name||name.length>100)return fail('invalid','Name mit 1–100 Zeichen erforderlich');
       const existing=bookByName(name);
       return existing?{noop:true,result:{libraryId:existing.id,created:false}}:{name};
     },
     run(args,plan){
+      if(plan.catalogKey){
+        // training.js:ensureBook, as when picking a catalog exercise in the Web routine editor: catalog ID, name,
+        // muscles and equipment; a same-named library entry is reused.
+        const count=state.exerciseBook.length,b=ensureBook(plan.catalogKey);if(!b)throw Error('Katalogübung nicht übernommen');
+        return {libraryId:b.id,created:state.exerciseBook.length>count};
+      }
       // training.js:addOwnLibraryExercise / enhancements.js:routineAddNew: reuse by name, otherwise a new entry.
       let b=bookByName(plan.name),created=false;
       if(!b){b={id:uid(),name:plan.name,target:0};state.exerciseBook.push(b);save();created=true}
@@ -413,10 +429,24 @@ function search(request){
     matches=exerciseOptions(query);
     exact=!!name&&exerciseOptions(name).some(x=>normalizeSearch(x.name)===normalizeSearch(name));
   }finally{if(filtered)exerciseEquipmentFilter=previous}
-  return {query,equipment,total:matches.length,canCreate:!!name&&!exact,
-    items:matches.slice(0,limit).filter(x=>isId(x.id)).map(x=>({id:x.id,name:text(x.name),muscles:(x.muscles||[]).map(text),
-      equipment:typeof x.equipment==='string'?text(x.equipment):null,inLibrary:!!exerciseBookItem(x.id)}))};
+  return {query,equipment,total:matches.length,canCreate:!!name&&!exact,language:state.language==='en'?'en':'de',
+    items:matches.slice(0,limit).filter(x=>isId(x.id)).map(x=>{
+      const muscles=(x.muscles||[]).map(text),gear=typeof x.equipment==='string'?text(x.equipment):null;
+      return {id:x.id,name:text(x.name),muscles,muscleLabels:muscles.map(muscleLabel),equipment:gear,equipmentLabel:gear===null?null:equipmentLabel(gear),
+        inLibrary:!!exerciseBookItem(x.id)};
+    })};
 }
+// Display labels from the existing Web translations: insights.js muscleNames (German), englishUI (i18n.js and
+// exercise-muscles.js) for English. Without a Web translation the stored key is shown, exactly as the Web picker does.
+function muscleLabel(key){
+  const german=typeof muscleNames==='object'&&typeof muscleNames[key]==='string'?muscleNames[key]:null;
+  if(german===null)return key;
+  if(state.language!=='en')return text(german);
+  // English: the Web translation of the German label; the catalog key is already English otherwise.
+  return typeof englishUI==='object'&&typeof englishUI?.[german]==='string'?text(englishUI[german]):key;
+}
+// The Web has no per-value equipment translation: its picker shows the catalog value in both languages. Keep that.
+const equipmentLabel=key=>key;
 
 // Document-local Web UI state touched by the Web functions; restored on rollback.
 function captureUi(){

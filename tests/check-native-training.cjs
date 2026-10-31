@@ -29,6 +29,8 @@ function app(options={}){
   for(const id of ['workout-dock','session-root']){el(id).remove=()=>{};el(id).querySelector=()=>null}
   ctx.MutationObserver=class{constructor(callback){observers.push(callback)}observe(){}};
   run('render=function(){adaptiveGoals()};dismissSheet=function(){};var navSymbols={workout:""};');
+  // i18n.js (DOM translator) is not loaded; its englishUI table is, so later files add their entries as in the app.
+  run('var englishUI={}');
   for(const file of files){run(fs.readFileSync('js/'+file+'.js','utf8'));run('render=function(){adaptiveGoals()}')}
   run('var setAppLanguage=function(){},chooseAppIcon=function(){}');
   for(const file of ['account-refresh','compact','app-polish']){run(fs.readFileSync('js/'+file+'.js','utf8'));run('render=function(){adaptiveGoals()}')}
@@ -275,7 +277,24 @@ const TRAINING_OPS=['workout.start','set.update','set.add','set.remove','exercis
   ok(t.apply(cmd('routine.delete',{routineId:fresh2.id})),'delete');assert(!t.state().routines.some(r=>r.id===fresh2.id));
   ok(t.apply(cmd('routine.delete',{routineId:fresh2.id})),'delete idempotent');
   assert(t.state().workouts.some(w=>w.routineId===ROUTINE),'history keeps routine IDs');
-  console.log('PASS: routine.save create/edit/conflict/rules with unknown fields, delete idempotent, exercise.create by name');
+  // exercise.create {catalogKey}: same library entry as ensureBook in the Web; existing entries are reused.
+  t=started();const lateral=t.run('exerciseCatalog.find(x=>x.name==="Machine Lateral Raise").id');
+  const fromCatalog=cmd('exercise.create',{catalogKey:lateral});
+  assert.deepEqual(ok(t.apply(fromCatalog),'catalog create').result,{libraryId:lateral,created:true});
+  const webBook=started();webBook.run(`ensureBook('${lateral}')`);
+  assert.deepEqual(t.state().exerciseBook.at(-1),webBook.state().exerciseBook.at(-1),'entry equals Web ensureBook (name, muscles, equipment)');
+  assert.deepEqual(t.state().exerciseBook.at(-1).muscles,['shoulders']);assert.equal(t.state().exerciseBook.at(-1).equipment,'machine');
+  assert.deepEqual(ok(t.apply(fromCatalog),'replay').result,{libraryId:lateral,created:true});
+  assert.deepEqual(ok(t.apply(cmd('exercise.create',{catalogKey:lateral})),'again').result,{libraryId:lateral,created:false});
+  assert.deepEqual(ok(t.apply(cmd('exercise.create',{catalogKey:'x0000000-0000-4000-8000-000000000001'})),'library ID').result,{libraryId:'x0000000-0000-4000-8000-000000000001',created:false});
+  const sameName=t.run('exerciseCatalog.find(x=>x.name==="Machine Bench Press")');
+  const named=ok(t.apply(cmd('exercise.create',{name:sameName.name.toUpperCase()})),'own entry first').result;
+  assert.deepEqual(ok(t.apply(cmd('exercise.create',{catalogKey:sameName.id})),'same name').result,{libraryId:named.libraryId,created:false},'bookByName like ensureBook');
+  const books=t.state().exerciseBook.length;
+  for(const args of [{catalogKey:'unknown'},{catalogKey:''},{catalogKey:lateral,name:'x'},{}])code(t.apply(cmd('exercise.create',args)),'invalid',JSON.stringify(args));
+  assert.equal(t.state().exerciseBook.length,books);
+  t=started();assert.equal(ok(t.apply(fixture('apply-training-exercise-create')),'fixture').result.created,true);
+  console.log('PASS: routine.save create/edit/conflict/rules with unknown fields, delete idempotent, exercise.create by name and catalogKey');
 
   // Failure paths roll back profile, history and Web UI state.
   for(const fail of ['puls-v1','puls-native-applied']){
@@ -321,6 +340,16 @@ const TRAINING_OPS=['workout.start','set.update','set.add','set.remove','exercis
   t.ctx.window.pulsNativeExerciseSearch({requestId:'r2',query:'Bench Press'});found=t.messages.at(-1);assert.equal(found.canCreate,false);assert(found.items.some(x=>x.inLibrary));
   t.ctx.window.pulsNativeExerciseSearch({requestId:'r3',query:'Zzz eigene Übung'});assert.equal(t.messages.at(-1).canCreate,true);
   for(const bad of [null,{query:'x'},{requestId:'',query:'x'},{requestId:'r',equipment:'rope'},{requestId:'r',limit:0}])assert.equal(t.ctx.window.pulsNativeExerciseSearch(bad),false);
+  // Display labels from the Web translations; keys stay unchanged. Equipment has no Web translation.
+  t.ctx.window.pulsNativeExerciseSearch({requestId:'fixture',query:'Seitheben',equipment:'machine',limit:3});
+  assert.deepEqual(t.messages.at(-1),fixture('exercise-search'),'shared search fixture (de)');
+  for(const item of t.messages.at(-1).items){assert.equal(item.muscleLabels.length,item.muscles.length);assert.equal(item.equipmentLabel,item.equipment)}
+  const label=key=>{t.ctx.window.pulsNativeExerciseSearch({requestId:'l',query:'Machine Lateral Raise',limit:1});return t.messages.at(-1).items[0]};
+  assert.deepEqual(label().muscleLabels,[t.run('muscleNames.shoulders')]);assert.equal(t.messages.at(-1).language,'de');
+  t.run('state.language="en"');assert.deepEqual(label().muscleLabels,[t.run('englishUI[muscleNames.shoulders]')]);assert.equal(label().muscleLabels[0],'Shoulders');
+  assert.equal(t.messages.at(-1).language,'en');assert.deepEqual(label().muscles,['shoulders'],'keys unchanged');
+  t.run('state.language="de"');t.ctx.window.pulsNativeExerciseSearch({requestId:'tib',query:'Tibialis Raise Machine',limit:1});
+  assert.deepEqual(t.messages.at(-1).items[0].muscleLabels,t.messages.at(-1).items[0].muscles,'no Web translation: key as in the Web picker');
   console.log('PASS: exercise search mirrors Web ranking/filter/own-exercise hint without changing the picker state');
 
   // Review J/P2: native side effects (rest notification, Live Activity) leave an op only once, from the final state.
