@@ -28,6 +28,20 @@ for(const key of ['pulsSound','toast']){const base=globalThis[key];if(typeof bas
 for(const key of ['showUndoDiary','attachFoodExtras']){const base=globalThis[key];if(typeof base==='function')globalThis[key]=function(...args){if(!performing)return base.apply(this,args)}}
 for(const key of ['returnToRecipes','recipesPanel','renderRecipeEditor','applyPackageDefault','ffRenderDetail']){const base=globalThis[key];if(typeof base==='function')globalThis[key]=function(...args){if(!performing)return base.apply(this,args)}}
 const selectBase=selectFood;selectFood=function(id,...args){if(performing){foodSelection=[...state.custom,...foods].find(x=>x.id===id);return}return selectBase.call(this,id,...args)};
+let catalogueReady=false,catalogueLoadAttempt=null;
+function ensureCatalogue(){
+  if(localCatalogue.length){catalogueReady=true;return Promise.resolve(true)}
+  if(catalogueReady)return Promise.resolve(true);
+  // Public catalogue loading is independent of the profile/transaction. Coalesce retries; a failed load stays retryable.
+  if(!catalogueLoadAttempt)catalogueLoadAttempt=Promise.resolve().then(()=>loadFoodCatalogue()).then(rows=>{
+    catalogueReady=localCatalogue.length>0||Array.isArray(rows)&&rows.length===0&&!catalogueError;return catalogueReady;
+  }).catch(()=>false).finally(()=>{catalogueLoadAttempt=null});
+  return catalogueLoadAttempt;
+}
+function missingProduct(ref,message){
+  if(ref?.catalogKey&&!localCatalogue.length&&!catalogueReady){void ensureCatalogue();return fail('busy','Katalog noch nicht verfügbar; nach dem Laden erneut senden')}
+  return fail('gone',message);
+}
 function resolve(ref){
   if(!validRef(ref))return null;
   if(ref.recipeId){const r=(state.recipes||[]).find(x=>x.id===ref.recipeId);return r?{raw:r,food:{id:r.id,recipeId:r.id,name:r.name,unit:'g',...recipeNutrients(r)},ref}:null}
@@ -73,14 +87,14 @@ const ops={
       if(old){const grams=a.product.recipeId&&a.unit==='whole'&&validRecipe(a.expect)?
           (finite(a.amount*a.expect.yield,.1,10000)?Number((a.amount*a.expect.yield).toFixed(6)):null):addQuantity(expected,a,true),target=grams===null?null:addSnapshot(expected,a,grams);
         return target&&matchEntry(old,target)?{noop:true,target,result:entryResult(old)}:fail('conflict','Eintrags-ID bereits belegt')}
-      const p=resolve(a.product);if(!p)return fail('gone','Lebensmittel fehlt');
+      const p=resolve(a.product);if(!p)return missingProduct(a.product,'Lebensmittel fehlt');
+      // A changed source is a conflict even when its new macros/unit would reject the old quantity.
+      if(!same(p.raw,a.expect))return fail('conflict','Produkt oder Rezept inzwischen geändert');
       if(p.catalog){if(!id(a.productId))return fail('invalid','Stabile productId für neuen Katalogeintrag erforderlich');p.food.id=a.productId;
         if(state.custom.some(x=>x.id===a.productId))return fail('conflict','Produkt-ID bereits belegt')}
       if(!keys.every(k=>Number.isFinite(p.food[k])))return fail('invalid','Fehlende Nährwerte bitte im Web prüfen');
       const grams=addQuantity(p.food,a);if(grams===null)return fail('invalid','Menge/Einheit ungültig oder Dichte fehlt');
       const target=addSnapshot(p.food,a,grams);
-      // Compare with the original source first: a changed product must never recreate different historical nutrients.
-      if(!same(p.raw,a.expect))return fail('conflict','Produkt oder Rezept inzwischen geändert');
       return busy({...p,grams,target});
     },
     run(a,p){return perform(()=>{foodSelection=p.food;const count=state.foods.length;
@@ -94,7 +108,8 @@ const ops={
     check(a){if(!fields(a,['id','amount','unit','expect'])||!id(a.id)||!plain(a.expect)||a.expect.id!==a.id)return fail('invalid','Vollständiger Eintrag als expect erforderlich');
       const old=entry(a.id);if(!old)return fail('gone','Eintrag fehlt');
       // Diary does not store density. Editing may scale within its canonical dimension only, just like the Web editor.
-      const grams=canonicalQuantity(a.amount,a.unit,ffBase(old));if(!finite(grams,.1,10000))return fail('invalid','Menge/Einheit ungültig; keine gespeicherte Tagebuch-Dichte');
+      const canonical=canonicalQuantity(a.amount,a.unit,ffBase(old));if(!finite(canonical,.1,10000))return fail('invalid','Menge/Einheit ungültig; keine gespeicherte Tagebuch-Dichte');
+      const grams=Number(canonical.toFixed(6));
       const target=copy(a.expect),factor=grams/target.grams;for(const k of keys)target[k]=round(target[k]*factor);target.grams=grams;
       if(target.nutrients)for(const k of Object.keys(target.nutrients))target.nutrients[k]*=factor;
       if(same(old,target))return {noop:true,target,result:entryResult(old)};if(!same(old,a.expect))return fail('conflict','Eintrag inzwischen geändert');return busy({target,grams});
@@ -146,7 +161,7 @@ const ops={
   },
   'product.favorite':{
     check(a){if(!fields(a,['product','favorite','expect'])||typeof a.favorite!=='boolean'||!plain(a.expect))return fail('invalid','Produkt, favorite und vollständiges expect erforderlich');
-      const p=resolve(a.product);if(!p||p.catalog||p.food.recipeId)return fail('gone','Gespeichertes Lebensmittel fehlt');
+      const p=resolve(a.product);if(!p)return missingProduct(a.product,'Gespeichertes Lebensmittel fehlt');if(p.catalog||p.food.recipeId)return fail('gone','Gespeichertes Lebensmittel fehlt');
       if(!!p.food.favorite===a.favorite)return {noop:true};if(!same(p.raw,a.expect))return fail('conflict','Produkt geändert');return busy(p)},
     run(a,p){perform(()=>{foodSelection=p.food;toggleFoodFavorite()})},
     effective:(s,a)=>{const ref=resolve(a.product)?.food?.id;return !!s.custom?.find(x=>x.id===ref)?.favorite===a.favorite}
@@ -246,7 +261,7 @@ Object.assign(ops,{
   'product.extras.set':{
     check(a){if(!fields(a,['product','expect','density','water'])||!validRef(a.product)||!plain(a.expect)||!small(a)||!['density','water'].some(k=>Object.hasOwn(a,k))||
       a.density!==undefined&&a.density!==null&&!finite(a.density,.01,20)||a.water!==undefined&&a.water!==null&&!finite(a.water,0,100))return fail('invalid','Bekannte Dichte/Wasserwerte und expect erforderlich');
-      const p=resolve(a.product);if(!p||p.catalog||p.food.recipeId)return fail('gone','Gespeichertes Produkt fehlt');
+      const p=resolve(a.product);if(!p)return missingProduct(a.product,'Gespeichertes Produkt fehlt');if(p.catalog||p.food.recipeId)return fail('gone','Gespeichertes Produkt fehlt');
       if(a.water!==undefined&&ffBase(p.food)!=='ml')return fail('invalid','Getränkewasser nur je 100 ml');
       const target=persistTarget(p,a.expect);
       if(Object.hasOwn(a,'density')){if(a.density===null)delete target.density;else target.density=a.density}
@@ -261,7 +276,7 @@ Object.assign(ops,{
   },
   'portion.save':{
     check(a){if(!fields(a,['product','name','amount','expect'])||!validRef(a.product)||typeof a.name!=='string'||!a.name.trim()||a.name.trim().length>80||!finite(a.amount,.1,10000)||!plain(a.expect)||!small(a))return fail('invalid','Name, belegte Menge und expect erforderlich');
-      const p=resolve(a.product);if(!p||p.catalog||p.food.recipeId)return fail('gone','Gespeichertes Produkt fehlt');
+      const p=resolve(a.product);if(!p)return missingProduct(a.product,'Gespeichertes Produkt fehlt');if(p.catalog||p.food.recipeId)return fail('gone','Gespeichertes Produkt fehlt');
       const target={...persistTarget(p,a.expect),portions:[...(a.expect.portions||[]).filter(x=>x.name!==a.name.trim()),{name:a.name.trim(),amount:a.amount,unit:ffBase(p.food),source:'Eigene Portionsangabe'}].slice(-30)};
       if(same(p.raw,target))return {noop:true,target,result:storedProduct(p.raw)};if(!same(p.raw,a.expect))return fail('conflict','Produkt geändert');return busy({...p,target})},
     run(a,p){return perform(()=>{foodSelection=p.food;inputs({'portion-name':value(a.name),'portion-amount':value(a.amount),'ff-detail':null},()=>saveHouseholdPortion());return storedProduct(foodSelection)})},
@@ -269,7 +284,7 @@ Object.assign(ops,{
   },
   'portion.delete':{
     check(a){if(!fields(a,['product','name','expect'])||!validRef(a.product)||typeof a.name!=='string'||!a.name||!plain(a.expect)||!small(a))return fail('invalid','Portionsname und expect erforderlich');
-      const p=resolve(a.product);if(!p||p.catalog||p.food.recipeId)return fail('gone','Produkt fehlt');const target={...persistTarget(p,a.expect),portions:(a.expect.portions||[]).filter(x=>x.name!==a.name)};
+      const p=resolve(a.product);if(!p)return missingProduct(a.product,'Produkt fehlt');if(p.catalog||p.food.recipeId)return fail('gone','Produkt fehlt');const target={...persistTarget(p,a.expect),portions:(a.expect.portions||[]).filter(x=>x.name!==a.name)};
       if(same(p.raw,target))return {noop:true,target,result:storedProduct(p.raw)};if(!same(p.raw,a.expect))return fail('conflict','Produkt geändert');return busy({...p,target})},
     run(a,p){return perform(()=>{foodSelection=p.food;const f=persistSelectedFood();f.portions=(f.portions||[]).filter(x=>x.name!==a.name);return storedProduct(f)})},
     effective:(s,a,p,r)=>same(s.custom?.find(x=>x.id===r.productId),p.target)
@@ -337,10 +352,10 @@ function build(){
 }
 function detail(p){const f=p.food,units=ffUnits(f).map(u=>({...u,label:text(u.label),...(/^p\d+$/.test(u.key)?{snapshot:copy(foodPortions(f)[Number(u.key.slice(1))])}:{})}));
   return {product:compactProduct(f),expect:copy(p.raw),units,nutrients:nutrients(f.nutrients),warnings:foodWarnings(f),
-    defaultAmount:ffLastAmount(f)??defaultPortion(f),base:ffBase(f),newCatalogProduct:p.catalog===true,
+    defaultAmount:ffLastAmount(f)??(f.recipeId?250:defaultPortion(f)),base:ffBase(f),newCatalogProduct:p.catalog===true,
     density:f.density??null,packageAmount:ffPackageKnown(f)?f.packageAmount:null};
 }
-function localDetail(ref,current){const p=resolve(ref);if(!p)return error('product','gone','Lebensmittel fehlt; zunächst lokal suchen');
+function localDetail(ref,current){const p=resolve(ref);if(!p){const missing=missingProduct(ref,'Lebensmittel fehlt; zunächst lokal suchen');return error('product',missing.code,missing.message)}
   const key=ref.catalogKey||p.food.catalogKey;
   if(key&&!p.food.portions)return loadPortionReferences().then(()=>current()?bounded(result('product',detail(resolve(ref)))):null);
   return bounded(result('product',detail(p)));
@@ -349,6 +364,22 @@ let searchSerial=0,pendingSearch=null,searchNetwork=null;
 const jobs=new Map(),offDrafts=new Map();
 function cancelSearch(){pendingSearch?.();pendingSearch=null;searchNetwork?.abort();searchNetwork=null;searchSerial++}
 function cancelQueries(){cancelSearch();for(const j of jobs.values())j.abort();jobs.clear();offDrafts.clear()}
+async function nativeCatalogueFallback(query,serial,current){
+  // Same matching/ranking providers as food-upgrade's fallback, with native-only cancellation. Never borrow or
+  // change catalogueQuerySerial: a concurrently typing Web sheet must not cancel an accepted native search.
+  const alternatives=catalogueAlternatives(query),matches=[];
+  for(let start=0;start<localCatalogue.length;start+=400){
+    if(serial!==searchSerial||!current())return null;
+    for(let index=start;index<Math.min(start+400,localCatalogue.length);index++){
+      const x=localCatalogue[index],text=x.search;
+      if(alternatives.every(words=>words.some(word=>text.includes(word)||text.replace(/ /g,'').includes(word))))
+        matches.push({index,score:foodPriority(x)+foodRelevance(normalizeSearch(x.name),alternatives)});
+    }
+    await wait(0);
+  }
+  if(serial!==searchSerial||!current())return null;
+  matches.sort((a,b)=>b.score-a.score||a.index-b.index);return {indices:matches.slice(0,60).map(x=>x.index),count:matches.length};
+}
 function job(kind,current){jobs.get(kind)?.abort();const c=new AbortController();jobs.set(kind,c);return {controller:c,
   current:()=>current()&&!c.signal.aborted&&jobs.get(kind)===c,close:()=>{if(jobs.get(kind)===c)jobs.delete(kind)}}}
 function wait(ms,signal){return new Promise(resolve=>{if(signal?.aborted){resolve(false);return}const abort=()=>{clearTimeout(timer);resolve(false)},timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve(true)},ms);signal?.addEventListener('abort',abort,{once:true})})}
@@ -462,10 +493,10 @@ async function search(r,current,emit){
   try{
     // Cold catalogue loading/worker startup must not delay saved hits or OFF's 450-ms dispatch.
     const catalogueTask=(async()=>{if(!answer.result.cataloguePending)return;
-      await loadFoodCatalogue();if(!active())return;
+      await ensureCatalogue();if(!active())return;
       let catalog=[];
       if(localCatalogue.length){const available=await startCatalogueWorker();if(!active())return;
-        const found=available?await queryCatalogueAsync(q,'nativeNutrition:'+serial):await fallbackCatalogueSearch(q,catalogueQuerySerial);
+        const found=available?await queryCatalogueAsync(q,'nativeNutrition:'+serial):await nativeCatalogueFallback(q,serial,active);
         if(!active())return;if(found)catalog=found.indices.map(i=>localCatalogue[i]).filter(Boolean)||[];else answer.result.catalogueError='Katalogsuche nicht abgeschlossen';}
       rows=ffRankFoods(q,saved,catalog);localItems();answer.result.cataloguePending=false;answer.result.catalogueError=answer.result.catalogueError||text(catalogueError);onlineItems();publish();
     })();

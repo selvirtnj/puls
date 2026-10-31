@@ -139,6 +139,55 @@ async function checkP2(){
   t=fresh();t.run('modal.open=true');code(t.apply(cmd('product.save',productArgs())),'busy');t.run('modal.open=false;stateRecoveryPending=true');code(t.apply(cmd('recipe.save',{recipe:r,expect:null})),'readonly');
   console.log('PASS P2: product/recipe/planner transaction rollback, safe retry, dialog/read-only isolation');
 }
+async function checkReview(){
+  const last=(t,id='review')=>t.messages.filter(x=>x.type==='nutritionResult'&&x.requestId===id).at(-1);
+  const ask=(t,args)=>assert.equal(t.ctx.window.pulsNativeNutritionQuery({requestId:'review',...args}),true);
+  const row={id:'catalog_0',record:'review',name:'Synthetic catalogue',alias:'',search:'synthetic catalogue',unit:'g',source:'BLS review',kcal:200,p:20,c:30,f:0,nutrients:{vitc:0}};
+  // M1: a worker timeout/error must finish with saved hits and a marker, both without and with OFF.
+  for(const online of [false,true]){
+    const t=start();t.ctx.URLSearchParams=URLSearchParams;t.ctx.fetch=async()=>({ok:true,json:async()=>({products:[]})});
+    t.run('localCatalogue='+JSON.stringify([row])+';catalogueLoading=Promise.resolve(localCatalogue);navigator.onLine=true;startCatalogueWorker=async()=>true;queryCatalogueAsync=async()=>null');
+    ask(t,{kind:'search',q:'Synthetic',online});t.clock.now+=150;t.tick(150);await microtask();
+    if(online){t.clock.now+=300;t.tick(300);await microtask()}
+    assert.equal(last(t).result.phase,'complete');assert.equal(last(t).result.cataloguePending,false);assert(last(t).result.catalogueError);
+    assert(last(t).result.items.some(x=>x.ref.id==='product'),'stored matches survive null worker result');
+    if(online)assert.equal(last(t).result.online.status,'ready','OFF completes despite missing catalogue results');
+  }
+  // M1: change the Web serial between the two real fallback chunks. Native must finish with catalogue hits.
+  let t=start();const rows=Array.from({length:401},(_,i)=>({...row,id:'catalog_'+i,record:String(i),name:i===400?'Synthetic':'Synthetic fallback '+i,search:i===400?'synthetic':'synthetic fallback '+i}));
+  t.run('localCatalogue='+JSON.stringify(rows)+';catalogueLoading=Promise.resolve(localCatalogue);navigator.onLine=false;startCatalogueWorker=async()=>false;fallbackCatalogueSearch=async()=>{throw Error("Web fallback must not be used by native")};var fallbackScoreCalls=0;const reviewPriority=foodPriority;foodPriority=function(x){fallbackScoreCalls++;return reviewPriority(x)}');
+  ask(t,{kind:'search',q:'Synthetic',online:false});t.tick(150);await microtask();
+  assert(t.run('fallbackScoreCalls')>=400,'first 400-item chunk ran');assert.equal(last(t).result.cataloguePending,true);
+  t.run('catalogueQuerySerial++');t.tick(0);await microtask();t.tick(0);await microtask();
+  assert.equal(t.run('catalogueQuerySerial'),1,'native never changes the Web serial');assert.equal(last(t).result.phase,'complete');
+  assert(last(t).result.items.some(x=>x.ref.catalogKey==='BLS review:400'),'second chunk survives Web input');
+  // M2: a fresh Web document must retain pending native work until the catalogue is really loaded.
+  t=start();t.run('localCatalogue=[];catalogueLoading=null;catalogueError="";var reviewLoads=0,reviewLoadDone;loadFoodCatalogue=function(){reviewLoads++;return catalogueLoading??=new Promise(resolve=>{reviewLoadDone=rows=>{localCatalogue=rows;resolve(rows)}})}');
+  const args={id:'review-entry',product:{catalogKey:'BLS review:review'},productId:'review-product',date:'2026-10-28',meal:'Snacks',amount:100,unit:'g',expect:row};
+  const pending=cmd('food.add',args),original=t.state();code(t.apply(pending),'busy');code(t.apply(pending),'busy');
+  const sourceRef={catalogKey:'BLS review:review'};
+  for(const [op,a] of [['product.favorite',{product:sourceRef,favorite:true,expect:row}],['product.extras.set',{product:sourceRef,density:1,expect:row}],
+    ['portion.save',{product:sourceRef,name:'Measured',amount:30,expect:row}],['portion.delete',{product:sourceRef,name:'Measured',expect:row}]])code(t.apply(cmd(op,a)),'busy');
+  const detail= query(t,'product',{product:sourceRef});assert.equal(detail.error.code,'busy');await microtask();assert.equal(t.run('reviewLoads'),1,'loading coalesced across retries/ops');assert.deepEqual(t.state(),original);
+  t.run('reviewLoadDone('+JSON.stringify([row])+')');await microtask();ok(t.apply(pending));assert.equal(t.state().foods.at(-1).id,'review-entry');
+  code(t.apply(cmd('food.add',{...args,id:'unknown-entry',product:{catalogKey:'BLS review:missing'}})),'gone','unknown only after full catalogue load');
+  t=start();t.run('localCatalogue=[];catalogueLoading=null;var reviewLoads=0;loadFoodCatalogue=async function(){reviewLoads++;catalogueError="offline";return []}');
+  code(t.apply(cmd('food.add',args)),'busy');await microtask();code(t.apply(cmd('food.add',args)),'busy');await microtask();assert.equal(t.run('reviewLoads'),2,'failed catalogue loads remain retryable, never gone');
+  // P2 writes carry their source/preview in args; an empty OFF draft cache/catalogue after reload is harmless.
+  t=start();ok(t.apply(cmd('product.save',fixture('apply-nutrition-product-save').args)));ok(t.apply(cmd('recipe.import.save',fixture('apply-nutrition-recipe-import-save').args)));
+  // L3: stale sources conflict before new missing nutrients or changed dimensions can reject the old input.
+  for(const mutation of ['delete state.custom[0].kcal','state.custom[0].unit="ml";delete state.custom[0].density']){
+    t=start();const a=addArgs(t,{amount:100,unit:'g'});t.run(mutation);const before=t.state();code(t.apply(cmd('food.add',a)),'conflict');assert.deepEqual(t.state(),before);
+  }
+  // L4: match the six-decimal canonical rounding used by food.add and the Web quantity form.
+  t=start();const old=t.state().foods.find(x=>x.id==='old'),update=cmd('food.update',{id:'old',amount:1.005,unit:'kg',expect:old});ok(t.apply(update));
+  assert.equal(t.state().foods.find(x=>x.id==='old').grams,1005);t.store.delete('puls-native-applied');ok(t.apply(update));
+  // L5: chooseRecipe starts at 250 g; previous actual recipe amounts still take priority.
+  t=start();assert.equal(query(t,'product',{product:{recipeId:'recipe'}}).result.defaultAmount,250);
+  ok(t.apply(cmd('food.add',addArgs(t,{product:{recipeId:'recipe'},amount:175,unit:'g',expect:t.state().recipes[0]}))));
+  assert.equal(query(t,'product',{product:{recipeId:'recipe'}}).result.defaultAmount,175);
+  console.log('PASS review M1/M2/L3–L5: null worker + OFF completion, native fallback cancellation, reload-safe catalogue busy/retry, P2 source-independent writes, conflict priority, canonical rounding, recipe default');
+}
 (async()=>{
   for(const opts of [{handler:false},{features:['stateBridge']},{features:['nativeNutrition']},{features:['stateBridge','nativeOverview']}]){
     const t=app(opts),before=t.run('[addFood,saveDiaryAmount,deleteSwipeDiary,markFoodDayComplete,pulsSound,toast]');t.start();
@@ -263,4 +312,5 @@ async function checkP2(){
   console.log('PASS: projection budget/truncation, complete totals, Unicode and legacy profiles');
   console.log('PASS: M7/P1 native nutrition (VM; no live RLS, actual Worker/browser layout, camera or Vision proof)');
   await checkP2();
+  await checkReview();
 })().catch(e=>{console.error(e);process.exit(1)});
