@@ -96,7 +96,7 @@ public enum NavigationTarget: Equatable, Hashable, Sendable {
 /// Ohne Meldung berechnet das Web `overview`/`training` wie bisher, `progress` dagegen nie.
 public struct ProjectionInterest: Equatable, Hashable, Sendable {
     public static let allowed: Set<String> = [ProjectionMessage.overviewName, TrainingProjectionMessage.trainingName,
-                                              ProgressProjectionMessage.progressName]
+                                              ProgressProjectionMessage.progressName, ActivityProjectionMessage.activityName]
 
     public let projections: [String]
 
@@ -201,6 +201,22 @@ public enum WebCall {
 
     /// M5 Web-Ausweg aus Kalender/Fortschritt (`{action, id?, web:true}`, §10.5).
     public static func progressNavigate(_ target: ProgressNavigation) -> String {
+        "(typeof window.pulsNativeNavigate==='function')?window.pulsNativeNavigate(\(target.json.serializedString()))!==false:false"
+    }
+
+    /// M6 `window.pulsNativeSetActivity(active)`: `true` erst, wenn Native Aktivitäten für den aktuellen Nutzer zeigen kann.
+    /// Eine reine Web-Live-/Startansicht minimiert das Web dabei selbst; sonstige Web-Abläufe lehnen ab.
+    public static func setActivity(_ active: Bool) -> String {
+        "(typeof window.pulsNativeSetActivity==='function')?window.pulsNativeSetActivity(\(active ? "true" : "false"))===true:false"
+    }
+
+    /// M6 `window.pulsNativeActivityQuery(request)`; Antwort kommt als `activityResult` mit derselben `requestId`.
+    public static func activityQuery(_ request: ActivityQueryRequest) -> String {
+        "(typeof window.pulsNativeActivityQuery==='function')?window.pulsNativeActivityQuery(\(request.json.serializedString()))===true:false"
+    }
+
+    /// M6 Web-Ausweg (§11.5, `web:true` nur für diesen Aufruf; ohne würde der Einstieg wieder nativ umgeleitet).
+    public static func activityNavigate(_ target: ActivityNavigation) -> String {
         "(typeof window.pulsNativeNavigate==='function')?window.pulsNativeNavigate(\(target.json.serializedString()))!==false:false"
     }
 

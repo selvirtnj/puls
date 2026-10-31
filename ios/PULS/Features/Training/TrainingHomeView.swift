@@ -25,6 +25,8 @@ struct TrainingHomeView: View {
     let coordinator: TrainingCoordinator
     /// M5: Ohne nativen Kalender/Fortschritt führt ein Eintrag zur Web-Trainingsseite (Kalender, Rekorde, Rückblick).
     var showsWebHistoryLink = true
+    /// M6: Aktivitäten wie die Web-Karte unter den Routinen (nur mit nativer Aktivitätsoberfläche).
+    var activity: ActivityCoordinator? = nil
     @State private var editor: EditorRequest?
     @State private var showsEmptyStart = false
     @State private var emptyName = ""
@@ -43,6 +45,7 @@ struct TrainingHomeView: View {
         .background(Color(.systemGroupedBackground))
         .environment(\.locale, text.locale)
         .tint(.blue)
+        .modifier(ActivitySheets(coordinator: activity))
         .sheet(item: $editor) { request in
             RoutineEditorView(coordinator: coordinator, draft: request.draft, isNew: request.isNew)
         }
@@ -98,6 +101,9 @@ struct TrainingHomeView: View {
                              startEmpty: { openEmptyStart(text: text) })
             }
             routinesSection(training, text: text, canWrite: canWrite)
+            if let activity, activity.isOffered {
+                ActivityCardSection(coordinator: activity)
+            }
             RecentSection(training: training, text: text)
             // Mit nativem Kalender/Fortschritt (M5) liegen diese im Bereichswähler; der Web-Eintrag bleibt dann nur
             // als Ausweg für ausgelassene Einträge.

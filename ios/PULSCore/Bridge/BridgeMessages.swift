@@ -40,6 +40,10 @@ public enum InboundMessage: Equatable, Sendable {
     case progressProjection(ProgressProjectionMessage)
     /// M5: Antwort auf `pulsNativeProgressQuery` (keine Mutation, kein Ack).
     case progressResult(ProgressResultMessage)
+    /// M6: `projection{name:"activity"}` (Arten, aktive Aktivität mit Zeitbasen, Entwurf, Routen, letzte Aktivitäten).
+    case activityProjection(ActivityProjectionMessage)
+    /// M6: Antwort auf `pulsNativeActivityQuery` (keine Mutation, kein Ack).
+    case activityResult(ActivityResultMessage)
 
     /// `nil` = ignorieren (kein/unbekannter `type`, anderes `protocol`). Wirft bei falscher Form einer bekannten Nachricht.
     public static func decode(_ value: JSONValue) throws -> InboundMessage? {
@@ -60,11 +64,13 @@ public enum InboundMessage: Equatable, Sendable {
             case ProjectionMessage.overviewName: return .projection(try ProjectionMessage(json: value))
             case TrainingProjectionMessage.trainingName: return .trainingProjection(try TrainingProjectionMessage(json: value))
             case ProgressProjectionMessage.progressName: return .progressProjection(try ProgressProjectionMessage(json: value))
+            case ActivityProjectionMessage.activityName: return .activityProjection(try ActivityProjectionMessage(json: value))
             default: return nil
             }
         case "chrome": return .chrome(try ChromeMessage(json: value))
         case "exerciseSearch": return .exerciseSearch(try ExerciseSearchMessage(json: value))
         case "progressResult": return .progressResult(try ProgressResultMessage(json: value))
+        case "activityResult": return .activityResult(try ActivityResultMessage(json: value))
         default: return nil
         }
     }
@@ -94,6 +100,8 @@ public enum InboundMessage: Equatable, Sendable {
         case .exerciseSearch(let message): return message.json
         case .progressProjection(let message): return message.json
         case .progressResult(let message): return message.json
+        case .activityProjection(let message): return message.json
+        case .activityResult(let message): return message.json
         }
     }
 }
@@ -432,16 +440,25 @@ public struct OpenNativeMessage: Equatable, Sendable {
     public var screen: String
     /// M4: `screen:"training"` nennt das aktive Workout.
     public var workoutId: String?
+    /// M6: `screen:"activity"` nennt die aktive Aktivität (`startedAt`) oder `null` (Startansicht). Nachsichtig gelesen:
+    /// ein unerwarteter Wert darf das Öffnen nicht verhindern (Native muss immer etwas zeigen).
+    public var startedAt: Double?
+    /// M6: „Diese Route nehmen“ im Web-Routenblatt: Native wählt diese Route in seiner Startansicht vor.
+    public var routeId: String?
 
-    public init(screen: String, workoutId: String? = nil) {
+    public init(screen: String, workoutId: String? = nil, startedAt: Double? = nil, routeId: String? = nil) {
         self.screen = screen
         self.workoutId = workoutId
+        self.startedAt = startedAt
+        self.routeId = routeId
     }
 
     public init(json: JSONValue) throws {
         let fields = try Fields(json)
         screen = try fields.nonEmptyString("screen")
         workoutId = try fields.optionalString("workoutId")
+        if let value = fields["startedAt"]?.doubleValue, value.isFinite { startedAt = value } else { startedAt = nil }
+        if let value = fields["routeId"]?.stringValue, !value.isEmpty { routeId = value } else { routeId = nil }
     }
 
     public var json: JSONValue {
@@ -449,6 +466,8 @@ public struct OpenNativeMessage: Equatable, Sendable {
             "type": .string("openNative"), "protocol": .number(Double(BridgeProtocol.version)), "screen": .string(screen),
         ]
         if let workoutId { object["workoutId"] = .string(workoutId) }
+        if let startedAt { object["startedAt"] = .number(startedAt) }
+        if let routeId { object["routeId"] = .string(routeId) }
         return .object(object)
     }
 }

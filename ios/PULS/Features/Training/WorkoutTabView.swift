@@ -8,13 +8,15 @@ import PULSCore
 struct WorkoutTabHost: View {
     let training: TrainingCoordinator
     let progress: ProgressCoordinator?
+    /// M6: native Aktivitäten (Karte im Bereich Training).
+    var activity: ActivityCoordinator? = nil
 
     var body: some View {
         Group {
             if let progress {
-                WorkoutTabView(training: training, progress: progress)
+                WorkoutTabView(training: training, progress: progress, activity: activity)
             } else {
-                TrainingHomeView(coordinator: training)
+                TrainingHomeView(coordinator: training, activity: activity)
             }
         }
         .environment(training.store)
@@ -24,6 +26,7 @@ struct WorkoutTabHost: View {
 struct WorkoutTabView: View {
     let training: TrainingCoordinator
     @Bindable var progress: ProgressCoordinator
+    var activity: ActivityCoordinator? = nil
 
     var body: some View {
         let text = progress.text
@@ -70,7 +73,7 @@ struct WorkoutTabView: View {
     @ViewBuilder
     private func trainingContent(text: ProgressText) -> some View {
         if training.isAvailable {
-            TrainingHomeView(coordinator: training, showsWebHistoryLink: !progress.offersAny)
+            TrainingHomeView(coordinator: training, showsWebHistoryLink: !progress.offersAny, activity: activity)
         } else {
             // Nur Kalender/Fortschritt nativ (Web ohne `nativeTraining`): Training bleibt im Web erreichbar.
             ContentUnavailableView {
@@ -80,6 +83,10 @@ struct WorkoutTabView: View {
             } actions: {
                 Button(text("Training öffnen", "Open training")) { training.showWebWorkout() }
                     .buttonStyle(.borderedProminent)
+                if let activity, activity.isOffered {
+                    Button(text("Aktivität starten", "Start activity")) { activity.openStart() }
+                        .buttonStyle(.bordered)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

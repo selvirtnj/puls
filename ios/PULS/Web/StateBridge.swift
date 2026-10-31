@@ -127,6 +127,22 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
         evaluate(WebCall.progressNavigate(target)) { result in completion?((result as? Bool) == true) }
     }
 
+    /// M6 `window.pulsNativeSetActivity(active)`; `completion(true)` nur, wenn das Web die Übernahme bestätigt.
+    func setActivity(_ active: Bool, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.setActivity(active)) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// M6 Aktivitäts-Query; die Antwort kommt als `activityResult` in den Store. `completion(false)`: nicht gesendet
+    /// (Web nicht bereit, GPS-Abschluss läuft, laufende Transaktion, alter Web-Stand).
+    func activityQuery(_ request: ActivityQueryRequest, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.activityQuery(request)) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// M6 Web-Ausweg (§11.5, `web:true` nur für diesen Aufruf).
+    func navigateActivity(_ target: ActivityNavigation, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.activityNavigate(target)) { result in completion?((result as? Bool) == true) }
+    }
+
     /// Meldet die Projektionen der sichtbaren nativen Bildschirme (`pulsNativeSetInterest`). Je Dokument/Hello nur bei
     /// Änderung; nach jedem Hello wird neu gemeldet, damit ein neues Web-Dokument den Stand kennt.
     /// Abgleich und Wiederholung regelt `InterestSync` (PULSCore, getestet).

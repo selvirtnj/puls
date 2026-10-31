@@ -135,6 +135,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     var training: TrainingCoordinator?
     /// M5: nativer Kalender und Fortschritt im Trainings-Tab. Vor `install` setzen.
     var progress: ProgressCoordinator?
+    /// M6: native Aktivitäten (Karte im Trainings-Tab, Vollbild-Ablauf). Vor `install` setzen.
+    var activity: ActivityCoordinator?
     /// M5: Ein Web-Ausweg aus Kalender/Fortschritt (Review, Aktivität, Übungsverlauf …) läuft: native Trainingsansicht
     /// verdecken, bis der Web-Ablauf endet (`chrome` blocking true → false) bzw. nach 3 s ohne Web-Ablauf.
     private var workoutFlowHidden = false
@@ -168,7 +170,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         overviewHost = overview
         let trainingView: UIView?
         if let training {
-            let hosting = UIHostingController(rootView: WorkoutTabHost(training: training, progress: progress))
+            let hosting = UIHostingController(rootView: WorkoutTabHost(training: training, progress: progress, activity: activity))
             hosting.view.backgroundColor = .systemGroupedBackground
             trainingHost = hosting
             trainingView = hosting.view
@@ -357,7 +359,34 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         guard let training, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .workout,
               !workoutShowsWeb, !workoutFlowHidden else { return false }
         // M5: auch ohne Trainings-Projektion, wenn Kalender/Fortschritt nativ angeboten werden.
+        // M6: nach dem Speichern einer Aktivität zeigt das Web seinen Endscreen; bis dahin nicht überdecken.
         return (training.isAvailable || progress?.offersAny == true) && !training.awaitingWebCompletion
+            && activity?.awaitingWebCompletion != true
+    }
+
+    /// M6 Web-Ausweg aus den Aktivitäten (Routenplaner, Web-Detail). Native Ansichten sind bereits geschlossen.
+    func openActivityWeb(_ target: ActivityNavigation) {
+        guard !state.isBlocked else { return }
+        if state.selected == .home {
+            homeShowsWeb = true
+            restoreOverviewAfterFlow = true
+            flowWasBlocking = false
+        } else {
+            beginWorkoutFlow()
+        }
+        updateVisibility()
+        bridge.navigateActivity(target) { [weak self] accepted in
+            guard let self, !accepted else { return }
+            self.workoutFlowHidden = false
+            if self.restoreOverviewAfterFlow {
+                self.restoreOverviewAfterFlow = false
+                self.homeShowsWeb = false
+            }
+            self.updateVisibility()
+            if let activity = self.activity {
+                activity.notice = TrainingNotice(text: activity.text("Das ist in PULS gerade nicht möglich.", "This is not possible in PULS right now."))
+            }
+        }
     }
 
     // MARK: M5 Web-Auswege und Interesse
@@ -415,13 +444,29 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     /// laufendes Workout und bis zur ersten Trainings-Projektion (Übersichts-Einstiege brauchen sie). `progress` nur bei
     /// sichtbarem Kalender/Fortschritt.
     private func reportInterest() {
-        guard isActive, let hello = store.documentHello, !hello.ownerPending else { return }
+        guard let hello = store.documentHello, !hello.ownerPending else { return }
         // Nur Projektionen, die dieses Dokument laut Hello anbietet (sonst lehnt das Web die ganze Liste ab).
         let offered = Set(hello.projections)
+        let activityOffered = activity != nil && offered.contains(ActivityProjectionMessage.activityName)
+        guard isActive else {
+            // Ohne native Leiste gilt das Web-Standardinteresse (Übersicht + Training) unverändert. Nur wenn das Web
+            // native Aktivitäten anbietet, meldet Native diesen Standard ausdrücklich, ergänzt um `activity` bei Bedarf.
+            guard activityOffered, let activity else { return }
+            var names: Set<String> = [ProjectionMessage.overviewName, TrainingProjectionMessage.trainingName]
+            if activity.needsProjection { names.insert(ActivityProjectionMessage.activityName) }
+            bridge.setInterest(ProjectionInterest(names.intersection(offered)), hello: store.helloCount)
+            return
+        }
         var names: Set<String> = [ProjectionMessage.overviewName]
         let workoutVisible = showsNativeTraining
         // Eine native Session verdeckt Kalender/Fortschritt vollständig.
         let sessionOpen = training?.sessionWorkoutId != nil
+        // M6: Aktivitäten für Vollbild/Routen/Detail sowie die Karte im sichtbaren Bereich „Training“.
+        if let activity, activityOffered {
+            let cardVisible = workoutVisible && !sessionOpen && (progress?.effectiveSegment ?? .training) == .training
+                && (progress?.path.isEmpty ?? true)
+            if activity.needsProjection || cardVisible { names.insert(ActivityProjectionMessage.activityName) }
+        }
         if let training {
             if workoutVisible || sessionOpen || training.awaitingWebCompletion
                 || store.trainingProjection == nil || training.training?.active != nil {
@@ -529,6 +574,10 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         guard !state.isBlocked else { return }
         // M4: Trainings-Einstiege (Fortsetzen, Routine starten, freies Training, Routinen) nativ, wenn verfügbar.
         if case .action(let action, let id) = target, let training, training.handleOverviewAction(action, id: id) {
+            return
+        }
+        // M6: laufende Aktivität aus der Übersicht direkt nativ fortsetzen.
+        if case .action("resumeRun", _) = target, let activity, activity.resume() {
             return
         }
         let previousTab = state.selected

@@ -22,7 +22,8 @@ struct OverviewText {
 
     /// Wie `n()` im Web: höchstens eine Nachkommastelle, Gruppierung nach Gebietsschema.
     func number(_ value: Double, digits: Int = 1) -> String {
-        value.formatted(.number.precision(.fractionLength(0...digits)).locale(locale))
+        // Negative Null (z. B. `JSMath.round(-0.4)`) als „0“ zeigen, nie „−0“.
+        (value == 0 ? 0 : value).formatted(.number.precision(.fractionLength(0...digits)).locale(locale))
     }
 
     /// Bereits ganzzahlige Web-Werte (Energie, Makros gegessen, Essens-kcal).
@@ -39,7 +40,7 @@ struct OverviewText {
     }
 
     func signedKg(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0...1)).sign(strategy: .always()).locale(locale)) + " kg"
+        (value == 0 ? 0 : value).formatted(.number.precision(.fractionLength(0...1)).sign(strategy: .always()).locale(locale)) + " kg"
     }
 
     /// Heute/Gestern/Morgen, sonst kurzes Datum (wie `friendlyDay`).

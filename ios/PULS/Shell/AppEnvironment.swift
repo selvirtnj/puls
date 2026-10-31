@@ -19,6 +19,8 @@ final class AppEnvironment {
         environment.reducers.merge(BridgeOps.trainingReducers) { _, new in new }
         // M5: Einstellungs-Ops (Ansicht, Kurven, Wochenziele) zeigen ihren eindeutigen Zielwert sofort.
         environment.reducers.merge(BridgeOps.progressReducers) { _, new in new }
+        // M6: nur eindeutige Aktivitäts-Wirkungen (Verwerfen, Bearbeiten, Löschen, Einstellungen, Route löschen).
+        environment.reducers.merge(BridgeOps.activityReducers) { _, new in new }
         store = ProfileStore(environment: environment)
     }
 }

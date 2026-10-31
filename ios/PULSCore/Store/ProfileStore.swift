@@ -28,6 +28,8 @@ public struct StoreEnvironment: Sendable {
         // M5: Kalender liest nur (Queries, keine Ops); Fortschritt braucht die drei Einstellungs-Ops (§10.1).
         "calendar": [],
         "progress": ProgressOps.all,
+        // M6: die native Aktivitätsoberfläche braucht alle Aktivitäts-Ops (§11.1/§11.4).
+        "activity": ActivityOps.all,
     ]
 
     public init(
@@ -201,6 +203,16 @@ public final class ProfileStore {
     /// M5: steigt bei neuem Dokument, `hello.ownerPending:true` und Nutzerwechsel. Angezeigte Ergebnisse älterer
     /// Generationen sind verworfen; Oberflächen fragen dann neu an.
     public private(set) var progressGeneration = 0
+    /// M6: zuletzt angenommene `activity`-Projektion dieses Dokuments (nicht persistiert).
+    public private(set) var activityProjection: ActivityProjectionMessage?
+    /// M6: angenommene `activityResult`-Antworten (nach `requestId`), höchstens 16, nie persistiert.
+    public private(set) var activityResults: [String: ActivityResultMessage] = [:]
+    /// M6: steigt bei neuem Dokument, `hello.ownerPending:true` und Nutzerwechsel (wie `progressGeneration`).
+    public private(set) var activityGeneration = 0
+    /// M6: `startedAt` aus dem letzten `openNative{screen:'activity'}`.
+    public private(set) var requestedActivityStartedAt: Double?
+    /// M6: vorgewählte Route aus dem letzten `openNative{screen:'activity', routeId}`.
+    public private(set) var requestedActivityRouteId: String?
     public let authority: DataAuthority = .web
 
     /// Übergibt einen Befehl an das Web (`StateBridge`). Ohne Sender bleibt er in der Outbox.
@@ -228,6 +240,15 @@ public final class ProfileStore {
     @ObservationIgnored private var lastProgressProjectionSeq: Int?
     @ObservationIgnored private var pendingProgressQueries: [String: PendingProgressQuery] = [:]
     @ObservationIgnored private var progressResultOrder: [String] = []
+    @ObservationIgnored private var lastActivityProjectionSeq: Int?
+    @ObservationIgnored private var pendingActivityQueries: [String: PendingActivityQuery] = [:]
+    @ObservationIgnored private var activityResultOrder: [String] = []
+
+    private struct PendingActivityQuery {
+        var request: ActivityQueryRequest
+        var userId: String?
+        var generation: Int
+    }
 
     private struct PendingProgressQuery {
         var request: ProgressQueryRequest
@@ -303,6 +324,10 @@ public final class ProfileStore {
         case .openNative(let open):
             requestedScreen = open.screen
             requestedWorkoutId = open.workoutId
+            if open.screen == Self.activityScreen {
+                requestedActivityStartedAt = open.startedAt
+                requestedActivityRouteId = open.routeId
+            }
             log("openNative \(open.screen)")
             return true
         case .navigate(let navigate):
@@ -332,6 +357,10 @@ public final class ProfileStore {
             return handleProgressProjection(projection)
         case .progressResult(let result):
             return handleProgressResult(result)
+        case .activityProjection(let projection):
+            return handleActivityProjection(projection)
+        case .activityResult(let result):
+            return handleActivityResult(result)
         }
     }
 
@@ -383,6 +412,7 @@ public final class ProfileStore {
         lastTrainingProjectionSeq = nil
         exerciseSearch = nil
         resetProgress()
+        resetActivity()
         // Ein neues Dokument hat keinen offenen Dialog; Hello und Lade-Snapshot spielen die Outbox ohnehin ein.
         replayAfterWebDialog = false
         isWaitingForWebDialog = false
@@ -539,6 +569,103 @@ public final class ProfileStore {
         progressGeneration += 1
     }
 
+    // MARK: M6 Aktivitäten
+
+    public static let activityScreen = "activity"
+    /// Eintrag in `window.pulsNativeFeatures` für M6 (nur zusammen mit `stateBridge`).
+    public static let nativeActivityFeature = "nativeActivity"
+
+    /// Das aktuelle Dokument bietet native Aktivitäten an: Screen und Projektion `activity`, alle Aktivitäts-Ops,
+    /// geklärte Zuordnung und keine Vorschau (Schreibbereich).
+    public var webOffersActivity: Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return false }
+        return hello.screens.contains(Self.activityScreen)
+            && hello.projections.contains(ActivityProjectionMessage.activityName)
+            && availableScreens.contains(Self.activityScreen)
+    }
+
+    /// Anzeigefähige Aktivitäts-Projektion desselben Nutzers wie der Spiegel (sonst `nil` → Lade-/Web-Ausweg).
+    public var currentActivity: ActivityProjectionMessage? {
+        guard webOffersActivity, let projection = activityProjection, !projection.ownerPending else { return nil }
+        guard projection.flags.preview || projection.userId == userId else { return nil }
+        return projection
+    }
+
+    /// Letzter `openNative{screen:'activity'}`-Wunsch (`startedAt`, `routeId`), danach geleert.
+    public func consumeActivityRequest() -> (startedAt: Double?, routeId: String?) {
+        defer {
+            requestedActivityStartedAt = nil
+            requestedActivityRouteId = nil
+        }
+        return (requestedActivityStartedAt, requestedActivityRouteId)
+    }
+
+    /// Vor dem Senden einer Aktivitäts-Query aufrufen; nur registrierte Anfragen dieses Dokuments/Nutzers werden angenommen.
+    public func registerActivityQuery(_ request: ActivityQueryRequest) {
+        pendingActivityQueries[request.requestId] = PendingActivityQuery(
+            request: request, userId: userId, generation: activityGeneration
+        )
+    }
+
+    public func forgetActivityQuery(_ requestId: String) {
+        pendingActivityQueries[requestId] = nil
+        if activityResults[requestId] != nil {
+            activityResults[requestId] = nil
+            activityResultOrder.removeAll { $0 == requestId }
+        }
+    }
+
+    public func isActivityQueryPending(_ requestId: String) -> Bool {
+        pendingActivityQueries[requestId] != nil
+    }
+
+    private func handleActivityProjection(_ message: ActivityProjectionMessage) -> Bool {
+        guard !message.ownerPending else {
+            log("activity projection ownerPending ignored")
+            return false
+        }
+        let freshDocument = message.projectionSeq <= 1 && message.reason == "load"
+        if let last = lastActivityProjectionSeq, message.projectionSeq <= last, !freshDocument {
+            log("activity projection \(message.projectionSeq) stale (have \(last))")
+            return false
+        }
+        lastActivityProjectionSeq = message.projectionSeq
+        activityProjection = message
+        return true
+    }
+
+    private func handleActivityResult(_ message: ActivityResultMessage) -> Bool {
+        guard !message.ownerPending, let pending = pendingActivityQueries[message.requestId] else {
+            log("activity result dropped")
+            return false
+        }
+        guard pending.generation == activityGeneration, pending.request.kind.rawValue == message.kind,
+              message.flags.preview || (message.userId == pending.userId && message.userId == userId) else {
+            pendingActivityQueries[message.requestId] = nil
+            log("activity result for other user/document dropped")
+            return false
+        }
+        pendingActivityQueries[message.requestId] = nil
+        activityResults[message.requestId] = message
+        activityResultOrder.removeAll { $0 == message.requestId }
+        activityResultOrder.append(message.requestId)
+        while activityResultOrder.count > 16 {
+            activityResults[activityResultOrder.removeFirst()] = nil
+        }
+        return true
+    }
+
+    private func resetActivity(keepProjection: Bool = false) {
+        if !keepProjection {
+            activityProjection = nil
+            lastActivityProjectionSeq = nil
+        }
+        pendingActivityQueries.removeAll()
+        activityResults.removeAll()
+        activityResultOrder.removeAll()
+        activityGeneration += 1
+    }
+
     private func recordAck(_ ack: AckMessage, command: ApplyCommand, code: AckErrorCode?, message: String?) {
         ackSerial += 1
         recentAcks.append(AckEvent(serial: ackSerial, commandId: command.id, op: command.op, args: command.args,
@@ -582,6 +709,7 @@ public final class ProfileStore {
             trainingProjection = nil
             // §10.3: angezeigte Ergebnisse verdecken, ausstehende Anfragen verwerfen.
             resetProgress()
+            resetActivity()
         }
         acceptAnySnapshotSeq = true
         // Wiederholte Status-Hellos verwerfen weder Spiegel noch Outbox noch gespeicherte Beobachtungen.
@@ -626,7 +754,10 @@ public final class ProfileStore {
         if snapshot.userId != userId {
             awaitingSnapshot.removeAll()
             // Kontowechsel: Fortschrittsdaten des bisherigen Nutzers nie weiter zeigen.
-            if hasDocument { resetProgress(keepProjection: true) }
+            if hasDocument {
+                resetProgress(keepProjection: true)
+                resetActivity(keepProjection: true)
+            }
         }
         acceptAnySnapshotSeq = false
         isWaitingForWeb = false

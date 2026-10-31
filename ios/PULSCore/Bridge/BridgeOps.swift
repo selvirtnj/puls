@@ -9,7 +9,7 @@ public typealias CommandPreparer = @Sendable (_ args: JSONValue, _ document: Pro
 /// `ack.result` (M4, z. B. `{workoutId}`), sonst `nil`.
 public typealias EffectCheck = @Sendable (_ args: JSONValue, _ state: JSONValue, _ result: JSONValue?) -> Bool
 
-/// Op-spezifische Regeln aus NATIVE-BRIDGE-PROTOCOL.md Abschnitt 5, 7, 9 und 10.
+/// Op-spezifische Regeln aus NATIVE-BRIDGE-PROTOCOL.md Abschnitt 5, 7, 9, 10 und 11.
 public enum BridgeOps {
     public static let weightUpsert = "weight.upsert"
     public static let weightDelete = "weight.delete"
@@ -21,6 +21,7 @@ public enum BridgeOps {
         ]
         map.merge(trainingPreparers) { first, _ in first }
         map.merge(progressPreparers) { first, _ in first }
+        map.merge(activityPreparers) { first, _ in first }
         return map
     }()
 
@@ -31,6 +32,7 @@ public enum BridgeOps {
         ]
         map.merge(trainingEffectChecks) { first, _ in first }
         map.merge(progressEffectChecks) { first, _ in first }
+        map.merge(activityEffectChecks) { first, _ in first }
         return map
     }()
 

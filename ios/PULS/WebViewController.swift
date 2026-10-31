@@ -27,6 +27,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var trainingCoordinator: TrainingCoordinator?
     // M5: nativer Kalender und Fortschritt (Features/Calendar, Features/Progress); nil ohne Brücke.
     private var progressCoordinator: ProgressCoordinator?
+    // M6: native Aktivitäten (Features/Activity); nil ohne Brücke. GPS und Live-Aktivität bleiben unten bei pulsNative.
+    private var activityCoordinator: ActivityCoordinator?
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
@@ -60,7 +62,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // Session-Einstiege erst nach pulsNativeSetTraining(true) per openNative{screen:'training'} weiter.
         // 'nativeProgress' (M5): Kalender und Fortschritt nativ im Trainings-Tab; das Web berechnet die Projektion
         // 'progress' nur nach pulsNativeSetInterest({projections:['progress',…]}).
-        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress'"
+        // 'nativeActivity' (M6): Aktivitäten nativ (Start, Countdown, Live, Abschluss, Details, Routen). GPS bleibt
+        // RunTracker, Live-Aktivität bleibt runActivity aus running.js; das Web leitet openRunView erst nach
+        // pulsNativeSetActivity(true) per openNative{screen:'activity'} weiter.
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress','nativeActivity'"
         config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -70,9 +75,13 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             nativeRouter = router
             let training = TrainingCoordinator(store: store, bridge: stateBridge, host: self)
             trainingCoordinator = training
-            stateBridge.onOpenNative = { [weak router, weak training] open in
+            let activity = ActivityCoordinator(store: store, bridge: stateBridge, host: self)
+            activityCoordinator = activity
+            stateBridge.onOpenNative = { [weak router, weak training, weak activity] open in
                 if open.screen == TrainingCoordinator.screen {
                     training?.openFromWeb(workoutId: open.workoutId)
+                } else if open.screen == ActivityCoordinator.screen {
+                    activity?.openFromWeb(startedAt: open.startedAt, routeId: open.routeId)
                 } else {
                     router?.open(open.screen)
                 }
@@ -88,6 +97,12 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             training.onSelectWorkoutTab = { [weak shell] in shell?.selectWorkoutTab() }
             training.onShowWebWorkout = { [weak shell] in shell?.showWebWorkout() }
             training.styleProvider = { [weak shell] in
+                guard let shell, shell.isActive else { return .dark }
+                return shell.style
+            }
+            shell.activity = activity
+            activity.onOpenWeb = { [weak shell] target in shell?.openActivityWeb(target) }
+            activity.styleProvider = { [weak shell] in
                 guard let shell, shell.isActive else { return .dark }
                 return shell.style
             }
