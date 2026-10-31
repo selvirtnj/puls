@@ -15,6 +15,14 @@ extension BridgeOps {
         .object(["id": .string(id), "date": .string(date), "kg": .number(kg)])
     }
 
+    /// `args` für `weight.upsert` mit ausdrücklichem `expect` (`nil` → JSON `null`). Der Preparer überschreibt ein
+    /// gesetztes `expect` nicht; so gilt der Stand, den Selvir beim Öffnen gesehen hat.
+    public static func weightUpsertArgs(id: String, date: String, kg: Double, expect: String?) -> JSONValue {
+        var args = weightUpsertArgs(id: id, date: date, kg: kg)
+        args["expect"] = expect.map(JSONValue.string) ?? .null
+        return args
+    }
+
     /// `args` für `weight.delete`; `expect` ergänzt `prepareWeightDelete` beim `perform`.
     public static func weightDeleteArgs(id: String) -> JSONValue {
         .object(["id": .string(id)])

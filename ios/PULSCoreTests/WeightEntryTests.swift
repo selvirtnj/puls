@@ -47,13 +47,38 @@ final class WeightEntryTests: XCTestCase {
     }
 
     func testLocalDayStringAndNoon() throws {
+        let vienna = try XCTUnwrap(TimeZone(identifier: "Europe/Vienna"))
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "Europe/Vienna"))
-        let lateEvening = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 10, day: 31, hour: 23, minute: 30)))
-        XCTAssertEqual(WeightDay.string(from: lateEvening, calendar: calendar), "2026-10-31")
-        let noon = try XCTUnwrap(WeightDay.date(from: "2026-10-25", calendar: calendar))
+        calendar.timeZone = vienna
+        let lateEvening = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 10, day: 31, hour: 23, minute: 59, second: 59)))
+        let afterMidnight = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 1, hour: 0, minute: 0, second: 1)))
+        XCTAssertEqual(WeightDay.string(from: lateEvening, timeZone: vienna), "2026-10-31")
+        XCTAssertEqual(WeightDay.string(from: afterMidnight, timeZone: vienna), "2026-11-01")
+        // Zeitumstellung (25.10.2026 in Wien): Mittag bleibt am selben Tag.
+        let noon = try XCTUnwrap(WeightDay.date(from: "2026-10-25", timeZone: vienna))
         XCTAssertEqual(calendar.component(.hour, from: noon), 12)
-        XCTAssertEqual(WeightDay.string(from: noon, calendar: calendar), "2026-10-25")
+        XCTAssertEqual(WeightDay.string(from: noon, timeZone: vienna), "2026-10-25")
+        // Obergrenze der Datumsauswahl: letzte Sekunde des lokalen Tages.
+        let end = WeightDay.endOfToday(now: lateEvening.addingTimeInterval(-3600 * 20), timeZone: vienna)
+        XCTAssertEqual(WeightDay.string(from: end, timeZone: vienna), "2026-10-31")
+        XCTAssertEqual(WeightDay.string(from: end.addingTimeInterval(1), timeZone: vienna), "2026-11-01")
+    }
+
+    func testIsoDaysStayGregorianWithOtherDeviceCalendars() throws {
+        let utc = try XCTUnwrap(TimeZone(identifier: "UTC"))
+        // 2026-10-31 12:00 UTC.
+        let instant = Date(timeIntervalSince1970: 1_793_448_000)
+        for identifier in [Calendar.Identifier.buddhist, .japanese, .islamicUmmAlQura, .hebrew] {
+            var device = Calendar(identifier: identifier)
+            device.timeZone = utc
+            // Gerätekalender liefert eine andere Jahreszahl; ISO-Tag muss trotzdem gregorianisch sein.
+            XCTAssertNotEqual(device.component(.year, from: instant), 2026, "\(identifier)")
+        }
+        XCTAssertEqual(WeightDay.calendar(timeZone: utc).identifier, .gregorian)
+        XCTAssertEqual(WeightDay.string(from: instant, timeZone: utc), "2026-10-31")
+        let noon = try XCTUnwrap(WeightDay.date(from: "2026-10-31", timeZone: utc))
+        XCTAssertEqual(noon, instant)
+        XCTAssertEqual(WeightDay.dayNumber("2026-10-31").map { Double($0) * 86_400 + 43_200 }, instant.timeIntervalSince1970)
     }
 
     // MARK: Eingabe wie addWeight

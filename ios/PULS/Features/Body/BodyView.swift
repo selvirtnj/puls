@@ -57,13 +57,11 @@ struct BodyView: View {
         }
         .tint(.blue)
         .environment(\.locale, text.locale)
+        // ISO-Tage und Datumsauswahl immer gregorianisch, unabhängig vom Gerätekalender.
+        .environment(\.calendar, WeightDay.calendar())
         .sheet(item: $editor) { request in
-            WeightEditorSheet(
-                request: request,
-                entries: WeightEntry.entries(in: store.document),
-                text: text
-            ) { date, kg in
-                save(original: request.original, date: date, kg: kg, text: text)
+            WeightEditorSheet(request: request, text: text) { date, kg in
+                save(request, date: date, kg: kg, text: text)
             }
         }
         .alert(
@@ -88,6 +86,12 @@ struct BodyView: View {
         }
         .onChange(of: conflictIDs, initial: true) { _, _ in
             showNextConflict()
+        }
+        .onChange(of: store.userId) { _, _ in
+            // Kontowechsel: Sheet, Rückgängig und Konfliktdialog gehören zum alten Konto.
+            editor = nil
+            undo = nil
+            scheduleNextConflict()
         }
         .onChange(of: alertMessage) { _, message in
             // Ein Hinweis hatte den Konfliktdialog verdrängt: danach wieder zeigen.
@@ -236,12 +240,9 @@ struct BodyView: View {
         })
     }
 
-    private var weightConflicts: [OutboxEntry] {
-        store.conflicts.filter { BodyOps.isWeight($0.command.op) }
-    }
-
+    /// Nur Konflikte des aktuellen Kontos (`ProfileStore.weightConflicts`).
     private var conflictIDs: [String] {
-        weightConflicts.map(\.command.id)
+        store.weightConflicts.map(\.command.id)
     }
 
     // MARK: Aktionen
@@ -249,23 +250,29 @@ struct BodyView: View {
     private func openEditor(_ entry: WeightEntry?) {
         let text = BodyText(document: store.document)
         guard BodyAccess.of(store, text: text).canEdit else { return }
-        if let entry {
-            editor = WeightEditorRequest(
-                original: entry,
-                initialDate: WeightDay.date(from: entry.date) ?? Date(),
-                initialText: text.number(entry.kg)
-            )
-        } else {
-            editor = WeightEditorRequest(original: nil, initialDate: Date(), initialText: "")
-        }
+        editor = WeightEditorRequest(
+            original: entry,
+            userId: store.userId,
+            seen: WeightEntry.entries(in: store.document),
+            initialDate: entry.flatMap { WeightDay.date(from: $0.date) } ?? Date(),
+            initialText: entry.map { text.number($0.kg) } ?? ""
+        )
     }
 
-    /// Neuer Eintrag bekommt eine neue ID (wie `addWeight`), Bearbeiten behält die ID.
-    private func save(original: WeightEntry?, date: Date, kg: Double, text: BodyText) -> String? {
-        let day = WeightDay.string(from: date)
-        let id = original?.id ?? UUID().uuidString.lowercased()
+    private static func newID() -> String {
+        UUID().uuidString.lowercased()
+    }
+
+    /// Wie `addWeight`: immer neue ID; `expect` aus dem Stand beim Öffnen, Konto muss noch dasselbe sein.
+    private func save(_ request: WeightEditorRequest, date: Date, kg: Double, text: BodyText) -> String? {
+        let command: Command
+        if let original = request.original {
+            command = WeightCommands.edit(original: original, kg: kg, newID: Self.newID())
+        } else {
+            command = WeightCommands.add(date: WeightDay.string(from: date), kg: kg, newID: Self.newID(), seen: request.seen)
+        }
         do {
-            try store.perform(Command(op: BridgeOps.weightUpsert, args: BridgeOps.weightUpsertArgs(id: id, date: day, kg: kg)))
+            try store.performWeight(command, asUser: request.userId)
             savedCount += 1
             return nil
         } catch {
@@ -274,28 +281,31 @@ struct BodyView: View {
     }
 
     private func delete(_ entry: WeightEntry, text: BodyText) {
+        let userId = store.userId
         do {
-            try store.perform(Command(op: BridgeOps.weightDelete, args: BridgeOps.weightDeleteArgs(id: entry.id)))
+            try store.performWeight(WeightCommands.delete(entry), asUser: userId)
             deletedCount += 1
-            undo = DeletedWeight(entry: entry)
+            undo = DeletedWeight(entry: entry, userId: userId)
             AccessibilityNotification.Announcement(text("Eintrag gelöscht", "Entry deleted")).post()
         } catch {
             alertMessage = text.message(for: error)
         }
     }
 
-    /// Stellt den gelöschten Eintrag mit derselben ID wieder her, aber nie über einen neueren Eintrag desselben Tages.
+    /// Stellt den gelöschten Eintrag mit derselben ID wieder her, aber nie über einen neueren Eintrag
+    /// (gleicher Tag oder gleiche ID mit anderem Datum) und nie unter einem anderen Konto.
     private func undoDelete(text: BodyText) {
         guard let deleted = undo else { return }
         undo = nil
-        if WeightEntry.entries(in: store.document).contains(where: { $0.date == deleted.entry.date }) {
-            alertMessage = text("Für diesen Tag gibt es inzwischen einen anderen Eintrag. Nichts wurde überschrieben.",
-                                "There is now another entry for this day. Nothing was overwritten.")
+        guard let command = WeightCommands.restore(deleted.entry, current: WeightEntry.entries(in: store.document)) else {
+            alertMessage = text.message(for: WeightCommandError.restoreBlocked)
             return
         }
-        let date = WeightDay.date(from: deleted.entry.date) ?? Date()
-        if let error = save(original: deleted.entry, date: date, kg: deleted.entry.kg, text: text) {
-            alertMessage = error
+        do {
+            try store.performWeight(command, asUser: deleted.userId)
+            savedCount += 1
+        } catch {
+            alertMessage = text.message(for: error)
         }
     }
 
@@ -303,35 +313,27 @@ struct BodyView: View {
 
     private func showNextConflict() {
         guard activeConflict == nil || !conflictIDs.contains(activeConflict?.command.id ?? "") else { return }
-        activeConflict = weightConflicts.first
+        activeConflict = store.weightConflicts.first
     }
 
     private func keepOther(_ conflict: OutboxEntry, text: BodyText) {
         do {
-            try store.discardCommand(id: conflict.command.id)
+            try store.keepOtherWeight(conflictID: conflict.command.id, asUser: conflict.command.userId)
         } catch {
             alertMessage = text.message(for: error)
         }
         scheduleNextConflict()
     }
 
-    /// Neuer Befehl mit frischem `expect` aus der aktuellen Anzeige, danach den geparkten verwerfen.
+    /// Neuer Befehl mit frischem `expect` aus der aktuellen Anzeige, danach den geparkten verwerfen (im Store,
+    /// der das Konto erneut prüft).
     private func useMine(_ conflict: OutboxEntry, text: BodyText) {
-        var args = conflict.command.args
-        args["expect"] = nil
         do {
-            try store.perform(Command(op: conflict.command.op, args: args))
-        } catch {
-            alertMessage = text.message(for: error)
-            scheduleNextConflict()
-            return
-        }
-        do {
-            try store.discardCommand(id: conflict.command.id)
+            try store.useMineWeight(conflictID: conflict.command.id, asUser: conflict.command.userId)
+            if conflict.command.op == BridgeOps.weightUpsert { savedCount += 1 } else { deletedCount += 1 }
         } catch {
             alertMessage = text.message(for: error)
         }
-        if conflict.command.op == BridgeOps.weightUpsert { savedCount += 1 } else { deletedCount += 1 }
         scheduleNextConflict()
     }
 

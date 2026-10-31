@@ -89,17 +89,33 @@ public enum WeightDay {
         return String(format: "%04d-%02d-%02d", year, month, day)
     }
 
-    /// Kalendertag eines Zeitpunkts im angegebenen Kalender (Standard: lokale Zeitzone, wie `today()` im Web).
-    public static func string(from date: Date, calendar: Calendar = .current) -> String {
-        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+    /// Gregorianischer Kalender in `timeZone`. ISO-Tage nie mit `Calendar.current` bilden: ein buddhistischer oder
+    /// japanischer Gerätekalender ergäbe andere Jahreszahlen.
+    public static func calendar(timeZone: TimeZone = .current) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar
+    }
+
+    /// Lokaler Kalendertag eines Zeitpunkts (wie `today()` im Web), immer gregorianisch.
+    public static func string(from date: Date, timeZone: TimeZone = .current) -> String {
+        let parts = calendar(timeZone: timeZone).dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 1970, parts.month ?? 1, parts.day ?? 1)
     }
 
-    /// Lokaler Mittag des Tages (für DatePicker und Diagramm-Achsen).
-    public static func date(from text: String, calendar: Calendar = .current) -> Date? {
+    /// Lokaler Mittag des Tages (für DatePicker und Diagramm-Achsen), immer gregorianisch.
+    public static func date(from text: String, timeZone: TimeZone = .current) -> Date? {
         guard let number = dayNumber(text) else { return nil }
         let (year, month, day) = civilFromDays(number)
-        return calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12))
+        return calendar(timeZone: timeZone).date(from: DateComponents(year: year, month: month, day: day, hour: 12))
+    }
+
+    /// Letzter Zeitpunkt des lokalen heutigen Tages (Obergrenze für die Datumsauswahl).
+    public static func endOfToday(now: Date = Date(), timeZone: TimeZone = .current) -> Date {
+        let gregorian = WeightDay.calendar(timeZone: timeZone)
+        let start = gregorian.startOfDay(for: now)
+        let next = gregorian.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(86_400)
+        return next.addingTimeInterval(-1)
     }
 
     public static func adding(days: Int, to text: String) -> String? {

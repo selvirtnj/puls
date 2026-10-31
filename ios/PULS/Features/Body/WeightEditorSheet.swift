@@ -3,10 +3,9 @@ import PULSCore
 
 /// Gewicht eintragen oder einen vorhandenen Tag bearbeiten. Regeln wie `addWeight` (js/app.js):
 /// Komma oder Punkt, 20 bis 400 kg, ein Gewicht pro Tag (ein vorhandener Tageseintrag wird ersetzt).
+/// Beim Bearbeiten bleibt der Tag fest (wie im Web ersetzt ein Eintrag nur den Wert seines Tages).
 struct WeightEditorSheet: View {
     let request: WeightEditorRequest
-    /// Aktuelle Anzeige, für den Hinweis „wird ersetzt“.
-    let entries: [WeightEntry]
     let text: BodyText
     /// Liefert eine Fehlermeldung oder `nil` bei Erfolg.
     let onSave: (_ date: Date, _ kg: Double) -> String?
@@ -18,10 +17,9 @@ struct WeightEditorSheet: View {
     @State private var saveError: String?
     @FocusState private var kgFocused: Bool
 
-    init(request: WeightEditorRequest, entries: [WeightEntry], text: BodyText,
+    init(request: WeightEditorRequest, text: BodyText,
          onSave: @escaping (_ date: Date, _ kg: Double) -> String?) {
         self.request = request
-        self.entries = entries
         self.text = text
         self.onSave = onSave
         _date = State(initialValue: request.initialDate)
@@ -34,22 +32,27 @@ struct WeightEditorSheet: View {
         !kgText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isValid
     }
 
-    /// Anderer Eintrag am gewählten Tag, der beim Sichern ersetzt wird.
+    /// Anderer Eintrag am gewählten Tag (Stand beim Öffnen), der beim Sichern ersetzt wird.
     private var replaced: WeightEntry? {
+        guard request.original == nil else { return nil }
         let day = WeightDay.string(from: date)
-        return entries.first { $0.date == day && $0.id != request.original?.id }
+        return request.seen.first { $0.date == day }
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    DatePicker(
-                        text("Datum", "Date"),
-                        selection: $date,
-                        in: ...Swift.max(Date(), request.initialDate),
-                        displayedComponents: .date
-                    )
+                    if let original = request.original {
+                        LabeledContent(text("Datum", "Date"), value: text.day(original.date))
+                    } else {
+                        DatePicker(
+                            text("Datum", "Date"),
+                            selection: $date,
+                            in: ...WeightDay.endOfToday(),
+                            displayedComponents: .date
+                        )
+                    }
                     HStack(spacing: 8) {
                         Text(text("Gewicht", "Weight"))
                         Spacer(minLength: 12)

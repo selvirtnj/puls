@@ -128,6 +128,101 @@ final class WeightOpsTests: XCTestCase {
         XCTAssertEqual(sent.commands.last?.id, resend.id)
     }
 
+    // MARK: Ausdrückliches expect (Stand beim Start der Aktion)
+
+    @MainActor
+    func testEditUsesNewIdAndKeepsExpectFromStartEvenAfterNewerSnapshot() throws {
+        let store = makeStore(directory: try makeTemporaryDirectory())
+        let sent = ready(store, weights: [weight("o1", "2026-10-26", 83)])
+        let original = try XCTUnwrap(WeightEntry.entries(in: store.document).first)
+        let command = WeightCommands.edit(original: original, kg: 82, newID: "n")
+
+        // Während das Sheet offen ist, ändert ein anderes Gerät denselben Tag (neue ID wie im Web).
+        store.receive(.snapshot(SnapshotMessage(seq: 11, userId: Self.user,
+                                                state: ["weights": [weight("o2", "2026-10-26", 81)]], reason: "cloud")))
+        let apply = try store.performWeight(command, asUser: Self.user)
+        XCTAssertEqual(apply.args["id"], "n")
+        XCTAssertEqual(apply.args["date"], "2026-10-26")
+        XCTAssertEqual(apply.args["expect"], "o1", "nicht still auf o2 ersetzt: das Web meldet conflict")
+        XCTAssertEqual(sent.commands.last, apply)
+    }
+
+    func testAddCommandExpectsDayFromOpenedState() {
+        let seen = [WeightEntry(id: "a", date: "2026-10-26", kg: 83)]
+        XCTAssertEqual(WeightCommands.add(date: "2026-10-26", kg: 82, newID: "n", seen: seen).args["expect"], "a")
+        XCTAssertEqual(WeightCommands.add(date: "2026-10-27", kg: 82, newID: "n", seen: seen).args["expect"], .null)
+        XCTAssertEqual(WeightCommands.delete(seen[0]).args, ["id": "a", "expect": "a"])
+    }
+
+    func testRestoreRefusesWhenDayOrIdIsTakenAgain() {
+        let deleted = WeightEntry(id: "a", date: "2026-10-26", kg: 83)
+        XCTAssertNil(WeightCommands.restore(deleted, current: [WeightEntry(id: "x", date: "2026-10-26", kg: 80)]))
+        // Gleiche ID inzwischen mit anderem Datum: nicht überschreiben.
+        XCTAssertNil(WeightCommands.restore(deleted, current: [WeightEntry(id: "a", date: "2026-10-27", kg: 80)]))
+        let restore = WeightCommands.restore(deleted, current: [WeightEntry(id: "y", date: "2026-10-25", kg: 80)])
+        XCTAssertEqual(restore?.args, ["id": "a", "date": "2026-10-26", "kg": 83, "expect": .null])
+    }
+
+    // MARK: Konto-Bindung
+
+    @MainActor
+    func testConflictsAndActionsAreBoundToCurrentUser() throws {
+        let store = makeStore(directory: try makeTemporaryDirectory())
+        let sent = ready(store, weights: [])
+        let mine = try store.performWeight(WeightCommands.add(date: "2026-10-26", kg: 82, newID: "m", seen: []), asUser: Self.user)
+        store.receive(.ack(AckMessage(id: mine.id, ok: false, seq: 10, error: AckError(code: .conflict))))
+        XCTAssertEqual(store.weightConflicts.map(\.command.id), [mine.id])
+
+        // Kontowechsel zu B.
+        let other = "b0000000-0000-4000-8000-0000000000bb"
+        store.receive(.hello(HelloMessage(webVersion: "75", ops: [BridgeOps.weightUpsert, BridgeOps.weightDelete], screens: ["body"])))
+        store.receive(.snapshot(SnapshotMessage(seq: 1, userId: other, state: ["weights": []], reason: "load")))
+        XCTAssertEqual(store.conflicts.count, 1, "Konflikt von A bleibt erhalten")
+        XCTAssertTrue(store.weightConflicts.isEmpty, "aber nie unter B sichtbar")
+
+        let sentBefore = sent.commands.count
+        XCTAssertThrowsError(try store.useMineWeight(conflictID: mine.id, asUser: other)) { error in
+            XCTAssertEqual(error as? WeightCommandError, .userChanged)
+        }
+        XCTAssertThrowsError(try store.useMineWeight(conflictID: mine.id, asUser: Self.user)) { error in
+            XCTAssertEqual(error as? WeightCommandError, .userChanged)
+        }
+        XCTAssertThrowsError(try store.keepOtherWeight(conflictID: mine.id, asUser: other)) { error in
+            XCTAssertEqual(error as? WeightCommandError, .userChanged)
+        }
+        XCTAssertEqual(store.conflicts.count, 1)
+        XCTAssertEqual(sent.commands.count, sentBefore, "nichts von A unter B gesendet")
+        XCTAssertTrue(WeightEntry.entries(in: store.document).isEmpty)
+
+        // Sheet/Undo aus der Sitzung von A darf unter B nichts schreiben.
+        XCTAssertThrowsError(try store.performWeight(
+            WeightCommands.add(date: "2026-10-27", kg: 80, newID: "late", seen: []), asUser: Self.user
+        )) { error in
+            XCTAssertEqual(error as? WeightCommandError, .userChanged)
+        }
+        XCTAssertEqual(sent.commands.count, sentBefore)
+    }
+
+    @MainActor
+    func testUseMineAndKeepOtherViaStoreForCurrentUser() throws {
+        let store = makeStore(directory: try makeTemporaryDirectory())
+        _ = ready(store, weights: [weight("o", "2026-10-26", 80)])
+        let first = try store.performWeight(WeightCommands.edit(original: WeightEntry(id: "x", date: "2026-10-26", kg: 79), kg: 82, newID: "m"),
+                                            asUser: Self.user)
+        store.receive(.ack(AckMessage(id: first.id, ok: false, seq: 10, error: AckError(code: .conflict))))
+        let resend = try store.useMineWeight(conflictID: first.id, asUser: Self.user)
+        XCTAssertEqual(resend.args["expect"], "o")
+        XCTAssertTrue(store.weightConflicts.isEmpty)
+
+        store.receive(.ack(AckMessage(id: resend.id, ok: false, seq: 10, error: AckError(code: .conflict))))
+        try store.keepOtherWeight(conflictID: resend.id, asUser: Self.user)
+        XCTAssertTrue(store.conflicts.isEmpty)
+        XCTAssertThrowsError(try store.keepOtherWeight(conflictID: resend.id, asUser: Self.user)) { error in
+            XCTAssertEqual(error as? WeightCommandError, .noLongerConflict)
+        }
+        XCTAssertEqual(WeightEntry.entries(in: store.document), [WeightEntry(id: "o", date: "2026-10-26", kg: 80)])
+    }
+
     @MainActor
     func testConflictKeepOtherDeviceDiscards() throws {
         let store = makeStore(directory: try makeTemporaryDirectory())

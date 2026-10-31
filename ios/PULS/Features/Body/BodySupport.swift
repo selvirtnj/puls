@@ -45,6 +45,17 @@ struct BodyText {
 
     /// Fehler aus `ProfileStore.perform` für Selvir verständlich.
     func message(for error: Error) -> String {
+        switch error as? WeightCommandError {
+        case .userChanged?:
+            return self("Das Konto wurde gewechselt. Nichts wurde gespeichert.", "The account changed. Nothing was saved.")
+        case .noLongerConflict?:
+            return self("Das ist bereits erledigt.", "This has already been resolved.")
+        case .restoreBlocked?:
+            return self("Der Eintrag wurde inzwischen geändert. Nichts wurde überschrieben.",
+                        "The entry has changed in the meantime. Nothing was overwritten.")
+        case nil:
+            break
+        }
         switch error as? ProfileStoreError {
         case .preview?, .readOnly?:
             return self("Gerade nur lesbar. Nichts wurde geändert.", "Read-only right now. Nothing was changed.")
@@ -193,16 +204,21 @@ enum WeightRange: String, CaseIterable, Identifiable {
     }
 }
 
-/// Gelöschter Eintrag für „Rückgängig“.
+/// Gelöschter Eintrag für „Rückgängig“, gebunden an das Konto beim Löschen.
 struct DeletedWeight: Equatable {
     let entry: WeightEntry
+    let userId: String?
     let token = UUID()
 }
 
-/// Öffnet das Eintragen-Sheet (neu oder vorhandenen Tag bearbeiten).
+/// Öffnet das Eintragen-Sheet (neu oder vorhandenen Tag bearbeiten). Hält Konto und Stand beim Öffnen fest:
+/// `expect` wird daraus gebildet und beim Sichern nicht still durch einen neueren Snapshot ersetzt.
 struct WeightEditorRequest: Identifiable {
     let id = UUID()
     let original: WeightEntry?
+    let userId: String?
+    /// Einträge, die beim Öffnen sichtbar waren.
+    let seen: [WeightEntry]
     let initialDate: Date
     let initialText: String
 }
