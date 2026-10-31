@@ -42,12 +42,21 @@
     ],
     "total": 1,
     "omitted": 0,
+    "phase": "complete",
+    "cataloguePending": false,
     "offline": true,
     "catalogueError": "",
     "online": {
-      "supported": false,
-      "reason": "P2",
-      "provider": "Open Food Facts"
+      "supported": true,
+      "status": "offline",
+      "items": [],
+      "attribution": {
+        "name": "Open Food Facts",
+        "url": "https://world.openfoodfacts.org",
+        "license": "ODbL",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "privacy": "Suchbegriff/Barcode und IP-Adresse; keine Profil- oder Tagebuchdaten."
+      }
     },
     "attribution": "BLS 4.0 (2025), CC BY 4.0 · USDA SR Legacy/Foundation, Public Domain · Ciqual 2025, CC BY 4.0"
   }

@@ -1,0 +1,37 @@
+{
+  "protocol": 1,
+  "type": "ack",
+  "id": "f0000000-0000-4000-8000-000000000042",
+  "ok": true,
+  "seq": 2,
+  "result": {
+    "productId": "off-saved",
+    "product": {
+      "barcode": "4006381333931",
+      "name": "OFF fixture drink",
+      "brand": "Fixture brand",
+      "kcal": 200,
+      "p": 20,
+      "c": 30,
+      "f": 0,
+      "unit": "ml",
+      "source": "Open Food Facts",
+      "sourceUrl": "https://world.openfoodfacts.org/product/4006381333931",
+      "prepared": false,
+      "fetched": "2026-10-28",
+      "packageAmount": 330,
+      "packageUnit": "ml",
+      "packageChecked": "2026-10-28",
+      "portions": [
+        {
+          "name": "Portion · 165 ml",
+          "amount": 165,
+          "unit": "ml",
+          "source": "Open Food Facts"
+        }
+      ],
+      "id": "off-saved",
+      "verified": "2026-10-28"
+    }
+  }
+}

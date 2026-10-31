@@ -39,7 +39,7 @@ function hello(force=false){
     screens:['body',...(training?['training']:[]),...(progress?['calendar','progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[])],
     projections:['overview',...(training?['training']:[]),...(progress?['progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[])],
     features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[]),...(activity?['nativeActivity']:[]),...(nutrition?['nativeNutrition']:[])],
-    ...(nutrition?{nutrition:{stage:'P1',queries:nutrition.queries}}:{}),ownerPending})){
+    ...(nutrition?{nutrition:{stage:nutrition.stage,queries:nutrition.queries}}:{}),ownerPending})){
     helloOwnerPending=ownerPending;
     if(!ownerPending)queueProjection('ready',true);
   }
@@ -477,6 +477,7 @@ function commit(cmd,history,{run,verify,ui}){
     // The effective render chain invokes adaptiveGoals(), including goal history/calibration and its nested saves.
     // Validate again afterwards and save once more so the final derived state is persisted as well.
     render();
+    if(ui?.afterRender)ui.afterRender(result);
     if(!validData(state)){code='invalid';throw Error('Ungültiges Profil nach Neuberechnung')}
     wrote=true;save();
     const stored=JSON.parse(localStorage.getItem('puls-v1')||'null');
@@ -589,7 +590,7 @@ if(progressFeature)window.pulsNativeProgressQuery=function(request){
 };
 if(nutritionFeature){
   let queryEpoch=0;
-  const invalidateQueries=()=>{queryEpoch++;nutritionAdapter()?.cancelSearch()};
+  const invalidateQueries=()=>{queryEpoch++;nutritionAdapter()?.cancelQueries()};
   window.pulsNativeNutritionQuery=function(request){
     const adapter=nutritionAdapter();
     if(!adapter||!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||activityPreparing||saveDepth||!adapter.validQuery(request))return false;
@@ -597,7 +598,8 @@ if(nutritionFeature){
     const current=()=>epoch===queryEpoch&&!pageHidden&&ready&&helloOwnerPending===false&&profileReady()&&owner===userId()&&profile===state&&revision===projectionRevision&&!applying&&!rollingBack;
     const send=answer=>!!answer&&current()&&post({type:'nutritionResult',requestId:request.requestId,seq,userId:userId(),ownerPending:false,
       flags:flags(),cloud:cloud(),language:state.language==='en'?'en':'de',...answer});
-    try{const answer=adapter.query(copy(request),current);if(answer&&typeof answer.then==='function'){void answer.then(send).catch(()=>{
+    request=copy(request);
+    try{const answer=adapter.query(request,current,send);if(answer&&typeof answer.then==='function'){void answer.then(send).catch(()=>{
       if(current())send({kind:request.kind,ok:false,error:{code:'unavailable',message:'Lokale Suche derzeit nicht verfügbar'}})});return true}return !!send(answer)}catch{return false}
   };
   window.addEventListener('pagehide',invalidateQueries);

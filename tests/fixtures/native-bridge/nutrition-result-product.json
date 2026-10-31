@@ -97,7 +97,13 @@
         "key": "p0",
         "label": "Weighed serving",
         "factor": 30,
-        "portion": true
+        "portion": true,
+        "snapshot": {
+          "name": "Weighed serving",
+          "amount": 30,
+          "unit": "g",
+          "source": "Synthetic fixture"
+        }
       }
     ],
     "nutrients": {
