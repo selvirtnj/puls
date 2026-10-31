@@ -318,6 +318,98 @@ final class TrainingTests: XCTestCase {
         XCTAssertTrue(log.commands.isEmpty)
     }
 
+    // MARK: Review-Korrekturen K (P2/P3, catalogKey)
+
+    @MainActor
+    func testOpenInputKeepsExpectFromEditingStart() throws {
+        let (store, _) = try connectedStore()
+        // Beim Beginn der Eingabe gesehen: Satz 2 = 80 × 7, offen.
+        let origin = TrainingCommands.setExpect(kg: .number(80), reps: .number(7), done: false)
+        // Inzwischen ändert ein anderes Gerät den Satz auf 85 kg.
+        var changed = try profile()
+        TrainingOps.updateWorkout(&changed, id: Self.workoutID) { workout in
+            TrainingOps.updateExercise(&workout, id: Self.bench) { exercise in
+                var sets = exercise["sets"]?.arrayValue ?? []
+                sets[1]["kg"] = 85
+                exercise["sets"] = .array(sets)
+            }
+        }
+        store.receive(.snapshot(SnapshotMessage(seq: 2, userId: Self.user, state: changed, reason: "cloud")))
+        let apply = try store.performTraining(
+            TrainingCommands.updateSet(workoutId: Self.workoutID, exerciseId: Self.bench, setIndex: 1,
+                                       kg: .number(90), expect: origin),
+            asUser: Self.user
+        )
+        XCTAssertEqual(apply.args["expect"], origin, "expect bleibt der Stand vom Beginn der Bearbeitung")
+        // Keine optimistische Überschreibung des fremden Werts; das Web antwortet `conflict`.
+        XCTAssertEqual(store.trainingSession(workoutId: Self.workoutID)?.exercise(id: Self.bench)?.sets[1].kg, .number(85))
+    }
+
+    @MainActor
+    func testStartReplayIsSettledWhenWorkoutWasAlreadyFinished() async throws {
+        let directory = try makeTemporaryDirectory()
+        var state = try profile()
+        state["workouts"] = .array((state["workouts"]?.arrayValue ?? []).filter { $0["finished"] == true })
+        do {
+            let store = makeStore(directory: directory, session: "app-1")
+            store.sender = { _ in }
+            store.receive(trainingHello)
+            store.receive(.snapshot(SnapshotMessage(seq: 1, userId: Self.user, state: state, reason: "load")))
+            let apply = try store.performTraining(TrainingCommands.start(routineId: "t0000000-0000-4000-8000-000000000001"),
+                                                  asUser: Self.user)
+            store.receive(.ack(AckMessage(id: apply.id, ok: true, seq: 2, result: ["workoutId": "w-new", "started": true])))
+            await store.waitForMirrorWrites()
+        }
+        // Nach dem Neustart ist das gestartete Workout bereits abgeschlossen: kein zweites Workout per Replay.
+        var finished = state
+        finished["workouts"] = .array((state["workouts"]?.arrayValue ?? []) + [["id": "w-new", "finished": true, "exercises": []]])
+        let restarted = makeStore(directory: directory, session: "app-2")
+        let log = SentLog()
+        restarted.sender = { log.commands.append($0) }
+        restarted.receive(trainingHello)
+        restarted.receive(.snapshot(SnapshotMessage(seq: 3, userId: Self.user, state: finished, reason: "load")))
+        XCTAssertTrue(restarted.outboxEntries.isEmpty)
+        XCTAssertTrue(log.commands.isEmpty)
+    }
+
+    func testRoutineDraftKeepsFractionalRestWhenOnlyRenamed() throws {
+        var raw = try XCTUnwrap(TrainingOps.routine(try profile(), "t0000000-0000-4000-8000-000000000001"))
+        var exercises = raw["exercises"]?.arrayValue ?? []
+        exercises[0]["restSeconds"] = 45.5
+        raw["exercises"] = .array(exercises)
+        var draft = try XCTUnwrap(RoutineDraft(raw: raw) { UUID().uuidString })
+        XCTAssertEqual(draft.items.first?.restSeconds, 45.5)
+        draft.name = "Push neu"
+        let json = draft.routineJSON
+        XCTAssertEqual(json["exercises"]?[0]?["restSeconds"], 45.5, "kein Runden beim bloßen Umbenennen")
+        XCTAssertEqual(json["exercises"], raw["exercises"])
+        XCTAssertTrue(draft.isValid)
+    }
+
+    func testExerciseSearchFixtureLabelsAndCatalogCreate() throws {
+        guard case .exerciseSearch(let search)? = try InboundMessage.decode(data: Fixtures.data("exercise-search")) else {
+            return XCTFail("exerciseSearch erwartet")
+        }
+        XCTAssertEqual(search.language, "de")
+        XCTAssertEqual(search.items.count, 3)
+        let first = try XCTUnwrap(search.items.first)
+        XCTAssertFalse(first.inLibrary)
+        XCTAssertEqual(first.muscles, ["shoulders"])
+        XCTAssertEqual(first.displayMuscles, ["Schultern"])
+        XCTAssertEqual(first.displayEquipment, "machine")
+        XCTAssertEqual(ExerciseSearchMessage.Item(id: "x", name: "X", muscles: ["chest"], inLibrary: true).displayMuscles, ["chest"])
+
+        let fixture = try ApplyCommand(json: Fixtures.value("apply-training-exercise-create"))
+        let command = TrainingCommands.createExercise(catalogKey: first.id)
+        XCTAssertEqual(command.op, fixture.op)
+        XCTAssertEqual(command.args, fixture.args)
+        let check = try XCTUnwrap(BridgeOps.defaultEffectChecks[TrainingOps.exerciseCreate])
+        var state = try profile()
+        XCTAssertFalse(check(command.args, state, ["libraryId": .string(first.id), "created": true]))
+        state["exerciseBook"] = .array((state["exerciseBook"]?.arrayValue ?? []) + [["id": .string(first.id), "name": "Machine Lateral Raise"]])
+        XCTAssertTrue(check(command.args, state, ["libraryId": .string(first.id), "created": true]))
+    }
+
     // MARK: Wirkung
 
     func testEffectChecks() throws {

@@ -422,14 +422,20 @@ public struct ExerciseSearchMessage: Equatable, Sendable {
         public var name: String
         public var muscles: [String]
         public var equipment: String?
-        /// Bereits in der eigenen Bibliothek (`exerciseBook`), sonst Katalogeintrag.
+        /// Anzeigetexte des Webs in `language` (gleiche Reihenfolge wie `muscles`); Native übersetzt nicht selbst.
+        public var muscleLabels: [String]
+        public var equipmentLabel: String?
+        /// Bereits in der eigenen Bibliothek (`exerciseBook`), sonst Katalogeintrag (`exercise.create {catalogKey}`).
         public var inLibrary: Bool
 
-        public init(id: String, name: String, muscles: [String] = [], equipment: String? = nil, inLibrary: Bool) {
+        public init(id: String, name: String, muscles: [String] = [], equipment: String? = nil,
+                    muscleLabels: [String] = [], equipmentLabel: String? = nil, inLibrary: Bool) {
             self.id = id
             self.name = name
             self.muscles = muscles
             self.equipment = equipment
+            self.muscleLabels = muscleLabels
+            self.equipmentLabel = equipmentLabel
             self.inLibrary = inLibrary
         }
 
@@ -439,9 +445,18 @@ public struct ExerciseSearchMessage: Equatable, Sendable {
             name = o.string("name") ?? ""
             muscles = o.array("muscles").compactMap(\.stringValue)
             equipment = o.string("equipment")
+            muscleLabels = o.array("muscleLabels").compactMap(\.stringValue)
+            equipmentLabel = o.string("equipmentLabel")
             inLibrary = o.bool("inLibrary") ?? false
         }
+
+        /// Anzeige: Web-Labels; ältere Web-Stände ohne Labels zeigen die gespeicherten Schlüssel.
+        public var displayMuscles: [String] { muscleLabels.isEmpty ? muscles : muscleLabels }
+        public var displayEquipment: String? { equipmentLabel ?? equipment }
     }
+
+    /// Sprache der Labels (`de`/`en`).
+    public var language: String?
 
     public var requestId: String
     public var query: String
@@ -461,6 +476,7 @@ public struct ExerciseSearchMessage: Equatable, Sendable {
         items = o.array("items").compactMap { Item(Loose($0)) }
         total = o.int("total") ?? items.count
         canCreate = o.bool("canCreate") ?? false
+        language = o.string("language")
         raw = json
     }
 

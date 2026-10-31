@@ -155,16 +155,16 @@ struct RoutineEditorView: View {
         case .item(let item) where item.inLibrary:
             draft.append(libraryId: item.id, itemID: UUID().uuidString)
         case .item(let item):
-            // Katalogeintrag: Routinen brauchen einen Bibliothekseintrag (gleichnamiger wird wiederverwendet).
-            create(name: item.name)
+            // Katalogeintrag: Routinen brauchen einen Bibliothekseintrag (`ensureBook` mit Katalogdaten).
+            create(TrainingCommands.createExercise(catalogKey: item.id), label: item.name)
         case .newName(let name):
-            create(name: name)
+            create(TrainingCommands.createExercise(name: name), label: name)
         }
     }
 
-    private func create(name: String) {
-        addingName = name
-        coordinator.createExercise(name: name) { libraryID in
+    private func create(_ command: Command, label: String) {
+        addingName = label
+        coordinator.createExercise(command) { libraryID in
             addingName = nil
             if let libraryID { draft.append(libraryId: libraryID, itemID: UUID().uuidString) }
         }
@@ -202,7 +202,7 @@ private struct RoutineItemEditor: View {
     let setPartner: (String?) -> Void
     let remove: () -> Void
 
-    private static let restOptions: [Int] = [0, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300, 420, 600, 900]
+    private static let restOptions: [Double] = [0, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300, 420, 600, 900]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -240,9 +240,9 @@ private struct RoutineItemEditor: View {
                 LabeledContent(text("Wdh. bis", "Reps to"), value: "\(item.max)")
             }
             Picker(text("Pause", "Rest"), selection: $item.restSeconds) {
-                Text(text("Standard", "Default")).tag(Int?.none)
+                Text(text("Standard", "Default")).tag(Double?.none)
                 ForEach(restChoices, id: \.self) { seconds in
-                    Text(text.rest(Double(seconds))).tag(Int?.some(seconds))
+                    Text(text.rest(seconds)).tag(Double?.some(seconds))
                 }
             }
             Picker(text("Supersatz", "Superset"), selection: Binding(get: { partnerID }, set: { setPartner($0) })) {
@@ -256,7 +256,8 @@ private struct RoutineItemEditor: View {
         .padding(.vertical, 4)
     }
 
-    private var restChoices: [Int] {
+    /// Gespeicherte Bruchwerte bleiben als eigene Auswahl erhalten (kein Runden beim bloßen Umbenennen).
+    private var restChoices: [Double] {
         var choices = Self.restOptions
         if let current = item.restSeconds, !choices.contains(current) {
             choices.append(current)

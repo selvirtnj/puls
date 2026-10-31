@@ -169,8 +169,8 @@ public struct RoutineDraft: Equatable, Sendable {
         public var sets: Int
         public var min: Int
         public var max: Int
-        /// `nil` = Standardpause (Feld fehlt).
-        public var restSeconds: Int?
+        /// `nil` = Standardpause (Feld fehlt). Double, damit gespeicherte Bruchwerte (z. B. 45.5) verlustfrei bleiben.
+        public var restSeconds: Double?
         public var superset: String?
     }
 
@@ -201,7 +201,7 @@ public struct RoutineDraft: Equatable, Sendable {
             if rest != nil, rest?.doubleValue == nil { return nil }
             items.append(Item(
                 id: makeID(), raw: exercise, libraryId: library, sets: sets, min: min, max: max,
-                restSeconds: rest?.doubleValue.map { Int($0.rounded()) },
+                restSeconds: rest?.doubleValue,
                 superset: exercise["superset"]?.stringValue
             ))
         }
@@ -225,7 +225,8 @@ public struct RoutineDraft: Equatable, Sendable {
         guard !name.isEmpty, name.count <= 80, !items.isEmpty else { return false }
         return items.allSatisfy { item in
             Self.setsRange.contains(item.sets) && Self.repsRange.contains(item.min) && Self.repsRange.contains(item.max)
-                && item.max >= item.min && (item.restSeconds.map { Self.restRange.contains($0) } ?? true)
+                && item.max >= item.min
+                && (item.restSeconds.map { $0 >= Double(Self.restRange.lowerBound) && $0 <= Double(Self.restRange.upperBound) } ?? true)
         }
     }
 
@@ -264,7 +265,7 @@ public struct RoutineDraft: Equatable, Sendable {
             exercise["sets"] = .number(Double(item.sets))
             exercise["min"] = .number(Double(item.min))
             exercise["max"] = .number(Double(item.max))
-            exercise["restSeconds"] = item.restSeconds.map { JSONValue.number(Double($0)) }
+            exercise["restSeconds"] = item.restSeconds.map { JSONValue.number($0) }
             exercise["superset"] = item.superset.map(JSONValue.string)
             return exercise
         })

@@ -156,8 +156,10 @@ struct ExercisePickerView: View {
 
     private func detail(_ item: ExerciseSearchMessage.Item, text: TrainingText) -> String? {
         var parts: [String] = []
-        if !item.muscles.isEmpty { parts.append(item.muscles.joined(separator: ", ")) }
-        if let equipment = item.equipment, !equipment.isEmpty { parts.append(equipment) }
+        // Anzeigetexte kommen übersetzt aus dem Web (`muscleLabels`/`equipmentLabel`).
+        let muscles = item.displayMuscles
+        if !muscles.isEmpty { parts.append(muscles.joined(separator: ", ")) }
+        if let equipment = item.displayEquipment, !equipment.isEmpty { parts.append(equipment) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 

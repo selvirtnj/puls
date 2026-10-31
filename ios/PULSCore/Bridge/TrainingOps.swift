@@ -326,8 +326,10 @@ extension BridgeOps {
 
 extension BridgeOps {
     public static let trainingEffectChecks: [String: EffectCheck] = [
+        // Koordinator-Entscheidung (§9.4): Das gestartete Workout existiert, offen **oder bereits abgeschlossen**.
+        // Ein inzwischen beendetes Workout darf nach einem Neustart kein zweites per Replay erzeugen.
         TrainingOps.workoutStart: { _, state, result in
-            TrainingOps.workout(state, result?["workoutId"]?.stringValue)?["finished"] == JSONValue.bool(false)
+            TrainingOps.workout(state, result?["workoutId"]?.stringValue) != nil
         },
         TrainingOps.setUpdate: { args, state, _ in
             guard let index = args["setIndex"]?.intValue,
@@ -417,16 +419,25 @@ public enum TrainingCommands {
                 args: ["routineId": .null, "name": .string(name.trimmingCharacters(in: .whitespacesAndNewlines))])
     }
 
-    /// Nur die geänderten Felder eines Satzes, gebündelt in einer Op.
+    /// Nur die geänderten Felder eines Satzes, gebündelt in einer Op. `expect` = `{kg, reps, done}`, wie der Satz zu
+    /// **Beginn** der Bearbeitung aussah (`setExpect`); ohne Angabe ergänzt der Store den aktuell angezeigten Stand.
+    /// So überschreibt eine lange offene Eingabe nie still eine zwischenzeitliche Änderung eines anderen Geräts.
     public static func updateSet(workoutId: String, exerciseId: String, setIndex: Int,
-                                 kg: SetValue? = nil, reps: SetValue? = nil, done: Bool? = nil) -> Command {
+                                 kg: SetValue? = nil, reps: SetValue? = nil, done: Bool? = nil,
+                                 expect: JSONValue? = nil) -> Command {
         var args: JSONValue = [
             "workoutId": .string(workoutId), "exerciseId": .string(exerciseId), "setIndex": .number(Double(setIndex)),
         ]
         if let kg { args["kg"] = kg.json }
         if let reps { args["reps"] = reps.json }
         if let done { args["done"] = .bool(done) }
+        if let expect { args["expect"] = expect }
         return Command(op: TrainingOps.setUpdate, args: args)
+    }
+
+    /// `expect` eines Satzes aus gesehenen Werten (`nil` = nicht lesbar → `null`, das Web antwortet dann `invalid`).
+    public static func setExpect(kg: SetValue?, reps: SetValue?, done: Bool) -> JSONValue {
+        ["kg": kg?.json ?? .null, "reps": reps?.json ?? .null, "done": .bool(done)]
     }
 
     private static func exerciseArgs(_ workoutId: String, _ exerciseId: String) -> JSONValue {
@@ -501,5 +512,11 @@ public enum TrainingCommands {
 
     public static func createExercise(name: String) -> Command {
         Command(op: TrainingOps.exerciseCreate, args: ["name": .string(name.trimmingCharacters(in: .whitespacesAndNewlines))])
+    }
+
+    /// Katalogtreffer der Übungssuche (`items[].id`) als Bibliothekseintrag übernehmen (Web `ensureBook`: Name,
+    /// Muskeln, Gerät bleiben erhalten). Ist der Schlüssel schon eine Bibliotheks-ID, kommt der bestehende Eintrag.
+    public static func createExercise(catalogKey: String) -> Command {
+        Command(op: TrainingOps.exerciseCreate, args: ["catalogKey": .string(catalogKey)])
     }
 }

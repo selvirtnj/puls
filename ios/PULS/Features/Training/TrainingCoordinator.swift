@@ -522,9 +522,9 @@ final class TrainingCoordinator {
         perform(TrainingCommands.deleteRoutine(id: id), busyKey: "delete:" + id)
     }
 
-    /// Eigene Übung anlegen (bzw. gleichnamige wiederverwenden); `completion(libraryId)` nach dem Ack.
-    func createExercise(name: String, completion: @escaping (String?) -> Void) {
-        guard let apply = perform(TrainingCommands.createExercise(name: name)) else {
+    /// Bibliothekseintrag anlegen (`exercise.create` mit `name` oder `catalogKey`); `completion(libraryId)` nach dem Ack.
+    func createExercise(_ command: Command, completion: @escaping (String?) -> Void) {
+        guard command.op == TrainingOps.exerciseCreate, let apply = perform(command) else {
             completion(nil)
             return
         }

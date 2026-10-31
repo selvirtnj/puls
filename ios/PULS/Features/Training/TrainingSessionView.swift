@@ -29,8 +29,10 @@ struct SetField: Hashable {
     let kind: Kind
 }
 
-/// Noch nicht gesendete Eingabe eines Satzes (`nil` = Feld unverändert).
+/// Noch nicht gesendete Eingabe eines Satzes (`nil` = Feld unverändert). `origin` = `{kg, reps, done}` bei Beginn der
+/// Bearbeitung; wird als `expect` gesendet, damit eine Änderung eines anderen Geräts zwischendurch zu `conflict` führt.
 private struct SetDraft {
+    var origin: JSONValue
     var kg: String?
     var reps: String?
 }
@@ -314,8 +316,8 @@ struct TrainingSessionView: View {
                 SetRow(
                     exerciseName: exercise.name, set: set, text: text,
                     canEdit: canWrite && set.isEditable,
-                    kg: binding(key, .kg, current: set.kg, text: text),
-                    reps: binding(key, .reps, current: set.reps, text: text),
+                    kg: binding(key, .kg, set: set, text: text),
+                    reps: binding(key, .reps, set: set, text: text),
                     focus: $focus, key: key,
                     toggleDone: { toggleDone(key, set: set) },
                     copyPrevious: { copyPrevious(key, set: set) }
@@ -383,17 +385,19 @@ struct TrainingSessionView: View {
 
     // MARK: Eingaben
 
-    private func binding(_ key: SetKey, _ kind: SetField.Kind, current: SetValue?, text: TrainingText) -> Binding<String> {
+    private func binding(_ key: SetKey, _ kind: SetField.Kind, set: TrainingSessionModel.SessionSet,
+                         text: TrainingText) -> Binding<String> {
         Binding(
             get: {
                 let draft = drafts[key]
                 switch kind {
-                case .kg: return draft?.kg ?? SetInput.text(current, locale: text.locale)
-                case .reps: return draft?.reps ?? SetInput.text(current, locale: text.locale)
+                case .kg: return draft?.kg ?? SetInput.text(set.kg, locale: text.locale)
+                case .reps: return draft?.reps ?? SetInput.text(set.reps, locale: text.locale)
                 }
             },
             set: { value in
-                var draft = drafts[key] ?? SetDraft()
+                // Erste Eingabe: gesehenen Stand festhalten (später `expect`).
+                var draft = drafts[key] ?? SetDraft(origin: Self.expect(of: set))
                 switch kind {
                 case .kg: draft.kg = value
                 case .reps: draft.reps = value
@@ -440,10 +444,15 @@ struct TrainingSessionView: View {
             return
         }
         guard let parsed = parsedDraft(key, set: set) else { return rejectInput(key) }
+        let origin = drafts[key]?.origin
         drafts[key] = nil
         guard parsed.kg != nil || parsed.reps != nil else { return }
         coordinator.perform(TrainingCommands.updateSet(workoutId: workoutId, exerciseId: key.exerciseId, setIndex: key.index,
-                                                       kg: parsed.kg, reps: parsed.reps))
+                                                       kg: parsed.kg, reps: parsed.reps, expect: origin))
+    }
+
+    static func expect(of set: TrainingSessionModel.SessionSet) -> JSONValue {
+        TrainingCommands.setExpect(kg: set.kg, reps: set.reps, done: set.done)
     }
 
     private func commitAll() {
@@ -462,10 +471,12 @@ struct TrainingSessionView: View {
                 return
             }
         }
+        // Mit offener Eingabe gilt der Stand vom Beginn der Bearbeitung, sonst der gerade angezeigte.
+        let origin = drafts[key]?.origin ?? Self.expect(of: set)
         drafts[key] = nil
         if focus?.key == key { focus = nil }
         coordinator.perform(TrainingCommands.updateSet(workoutId: workoutId, exerciseId: key.exerciseId, setIndex: key.index,
-                                                       kg: parsed.kg, reps: parsed.reps, done: newDone))
+                                                       kg: parsed.kg, reps: parsed.reps, done: newDone, expect: origin))
         if newDone { doneFeedback += 1 }
     }
 
@@ -477,7 +488,7 @@ struct TrainingSessionView: View {
         let changedKg = kg != set.kg ? kg : nil, changedReps = reps != set.reps ? reps : nil
         guard changedKg != nil || changedReps != nil else { return }
         coordinator.perform(TrainingCommands.updateSet(workoutId: workoutId, exerciseId: key.exerciseId, setIndex: key.index,
-                                                       kg: changedKg, reps: changedReps))
+                                                       kg: changedKg, reps: changedReps, expect: Self.expect(of: set)))
     }
 
     // MARK: Fokus
