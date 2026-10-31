@@ -34,9 +34,20 @@
 - Native (Paket K, Claude): `Features/Training/*` (Tab, Routinen-Editor, Übungswahl, Vollbild-Session, Abschluss-Sheet), `TrainingOps/TrainingMessages/TrainingSession`. Codex-Review: 2× P2, 1× P3 behoben und nachgeprüft. CI #17 grün; Lauf für `a2283e8` siehe Actions.
 - Offen nur auf dem Gerät prüfbar: ob sich `postMessage` am WKWebView-Handler umhüllen lässt (sonst ungepuffertes Altverhalten).
 
+## M5 Kalender + Fortschritt — fertig (31.10.2026)
+
+- Web (Codex, Paket L): `js/native-progress.js`, Projektion `progress`, Queries, 3 Ops; Leistungsumbau `pulsNativeSetInterest` + granulare Caches (Satz-Op 3–48 ms statt ~550 ms). Live als **v77**.
+- Native (Claude, Paket M): `Features/Calendar/*`, `Features/Progress/*` im Trainings-Tab. Codex-Reviews: 5×P2+1×P3, dann 1×P1+1×P2, dann Rundungsparität (`JSMath`, inkl. −0) — behoben. CI #26 grün.
+- CI zeigt Compiler-/Testfehler seither als öffentliche Annotationen.
+
+## M6 Aktivitäten — fertig (31.10.2026)
+
+- Web (Paket N, von Codex begonnen, Claude `puls-backend` fertig): `js/native-activity.js`, 12 Ops; Claude-Review + 2 Codex-Nachprüfungen (u. a. veralteter Entwurf → 0 km + Spurlöschung verhindert). Live als **v78**.
+- Native (Paket O, Claude): `Features/Activity/*`; Codex: 3×P2+1×P3, dann 2×P2 (Start-Abbruch/Outbox-Neuverknüpfung) — behoben. Routenplaner bleibt Web. CI #30 grün (`PULS-ipa-30`).
+
 ## Nächste Schritte
 
-0. M5 Kalender + Fortschritt, dann M6 Aktivitäten, M7 Ernährung, M8 Konto/Profil + Phase B.
+0. M7 Ernährung (läuft: Codex Paket P), dann M8 Konto/Profil + Phase B.
 1. Selvir testet die Branch-IPA (Actions-Artifact `PULS-ipa-<Lauf>`) auf dem iPhone: Konto → „Körper & Entwicklung“ öffnet den nativen Bildschirm; Gewicht eintragen/bearbeiten/löschen erscheint im Web und auf dem PC; Live-Aktivität und GPS unverändert.
 2. Nach erfolgreichem Gerätetest `native-ios` nach `main` (erzeugt Release-IPA).
 3. M3: native Übersicht + native Tab-Leiste.
