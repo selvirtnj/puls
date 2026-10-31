@@ -36,6 +36,10 @@ public enum InboundMessage: Equatable, Sendable {
     case trainingProjection(TrainingProjectionMessage)
     /// M4: Antwort auf `pulsNativeExerciseSearch` (keine Mutation).
     case exerciseSearch(ExerciseSearchMessage)
+    /// M5: `projection{name:"progress"}` (Fortschritt, Kalender-Kontext).
+    case progressProjection(ProgressProjectionMessage)
+    /// M5: Antwort auf `pulsNativeProgressQuery` (keine Mutation, kein Ack).
+    case progressResult(ProgressResultMessage)
 
     /// `nil` = ignorieren (kein/unbekannter `type`, anderes `protocol`). Wirft bei falscher Form einer bekannten Nachricht.
     public static func decode(_ value: JSONValue) throws -> InboundMessage? {
@@ -55,10 +59,12 @@ public enum InboundMessage: Equatable, Sendable {
             switch name {
             case ProjectionMessage.overviewName: return .projection(try ProjectionMessage(json: value))
             case TrainingProjectionMessage.trainingName: return .trainingProjection(try TrainingProjectionMessage(json: value))
+            case ProgressProjectionMessage.progressName: return .progressProjection(try ProgressProjectionMessage(json: value))
             default: return nil
             }
         case "chrome": return .chrome(try ChromeMessage(json: value))
         case "exerciseSearch": return .exerciseSearch(try ExerciseSearchMessage(json: value))
+        case "progressResult": return .progressResult(try ProgressResultMessage(json: value))
         default: return nil
         }
     }
@@ -86,6 +92,8 @@ public enum InboundMessage: Equatable, Sendable {
         case .chrome(let message): return message.json
         case .trainingProjection(let message): return message.json
         case .exerciseSearch(let message): return message.json
+        case .progressProjection(let message): return message.json
+        case .progressResult(let message): return message.json
         }
     }
 }

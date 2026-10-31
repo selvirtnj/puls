@@ -25,6 +25,9 @@ public struct StoreEnvironment: Sendable {
         "body": [BridgeOps.weightUpsert, BridgeOps.weightDelete],
         // M4: der native Trainingsbereich braucht alle 15 Trainings-Ops (Protokoll §9.1).
         "training": TrainingOps.all,
+        // M5: Kalender liest nur (Queries, keine Ops); Fortschritt braucht die drei Einstellungs-Ops (§10.1).
+        "calendar": [],
+        "progress": ProgressOps.all,
     ]
 
     public init(
@@ -188,6 +191,14 @@ public final class ProfileStore {
     public private(set) var isWaitingForWebDialog = false
     /// M4: zuletzt verarbeitete Acks (höchstens 40, älteste zuerst).
     public private(set) var recentAcks: [AckEvent] = []
+    /// M5: zuletzt angenommene `progress`-Projektion dieses Dokuments (nicht persistiert).
+    public private(set) var progressProjection: ProgressProjectionMessage?
+    /// M5: angenommene Query-Antworten (nach `requestId`), nur für noch registrierte Anfragen desselben
+    /// Dokuments und Nutzers. Höchstens 16, nie persistiert.
+    public private(set) var progressResults: [String: ProgressResultMessage] = [:]
+    /// M5: steigt bei neuem Dokument, `hello.ownerPending:true` und Nutzerwechsel. Angezeigte Ergebnisse älterer
+    /// Generationen sind verworfen; Oberflächen fragen dann neu an.
+    public private(set) var progressGeneration = 0
     public let authority: DataAuthority = .web
 
     /// Übergibt einen Befehl an das Web (`StateBridge`). Ohne Sender bleibt er in der Outbox.
@@ -212,6 +223,15 @@ public final class ProfileStore {
     @ObservationIgnored private var navigationCounter = 0
     @ObservationIgnored private var replayAfterWebDialog = false
     @ObservationIgnored private var ackSerial = 0
+    @ObservationIgnored private var lastProgressProjectionSeq: Int?
+    @ObservationIgnored private var pendingProgressQueries: [String: PendingProgressQuery] = [:]
+    @ObservationIgnored private var progressResultOrder: [String] = []
+
+    private struct PendingProgressQuery {
+        var request: ProgressQueryRequest
+        var userId: String?
+        var generation: Int
+    }
 
     private struct AwaitedCommand {
         var command: ApplyCommand
@@ -306,6 +326,10 @@ public final class ProfileStore {
         case .exerciseSearch(let search):
             exerciseSearch = search
             return true
+        case .progressProjection(let projection):
+            return handleProgressProjection(projection)
+        case .progressResult(let result):
+            return handleProgressResult(result)
         }
     }
 
@@ -356,6 +380,7 @@ public final class ProfileStore {
         trainingProjection = nil
         lastTrainingProjectionSeq = nil
         exerciseSearch = nil
+        resetProgress()
         // Ein neues Dokument hat keinen offenen Dialog; Hello und Lade-Snapshot spielen die Outbox ohnehin ein.
         replayAfterWebDialog = false
         isWaitingForWebDialog = false
@@ -411,6 +436,107 @@ public final class ProfileStore {
         return true
     }
 
+    // MARK: M5 Kalender und Fortschritt
+
+    public static let calendarScreen = "calendar"
+    public static let progressScreen = "progress"
+    /// Eintrag in `window.pulsNativeFeatures` für M5 (nur zusammen mit `stateBridge`).
+    public static let nativeProgressFeature = "nativeProgress"
+
+    /// Das aktuelle Dokument bietet den nativen Fortschritt an: Screen und Projektion `progress`, alle drei
+    /// Einstellungs-Ops und geklärte Zuordnung.
+    public var webOffersProgress: Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return false }
+        return hello.screens.contains(Self.progressScreen)
+            && hello.projections.contains(ProgressProjectionMessage.progressName)
+            && availableScreens.contains(Self.progressScreen)
+    }
+
+    /// Nativer Kalender (nur lesend, Monate per Query): Screen `calendar` und geklärte Zuordnung.
+    public var webOffersCalendar: Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return false }
+        return hello.screens.contains(Self.calendarScreen) && hello.features.contains(Self.nativeProgressFeature)
+            && availableScreens.contains(Self.calendarScreen)
+    }
+
+    /// Anzeigefähige Fortschritts-Projektion desselben Nutzers wie der Spiegel (sonst `nil` → Lade-/Web-Ausweg).
+    public var currentProgress: ProgressProjectionMessage? {
+        guard webOffersProgress || webOffersCalendar, let projection = progressProjection, !projection.ownerPending else {
+            return nil
+        }
+        guard projection.flags.preview || projection.userId == userId else { return nil }
+        return projection
+    }
+
+    /// Vor dem Senden einer Query aufrufen; nur registrierte Anfragen dieses Dokuments/Nutzers werden angenommen.
+    public func registerProgressQuery(_ request: ProgressQueryRequest) {
+        pendingProgressQueries[request.requestId] = PendingProgressQuery(
+            request: request, userId: userId, generation: progressGeneration
+        )
+    }
+
+    /// Anfrage aufgeben (Zeitlimit, neues sichtbares Ziel, Ansicht geschlossen). Eine spätere Antwort wird verworfen.
+    public func forgetProgressQuery(_ requestId: String) {
+        pendingProgressQueries[requestId] = nil
+        if progressResults[requestId] != nil {
+            progressResults[requestId] = nil
+            progressResultOrder.removeAll { $0 == requestId }
+        }
+    }
+
+    public func isProgressQueryPending(_ requestId: String) -> Bool {
+        pendingProgressQueries[requestId] != nil
+    }
+
+    private func handleProgressProjection(_ message: ProgressProjectionMessage) -> Bool {
+        guard !message.ownerPending else {
+            log("progress projection ownerPending ignored")
+            return false
+        }
+        let freshDocument = message.projectionSeq <= 1 && message.reason == "load"
+        if let last = lastProgressProjectionSeq, message.projectionSeq <= last, !freshDocument {
+            log("progress projection \(message.projectionSeq) stale (have \(last))")
+            return false
+        }
+        lastProgressProjectionSeq = message.projectionSeq
+        progressProjection = message
+        return true
+    }
+
+    /// Nur Antworten auf noch registrierte Anfragen derselben Generation und desselben Nutzers (Vorschau ausgenommen,
+    /// deren Snapshots nie übernommen werden).
+    private func handleProgressResult(_ message: ProgressResultMessage) -> Bool {
+        guard !message.ownerPending, let pending = pendingProgressQueries[message.requestId] else {
+            log("progress result dropped")
+            return false
+        }
+        guard pending.generation == progressGeneration, pending.request.kind.rawValue == message.kind,
+              message.flags.preview || (message.userId == pending.userId && message.userId == userId) else {
+            pendingProgressQueries[message.requestId] = nil
+            log("progress result for other user/document dropped")
+            return false
+        }
+        pendingProgressQueries[message.requestId] = nil
+        progressResults[message.requestId] = message
+        progressResultOrder.removeAll { $0 == message.requestId }
+        progressResultOrder.append(message.requestId)
+        while progressResultOrder.count > 16 {
+            progressResults[progressResultOrder.removeFirst()] = nil
+        }
+        return true
+    }
+
+    private func resetProgress(keepProjection: Bool = false) {
+        if !keepProjection {
+            progressProjection = nil
+            lastProgressProjectionSeq = nil
+        }
+        pendingProgressQueries.removeAll()
+        progressResults.removeAll()
+        progressResultOrder.removeAll()
+        progressGeneration += 1
+    }
+
     private func recordAck(_ ack: AckMessage, command: ApplyCommand, code: AckErrorCode?, message: String?) {
         ackSerial += 1
         recentAcks.append(AckEvent(serial: ackSerial, commandId: command.id, op: command.op, args: command.args,
@@ -452,6 +578,8 @@ public final class ProfileStore {
         if hello.ownerPending {
             projection = nil
             trainingProjection = nil
+            // §10.3: angezeigte Ergebnisse verdecken, ausstehende Anfragen verwerfen.
+            resetProgress()
         }
         acceptAnySnapshotSeq = true
         // Wiederholte Status-Hellos verwerfen weder Spiegel noch Outbox noch gespeicherte Beobachtungen.
@@ -493,7 +621,11 @@ public final class ProfileStore {
             return false
         }
         let wasReadOnly = flags.isReadOnly
-        if snapshot.userId != userId { awaitingSnapshot.removeAll() }
+        if snapshot.userId != userId {
+            awaitingSnapshot.removeAll()
+            // Kontowechsel: Fortschrittsdaten des bisherigen Nutzers nie weiter zeigen.
+            if hasDocument { resetProgress(keepProjection: true) }
+        }
         acceptAnySnapshotSeq = false
         isWaitingForWeb = false
         ownerPending = false

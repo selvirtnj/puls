@@ -99,7 +99,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     private var headerHost: UIHostingController<ShellHeaderHost>?
     private var overviewHost: UIHostingController<OverviewHost>?
     /// M4: nativer Trainings-Tab (Routinen, laufende Session als Banner); nur mit `TrainingCoordinator`.
-    private var trainingHost: UIHostingController<TrainingHomeHost>?
+    /// M5: zusätzlich Kalender und Fortschritt als Bereiche desselben Tabs (ProgressCoordinator).
+    private var trainingHost: UIHostingController<WorkoutTabHost>?
     private var activeConstraints: [NSLayoutConstraint] = []
     private var inactiveConstraints: [NSLayoutConstraint] = []
 
@@ -132,6 +133,13 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     var openBody: (() -> Void)?
     /// M4: native Routinen und Session. Vor `install` setzen.
     var training: TrainingCoordinator?
+    /// M5: nativer Kalender und Fortschritt im Trainings-Tab. Vor `install` setzen.
+    var progress: ProgressCoordinator?
+    /// M5: Ein Web-Ausweg aus Kalender/Fortschritt (Review, Aktivität, Übungsverlauf …) läuft: native Trainingsansicht
+    /// verdecken, bis der Web-Ablauf endet (`chrome` blocking true → false) bzw. nach 3 s ohne Web-Ablauf.
+    private var workoutFlowHidden = false
+    private var workoutFlowSawBlocking = false
+    private var workoutFlowToken = 0
 
     init(store: ProfileStore, bridge: StateBridge) {
         self.store = store
@@ -160,7 +168,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         overviewHost = overview
         let trainingView: UIView?
         if let training {
-            let hosting = UIHostingController(rootView: TrainingHomeHost(coordinator: training))
+            let hosting = UIHostingController(rootView: WorkoutTabHost(training: training, progress: progress))
             hosting.view.backgroundColor = .systemGroupedBackground
             trainingHost = hosting
             trainingView = hosting.view
@@ -267,6 +275,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         let projection = store.currentProjection
         let chrome = store.webChrome
         state.isBlocked = chrome?.blocking == true
+        updateWorkoutFlow()
         if restoreOverviewAfterFlow {
             if state.isBlocked {
                 flowWasBlocking = true
@@ -346,8 +355,79 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     /// M4: nativer Trainings-Tab; nie über einem offenen Web-Ablauf oder der Web-Abschlussansicht.
     private var showsNativeTraining: Bool {
         guard let training, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .workout,
-              !workoutShowsWeb else { return false }
-        return training.isAvailable && !training.awaitingWebCompletion
+              !workoutShowsWeb, !workoutFlowHidden else { return false }
+        // M5: auch ohne Trainings-Projektion, wenn Kalender/Fortschritt nativ angeboten werden.
+        return (training.isAvailable || progress?.offersAny == true) && !training.awaitingWebCompletion
+    }
+
+    // MARK: M5 Web-Auswege und Interesse
+
+    /// Web-Ausweg aus Kalender/Fortschritt (§10.5). Seitenwechsel (`calendar`/`progress`/`records`/`editWorkout`) zeigen
+    /// die Web-Trainingsseite bis zur bewussten Tabwahl; Dialoge/Review verdecken die native Ansicht nur für ihre Dauer.
+    func openProgressWeb(_ target: ProgressNavigation) {
+        guard !state.isBlocked else { return }
+        let previousShowsWeb = workoutShowsWeb
+        if target.changesPage {
+            state.selected = .workout
+            workoutShowsWeb = true
+        } else {
+            beginWorkoutFlow()
+        }
+        updateVisibility()
+        bridge.navigateProgress(target) { [weak self] accepted in
+            guard let self, !accepted else { return }
+            // Abgelehnt (Web-Sperre, Ziel fehlt): native Ansicht wieder zeigen.
+            self.workoutShowsWeb = previousShowsWeb
+            self.workoutFlowHidden = false
+            self.updateVisibility()
+            if let progress = self.progress {
+                let text = progress.text
+                progress.notice = TrainingNotice(text: text("Das ist in PULS gerade nicht möglich.", "This is not possible in PULS right now."))
+            }
+        }
+    }
+
+    private func beginWorkoutFlow() {
+        workoutFlowHidden = true
+        workoutFlowSawBlocking = false
+        workoutFlowToken += 1
+        let token = workoutFlowToken
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard let self, self.workoutFlowToken == token, !self.workoutFlowSawBlocking else { return }
+            self.workoutFlowHidden = false
+            self.updateVisibility()
+        }
+    }
+
+    private func updateWorkoutFlow() {
+        guard workoutFlowHidden else { return }
+        if state.isBlocked {
+            workoutFlowSawBlocking = true
+        } else if workoutFlowSawBlocking {
+            workoutFlowHidden = false
+            workoutFlowSawBlocking = false
+        }
+    }
+
+    /// `pulsNativeSetInterest`: Projektionen der gerade sichtbaren nativen Bildschirme. `overview` immer, solange die
+    /// native Leiste aktiv ist (Seitenkopf/Datum lesen sie auf allen Tabs). `training` für Trainings-Tab, Session,
+    /// laufendes Workout und bis zur ersten Trainings-Projektion (Übersichts-Einstiege brauchen sie). `progress` nur bei
+    /// sichtbarem Kalender/Fortschritt.
+    private func reportInterest() {
+        guard isActive, let hello = store.documentHello, !hello.ownerPending else { return }
+        var names: Set<String> = [ProjectionMessage.overviewName]
+        let workoutVisible = showsNativeTraining
+        if let training {
+            if workoutVisible || training.sessionWorkoutId != nil || training.awaitingWebCompletion
+                || store.trainingProjection == nil || training.training?.active != nil {
+                names.insert(TrainingProjectionMessage.trainingName)
+            }
+        }
+        if workoutVisible, progress?.needsProgressProjection == true {
+            names.insert(ProgressProjectionMessage.progressName)
+        }
+        bridge.setInterest(ProjectionInterest(names), hello: store.helloCount)
     }
 
     private func updateVisibility() {
@@ -358,6 +438,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         // Verdeckte Web-Inhalte nicht für VoiceOver erreichbar lassen; die WebView selbst bleibt sichtbar.
         webView?.accessibilityElementsHidden = showOverview || showTraining
         syncSelection()
+        reportInterest()
     }
 
     /// M4: Trainings-Tab wählen (z. B. „Alle Routinen“ aus der Übersicht).

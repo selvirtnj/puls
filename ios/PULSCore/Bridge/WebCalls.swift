@@ -91,6 +91,24 @@ public enum NavigationTarget: Equatable, Hashable, Sendable {
     }
 }
 
+/// Projektionen, deren native Bildschirme gerade sichtbar sind (`pulsNativeSetInterest`). Nur bekannte Namen,
+/// sortiert und ohne Doppelte, damit gleiche Mengen gleich serialisiert und nicht erneut gesendet werden.
+/// Ohne Meldung berechnet das Web `overview`/`training` wie bisher, `progress` dagegen nie.
+public struct ProjectionInterest: Equatable, Hashable, Sendable {
+    public static let allowed: Set<String> = [ProjectionMessage.overviewName, TrainingProjectionMessage.trainingName,
+                                              ProgressProjectionMessage.progressName]
+
+    public let projections: [String]
+
+    public init(_ projections: Set<String>) {
+        self.projections = projections.intersection(Self.allowed).sorted()
+    }
+
+    public var json: JSONValue {
+        .object(["projections": .array(projections.map(JSONValue.string))])
+    }
+}
+
 /// JavaScript für `WKWebView.evaluateJavaScript`. Alle Werte gehen als serialisiertes JSON hinein: Anführungszeichen,
 /// Steuerzeichen und U+2028/U+2029 sind maskiert, Nutzerinhalte (IDs) können den Ausdruck nicht verlassen.
 public enum WebCall {
@@ -125,6 +143,23 @@ public enum WebCall {
     /// Der Ausdruck liefert `true`, wenn das Web die Suche gesendet hat.
     public static func exerciseSearch(_ request: ExerciseSearchRequest) -> String {
         "(typeof window.pulsNativeExerciseSearch==='function')?window.pulsNativeExerciseSearch(\(request.json.serializedString()))===true:false"
+    }
+
+    /// M5 `window.pulsNativeProgressQuery(request)`; Antwort kommt als `progressResult` mit derselben `requestId`.
+    /// Der Ausdruck liefert `true` genau dann, wenn das Web die Antwort gesendet hat.
+    public static func progressQuery(_ request: ProgressQueryRequest) -> String {
+        "(typeof window.pulsNativeProgressQuery==='function')?window.pulsNativeProgressQuery(\(request.json.serializedString()))===true:false"
+    }
+
+    /// M5 Web-Ausweg aus Kalender/Fortschritt (`{action, id?, web:true}`, §10.5).
+    public static func progressNavigate(_ target: ProgressNavigation) -> String {
+        "(typeof window.pulsNativeNavigate==='function')?window.pulsNativeNavigate(\(target.json.serializedString()))!==false:false"
+    }
+
+    /// `window.pulsNativeSetInterest({projections})`: nur die Projektionen sichtbarer nativer Bildschirme berechnen.
+    /// Ältere Web-Stände ohne Funktion liefern `false` (dann gilt das bisherige Verhalten).
+    public static func setInterest(_ interest: ProjectionInterest) -> String {
+        "(typeof window.pulsNativeSetInterest==='function')?window.pulsNativeSetInterest(\(interest.json.serializedString()))!==false:false"
     }
 
     /// `nil` für keinen streng gültigen Kalendertag (`YYYY-MM-DD`, existierendes Datum).

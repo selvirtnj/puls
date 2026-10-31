@@ -116,6 +116,29 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
         evaluate(WebCall.exerciseSearch(request)) { result in completion?((result as? Bool) == true) }
     }
 
+    /// M5 Fortschritts-Query; die Antwort kommt als `progressResult` in den Store. `completion(false)`: nicht gesendet
+    /// (Web noch nicht bereit, ungeklärte Zuordnung, ungültige Anfrage, alter Web-Stand).
+    func progressQuery(_ request: ProgressQueryRequest, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.progressQuery(request)) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// M5 Web-Ausweg aus Kalender/Fortschritt (§10.5, `web:true` nur für diesen Aufruf).
+    func navigateProgress(_ target: ProgressNavigation, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.progressNavigate(target)) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// Meldet die Projektionen der sichtbaren nativen Bildschirme (`pulsNativeSetInterest`). Je Dokument/Hello nur bei
+    /// Änderung; nach jedem Hello wird neu gemeldet, damit ein neues Web-Dokument den Stand kennt.
+    func setInterest(_ interest: ProjectionInterest, hello: Int) {
+        guard sentInterest?.interest != interest || sentInterest?.hello != hello else { return }
+        sentInterest = (interest, hello)
+        // Älterer Web-Stand ohne Funktion liefert `false`: dann gilt dort das bisherige Verhalten, kein Wiederholen
+        // bis zum nächsten Hello.
+        evaluate(WebCall.setInterest(interest), completion: nil)
+    }
+
+    private var sentInterest: (interest: ProjectionInterest, hello: Int)?
+
     /// `data-scheme` der Web-App (`light`/`dark`, js/color-scheme.js) oder `nil`.
     func readWebScheme(_ completion: @escaping @MainActor (String?) -> Void) {
         evaluate("document.documentElement.getAttribute('data-scheme')") { result in completion(result as? String) }

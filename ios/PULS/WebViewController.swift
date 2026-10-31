@@ -25,6 +25,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var tabShell: RootTabShell?
     // M4: native Routinen und Kraftsession (Features/Training); nil ohne Brücke.
     private var trainingCoordinator: TrainingCoordinator?
+    // M5: nativer Kalender und Fortschritt (Features/Calendar, Features/Progress); nil ohne Brücke.
+    private var progressCoordinator: ProgressCoordinator?
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
@@ -56,7 +58,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // erst nach pulsNativeSetChrome(true) aus.
         // 'nativeTraining' (M4): Routinen und Kraftsession nativ; nur zusammen mit 'stateBridge'. Das Web leitet seine
         // Session-Einstiege erst nach pulsNativeSetTraining(true) per openNative{screen:'training'} weiter.
-        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining'"
+        // 'nativeProgress' (M5): Kalender und Fortschritt nativ im Trainings-Tab; das Web berechnet die Projektion
+        // 'progress' nur nach pulsNativeSetInterest({projections:['progress',…]}).
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress'"
         config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -77,6 +81,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             shell.openBody = { [weak router] in router?.open(NativeRouter.bodyScreen) }
             shell.onStyleChange = { [weak self] in self?.setNeedsStatusBarAppearanceUpdate() }
             shell.training = training
+            let progress = ProgressCoordinator(store: store, bridge: stateBridge)
+            progressCoordinator = progress
+            shell.progress = progress
+            progress.onOpenWeb = { [weak shell] target in shell?.openProgressWeb(target) }
             training.onSelectWorkoutTab = { [weak shell] in shell?.selectWorkoutTab() }
             training.onShowWebWorkout = { [weak shell] in shell?.showWebWorkout() }
             training.styleProvider = { [weak shell] in

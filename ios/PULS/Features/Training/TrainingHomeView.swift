@@ -23,6 +23,8 @@ private struct EditorRequest: Identifiable {
 
 struct TrainingHomeView: View {
     let coordinator: TrainingCoordinator
+    /// M5: Ohne nativen Kalender/Fortschritt führt ein Eintrag zur Web-Trainingsseite (Kalender, Rekorde, Rückblick).
+    var showsWebHistoryLink = true
     @State private var editor: EditorRequest?
     @State private var showsEmptyStart = false
     @State private var emptyName = ""
@@ -97,17 +99,25 @@ struct TrainingHomeView: View {
             }
             routinesSection(training, text: text, canWrite: canWrite)
             RecentSection(training: training, text: text)
-            Section {
-                Button {
-                    coordinator.showWebWorkout()
-                } label: {
-                    Label(text("Kalender, Rekorde und Rückblick", "Calendar, records and history"), systemImage: "calendar")
-                }
-                .accessibilityHint(text("Öffnet die Trainingsseite in PULS", "Opens the training page in PULS"))
-            } footer: {
-                if training.omitted.any {
-                    Text(text("Nicht alle Einträge passen in diese Ansicht. Die vollständige Liste steht in PULS.",
-                              "Not every entry fits this view. The full list is in PULS."))
+            // Mit nativem Kalender/Fortschritt (M5) liegen diese im Bereichswähler; der Web-Eintrag bleibt dann nur
+            // als Ausweg für ausgelassene Einträge.
+            if showsWebHistoryLink || training.omitted.any {
+                Section {
+                    Button {
+                        coordinator.showWebWorkout()
+                    } label: {
+                        if showsWebHistoryLink {
+                            Label(text("Kalender, Rekorde und Rückblick", "Calendar, records and history"), systemImage: "calendar")
+                        } else {
+                            Label(text("Alle Einträge in PULS", "All entries in PULS"), systemImage: "arrow.up.forward.app")
+                        }
+                    }
+                    .accessibilityHint(text("Öffnet die Trainingsseite in PULS", "Opens the training page in PULS"))
+                } footer: {
+                    if training.omitted.any {
+                        Text(text("Nicht alle Einträge passen in diese Ansicht. Die vollständige Liste steht in PULS.",
+                                  "Not every entry fits this view. The full list is in PULS."))
+                    }
                 }
             }
         }

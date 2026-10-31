@@ -17,6 +17,8 @@ final class AppEnvironment {
         environment.reducers.merge(BridgeOps.weightReducers) { _, new in new }
         // M4: Vorschau nur für eindeutig vorhersagbare Trainings-Ops (Satzwerte, Entfernen, Verschieben, Pause beenden).
         environment.reducers.merge(BridgeOps.trainingReducers) { _, new in new }
+        // M5: Einstellungs-Ops (Ansicht, Kurven, Wochenziele) zeigen ihren eindeutigen Zielwert sofort.
+        environment.reducers.merge(BridgeOps.progressReducers) { _, new in new }
         store = ProfileStore(environment: environment)
     }
 }
