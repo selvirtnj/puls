@@ -51,7 +51,7 @@ struct CalendarScreen: View {
         }
         .listStyle(.insetGrouped)
         .contentMargins(.top, 4, for: .scrollContent)
-        .task(id: QueryKey(month: month, week: WeightDay.weekStart(selected) ?? "", generation: coordinator.store.progressGeneration,
+        .task(id: QueryKey(month: month, week: WeightDay.weekStart(selected) ?? "", revision: coordinator.dataRevision,
                            reload: reload)) { @MainActor in
             await load(month: month, day: selected)
         }
@@ -64,7 +64,7 @@ struct CalendarScreen: View {
     private struct QueryKey: Hashable {
         var month: String
         var week: String
-        var generation: Int
+        var revision: String
         var reload: Int
     }
 

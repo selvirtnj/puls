@@ -416,24 +416,30 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     /// sichtbarem Kalender/Fortschritt.
     private func reportInterest() {
         guard isActive, let hello = store.documentHello, !hello.ownerPending else { return }
+        // Nur Projektionen, die dieses Dokument laut Hello anbietet (sonst lehnt das Web die ganze Liste ab).
+        let offered = Set(hello.projections)
         var names: Set<String> = [ProjectionMessage.overviewName]
         let workoutVisible = showsNativeTraining
+        // Eine native Session verdeckt Kalender/Fortschritt vollständig.
+        let sessionOpen = training?.sessionWorkoutId != nil
         if let training {
-            if workoutVisible || training.sessionWorkoutId != nil || training.awaitingWebCompletion
+            if workoutVisible || sessionOpen || training.awaitingWebCompletion
                 || store.trainingProjection == nil || training.training?.active != nil {
                 names.insert(TrainingProjectionMessage.trainingName)
             }
         }
-        if workoutVisible, progress?.needsProgressProjection == true {
+        if workoutVisible, !sessionOpen, progress?.needsProgressProjection == true {
             names.insert(ProgressProjectionMessage.progressName)
         }
-        bridge.setInterest(ProjectionInterest(names), hello: store.helloCount)
+        bridge.setInterest(ProjectionInterest(names.intersection(offered)), hello: store.helloCount)
     }
 
     private func updateVisibility() {
         let showOverview = showsNativeOverview
         let showTraining = showsNativeTraining
         overviewHost?.view.isHidden = !showOverview
+        // M5: Rückkehr aus einem Web-Ablauf/anderen Tab: sichtbare Monate/Details neu laden (Web könnte geändert haben).
+        if showTraining, trainingHost?.view.isHidden == true { progress?.refreshToken += 1 }
         trainingHost?.view.isHidden = !showTraining
         // Verdeckte Web-Inhalte nicht für VoiceOver erreichbar lassen; die WebView selbst bleibt sichtbar.
         webView?.accessibilityElementsHidden = showOverview || showTraining

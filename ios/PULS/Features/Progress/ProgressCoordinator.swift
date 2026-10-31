@@ -52,6 +52,15 @@ final class ProgressCoordinator {
     /// Ausgewählter Kalendertag.
     var calendarDay: String?
 
+    /// Steigt, sobald der native Trainings-Tab nach einem Web-Ablauf/Tabwechsel wieder sichtbar wird.
+    var refreshToken = 0
+
+    /// Datenstand für Query-Ansichten: jeder neue Profilsnapshot (Änderung im Web, Sync, Import) und jede Rückkehr
+    /// aus dem Web lädt sichtbare Monate/Details neu; ein Dokument-/Nutzerwechsel ebenfalls (`progressGeneration`).
+    var dataRevision: String {
+        "\(store.progressGeneration)|\(store.seq)|\(refreshToken)"
+    }
+
     /// Shell: Web-Ausweg ausführen (WebView zeigen, native Leiste/Detail entsprechend). Vor `install` gesetzt.
     @ObservationIgnored var onOpenWeb: ((ProgressNavigation) -> Void)?
 

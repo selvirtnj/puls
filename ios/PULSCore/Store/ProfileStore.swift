@@ -155,6 +155,8 @@ public final class ProfileStore {
     /// Alle Outbox-Einträge, auch bereits bestätigte (`acked`).
     public private(set) var outboxEntries: [OutboxEntry] = []
     public private(set) var availableScreens: Set<String> = []
+    /// Wie `availableScreens`, aber auch in der Vorschau (nur lesend; M5 Kalender/Fortschritt).
+    public private(set) var readableScreens: Set<String> = []
     public private(set) var notice: StoreNotice?
     /// Das Web hat `not_ready` gemeldet (lädt, Anmeldung läuft, Profilzuordnung offen). Befehle werden bis zum
     /// nächsten Snapshot nur eingereiht, nicht gesendet.
@@ -449,14 +451,14 @@ public final class ProfileStore {
         guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return false }
         return hello.screens.contains(Self.progressScreen)
             && hello.projections.contains(ProgressProjectionMessage.progressName)
-            && availableScreens.contains(Self.progressScreen)
+            && readableScreens.contains(Self.progressScreen)
     }
 
     /// Nativer Kalender (nur lesend, Monate per Query): Screen `calendar` und geklärte Zuordnung.
     public var webOffersCalendar: Bool {
         guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return false }
         return hello.screens.contains(Self.calendarScreen) && hello.features.contains(Self.nativeProgressFeature)
-            && availableScreens.contains(Self.calendarScreen)
+            && readableScreens.contains(Self.calendarScreen)
     }
 
     /// Anzeigefähige Fortschritts-Projektion desselben Nutzers wie der Spiegel (sonst `nil` → Lade-/Web-Ausweg).
@@ -857,15 +859,20 @@ public final class ProfileStore {
     }
 
     private func recomputeScreens() {
-        guard let web = webInfo, !flags.preview, !ownerPending else {
+        guard let web = webInfo, !ownerPending else {
             availableScreens = []
+            readableScreens = []
             return
         }
         let ops = Set(web.ops).subtracting(unsupportedOps)
-        availableScreens = Set(web.screens.filter { screen in
+        let supported = Set(web.screens.filter { screen in
             guard let required = environment.screenRequirements[screen] else { return false }
             return required.isSubset(of: ops)
         })
+        // M5 §10.1: Vorschau/Recovery/Upload-Sperre lassen Kalender/Fortschritt lesbar. Schreiben bleibt über
+        // `perform` (preview/readOnly) gesperrt; Vorschau-Snapshots werden weiterhin nicht gespiegelt.
+        readableScreens = supported
+        availableScreens = flags.preview ? [] : supported
     }
 
     // MARK: Spiegel

@@ -208,8 +208,9 @@ struct WeeklyGoalSheet: View {
     init(coordinator: ProgressCoordinator, goals: WeeklyGoals) {
         self.coordinator = coordinator
         let text = coordinator.text
-        _kmText = State(initialValue: goals.hasKmGoal ? goals.weeklyGoalKm.map { text.number($0) } ?? "" : "")
-        _minutesText = State(initialValue: goals.weekMinutesGoal.map { text.number($0, digits: 0) } ?? "150")
+        // Ohne Tausendertrennzeichen vorbelegen: „1000“ darf nie als „1.000“ (= 1 km) zurückgelesen werden.
+        _kmText = State(initialValue: goals.hasKmGoal ? goals.weeklyGoalKm.map { GoalInput.kmText($0, locale: text.locale) } ?? "" : "")
+        _minutesText = State(initialValue: GoalInput.minutesText(goals.weekMinutesGoal ?? 150, locale: text.locale))
     }
 
     var body: some View {
@@ -263,16 +264,12 @@ struct WeeklyGoalSheet: View {
 
     /// `nil` = ungültig; `.value == nil` = kein Ziel.
     private var km: OptionalValue? {
-        let trimmed = kmText.trimmingCharacters(in: .whitespaces)
-        if trimmed.isEmpty { return OptionalValue(value: nil) }
-        guard let value = Double(trimmed.replacingOccurrences(of: ",", with: ".")), value.isFinite,
-              value >= 0.1, value <= 1000 else { return nil }
+        guard let value = GoalInput.km(kmText, locale: coordinator.text.locale) else { return nil }
         return OptionalValue(value: value)
     }
 
     private var minutes: Int? {
-        guard let value = Int(minutesText.trimmingCharacters(in: .whitespaces)), (0...10080).contains(value) else { return nil }
-        return value
+        GoalInput.minutes(minutesText, locale: coordinator.text.locale)
     }
 
     struct OptionalValue {
@@ -367,6 +364,10 @@ private struct TrendSection: View {
                 }
             )) {
                 ForEach(Self.periods, id: \.self) { key in Text(text.period(key)).tag(key) }
+                // Älterer/unbekannter gespeicherter Wert (z. B. "90"): sichtbar lassen, nie automatisch umschreiben.
+                if let stored = chart.period ?? settings.chartPeriod, !Self.periods.contains(stored) {
+                    Text(legacyLabel(stored)).tag(stored)
+                }
             }
             .pickerStyle(.segmented)
             .disabled(!canEdit)
@@ -394,6 +395,13 @@ private struct TrendSection: View {
             Text(text("Tage ohne Messung bleiben leer. Den kombinierten Indexchart zeigt PULS.",
                       "Days without a measurement stay empty. PULS shows the combined index chart."))
         }
+    }
+
+    private func legacyLabel(_ value: String) -> String {
+        if !value.isEmpty, value.allSatisfy({ $0.isASCII && $0.isNumber }) {
+            return text("\(value) Tage", "\(value) days")
+        }
+        return value
     }
 
     /// Alle drei Schalter ausdrücklich (fehlend = an, wie im Web).
@@ -501,13 +509,13 @@ private struct ActivitySection: View {
         let usesProjection = (mode == nil || mode == base?.mode) && (filter == nil || filter == base?.filter)
         let view = usesProjection ? base : queried?.value
         Section {
-            Picker(text("Zeitraum", "Period"), selection: Binding(get: { currentMode }, set: { mode = $0 })) {
+            Picker(text("Zeitraum", "Period"), selection: Binding(get: { currentMode }, set: { mode = $0; queried = nil })) {
                 Text(text("Woche", "Week")).tag("week")
                 Text(text("Monat", "Month")).tag("month")
             }
             .pickerStyle(.segmented)
             if let types = (view ?? base)?.types, !types.isEmpty {
-                Picker(text("Art", "Type"), selection: Binding(get: { currentFilter }, set: { filter = $0 })) {
+                Picker(text("Art", "Type"), selection: Binding(get: { currentFilter }, set: { filter = $0; queried = nil })) {
                     Text(text("Alle", "All")).tag("all")
                     ForEach(types) { type in Text(type.label).tag(type.type) }
                 }
@@ -547,9 +555,10 @@ private struct ActivitySection: View {
         } header: {
             Text(text("Aktivitäten", "Activities") + ((view ?? base).map { " · " + text.range($0.start, $0.end) } ?? ""))
         }
-        .task(id: "\(currentMode)|\(currentFilter)|\(usesProjection)|\(coordinator.store.progressGeneration)|\(reload)") { @MainActor in
+        .task(id: "\(currentMode)|\(currentFilter)|\(usesProjection)|\(coordinator.dataRevision)|\(reload)") { @MainActor in
             guard !usesProjection else { return }
-            queried = .loading
+            let hadValue = queried?.value != nil
+            if !hadValue { queried = .loading }
             let today = coordinator.today
             guard let month = CalendarMonth.of(day: today) else { queried = .failed; return }
             let outcome = await coordinator.fetch { requestId in
@@ -558,7 +567,7 @@ private struct ActivitySection: View {
             guard !Task.isCancelled else { return }
             if case .loaded(let message) = outcome, case .month(let result)? = message.result, let view = result.activityView {
                 queried = .loaded(view)
-            } else {
+            } else if !hadValue {
                 queried = .failed
             }
         }

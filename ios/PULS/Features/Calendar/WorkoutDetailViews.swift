@@ -28,15 +28,17 @@ struct WorkoutReviewScreen: View {
         .listStyle(.insetGrouped)
         .navigationTitle(title.isEmpty ? "Workout" : title)
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: "\(workoutId)|\(coordinator.store.progressGeneration)|\(reload)") { @MainActor in
-            phase = .loading
+        .task(id: "\(workoutId)|\(coordinator.dataRevision)|\(reload)") { @MainActor in
+            // Beim Nachladen (neuer Snapshot, Rückkehr aus dem Web) bisherigen Inhalt stehen lassen.
+            let hadValue = phase.value != nil
+            if !hadValue { phase = .loading }
             let outcome = await coordinator.fetch { ProgressQueryRequest.detail(.workout, id: workoutId, requestId: $0) }
             guard !Task.isCancelled else { return }
             switch outcome {
             case .loaded(let message):
                 if case .workout(let review)? = message.result, review.id == workoutId { phase = .loaded(review) } else { phase = .failed }
             case .gone: phase = .gone
-            default: phase = .failed
+            default: if !hadValue { phase = .failed }
             }
         }
     }
@@ -203,15 +205,17 @@ struct RunDetailScreen: View {
         .listStyle(.insetGrouped)
         .navigationTitle(title.isEmpty ? text("Aktivität", "Activity") : title)
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: "\(runId)|\(coordinator.store.progressGeneration)|\(reload)") { @MainActor in
-            phase = .loading
+        .task(id: "\(runId)|\(coordinator.dataRevision)|\(reload)") { @MainActor in
+            // Beim Nachladen (neuer Snapshot, Rückkehr aus dem Web) bisherigen Inhalt stehen lassen.
+            let hadValue = phase.value != nil
+            if !hadValue { phase = .loading }
             let outcome = await coordinator.fetch { ProgressQueryRequest.detail(.run, id: runId, requestId: $0) }
             guard !Task.isCancelled else { return }
             switch outcome {
             case .loaded(let message):
                 if case .run(let detail)? = message.result, detail.entry.entryId == runId { phase = .loaded(detail) } else { phase = .failed }
             case .gone: phase = .gone
-            default: phase = .failed
+            default: if !hadValue { phase = .failed }
             }
         }
     }

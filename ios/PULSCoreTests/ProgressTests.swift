@@ -296,6 +296,64 @@ final class ProgressTests: XCTestCase {
         XCTAssertEqual(store.currentProgress?.projectionSeq, 5)
     }
 
+    @MainActor
+    func testPreviewKeepsCalendarAndProgressReadableButNotWritable() throws {
+        let store = ProfileStore(environment: StoreEnvironment(directory: try makeTemporaryDirectory(), now: { fixedNow }))
+        var sent: [ApplyCommand] = []
+        store.sender = { sent.append($0) }
+        store.receive(progressHello)
+        let preview = StateFlags(preview: true)
+        XCTAssertFalse(store.receive(.snapshot(SnapshotMessage(seq: 0, userId: nil, state: try profile(), flags: preview, reason: "load"))))
+        var projection = try Fixtures.value("progress-projection")
+        projection["flags"] = preview.json
+        projection["userId"] = .null
+        guard case .progressProjection(let message)? = try InboundMessage.decode(projection) else { return XCTFail("projection") }
+        XCTAssertTrue(store.receive(.progressProjection(message)))
+
+        XCTAssertTrue(store.webOffersProgress)
+        XCTAssertTrue(store.webOffersCalendar)
+        XCTAssertNotNil(store.currentProgress)
+        XCTAssertTrue(store.availableScreens.isEmpty, "Schreibbereiche bleiben in der Vorschau gesperrt")
+        XCTAssertFalse(store.hasDocument, "Vorschau-Profil wird nicht gespiegelt")
+        XCTAssertThrowsError(try store.performProgress(XCTUnwrap(ProgressCommands.setView(key: "range", value: "year")), asUser: nil)) {
+            XCTAssertEqual($0 as? ProfileStoreError, .preview)
+        }
+        XCTAssertTrue(sent.isEmpty)
+
+        store.registerProgressQuery(try XCTUnwrap(ProgressQueryRequest.month("2026-10", requestId: "q")))
+        var result = try Fixtures.value("progress-result-month")
+        result["flags"] = preview.json
+        result["userId"] = .null
+        guard case .progressResult(let answer)? = try InboundMessage.decode(result) else { return XCTFail("result") }
+        XCTAssertTrue(store.receive(.progressResult(answer)))
+    }
+
+    func testGoalInputNeverReadsGroupedThousandsAsDecimals() {
+        for identifier in ["de-DE", "en-GB", "en-US"] {
+            let locale = Locale(identifier: identifier)
+            let kmText = GoalInput.kmText(1000, locale: locale)
+            XCTAssertEqual(kmText, "1000", identifier)
+            XCTAssertEqual(GoalInput.km(kmText, locale: locale), .some(1000), identifier)
+            XCTAssertEqual(GoalInput.minutes(GoalInput.minutesText(1000, locale: locale), locale: locale), 1000, identifier)
+            XCTAssertEqual(GoalInput.minutes(GoalInput.minutesText(10080, locale: locale), locale: locale), 10080, identifier)
+            XCTAssertEqual(GoalInput.km("", locale: locale), .some(nil), "leer = kein Ziel")
+            XCTAssertNil(GoalInput.km("1001", locale: locale))
+            XCTAssertNil(GoalInput.minutes("10081", locale: locale))
+            XCTAssertNil(GoalInput.minutes("12,5", locale: locale))
+        }
+        let de = Locale(identifier: "de-DE"), en = Locale(identifier: "en-GB")
+        // Von Hand getippte Tausendertrennung wird als solche gelesen, nicht als Dezimalstelle.
+        XCTAssertEqual(GoalInput.km("1.000", locale: de), .some(1000))
+        XCTAssertEqual(GoalInput.km("1,000", locale: en), .some(1000))
+        XCTAssertEqual(GoalInput.minutes("10.080", locale: de), 10080)
+        XCTAssertEqual(GoalInput.minutes("10,080", locale: en), 10080)
+        XCTAssertEqual(GoalInput.km("25,5", locale: de), .some(25.5))
+        XCTAssertEqual(GoalInput.km("25.5", locale: de), .some(25.5))
+        XCTAssertEqual(GoalInput.km("25.5", locale: en), .some(25.5))
+        XCTAssertEqual(GoalInput.kmText(25.5, locale: de), "25,5")
+        XCTAssertNil(GoalInput.km("1.2.3", locale: de))
+    }
+
     // MARK: Ops
 
     @MainActor

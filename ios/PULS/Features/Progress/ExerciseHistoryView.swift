@@ -27,15 +27,17 @@ struct ExerciseHistoryScreen: View {
         .listStyle(.insetGrouped)
         .navigationTitle(title.isEmpty ? text("Übung", "Exercise") : title)
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: "\(exerciseId)|\(coordinator.store.progressGeneration)|\(reload)") { @MainActor in
-            phase = .loading
+        .task(id: "\(exerciseId)|\(coordinator.dataRevision)|\(reload)") { @MainActor in
+            // Beim Nachladen (neuer Snapshot, Rückkehr aus dem Web) bisherigen Inhalt stehen lassen.
+            let hadValue = phase.value != nil
+            if !hadValue { phase = .loading }
             let outcome = await coordinator.fetch { ProgressQueryRequest.detail(.exercise, id: exerciseId, requestId: $0) }
             guard !Task.isCancelled else { return }
             switch outcome {
             case .loaded(let message):
                 if case .exercise(let history)? = message.result, history.id == exerciseId { phase = .loaded(history) } else { phase = .failed }
             case .gone: phase = .gone
-            default: phase = .failed
+            default: if !hadValue { phase = .failed }
             }
         }
     }
