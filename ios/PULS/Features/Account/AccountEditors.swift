@@ -433,7 +433,7 @@ struct AccountMeasurementSheet: View {
     var body: some View {
         let text = coordinator.text
         let fields = coordinator.projection?.body.fields ?? []
-        let today = coordinator.projection?.today.flatMap(WeightDay.date(from:)) ?? Date()
+        let today = coordinator.projection?.today.flatMap { WeightDay.date(from: $0) } ?? Date()
         NavigationStack {
             Form {
                 Section {
@@ -470,7 +470,7 @@ struct AccountMeasurementSheet: View {
             }
         }
         .onAppear {
-            date = initialDate.flatMap(WeightDay.date(from:)) ?? today
+            date = initialDate.flatMap { WeightDay.date(from: $0) } ?? today
             fill(fields)
         }
         .onChange(of: date) { _, _ in fill(fields) }
