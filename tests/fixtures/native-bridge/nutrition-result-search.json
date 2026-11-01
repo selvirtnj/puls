@@ -1,0 +1,63 @@
+{
+  "protocol": 1,
+  "type": "nutritionResult",
+  "requestId": "latest",
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "ownerPending": false,
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "language": "de",
+  "kind": "search",
+  "ok": true,
+  "result": {
+    "q": "Synthetic",
+    "filter": "all",
+    "items": [
+      {
+        "ref": {
+          "id": "product"
+        },
+        "name": "Synthetic product",
+        "brand": "",
+        "unit": "g",
+        "kcal": 200,
+        "p": 20,
+        "c": 30,
+        "f": 0,
+        "source": "PULS Basis",
+        "favorite": true,
+        "complete": true,
+        "reviewRequired": false
+      }
+    ],
+    "total": 1,
+    "omitted": 0,
+    "phase": "complete",
+    "cataloguePending": false,
+    "offline": true,
+    "catalogueError": "",
+    "online": {
+      "supported": true,
+      "status": "offline",
+      "items": [],
+      "attribution": {
+        "name": "Open Food Facts",
+        "url": "https://world.openfoodfacts.org",
+        "license": "ODbL",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "privacy": "Suchbegriff/Barcode und IP-Adresse; keine Profil- oder Tagebuchdaten."
+      }
+    },
+    "attribution": "BLS 4.0 (2025), CC BY 4.0 · USDA SR Legacy/Foundation, Public Domain · Ciqual 2025, CC BY 4.0"
+  }
+}

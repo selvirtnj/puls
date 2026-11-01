@@ -1,0 +1,211 @@
+{
+  "protocol": 1,
+  "type": "projection",
+  "name": "nutrition",
+  "projectionSeq": 1,
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "ownerPending": false,
+  "reason": "interest",
+  "nutrition": {
+    "stage": "P2",
+    "date": "2026-10-28",
+    "today": "2026-10-28",
+    "language": "de",
+    "locale": "de-DE",
+    "goals": {
+      "values": {
+        "kcal": 2006,
+        "p": 167,
+        "c": 184,
+        "f": 67
+      },
+      "mode": "auto",
+      "macroMode": "auto"
+    },
+    "totals": {
+      "kcal": 199,
+      "p": 10,
+      "c": 35,
+      "f": 2
+    },
+    "micros": {
+      "fiber": {
+        "label": "Ballaststoffe",
+        "unit": "g",
+        "value": null,
+        "known": 0,
+        "total": 2,
+        "target": 30,
+        "targetSource": "reference"
+      },
+      "vitc": {
+        "label": "Vitamin C",
+        "unit": "mg",
+        "value": 0,
+        "known": 1,
+        "total": 2,
+        "target": 110,
+        "targetSource": "reference"
+      },
+      "iron": {
+        "label": "Eisen",
+        "unit": "mg",
+        "value": null,
+        "known": 0,
+        "total": 2,
+        "target": 11,
+        "targetSource": "reference"
+      },
+      "calcium": {
+        "label": "Calcium",
+        "unit": "mg",
+        "value": null,
+        "known": 0,
+        "total": 2,
+        "target": 1000,
+        "targetSource": "reference"
+      },
+      "b12": {
+        "label": "Vitamin B12",
+        "unit": "µg",
+        "value": null,
+        "known": 0,
+        "total": 2,
+        "target": 4,
+        "targetSource": "reference"
+      },
+      "folate": {
+        "label": "Folat",
+        "unit": "µg",
+        "value": null,
+        "known": 0,
+        "total": 2,
+        "target": 300,
+        "targetSource": "reference"
+      },
+      "potassium": {
+        "label": "Kalium",
+        "unit": "mg",
+        "value": null,
+        "known": 0,
+        "total": 2,
+        "target": 4000,
+        "targetSource": "reference"
+      },
+      "magnesium": {
+        "label": "Magnesium",
+        "unit": "mg",
+        "value": null,
+        "known": 0,
+        "total": 2,
+        "target": 350,
+        "targetSource": "reference"
+      }
+    },
+    "water": {
+      "value": 475,
+      "displayValue": 475,
+      "known": 1,
+      "total": 2,
+      "estimated": 475,
+      "unknownDrinks": 0,
+      "target": null,
+      "estimatedDisplayOnly": true
+    },
+    "foodLogCompleted": false,
+    "entries": [
+      {
+        "id": "old",
+        "name": "Old snapshot",
+        "date": "2026-10-28",
+        "meal": "Snacks",
+        "amount": 100,
+        "unit": "g",
+        "kcal": 99,
+        "p": 10,
+        "c": 10,
+        "f": 2,
+        "nutrients": {},
+        "foodRef": null,
+        "recipeId": null,
+        "source": ""
+      },
+      {
+        "id": "drink",
+        "name": "Synthetic drink",
+        "date": "2026-10-28",
+        "meal": "Snacks",
+        "amount": 500,
+        "unit": "ml",
+        "kcal": 100,
+        "p": 0,
+        "c": 25,
+        "f": 0,
+        "nutrients": {
+          "vitc": 0
+        },
+        "foodRef": null,
+        "recipeId": null,
+        "source": ""
+      }
+    ],
+    "entryCount": 2,
+    "favorites": [
+      {
+        "ref": {
+          "id": "product"
+        },
+        "name": "Synthetic product",
+        "brand": "",
+        "unit": "g",
+        "kcal": 200,
+        "p": 20,
+        "c": 30,
+        "f": 0,
+        "source": "Eigene Werte",
+        "favorite": true,
+        "complete": true,
+        "reviewRequired": false
+      }
+    ],
+    "recent": [],
+    "recipes": [
+      {
+        "id": "recipe",
+        "name": "Synthetic recipe",
+        "yield": 200,
+        "ingredients": 1,
+        "kcal": 100,
+        "p": 10,
+        "c": 15,
+        "f": 0
+      }
+    ],
+    "settings": {
+      "waterGoal": null,
+      "microGoals": {}
+    },
+    "omitted": {
+      "entries": 0,
+      "favorites": 0,
+      "recent": 0,
+      "recipes": 0
+    },
+    "navigation": {
+      "page": "food",
+      "web": true
+    }
+  }
+}

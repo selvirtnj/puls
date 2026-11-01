@@ -1,0 +1,27 @@
+{
+  "id": "f0000000-0000-4000-8000-000000000050",
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "baseSeq": 0,
+  "op": "product.save",
+  "args": {
+    "kind": "label",
+    "product": {
+      "id": "label",
+      "name": "Vision fixture",
+      "unit": "g",
+      "kcal": 100,
+      "p": 10,
+      "c": 15,
+      "f": 0,
+      "fiber": 2
+    },
+    "label": {
+      "basis": "portion-g",
+      "amount": 50,
+      "column": 1,
+      "confirmed": true
+    },
+    "expect": null,
+    "confirmWarnings": false
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "protocol": 1,
+  "type": "nutritionResult",
+  "requestId": "p2",
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "ownerPending": false,
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "language": "de",
+  "kind": "product",
+  "ok": true,
+  "result": {
+    "product": {
+      "ref": {
+        "barcode": "4006381333931"
+      },
+      "name": "OFF fixture drink",
+      "brand": "Fixture brand",
+      "unit": null,
+      "kcal": 200,
+      "p": 20,
+      "c": 30,
+      "f": 0,
+      "source": "Open Food Facts",
+      "favorite": false,
+      "complete": true,
+      "reviewRequired": true
+    },
+    "draft": {
+      "barcode": "4006381333931",
+      "name": "OFF fixture drink",
+      "brand": "Fixture brand",
+      "kcal": 200,
+      "p": 20,
+      "c": 30,
+      "f": 0,
+      "unit": "",
+      "source": "Open Food Facts",
+      "sourceUrl": "https://world.openfoodfacts.org/product/4006381333931",
+      "prepared": false,
+      "fetched": "2026-10-28",
+      "packageAmount": 330,
+      "packageUnit": "ml",
+      "packageChecked": "2026-10-28",
+      "portions": [
+        {
+          "name": "Portion · 165 ml",
+          "amount": 165,
+          "unit": "ml",
+          "source": "Open Food Facts"
+        }
+      ]
+    },
+    "expect": null,
+    "reviewRequired": true,
+    "missing": false,
+    "base": null,
+    "warnings": [],
+    "attribution": {
+      "name": "Open Food Facts",
+      "url": "https://world.openfoodfacts.org",
+      "license": "ODbL",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "privacy": "Suchbegriff/Barcode und IP-Adresse; keine Profil- oder Tagebuchdaten."
+    },
+    "units": [],
+    "nutrients": {}
+  }
+}
