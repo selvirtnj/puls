@@ -990,7 +990,7 @@ public final class ProfileStore {
             return
         }
         guard let entry = outbox.entries.first(where: { $0.command.id == ack.id }), entry.status == .pending,
-              NutritionOps.isNutrition(entry.command.op), webChrome?.blocking != true else { return }
+              BridgeOps.retriesBusyWithoutLock(entry.command.op), webChrome?.blocking != true else { return }
         let attempt = busyRetries[ack.id, default: 0]
         guard attempt < NutritionOps.busyRetryLimit else {
             log("nutrition busy retries exhausted")

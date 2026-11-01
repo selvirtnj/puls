@@ -27,6 +27,12 @@ public enum BridgeOps {
         return map
     }()
 
+    /// Ops, die nach `busy` **ohne** Web-Sperre begrenzt mit derselben Befehls-ID und unverändertem `expect` erneut gesendet
+    /// werden (z. B. Katalog lädt, Avatar-Decodierung/Profilwechsel im Web). Mit Sperre sendet der Chrome-Pfad nach deren Ende.
+    public static func retriesBusyWithoutLock(_ op: String) -> Bool {
+        NutritionOps.isNutrition(op) || AccountOps.isAccount(op)
+    }
+
     /// M8: Wirkungen, die neben `state` weitere Snapshot-Felder brauchen (`appearance.set` → `snapshot.device`).
     public static let defaultSnapshotEffectChecks: [String: SnapshotEffectCheck] = accountSnapshotEffectChecks
 

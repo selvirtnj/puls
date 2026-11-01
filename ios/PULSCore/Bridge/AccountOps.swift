@@ -294,10 +294,19 @@ extension BridgeOps {
 /// Befehle der nativen Kontooberfläche. `nil` = das Web würde `invalid` antworten (Grenzen aus §13.4 nativ geprüft).
 public enum AccountCommands {
     /// Getrimmt 1–40 UTF-16-Einheiten wie Web; `expect` ergänzt der Store aus dem Spiegel.
-    public static func name(_ name: String) -> Command? {
+    /// `expect` = beim Öffnen des Formulars gesehener Rohname (`null` ohne Namen); ohne Angabe ergänzt der Store ihn.
+    public static func name(_ name: String, expect: JSONValue? = nil) -> Command? {
         let trimmed = JSString.trim(name)
         guard (1...40).contains(JSString.length(trimmed)) else { return nil }
-        return Command(op: AccountOps.nameSet, args: ["name": .string(name)])
+        if let expect { guard expect.isNull || expect.stringValue != nil else { return nil } }
+        var args: JSONValue = ["name": .string(name)]
+        if let expect { args["expect"] = expect }
+        return Command(op: AccountOps.nameSet, args: args)
+    }
+
+    /// Planner-Kontext passt mit Reserve für die Änderung in die 24-Ki-Argumentgrenze; sonst nur im Web bearbeitbar.
+    public static func plannerFits(_ context: PlannerContext) -> Bool {
+        AccountOps.serializedLength(context.raw) + 512 <= AccountOps.argsLimit
     }
 
     /// Eingangsbild als JPEG/PNG/WebP-Daten-URL (≤ 512 Ki Zeichen) oder `nil` zum Entfernen. Zuschnitt/JPEG im Web.
@@ -347,15 +356,24 @@ public enum AccountCommands {
     /// Tag ≤ heute, mindestens ein Wert, jeder innerhalb der Web-Registry.
     public static func saveMeasurement(date: String, values: [String: Double], fields: [AccountMeasurementField],
                                        document: ProfileDocument, today: String, newID: String = AccountOps.makeID()) -> Command? {
+        let rows = AccountOps.measurements(document.root, date: date)
+        guard rows.count <= 1 else { return nil }
+        return saveMeasurement(date: date, values: values, fields: fields, existing: rows.first, document: document,
+                               today: today, newID: newID)
+    }
+
+    /// Wie oben, aber mit dem **beim Befüllen** gesehenen Rohrecord des Tages (`nil` = kein Record). Ein inzwischen
+    /// geänderter Stand führt so im Web zu `conflict`, statt ältere Formularwerte still zu übernehmen.
+    public static func saveMeasurement(date: String, values: [String: Double], fields: [AccountMeasurementField],
+                                       existing: JSONValue?, document: ProfileDocument, today: String,
+                                       newID: String = AccountOps.makeID()) -> Command? {
         guard WeightDay.isValid(date), WeightDay.isValid(today), date <= today, !values.isEmpty else { return nil }
         for (key, value) in values {
             guard let field = fields.first(where: { $0.key == key }), field.accepts(value) else { return nil }
         }
-        let rows = AccountOps.measurements(document.root, date: date)
-        guard rows.count <= 1 else { return nil }
         let id: String
         let expect: JSONValue
-        if let row = rows.first {
+        if let row = existing {
             guard let existing = row["id"]?.stringValue, ActivityIDs.isValid(existing) else { return nil }
             id = existing
             expect = row
@@ -374,6 +392,12 @@ public enum AccountCommands {
     /// Nativ bestätigtes Löschen mit vollständigem Rohrecord.
     public static func deleteMeasurement(id: String, document: ProfileDocument) -> Command? {
         guard let row = AccountOps.measurement(document.root, id: id) else { return nil }
+        return deleteMeasurement(row: row)
+    }
+
+    /// Mit dem Rohrecord, den der Nutzer zum Löschen bestätigt hat (nicht erst beim Ausführen gelesen).
+    public static func deleteMeasurement(row: JSONValue) -> Command? {
+        guard case .object = row, let id = row["id"]?.stringValue, !id.isEmpty else { return nil }
         let args: JSONValue = ["id": .string(id), "expect": row]
         guard AccountOps.serializedLength(args) <= AccountOps.argsLimit else { return nil }
         return Command(op: AccountOps.measurementsDelete, args: args)

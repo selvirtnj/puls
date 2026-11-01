@@ -39,7 +39,6 @@ targets:
         NSSupportsLiveActivities: true
         UILaunchScreen:
           UIColorName: LaunchBackground
-        UIUserInterfaceStyle: Dark
         UIViewControllerBasedStatusBarAppearance: true
         UIRequiresFullScreen: false
         UISupportedInterfaceOrientations:

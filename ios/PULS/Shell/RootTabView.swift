@@ -360,7 +360,9 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         // Einträge vor dem Einblenden setzen, damit nie eine leere Leiste bestätigt wird.
         rebuildItems(language: projection?.overview.language ?? state.fallbackLanguage)
         for item in tabBar.items ?? [] { item.isEnabled = !state.isBlocked }
-        if active { updateScheme(projection) }
+        // Auch ohne native Leiste: Fenster (und damit WebView/Statusleiste) folgen dem Web-Wunsch.
+        updateScheme(projection)
+        applyWindowStyle()
         if active != isActive || hideBars != barsHiddenForSession {
             setActive(active, hideBars: hideBars)
         } else if reconfirm, isActive, !barsHiddenForSession {
@@ -827,21 +829,27 @@ final class RootTabShell: NSObject, UITabBarDelegate {
 
     // MARK: Hell/Dunkel
 
-    /// `light`/`dark` direkt aus der Projektion; bei `system` wie die Web-App (`data-scheme`).
+    /// Gerätewunsch des Webs (`light`/`dark`/`system`) für Fenster und native Ansichten. Die App erzwingt kein Dunkel mehr:
+    /// `system` heißt `.unspecified`, dann folgen Native **und** die WebView (`prefers-color-scheme`) der iPhone-Einstellung,
+    /// auch bei einem Wechsel zur Laufzeit. Bei `light`/`dark` überschreibt das Fenster, passend zur Web-Darstellung.
     private func updateScheme(_ projection: ProjectionMessage?) {
         // M8: ein gerade nativ gewählter Wunsch gilt sofort, bis der Snapshot ihn bestätigt.
         let scheme = store.pendingScheme?.rawValue ?? projection?.overview.colorScheme ?? store.deviceScheme ?? "system"
-        let key = "\(scheme)#\(projection?.projectionSeq ?? -1)"
-        guard key != schemeKey else { return }
-        schemeKey = key
+        guard scheme != schemeKey else { return }
+        schemeKey = scheme
+        let newStyle: UIUserInterfaceStyle
         switch scheme {
-        case "light": applyStyle(.light)
-        case "dark": applyStyle(.dark)
-        default:
-            bridge.readWebScheme { [weak self] value in
-                self?.applyStyle(value == "light" ? .light : .dark)
-            }
+        case "light": newStyle = .light
+        case "dark": newStyle = .dark
+        default: newStyle = .unspecified
         }
+        applyStyle(newStyle)
+    }
+
+    /// Fenster nachziehen (beim ersten Aufruf ist die Ansicht evtl. noch nicht im Fenster).
+    private func applyWindowStyle() {
+        guard let window = host?.view.window, window.overrideUserInterfaceStyle != style else { return }
+        window.overrideUserInterfaceStyle = style
     }
 
     private func applyStyle(_ newStyle: UIUserInterfaceStyle) {

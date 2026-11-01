@@ -165,8 +165,13 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
-        guard let tabShell, tabShell.isActive else { return .lightContent }
-        return tabShell.style == .light ? .darkContent : .lightContent
+        // Das Fenster folgt dem Web-Wunsch (bzw. dem iPhone bei „System“); `.default` passt sich daran an.
+        guard let tabShell else { return .lightContent }
+        switch tabShell.style {
+        case .light: return .darkContent
+        case .dark: return .lightContent
+        default: return .default
+        }
     }
 
     private func isAppURL(_ url: URL) -> Bool {

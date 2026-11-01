@@ -45,6 +45,9 @@ struct AccountScreen: View {
         }
         .alert(text("Hinweis", "Notice"),
                isPresented: Binding(get: { coordinator.notice != nil }, set: { if !$0 { coordinator.notice = nil } })) {
+            if let action = coordinator.noticeWebAction {
+                Button(text("Im Web öffnen", "Open in the web view")) { coordinator.openWeb(action) }
+            }
             Button("OK", role: .cancel) {}
         } message: {
             Text(coordinator.notice?.text ?? "")
@@ -274,6 +277,7 @@ struct AccountCommandsSection: View {
 struct AccountRoutePage: View {
     let coordinator: AccountCoordinator
     let route: AccountRoute
+    @State private var showWebFallback = false
 
     var body: some View {
         if let projection = coordinator.projection {
@@ -286,7 +290,23 @@ struct AccountRoutePage: View {
             case .manage: AccountManagePage(coordinator: coordinator, projection: projection)
             }
         } else {
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Nie eine Sackgasse: nach etwa 3 s ohne Projektion dieselbe Unterseite im Web anbieten.
+            let text = coordinator.text
+            VStack(spacing: 16) {
+                ProgressView()
+                if showWebFallback {
+                    Text(text("Diese Seite lädt gerade nicht.", "This page is not loading right now."))
+                        .foregroundStyle(.secondary)
+                    Button(text("Im Web öffnen", "Open in the web view")) { coordinator.openWebSection(route) }
+                        .buttonStyle(.borderedProminent)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .task {
+                showWebFallback = false
+                try? await Task.sleep(for: .seconds(3))
+                if !Task.isCancelled { showWebFallback = true }
+            }
         }
     }
 }

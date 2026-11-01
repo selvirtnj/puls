@@ -136,6 +136,7 @@ final class AccountTests: XCTestCase {
         XCTAssertEqual(a.adaptive.calibration?.windowEnd, "2026-10-19")
         XCTAssertEqual(a.appearance.scheme, .system)
         XCTAssertEqual(a.appearance.language, "de")
+        XCTAssertEqual(a.appearance.resolvedScheme, "light", "aufgelöst immer light/dark, auch bei system")
         XCTAssertEqual(a.sound.enabled, true)
         XCTAssertEqual(a.sound.volume, 0.6)
         XCTAssertTrue(a.cloud.signedIn)
@@ -438,6 +439,50 @@ final class AccountTests: XCTestCase {
                 XCTAssertTrue(restarted.outboxEntries.isEmpty)
             }
         }
+    }
+
+    /// Formularstand beim Befüllen: ein inzwischen geänderter Spiegel ändert `expect` nicht (Web antwortet dann `conflict`).
+    func testCapturedExpectationsAndBusyRetry() throws {
+        let seen = try XCTUnwrap(AccountOps.measurements(try state(), date: "2026-10-27").first)
+        var later = try state()
+        var row = seen
+        row["waist"] = 99
+        later["measurements"] = [row]
+        let fields = try projection().account.body.fields
+        let command = try XCTUnwrap(AccountCommands.saveMeasurement(date: "2026-10-27", values: ["neck": 41], fields: fields, existing: seen,
+                                                                    document: ProfileDocument(root: later), today: "2026-10-28"))
+        XCTAssertEqual(command.args["expect"], seen)
+        XCTAssertEqual(command.args["values"], ["neck": 41], "nur bearbeitete Felder")
+        XCTAssertEqual(AccountCommands.deleteMeasurement(row: seen)?.args["expect"], seen)
+        XCTAssertEqual(AccountCommands.name("Neu", expect: "Fixture")?.args["expect"], "Fixture")
+        XCTAssertEqual(BridgeOps.prepareAccountName(try XCTUnwrap(AccountCommands.name("Neu", expect: .null)).args,
+                                                    ProfileDocument(root: try state()))["expect"], .null, "festgehaltenes expect bleibt")
+        XCTAssertTrue(BridgeOps.retriesBusyWithoutLock(AccountOps.avatarSet))
+        XCTAssertTrue(BridgeOps.retriesBusyWithoutLock(NutritionOps.waterAdd))
+        XCTAssertFalse(BridgeOps.retriesBusyWithoutLock(BridgeOps.weightUpsert))
+        let context = try XCTUnwrap(planner().planner?.context)
+        XCTAssertTrue(AccountCommands.plannerFits(context))
+        var huge = context.raw
+        huge["goals"]?["xFutureGoalField"] = .string(String(repeating: "x", count: AccountOps.argsLimit))
+        XCTAssertFalse(AccountCommands.plannerFits(try XCTUnwrap(PlannerContext(json: huge))), "zu groß → Web-Plan")
+    }
+
+    @MainActor
+    func testAccountBusyWithoutLockRetriesSameCommand() async throws {
+        let ids = SequentialIDs()
+        var environment = StoreEnvironment(directory: try makeTemporaryDirectory(), now: { fixedNow }, makeCommandID: { ids.make() },
+                                           sessionID: "app-1")
+        environment.busyRetryDelay = { _ in .milliseconds(5) }
+        let store = ProfileStore(environment: environment)
+        var sent: [ApplyCommand] = []
+        store.sender = { sent.append($0) }
+        store.receive(.hello(try hello()))
+        store.receive(.snapshot(SnapshotMessage(seq: 1, userId: Self.user, state: try state(), reason: "load")))
+        let apply = try store.performAccount(XCTUnwrap(AccountCommands.avatar("data:image/png;base64,QUJD")), asUser: Self.user)
+        store.receive(.ack(AckMessage(id: apply.id, ok: false, seq: 1, error: AckError(code: .busy, message: "Profil gewechselt"))))
+        try await Task.sleep(for: .milliseconds(80))
+        XCTAssertGreaterThanOrEqual(sent.count, 2)
+        XCTAssertTrue(sent.allSatisfy { $0.id == apply.id && $0.args == apply.args }, "gleiche ID, unverändertes expect")
     }
 
     func testNavigationOnlyFixedWebActions() throws {

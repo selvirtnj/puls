@@ -47,6 +47,20 @@ enum AccountWebExit: Equatable {
     case overview
 }
 
+/// Konto und Dokument beim Beginn einer Bearbeitung. Ein Befehl wird nur unter genau diesem Konto eingereiht.
+struct AccountEditSession: Equatable {
+    let userId: String?
+    let generation: Int
+}
+
+/// Ergebnis einer nativen Bearbeitung (für Hinweise direkt im Formular).
+enum AccountOutcome: Equatable {
+    case queued
+    case failed(String)
+    /// Planner-Kontext/Args über 24 Ki: nur im Web-Plan bearbeitbar.
+    case tooLarge
+}
+
 /// M8/S: natives Konto und Profil (docs/native/NATIVE-BRIDGE-PROTOCOL.md §13), weiterhin Phase A.
 ///
 /// - Liest die Projektion `account`, den verlustfreien Spiegel (Rohwerte für Erwartungen) und den Planner-Kontext.
@@ -64,7 +78,12 @@ final class AccountCoordinator {
 
     var path: [AccountRoute] = []
     var sheet: AccountSheet?
-    var notice: TrainingNotice?
+    var notice: TrainingNotice? {
+        // Jeder neue Hinweis beginnt ohne Web-Knopf; wer einen anbietet, setzt ihn danach.
+        didSet { noticeWebAction = nil }
+    }
+    /// Fester Web-Ausstieg, den der aktuelle Hinweis zusätzlich anbietet (z. B. `accountPlan`).
+    var noticeWebAction: String?
     /// Zuletzt geladener Planner-Kontext (nur für die nächste Op; verworfen bei Dokument-/Nutzerwechsel).
     var planner: AccountPlannerResult?
 
@@ -183,97 +202,117 @@ final class AccountCoordinator {
 
     // MARK: Ops
 
+    /// Konto und Dokument beim **Beginn** einer Bearbeitung festhalten (vor jedem `await`).
+    func beginEdit() -> AccountEditSession {
+        AccountEditSession(userId: store.userId, generation: store.accountGeneration)
+    }
+
+    /// Bearbeitung gehört noch zum aktuellen Konto und Dokument.
+    func isCurrent(_ session: AccountEditSession) -> Bool {
+        store.userId == session.userId && store.accountGeneration == session.generation
+    }
+
+    /// `expect` = beim Öffnen gesehener Rohname.
     @discardableResult
-    func setName(_ name: String) -> Bool {
-        guard let command = AccountCommands.name(name) else {
-            notice = TrainingNotice(text: text("Name mit 1 bis 40 Zeichen.", "Name with 1 to 40 characters."))
-            return false
+    func setName(_ name: String, expect: JSONValue, session: AccountEditSession) -> AccountOutcome {
+        guard let command = AccountCommands.name(name, expect: expect) else {
+            return .failed(text("Name mit 1 bis 40 Zeichen.", "Name with 1 to 40 characters."))
         }
-        return perform(command)
+        return perform(command, session: session)
     }
 
     /// Eingangsbild (JPEG ≤ 512 Ki Zeichen, nativ verkleinert); 160-px-Zuschnitt und Speichern im Web.
+    /// `expect` = beim Öffnen gesehenes gespeichertes Bild.
     @discardableResult
-    func setAvatar(dataUrl: String?) -> Bool {
-        guard let command = AccountCommands.avatar(dataUrl) else {
-            notice = TrainingNotice(text: text("Dieses Bild ist zu groß oder ungültig.", "This image is too large or invalid."))
-            return false
+    func setAvatar(dataUrl: String?, expect: JSONValue, session: AccountEditSession) -> AccountOutcome {
+        guard var command = AccountCommands.avatar(dataUrl) else {
+            return .failed(text("Dieses Bild ist zu groß oder ungültig.", "This image is too large or invalid."))
         }
-        return perform(command)
+        command.args["expect"] = expect
+        return perform(command, session: session)
     }
 
     @discardableResult
-    func saveProfile(_ fields: [String: JSONValue], context: PlannerContext) -> Bool {
-        guard let command = AccountCommands.profile(fields, context: context) else {
-            notice = TrainingNotice(text: text("Bitte im Web bearbeiten (Daten zu umfangreich).", "Please edit in the web view (too much data)."))
-            return false
-        }
-        return perform(command)
+    func saveProfile(_ fields: [String: JSONValue], context: PlannerContext, session: AccountEditSession) -> AccountOutcome {
+        guard AccountCommands.plannerFits(context) else { return .tooLarge }
+        guard let command = AccountCommands.profile(fields, context: context) else { return .tooLarge }
+        return perform(command, session: session)
     }
 
     @discardableResult
-    func savePlan(_ plan: [String: JSONValue], goals: [String: Double], context: PlannerContext) -> Bool {
+    func savePlan(_ plan: [String: JSONValue], goals: [String: Double], context: PlannerContext,
+                  session: AccountEditSession) -> AccountOutcome {
+        guard AccountCommands.plannerFits(context) else { return .tooLarge }
         guard let command = AccountCommands.plan(plan, goals: goals, context: context) else {
-            notice = TrainingNotice(text: text("Kalorien 1–20 000, Makros 0–2000 g.", "Calories 1–20,000, macros 0–2,000 g."))
-            return false
+            return .failed(text("Kalorien 1–20 000, Makros 0–2000 g.", "Calories 1–20,000, macros 0–2,000 g."))
         }
-        return perform(command)
+        return perform(command, session: session)
     }
 
-    /// Lädt den Kontext frisch und sendet nur die zwei Automatik-Felder.
+    /// Lädt den Kontext frisch und sendet nur die zwei Automatik-Felder. Zu großer Kontext → Web-Plan.
     func setAdaptive(adaptive: Bool, learnTdee: Bool) async {
         guard canEditAdaptive else { return }
-        guard let planner = await loadPlanner(), let command = AccountCommands.adaptive(adaptive: adaptive, learnTdee: learnTdee,
-                                                                                        context: planner.context) else {
+        let session = beginEdit()
+        guard let planner = await loadPlanner(), isCurrent(session) else {
             notice = TrainingNotice(text: text("Konnte nicht geladen werden. Bitte erneut versuchen oder im Web einstellen.",
                                                "Could not load. Please try again or change it in the web view."))
+            noticeWebAction = offers("accountPlan") ? "accountPlan" : nil
             return
         }
-        perform(command)
+        guard AccountCommands.plannerFits(planner.context),
+              let command = AccountCommands.adaptive(adaptive: adaptive, learnTdee: learnTdee, context: planner.context) else {
+            notice = TrainingNotice(text: text("Der Plan ist zu umfangreich für die App. Bitte im Web einstellen.",
+                                               "The plan is too large for the app. Please change it in the web view."))
+            noticeWebAction = offers("accountPlan") ? "accountPlan" : nil
+            return
+        }
+        if case .failed(let message) = perform(command, session: session) { notice = TrainingNotice(text: message) }
     }
 
+    /// `existing` = beim Befüllen gesehener Rohrecord des Tages; nur tatsächlich bearbeitete Felder in `values`.
     @discardableResult
-    func saveMeasurement(date: String, values: [String: Double]) -> Bool {
+    func saveMeasurement(date: String, values: [String: Double], existing: JSONValue?, session: AccountEditSession) -> AccountOutcome {
         guard let projection, let today = projection.today,
               let command = AccountCommands.saveMeasurement(date: date, values: values, fields: projection.body.fields,
-                                                            document: store.document, today: today) else {
-            notice = TrainingNotice(text: text("Bitte gültige Werte im angezeigten Bereich eintragen (Tag bis heute).",
-                                               "Please enter valid values within the shown range (day up to today)."))
-            return false
+                                                            existing: existing, document: store.document, today: today) else {
+            return .failed(text("Bitte gültige Werte im angezeigten Bereich eintragen (Tag bis heute).",
+                                "Please enter valid values within the shown range (day up to today)."))
         }
-        return perform(command)
+        return perform(command, session: session)
     }
 
-    @discardableResult
-    func deleteMeasurement(id: String) -> Bool {
-        guard let command = AccountCommands.deleteMeasurement(id: id, document: store.document) else { return false }
-        let ok = perform(command)
-        if ok { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
-        return ok
+    /// `row` = der Rohrecord, dessen Löschen der Nutzer bestätigt hat.
+    func deleteMeasurement(row: JSONValue, session: AccountEditSession) {
+        guard let command = AccountCommands.deleteMeasurement(row: row) else { return }
+        switch perform(command, session: session) {
+        case .queued: UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        case .failed(let message): notice = TrainingNotice(text: message)
+        case .tooLarge: break
+        }
     }
 
-    /// `expect` = aktueller Gerätewunsch (Snapshot) und Sprache (Spiegel).
+    /// `expect` = aktueller Gerätewunsch (Snapshot) und Sprache (Spiegel) zum Zeitpunkt der Auswahl.
     func setAppearance(scheme: AccountScheme? = nil, language: String? = nil) {
         guard can(AccountOps.appearanceSet), !isAppearancePending else { return }
         let current = store.deviceScheme.flatMap(AccountScheme.init(rawValue:)) ?? projection?.appearance.scheme ?? .system
         guard let command = AccountCommands.appearance(scheme: scheme, language: language,
                                                        expect: (current, AccountOps.language(store.document.root))) else { return }
-        perform(command)
+        if case .failed(let message) = perform(command, session: beginEdit()) { notice = TrainingNotice(text: message) }
     }
 
     func setSound(enabled: Bool, volume: Double) {
         guard can(AccountOps.soundSet), let command = AccountCommands.sound(enabled: enabled, volume: volume) else { return }
-        perform(command)
+        if case .failed(let message) = perform(command, session: beginEdit()) { notice = TrainingNotice(text: message) }
     }
 
-    @discardableResult
-    private func perform(_ command: Command) -> Bool {
+    /// Immer unter dem Konto des Bearbeitungsbeginns (`asUser`); ein inzwischen gewechseltes Konto/Dokument wird abgelehnt.
+    private func perform(_ command: Command, session: AccountEditSession) -> AccountOutcome {
+        guard isCurrent(session) else { return .failed(describe(TrainingCommandError.userChanged)) }
         do {
-            try store.performAccount(command, asUser: store.userId)
-            return true
+            try store.performAccount(command, asUser: session.userId)
+            return .queued
         } catch {
-            notice = TrainingNotice(text: describe(error))
-            return false
+            return .failed(describe(error))
         }
     }
 
