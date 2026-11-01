@@ -139,6 +139,75 @@ async function checkP2(){
   t=fresh();t.run('modal.open=true');code(t.apply(cmd('product.save',productArgs())),'busy');t.run('modal.open=false;stateRecoveryPending=true');code(t.apply(cmd('recipe.save',{recipe:r,expect:null})),'readonly');
   console.log('PASS P2: product/recipe/planner transaction rollback, safe retry, dialog/read-only isolation');
 }
+async function checkP2Review(){
+  const labelArgs=(amount,unit,v)=>({kind:'label',product:{id:'label-review-'+String(v).replace('.','_'),name:'Portion label',unit,
+    kcal:Math.min(120,amount*4),p:v,c:Math.min(amount,15),f:.1,fiber:1},label:{basis:'portion-'+unit,amount,column:0,confirmed:true},expect:null,confirmWarnings:true});
+  // H1: exact last-effective Web arithmetic, not an independent equivalent formula. Includes 30 g / protein 7 and 33 ml / .5.
+  let count=0;
+  for(const amount of [30,33,45,12.5,7])for(const unit of ['g','ml']){
+    const t=start();
+    for(const v of [0,.1,.5,1,2,3,4,5,6,7,...Array.from({length:31},(_,i)=>(i+1)/10)]){
+      const a=labelArgs(amount,unit,v);a.product.id+='-'+count++;
+      for(const k of ['kcal','p','c','f','fiber'])t.el('label-'+k).value=String(a.product[k]);
+      t.el('label-basis').value=a.label.basis;t.el('label-basis-amount').value=String(amount);
+      const expected=clone(t.run('labelReviewValues()')),op=cmd('product.save',a),ack=t.apply(op);ok(ack);
+      const saved=t.state().custom.find(x=>x.id===a.product.id);
+      for(const k of ['kcal','p','c','f','nutrients'])assert.deepEqual(saved[k],expected[k],`${unit} ${amount} / ${v} ${k}`);
+      assert.deepEqual(ack.result.product,saved);assert.deepEqual(JSON.parse(t.store.get('puls-v1')).custom.find(x=>x.id===saved.id),saved);
+      if(v===7){t.store.delete('puls-native-applied');ok(t.apply(op));assert.equal(t.state().custom.filter(x=>x.id===saved.id).length,1)}
+    }
+  }
+  let fail=true,t=start({failWrite:k=>fail&&k==='puls-v1'}),op=cmd('product.save',labelArgs(30,'g',7)),before=t.state();
+  code(t.apply(op),'persist_failed');assert.deepEqual(t.state(),before);fail=false;ok(t.apply(op));
+  // M2: only own non-barcode, non-catalogue, non-label products may be custom-corrected; source snapshots are immutable.
+  for(const source of [{catalogKey:'BLS fixture:1',source:'BLS 4.0'},{labelReviewed:'2026-10-28'},
+    {source:'Eigenes Etikett · OCR geprüft'},{source:'Label import'},{barcode:'4006381333931'}]){
+    t=start();t.run('Object.assign(state.custom[0],'+JSON.stringify(source)+')');before=t.state();
+    const a={kind:'custom',product:{id:'product',name:'Changed',unit:'g',kcal:220,p:25,c:30,f:0},expect:before.custom[0],confirmWarnings:true};
+    const ack=t.apply(cmd('product.save',a));code(ack,'invalid');assert(ack.error.message.includes('Custom-Korrektur'));assert.deepEqual(t.state(),before);
+  }
+  // L3: the Web form maps gain/extreme to high before collection, calculations, and persistence; replay must see the same plan.
+  const gain=clone(profile);gain.profile.target=95;t=start({profile:gain});const context=query(t,'goals').result.expect;
+  op=cmd('goals.set',{plan:{mode:'auto',macroMode:'auto',direction:'gain',pace:'extreme'},goals:Object.fromEntries(['kcal','p','c','f'].map(k=>[k,context.goals[k]])),expect:context});
+  const weights=t.state().weights,ack=t.apply(op);ok(ack);assert.equal(t.state().plan.pace,'high');assert.equal(ack.result.effect.plan.pace,'high');
+  assert.deepEqual(t.state().weights,weights);t.store.delete('puls-native-applied');ok(t.apply(op));
+  // L4: only Web OFF draft fields can enter persistence, even when the document-local draft cache is empty after reload.
+  const review=fixture('apply-nutrition-product-save').args;
+  for(const field of ['catalogKey','density','favorite','labelReviewed','unknown','id']){
+    t=start();before=t.state();code(t.apply(cmd('product.save',{...review,draft:{...review.draft,[field]:'injected'}})),'invalid');assert.deepEqual(t.state(),before);
+  }
+  t=start();code(t.apply(cmd('product.save',{...review,draft:{...review.draft,nutrients:{water:100}}})),'invalid');
+  // packageReference may round a tiny package to 0: the genuine Web draft stays acceptable; the form value decides.
+  ok(start().apply(cmd('product.save',{...review,draft:{...review.draft,packageAmount:0}})));
+  code(t.apply(cmd('product.save',{...review,draft:{...review.draft,portions:[{name:'Bad',amount:1,unit:'g',source:'Open Food Facts',density:1}]}})),'invalid');
+  for(const unit of ['g','ml']){
+    t=start();const a={...review,product:{...review.product,unit},draft:{...review.draft,nutrients:{vitc:0,fiber:2}}};op=cmd('product.save',a);ok(t.apply(op));
+    const saved=t.state().custom.at(-1);assert.deepEqual(saved.nutrients,{vitc:0,fiber:2});assert.deepEqual(saved.portions,a.draft.portions);
+    assert.equal(saved.packageAmount,unit==='ml'?330:undefined);assert.equal(saved.packageUnit,unit==='ml'?'ml':undefined);
+    t.store.delete('puls-native-applied');ok(t.apply(op));
+    if(unit==='ml'){
+      // An existing barcode review must also clear a formerly valid package on dimension change.
+      ok(t.apply(cmd('product.save',{kind:'review',product:{...a.product,unit:'g'},expect:saved,confirmWarnings:true})));
+      assert.equal(t.state().custom.at(-1).packageUnit,undefined);assert.equal(t.state().custom.at(-1).packageAmount,undefined);
+    }
+  }
+  // L5: imported recipe between 24/48 KiB can be saved and copied with the same bound, including source extensions.
+  t=start();const large={...clone(profile.recipes[0]),id:'large-import',importNotes:'x'.repeat(27000)};
+  ok(t.apply(cmd('recipe.save',{recipe:large,expect:null})));op=cmd('recipe.copy',{id:'large-copy',sourceId:large.id,expect:large});
+  assert(JSON.stringify(op.args).length>24*1024);ok(t.apply(op));assert.equal(t.state().recipes.at(-1).importNotes,large.importNotes);
+  t.store.delete('puls-native-applied');ok(t.apply(op));
+  code(t.apply(cmd('recipe.copy',{...op.args,id:'oversize',expect:{...large,importNotes:'x'.repeat(49000)}})),'invalid');
+  // L6: browser redirect handling is manual; opaque and exposed redirects fail without reading/following the target.
+  t=start();t.ctx.URL=URL;t.run('navigator.onLine=true');
+  for(const response of [{type:'opaqueredirect',status:0,ok:false},{type:'basic',status:302,ok:true,url:'https://127.0.0.1/private'}]){
+    let calls=0;t.ctx.fetch=async(url,options)=>{calls++;assert.equal(options.redirect,'manual');assert.equal(options.credentials,'omit');
+      return {...response,text:async()=>{throw Error('redirect body must not be read')}}};
+    assert.equal(t.ctx.window.pulsNativeNutritionQuery({requestId:'redirect',kind:'recipeImport',url:'https://recipes.example/redirect'}),true);
+    await microtask();const result=t.messages.filter(x=>x.type==='nutritionResult'&&x.requestId==='redirect').at(-1);
+    assert.equal(result.error.code,'unavailable');assert(result.error.message.includes('JSON-LD'));assert.equal(calls,1);
+  }
+  console.log(`PASS P2 review H1/M2/L3–L6: ${count} exact Web label saves (g/ml), provenance guards, gain pace, OFF whitelist/package units, large recipe copy, manual redirects; replay/rollback`);
+}
 async function checkReview(){
   const last=(t,id='review')=>t.messages.filter(x=>x.type==='nutritionResult'&&x.requestId===id).at(-1);
   const ask=(t,args)=>assert.equal(t.ctx.window.pulsNativeNutritionQuery({requestId:'review',...args}),true);
@@ -313,4 +382,5 @@ async function checkReview(){
   console.log('PASS: M7/P1 native nutrition (VM; no live RLS, actual Worker/browser layout, camera or Vision proof)');
   await checkP2();
   await checkReview();
+  await checkP2Review();
 })().catch(e=>{console.error(e);process.exit(1)});

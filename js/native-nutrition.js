@@ -175,12 +175,27 @@ const stampFree=x=>Object.fromEntries(Object.entries(x).filter(([k])=>!['verifie
 function confirmed(fn){const base=globalThis.confirm;globalThis.confirm=()=>true;try{return fn()}finally{globalThis.confirm=base}}
 function reviewInputs(prefix,p,checked){const check={querySelector:()=>({checked})},form={querySelector:()=>check};
   return Object.fromEntries(keys.map(k=>[prefix+k,{...value(p[k]),closest:()=>form}]))}
+function labelInputs(a){return {...reviewInputs('label-',a.product,a.confirmWarnings),'label-name':value(a.product.name),'label-basis':value(a.label.basis),
+  'label-basis-amount':value(a.label.amount),'label-fiber':value(a.product.fiber??''),'label-confirm':{checked:a.label.confirmed}}}
+// A persisted native outbox must survive an empty offDrafts cache after reload. Accept only the Web mapper's draft schema.
+function validReviewDraft(d,barcode){return fields(d,['barcode','name','brand',...keys,'unit','source','sourceUrl','prepared','fetched','packageAmount','packageUnit','packageChecked','nutrients','portions'])&&
+  d.barcode===barcode&&typeof d.name==='string'&&d.name.length<=100&&typeof d.brand==='string'&&d.brand.length<=100&&d.unit===''&&
+  keys.every(k=>d[k]===null||finite(d[k],0,k==='kcal'?1000:100))&&['Open Food Facts','Eigene Eingabe'].includes(d.source)&&
+  (d.source==='Open Food Facts'?d.sourceUrl==='https://world.openfoodfacts.org/product/'+barcode:d.sourceUrl===undefined)&&
+  (d.prepared===undefined||typeof d.prepared==='boolean')&&['fetched','packageChecked'].every(k=>d[k]===undefined||day(d[k]))&&
+  // portions.js packageReference rounds to one decimal and may yield 0 for tiny packages; the saved value comes from product.
+  (d.packageAmount===undefined||finite(d.packageAmount,0,10000))&&(d.packageUnit===undefined||['g','ml'].includes(d.packageUnit))&&
+  (d.nutrients===undefined||fields(d.nutrients,['fiber','vitc','calcium','iron','b12','potassium','magnesium','folate'])&&Object.values(d.nutrients).every(x=>finite(x,0,1e12)))&&
+  (d.portions===undefined||Array.isArray(d.portions)&&d.portions.length<=30&&d.portions.every(x=>fields(x,['name','amount','unit','source'])&&
+    typeof x.name==='string'&&x.name.length>0&&x.name.length<=80&&finite(x.amount,.1,10000)&&['g','ml'].includes(x.unit)&&x.source==='Open Food Facts'))}
 function checkedProduct(a){
   if(!fields(a,['kind','product','expect','draft','confirmWarnings','label'])||!['custom','review','label'].includes(a.kind)||
     !fields(a.product,['id','name','unit',...keys,'barcode','brand','packageAmount','fiber'])||!newId(a.product.id)||!name(a.product.name)||
     !['g','ml'].includes(a.product.unit)||typeof a.confirmWarnings!=='boolean'||!(a.expect===null||plain(a.expect))||!small(a))return fail('invalid','Produkt, vollständiges expect und confirmWarnings erforderlich');
   const p=a.product,old=custom(p.id),base=a.expect||{},label=a.kind==='label';
-  if(a.expect!==null&&base.id!==p.id||a.kind==='custom'&&base.barcode)return fail('invalid','Bestehende ID erhalten; Barcode-Korrektur über review');
+  if(a.expect!==null&&base.id!==p.id)return fail('invalid','Bestehende ID erhalten');
+  if(a.kind==='custom'&&(Object.hasOwn(base,'catalogKey')||Object.hasOwn(base,'labelReviewed')||/etikett|label|ocr/i.test(base.source||'')||base.barcode))
+    return fail('invalid','Custom-Korrektur nur für eigene Produkte ohne Katalog-/Etikettquelle und Barcode; Barcode-Korrektur über review');
   if(p.brand!==undefined&&(typeof p.brand!=='string'||p.brand.length>100)||p.barcode!==undefined&&!validBarcode(p.barcode)||
     p.packageAmount!==undefined&&p.packageAmount!==null&&!finite(p.packageAmount,.1,10000))return fail('invalid','Marke, Barcode oder Packungsmenge ungültig');
   if(!label&&p.fiber!==undefined||a.kind!=='review'&&a.draft!==undefined||!label&&a.label!==undefined)return fail('invalid','Unpassende Review-Felder');
@@ -188,22 +203,25 @@ function checkedProduct(a){
     a.label.confirmed!==true||![0,1,2].includes(a.label.column)||a.expect!==null||p.unit!==(a.label.basis.endsWith('ml')?'ml':'g')||
     a.label.basis.startsWith('portion-')&&!finite(a.label.amount,.1,10000)||!a.label.basis.startsWith('portion-')&&a.label.amount!==100||
     p.fiber!==undefined&&!finite(p.fiber,0,1e6)))return fail('invalid','Name/Spalte/Basis/Bezugsmenge müssen ausdrücklich geprüft sein');
-  const normalized=Object.fromEntries(keys.map(k=>[k,label?p[k]*100/a.label.amount:a.kind==='review'?nutrientNumber(p[k],k==='kcal'?1000:100):p[k]]));
+  // Use precisely the values saveLabelFood will store, including its floating-point evaluation order.
+  const labelValues=label?inputs(labelInputs(a),()=>labelReviewValues()):null;
+  const normalized=Object.fromEntries(keys.map(k=>[k,label?labelValues?.[k]:a.kind==='review'?nutrientNumber(p[k],k==='kcal'?1000:100):p[k]]));
   if(!keys.every(k=>finite(p[k],0,label?1e7:k==='kcal'?1000:100)&&finite(normalized[k],0,k==='kcal'?1000:100))||
-    label&&p.fiber!==undefined&&p.fiber*100/a.label.amount>100)return fail('invalid','Fehlende oder ungültige Nährwerte');
+    label&&p.fiber!==undefined&&labelValues?.nutrients?.fiber>100)return fail('invalid','Fehlende oder ungültige Nährwerte');
   const warnings=foodWarnings(normalized);if(warnings.length&&!a.confirmWarnings)return fail('conflict','Abweichende Werte ausdrücklich mit confirmWarnings bestätigen');
   let target;
   if(a.kind==='review'){
-    if(!p.barcode||a.draft!==undefined&&(!plain(a.draft)||a.draft.barcode!==p.barcode||a.draft.source==='Open Food Facts'&&a.draft.sourceUrl!=='https://world.openfoodfacts.org/product/'+p.barcode))return fail('invalid','Gültiger Barcode/Originalentwurf erforderlich');
+    if(!p.barcode||a.draft!==undefined&&!validReviewDraft(a.draft,p.barcode))return fail('invalid','Gültiger Barcode/Originalentwurf mit ausschließlich Web-OFF-Feldern erforderlich');
     if(state.custom.some(x=>x.barcode===p.barcode&&x.id!==p.id))return fail('conflict','Barcode gehört bereits zu einer anderen Produkt-ID');
     if(a.expect!==null&&base.barcode!==p.barcode)return fail('invalid','Barcode bestehender Produkte bleibt erhalten');
     target={...(a.draft||{}),...base,...normalized,id:p.id,name:p.name.trim(),unit:p.unit,barcode:p.barcode,verified:today(),packageChecked:today()};
   }else if(label)target={id:p.id,name:p.name.trim(),...normalized,unit:p.unit,source:'Eigenes Etikett · OCR geprüft',labelReviewed:today(),
-    ...(p.fiber!==undefined?{nutrients:{fiber:p.fiber*100/a.label.amount}}:{})};
+    ...(labelValues?.nutrients?{nutrients:labelValues.nutrients}:{})};
   else target={...base,id:p.id,name:p.name.trim(),...normalized,unit:p.unit};
   if(p.barcode&&a.kind!=='review')return fail('invalid','Barcode-Produkte über review speichern');
   if(p.brand!==undefined)target.brand=p.brand;
-  if(a.kind==='review'||p.packageAmount!==undefined){if(p.packageAmount>0){target.packageAmount=p.packageAmount;target.packageUnit=p.unit}else{delete target.packageAmount;delete target.packageUnit}}
+  if(a.kind==='review'||p.packageAmount!==undefined){if(p.packageAmount>0&&(!target.packageUnit||target.packageUnit===p.unit)){
+    target.packageAmount=p.packageAmount;target.packageUnit=p.unit}else{delete target.packageAmount;delete target.packageUnit}}
   if(!validData({...state,custom:[target]}))return fail('invalid','Produkt verletzt Web-Datenregeln');
   if(old&&same(stampFree(old),stampFree(target)))return {noop:true,target:old,result:storedProduct(old)};
   if(!same(old??null,a.expect))return fail('conflict','Produkt inzwischen geändert');
@@ -214,10 +232,9 @@ function saveProduct(a,p){return perform(()=>{
   const v=a.product,common=reviewInputs(a.kind==='review'?'off-':'custom-',v,a.confirmWarnings),before=state.custom.length;
   if(a.kind==='review'){
     productDraft={...(a.draft||{}),...(a.expect||{}),id:v.id,barcode:v.barcode,...(v.brand!==undefined?{brand:v.brand}:{})};
-    inputs({...common,'off-name':value(v.name),'off-unit':value(v.unit),'off-package':value(v.packageAmount||''),'ff-off-unit':null},()=>confirmProduct(event));
+    inputs({...common,'off-name':value(v.name),'off-unit':value(v.unit),'off-package':value(p.target.packageAmount||''),'ff-off-unit':null},()=>confirmProduct(event));
   }else if(a.kind==='label'){
-    inputs({...reviewInputs('label-',v,a.confirmWarnings),'label-name':value(v.name),'label-basis':value(a.label.basis),
-      'label-basis-amount':value(a.label.amount),'label-fiber':value(v.fiber??''),'label-confirm':{checked:a.label.confirmed}},()=>saveLabelFood(event));
+    inputs(labelInputs(a),()=>saveLabelFood(event));
   }else if(a.expect===null){
     inputs({...common,foodname:value(v.name),'ff-custom-unit-value':value(v.unit),'custom-package':value(v.packageAmount||''),'ff-detail':null},()=>addCustom(event));
   }else{
@@ -250,6 +267,8 @@ function saveRecipeTarget(p){return perform(()=>{state.recipes??=[];recipeDraft=
 function goalContext(){return {profile:copy(state.profile??null),plan:copy(state.plan??null),goals:copy(state.goals),weight:currentWeight()??null,
   tdeeCalibration:copy(state.tdeeCalibration??null),date:today(),goalRecord:copy(state.goalHistory?.find(x=>x.date===today())??null),profileRecord:copy(state.profileHistory?.find(x=>x.date===today())??null)}}
 function goalInputs(a){const p=a.expect.profile||{},pl={...a.expect.plan,...a.plan},weight=a.expect.weight??p.weight;
+  // experience.updatePlanPreview normalizes this selection before collectPlan/commitProfile in the Web form.
+  if(pl.direction==='gain'&&pl.pace==='extreme')pl.pace='high';
   return Object.fromEntries([...Object.entries({age:p.age??'',height:p.height??'',weight:weight??'',target:p.target??'',sex:p.sex||'male',activity:p.activity||1.2,
     method:p.method||'mifflin',rmr:p.rmr??'', 'kcal-mode':p.kcalMode||'classic','baseline-factor':p.baselineFactor??1.2}).map(([k,v])=>['pr-'+k,value(v)]),
     ...Object.entries({mode:pl.mode,direction:pl.direction,pace:pl.pace,macros:pl.macroMode,protein:pl.protein,fat:pl.fat}).map(([k,v])=>['pl-'+k,value(v)]),
@@ -297,7 +316,7 @@ Object.assign(ops,{
     run:a=>perform(()=>confirmed(()=>ffDeleteRecipe(a.id))),effective:(s,a)=>!s.recipes?.some(x=>x.id===a.id)
   },
   'recipe.copy':{
-    check(a){if(!fields(a,['id','sourceId','name','expect'])||!newId(a.id)||!newId(a.sourceId)||a.id===a.sourceId||!validRecipe(a.expect)||a.expect.id!==a.sourceId||!small(a)||a.name!==undefined&&!name(a.name))return fail('invalid','Neue stabile ID und Originalrezept erforderlich');
+    check(a){if(!fields(a,['id','sourceId','name','expect'])||!newId(a.id)||!newId(a.sourceId)||a.id===a.sourceId||!validRecipe(a.expect)||a.expect.id!==a.sourceId||JSON.stringify(a).length>48*1024||a.name!==undefined&&!name(a.name))return fail('invalid','Neue stabile ID und Originalrezept erforderlich');
       const target={...copy(a.expect),id:a.id,name:a.name?.trim()||(a.expect.name+' (Kopie)').slice(0,100)},old=recipe(a.id);
       if(same(old,target))return {noop:true,target,result:storedRecipe(old)};if(old)return fail('conflict','Kopie-ID belegt');if(!recipe(a.sourceId))return fail('gone','Originalrezept fehlt');
       if(!same(recipe(a.sourceId),a.expect))return fail('conflict','Originalrezept geändert');return busy({target})},
@@ -437,8 +456,10 @@ async function importPreview(r,current){
   if(r.url){const url=publicRecipeURL(r.url);if(!url)return error(r.kind,'invalid','Öffentliche HTTPS-Rezeptadresse erforderlich');
     if(navigator.onLine===false)return error(r.kind,'offline','URL-Import benötigt eine Verbindung; JSON-LD oder Zutatenliste einfügen');
     const j=job('import',current),controller=j.controller;let timedOut=false;const timer=setTimeout(()=>{timedOut=true;controller.abort()},12000);
-    try{const response=await fetch(url,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer'});
-      if(!j.current())return null;if(!response.ok||response.url&&!publicRecipeURL(response.url))throw Error();
+    try{const response=await fetch(url,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer',redirect:'manual'});
+      if(!j.current())return null;
+      if(response.type==='opaqueredirect'||response.status>=300&&response.status<400)return error(r.kind,'unavailable','Rezept-Redirect nicht unterstützt; JSON-LD oder Zutatenliste einfügen');
+      if(!response.ok||response.url&&!publicRecipeURL(response.url))throw Error();
       raw=await response.text();if(!j.current())return null;if(raw.length>2000000)return error(r.kind,'too_large','Rezeptseite zu groß');
       const doc=new DOMParser().parseFromString(raw,'text/html'),found=[...doc.querySelectorAll('script[type="application/ld+json"]')].map(x=>parseRecipeImport(x.textContent)).find(Boolean);
       if(!found)return error(r.kind,'invalid','Keine Recipe-Daten erkannt; JSON-LD oder Zutatenliste einfügen');raw=JSON.stringify(found);
