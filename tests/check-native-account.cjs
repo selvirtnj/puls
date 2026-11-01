@@ -36,7 +36,7 @@ function mockImages(t){
     const t=start(opts);assert.equal(t.ctx.window.pulsNativeAccount,undefined);assert.equal(t.ctx.window.pulsNativeAccountQuery,undefined);assert.equal(projection(t),undefined);
     if(opts.handler!==false&&opts.features.includes('stateBridge'))assert.equal(t.messages[0].ops.includes('profile.name.set'),false);
   }
-  let t=start();assert.equal(projection(t),undefined,'account requires interest');let hello=t.messages.find(x=>x.type==='hello');assert(hello.features.includes('nativeAccount'));assert(hello.ops.includes('plan.set'));compare('account-hello',hello);
+  let t=start();assert.equal(projection(t),undefined,'account requires interest');let hello=t.messages.find(x=>x.type==='hello');assert(hello.features.includes('nativeAccount'));assert(hello.ops.includes('plan.set'));compare('account-hello',{...hello,webVersion:'79'});
   interest(t);compare('account-projection',projection(t));const initial=projection(t).account;
   assert.equal(initial.identity.displayName,'Fixture');assert.equal(initial.body.bodyFat.estimated,false);assert.equal(initial.body.bodyFat.value,23);
   assert.equal(initial.cloud.email,undefined);assert.equal(initial.identity.email,undefined);
