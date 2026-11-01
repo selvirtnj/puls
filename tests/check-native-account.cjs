@@ -27,7 +27,7 @@ function mockImages(t){
   t.ctx.FileReader=class{};
   const create=t.ctx.document.createElement;
   t.ctx.document.createElement=function(tag){if(tag!=='canvas')return create(tag);return {width:0,height:0,getContext:()=>({drawImage(img,...args){draws++;assert.equal(img.source,'data:image/png;base64,QUJD');assert.deepEqual(args,[100,0,600,600,0,0,160,160])}}),toDataURL(type,q){assert.equal(type,'image/jpeg');assert.equal(q,.85);return 'data:image/jpeg;base64,REVG'}}};
-  return {complete(){const jobs=pending;pending=[];for(const img of jobs)img.onload()},get draws(){return draws}};
+  return {complete(){const jobs=pending;pending=[];for(const img of jobs)img.onload?.()},get draws(){return draws}};
 }
 (async()=>{
   for(const opts of [{handler:false},{features:['stateBridge']},{features:['stateBridge','nativeNutrition']},{features:['nativeAccount']}]){
@@ -107,4 +107,28 @@ function mockImages(t){
   t=start();code(t.apply(cmd('profile.avatar.set',{dataUrl:'data:text/html;base64,QUJD',expect:null})),'invalid');code(t.apply(cmd('profile.avatar.set',{dataUrl:'data:image/png;base64,'+'A'.repeat(512*1024),expect:null})),'invalid');
   const html=fs.readFileSync('index.html','utf8');assert(html.indexOf('js/native-account.js')>html.indexOf('js/native-nutrition.js'));assert(fs.readFileSync('sw.js','utf8').includes('"js/native-account.js"'));
   console.log('PASS account: read-only queries, device snapshot/reload effect, legacy missing profile, unknown metrics, history preservation, pagehide and asset integration');
+  t=start();const timeoutImages=mockImages(t),timeoutOp=cmd('profile.avatar.set',{dataUrl:'data:image/png;base64,QUJD',expect:null});
+  t.ctx.window.pulsNativeApply(timeoutOp);t.tick(5000);await tick();code(t.messages.filter(x=>x.type==='ack').at(-1),'busy');
+  assert.equal(t.state().avatarImage,undefined);timeoutImages.complete();await tick();assert.equal(timeoutImages.draws,0,'late decode after timeout has no effects');
+  t.ctx.window.pulsNativeApply(timeoutOp);timeoutImages.complete();await tick();ok(t.messages.filter(x=>x.type==='ack').at(-1));
+  const png=Buffer.alloc(24);Buffer.from([137,80,78,71,13,10,26,10]).copy(png);png.writeUInt32BE(13,8);png.write('IHDR',12);png.writeUInt32BE(4097,16);png.writeUInt32BE(100,20);
+  const jpeg=Buffer.from([255,216,255,192,0,8,8,16,1,0,100,0]);
+  const webp=(kind,body)=>{const b=Buffer.alloc(20+body.length+(body.length%2));b.write('RIFF');b.writeUInt32LE(b.length-8,4);b.write('WEBP',8);b.write(kind,12);b.writeUInt32LE(body.length,16);body.copy(b,20);return b};
+  const vp8x=Buffer.alloc(10);vp8x.writeUIntLE(4096,4,3);vp8x.writeUIntLE(99,7,3);
+  const vp8l=Buffer.alloc(5);vp8l[0]=47;vp8l.writeUInt32LE((99<<14)|4096,1);
+  const vp8=Buffer.alloc(10);Buffer.from([157,1,42]).copy(vp8,3);vp8.writeUInt16LE(4097,6);vp8.writeUInt16LE(100,8);
+  for(const [mime,data] of [['png',png],['jpeg',jpeg],['webp',webp('VP8X',vp8x)],['webp',webp('VP8L',vp8l)],['webp',webp('VP8 ',vp8)]]){
+    t=start();t.ctx.atob=atob;let created=0;t.ctx.Image=class{constructor(){created++}};
+    t.ctx.window.pulsNativeApply(cmd('profile.avatar.set',{dataUrl:'data:image/'+mime+';base64,'+data.toString('base64'),expect:null}));await tick();
+    code(t.messages.filter(x=>x.type==='ack').at(-1),'invalid');assert.equal(created,0,mime+' oversized header rejected before Image construction');
+  }
+  t=start();const oversized=mockImages(t);t.ctx.Image=class{constructor(){this.width=4097;this.height=100}set src(v){if(v)this.onload()}};
+  t.ctx.window.pulsNativeApply(cmd('profile.avatar.set',{dataUrl:'data:image/png;base64,QUJD',expect:null}));await tick();code(t.messages.filter(x=>x.type==='ack').at(-1),'invalid');assert.equal(oversized.draws,0,'post-decode limit remains for unknown headers');
+  t=start();const typedContext=ask(t),typedBefore=t.store.get('puls-v1');
+  for(const patch of [{height:[181]},{height:'0xb5'},{age:'30'},{age:null},{height:true},{method:['mifflin']},{method:'other'},{kcalMode:[]},{kcalMode:'other'},{activity:'1.55'},{activity:1.4},{baselineFactor:'1.3'},{baselineFactor:1.5},{rmr:{toString:'1900'}}]){
+    code(t.apply(cmd('profile.set',{profile:patch,expect:typedContext})),'invalid');assert.equal(t.store.get('puls-v1'),typedBefore);
+  }
+  for(const bad of [NaN,Infinity,-Infinity])assert.equal(t.ctx.window.pulsNativeAccount.ops['profile.set'].check({profile:{height:bad},expect:typedContext}).code,'invalid');
+  ok(t.apply(cmd('profile.set',{profile:{height:181,activity:1.55,baselineFactor:1.3,method:'mifflin',kcalMode:'classic'},expect:typedContext})));
+  console.log('PASS R review: retryable avatar timeout/late-callback cleanup, PNG/JPEG/WebP pre-decode dimension gates, final decode gate, strictly typed profile numbers/enums');
 })().catch(e=>{console.error(e);process.exitCode=1});

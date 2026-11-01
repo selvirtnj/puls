@@ -13,6 +13,9 @@ const id=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(x);
 const fail=(code,message)=>({code,message}),busy=p=>({...p,busy:true});
 const contextKeys=['profile','plan','goals','weight','tdeeCalibration','date','goalRecord','profileRecord'];
 const profileKeys=['age','height','target','activity','method','rmr','kcalMode','baselineFactor'];
+const profileEnums={method:['mifflin','measured'],kcalMode:['classic','baseline'],activity:activityOptions.map(x=>x[0]),baselineFactor:[1.2,1.3,1.4]};
+const typedProfile=p=>fields(p,profileKeys)&&Object.entries(p).every(([k,v])=>
+  Object.hasOwn(profileEnums,k)?profileEnums[k].includes(v):typeof v==='number'&&Number.isFinite(v));
 const planKeys=['mode','direction','pace','macroMode','protein','fat','adaptive','learnTdee'];
 const macros=['kcal','p','c','f'],event={preventDefault(){}};
 const text=x=>{const s=String(x??'');let end=Math.min(s.length,256);if(end<s.length&&/[\uD800-\uDBFF]/.test(s[end-1])&&/[\uDC00-\uDFFF]/.test(s[end]))end--;return s.slice(0,end)};
@@ -41,6 +44,29 @@ function plannerEffect(day){return {...context(),date:day,goalRecord:copy(state.
 const plannerEffective=(s,a,p,r)=>!!r?.effect&&['profile','plan','goals','tdeeCalibration'].every(k=>same(s[k]??null,r.effect[k]??null))&&
   same(s.goalHistory?.find(x=>x.date===r.effect.date)??null,r.effect.goalRecord)&&same(s.profileHistory?.find(x=>x.date===r.effect.date)??null,r.effect.profileRecord);
 const small=x=>JSON.stringify(x).length<=24*1024;
+// Bounded compressed bytes only; this is a dimension preflight, not an image decoder/validator.
+// Unknown/truncated formats still go through Image and its post-decode limit.
+function avatarDimensions(url){
+  if(typeof atob!=='function')return null;
+  const s=atob(url.slice(url.indexOf(',')+1)),b=i=>s.charCodeAt(i),le=(i,n)=>{let v=0;for(let k=0;k<n;k++)v+=b(i+k)*2**(8*k);return v},
+    be=(i,n)=>{let v=0;for(let k=0;k<n;k++)v=v*256+b(i+k);return v};
+  if(s.length>=24&&s.slice(0,8)==='\x89PNG\r\n\x1a\n'&&s.slice(12,16)==='IHDR'&&be(8,4)===13)return [be(16,4),be(20,4)];
+  if(s.length>=4&&b(0)===255&&b(1)===216){
+    let i=2;while(i+3<s.length){if(b(i++)!==255)return null;while(b(i)===255)i++;const marker=b(i++);
+      if(marker===217||marker===218)return null;if(marker===1||marker>=208&&marker<=215)continue;
+      const length=be(i,2);if(length<2||i+length>s.length)return null;
+      if([192,193,194,195,197,198,199,201,202,203,205,206,207].includes(marker)&&length>=8)return [be(i+5,2),be(i+3,2)];i+=length;
+    }
+  }
+  if(s.length>=20&&s.slice(0,4)==='RIFF'&&s.slice(8,12)==='WEBP'){
+    for(let i=12;i+8<=s.length;){const kind=s.slice(i,i+4),length=le(i+4,4),p=i+8;if(p+length>s.length)return null;
+      if(kind==='VP8X'&&length>=10)return [le(p+4,3)+1,le(p+7,3)+1];
+      if(kind==='VP8L'&&length>=5&&b(p)===47){const bits=le(p+1,4);return [(bits&16383)+1,((bits>>>14)&16383)+1]}
+      if(kind==='VP8 '&&length>=10&&s.slice(p+3,p+6)==='\x9d\x01\x2a')return [le(p+6,2)&16383,le(p+8,2)&16383];i=p+length+(length%2);
+    }
+  }
+  return null;
+}
 function normalizedAvatar(dataUrl,image){
   // Run the actual Web FileReader/Image/canvas pipeline synchronously against a temporary working root.
   // The await (image decoding) has already finished. Never replace/hold state across an await.
@@ -72,13 +98,15 @@ const ops={
       if(target!==undefined&&(state.avatarImage??null)===target)return {noop:true,result:{avatarImage:target}};
       // Loss-of-history replay must compare the Web-normalized JPEG before testing the old expectation.
       if(target!==undefined&&(state.avatarImage??null)!==a.expect)return fail('conflict','Profilbild geändert');return busy({target})},
-    prepare(a){return new Promise((resolve,reject)=>{const img=new Image(),timer=setTimeout(()=>reject(Error('timeout')),5000);
-      img.onerror=()=>{clearTimeout(timer);reject(Error('image'))};img.onload=()=>{clearTimeout(timer);try{if(!finite(img.width,1,4096)||!finite(img.height,1,4096))throw Error('size');resolve({avatarImage:normalizedAvatar(a.dataUrl,img)})}catch(e){reject(e)}};img.src=a.dataUrl})},
+    prepare(a){const dimensions=avatarDimensions(a.dataUrl);if(dimensions&&!dimensions.every(x=>finite(x,1,4096)))throw Error('size');
+      return new Promise((resolve,reject)=>{const img=new Image(),cleanup=()=>{clearTimeout(timer);img.onload=null;img.onerror=null},
+        timer=setTimeout(()=>{cleanup();img.src='';resolve(fail('busy','Profilbild noch nicht dekodiert – erneut senden'))},5000);
+      img.onerror=()=>{cleanup();reject(Error('image'))};img.onload=()=>{cleanup();try{if(!finite(img.width,1,4096)||!finite(img.height,1,4096))throw Error('size');resolve({avatarImage:normalizedAvatar(a.dataUrl,img)})}catch(e){reject(e)}};img.src=a.dataUrl})},
     run(a,p){if(p.target===null)delete state.avatarImage;else state.avatarImage=p.target;return {avatarImage:p.target}},
     effective:(s,a,p,r)=>(s.avatarImage??null)===r.avatarImage
   },
   'profile.set':{
-    check(a){if(!fields(a,['profile','expect'])||!fields(a.profile,profileKeys)||!Object.keys(a.profile).length||!validContext(a.expect)||!small(a))return fail('invalid','Profilfelder und vollständiger Plan-Kontext erforderlich');
+    check(a){if(!fields(a,['profile','expect'])||!typedProfile(a.profile)||!Object.keys(a.profile).length||!validContext(a.expect)||!small(a))return fail('invalid','Typisierte Profilfelder und vollständiger Plan-Kontext erforderlich');
       if(setupPending)return fail('busy','Erststart im Web abschließen');const vals=plannerInputs({...a.expect.profile,...a.profile},a.expect.plan,a.expect.goals);
       const p=inputs(vals,()=>collectProfile()),pl=inputs(vals,()=>collectPlan());const problem=profileError(p)||planError(p,pl,a.expect.goals);if(problem)return fail('invalid',problem);
       const target={...a.expect.profile,...p,updated:today()},observed=context();

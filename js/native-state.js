@@ -473,6 +473,7 @@ async function prepareAccount(cmd,history,adapter,op){
     if(pageHidden){ack(cmd.id,'busy','Web-Dokument ist ausgeblendet');return}
     if(profile!==state){ack(cmd.id,'busy','Profil neu geladen – erneut senden');return}
     if(Object.values(flags()).some(Boolean)){ack(cmd.id,'readonly','Profil ist schreibgeschützt');return}
+    if(prepared?.code){ack(cmd.id,prepared.code,prepared.message);return}
     applyTraining(cmd,history,adapter,op,prepared);
   }catch{ack(cmd.id,'invalid','Profilbild konnte nicht gelesen werden')}
   finally{accountPreparing=false;queueProjection('account')}
