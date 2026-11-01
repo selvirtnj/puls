@@ -457,6 +457,16 @@ final class AccountTests: XCTestCase {
         XCTAssertEqual(AccountCommands.name("Neu", expect: "Fixture")?.args["expect"], "Fixture")
         XCTAssertEqual(BridgeOps.prepareAccountName(try XCTUnwrap(AccountCommands.name("Neu", expect: .null)).args,
                                                     ProfileDocument(root: try state()))["expect"], .null, "festgehaltenes expect bleibt")
+        // Neues Profil: vorbelegte Aktivität/Berechnungsart werden mitgesendet; vorhandenes Profil nur Bearbeitetes.
+        XCTAssertEqual(AccountCommands.profileFieldsToSend(edited: ["age"], existingProfile: .null), AccountCommands.profileKeys)
+        XCTAssertEqual(AccountCommands.profileFieldsToSend(edited: ["age"], existingProfile: nil), AccountCommands.profileKeys)
+        var noProfile = try XCTUnwrap(planner().planner?.context).raw
+        noProfile["profile"] = .null
+        let fresh = try XCTUnwrap(PlannerContext(json: noProfile))
+        XCTAssertNil(fresh.profile)
+        XCTAssertEqual(AccountCommands.profileFieldsToSend(edited: [], existingProfile: fresh.profile), AccountCommands.profileKeys)
+        let existing = try XCTUnwrap(planner().planner?.context.profile)
+        XCTAssertEqual(AccountCommands.profileFieldsToSend(edited: ["height", "weight"], existingProfile: existing), ["height"])
         XCTAssertTrue(BridgeOps.retriesBusyWithoutLock(AccountOps.avatarSet))
         XCTAssertTrue(BridgeOps.retriesBusyWithoutLock(NutritionOps.waterAdd))
         XCTAssertFalse(BridgeOps.retriesBusyWithoutLock(BridgeOps.weightUpsert))

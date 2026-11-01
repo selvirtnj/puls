@@ -44,6 +44,11 @@ final class NativeRouter {
             return
         }
         isPresenting = true
+        // Bekannter Gerätewunsch (bei „System“ `.unspecified`): sofort; sonst wie bisher `data-scheme` der Web-App.
+        if let style = NativeAppearance.style(for: NativeAppearance.scheme(store)) {
+            presentBody(on: host, style: style)
+            return
+        }
         resolveWebScheme { [weak self] style in
             self?.presentBody(on: host, style: style)
         }

@@ -321,6 +321,14 @@ public enum AccountCommands {
     public static let profileKeys: Set<String> = ["age", "height", "target", "activity", "method", "rmr", "kcalMode", "baselineFactor"]
     public static let planKeys: Set<String> = ["mode", "direction", "pace", "macroMode", "protein", "fat", "adaptive", "learnTdee"]
 
+    /// Welche Profilfelder das Formular sendet: bei vorhandenem Profil nur bearbeitete (Rohwerte bleiben erhalten), beim
+    /// erstmaligen Anlegen (`profile:null`) alle angezeigten Werte einschließlich der vorbelegten Auswahl, sonst lehnt das
+    /// Web mit „Bitte Aktivität und Berechnungsart auswählen“ ab.
+    public static func profileFieldsToSend(edited: Set<String>, existingProfile: JSONValue?) -> Set<String> {
+        guard let existingProfile, !existingProfile.isNull else { return profileKeys }
+        return edited.intersection(profileKeys)
+    }
+
     /// Nur geänderte Körperprofilfelder; **kein Gewicht** (Gewicht bleibt M2). `expect` = vollständiger Planner-Kontext.
     public static func profile(_ fields: [String: JSONValue], context: PlannerContext) -> Command? {
         guard !fields.isEmpty, Set(fields.keys).isSubset(of: profileKeys) else { return nil }

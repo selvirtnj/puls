@@ -834,7 +834,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     /// auch bei einem Wechsel zur Laufzeit. Bei `light`/`dark` überschreibt das Fenster, passend zur Web-Darstellung.
     private func updateScheme(_ projection: ProjectionMessage?) {
         // M8: ein gerade nativ gewählter Wunsch gilt sofort, bis der Snapshot ihn bestätigt.
-        let scheme = store.pendingScheme?.rawValue ?? projection?.overview.colorScheme ?? store.deviceScheme ?? "system"
+        _ = projection
+        let scheme = NativeAppearance.scheme(store) ?? "system"
         guard scheme != schemeKey else { return }
         schemeKey = scheme
         let newStyle: UIUserInterfaceStyle

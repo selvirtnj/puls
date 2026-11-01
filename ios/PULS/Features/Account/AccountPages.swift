@@ -107,6 +107,7 @@ struct AccountBodyPage: View {
     let coordinator: AccountCoordinator
     let projection: AccountProjection
     /// Rohrecord und Konto zum Zeitpunkt der Löschabsicht (die Bestätigung löscht genau diesen Stand).
+    @State private var deleting: PendingMeasurementDelete?
 
     var body: some View {
         let text = coordinator.text
@@ -209,7 +210,7 @@ struct AccountBodyPage: View {
                 Text(text("Noch keine Körpermaße.", "No body measurements yet.")).foregroundStyle(.secondary)
             }
             ForEach(rows, id: \.self) { row in
-               let date = row["date"]?.stringValue ?? ""
+                let date = row["date"]?.stringValue ?? ""
                 Button {
                     if canSave { coordinator.sheet = .measurement(date) }
                 } label: {
@@ -222,10 +223,16 @@ struct AccountBodyPage: View {
                 .disabled(!canSave)
                 .swipeActions(edge: .trailing) {
                     if canDelete {
-                        Button(role: .destructive) { deleting = PendingMeasurementDelete(row: row, session: coordinator.beginEdit()) } label: { Label(text("Löschen", "Delete"), systemImage: "trash") }
+                        Button(role: .destructive) {
+                            deleting = PendingMeasurementDelete(row: row, session: coordinator.beginEdit())
+                        } label: {
+                            Label(text("Löschen", "Delete"), systemImage: "trash")
+                        }
                     }
                 }
                 .accessibilityAction(named: Text(text("Löschen", "Delete"))) {
+                    if canDelete { deleting = PendingMeasurementDelete(row: row, session: coordinator.beginEdit()) }
+                }
             }
             if canSave {
                 Button {
@@ -352,7 +359,7 @@ struct AccountDesignPage: View {
                 Text(text("Hell & Dunkel", "Light & dark"))
             } footer: {
                 // `resolvedScheme` ist immer light/dark (auch bei „System“), vom Web aufgelöst.
-                let resolved = projection.appearance.resolvedScheme == "light" ? text("Hell", "Light")
+                let resolved: String? = projection.appearance.resolvedScheme == "light" ? text("Hell", "Light")
                     : projection.appearance.resolvedScheme == "dark" ? text("Dunkel", "Dark") : nil
                 Text(text("Gilt nur auf diesem Gerät und wird nicht synchronisiert.", "Applies to this device only and is not synced.")
                      + (resolved.map { " " + text("Gerade: ", "Currently: ") + $0 + "." } ?? ""))

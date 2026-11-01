@@ -287,7 +287,9 @@ struct AccountProfileSheet: View {
     private func save(_ text: OverviewText) {
         guard let context, let session else { return }
         let locale = text.locale
-        let edited = Set(current.filter { initial[$0.key] != $0.value }.keys)
+        // Neues Profil: alle angezeigten Werte (auch vorbelegte Auswahl); sonst nur Bearbeitetes.
+        let edited = AccountCommands.profileFieldsToSend(edited: Set(current.filter { initial[$0.key] != $0.value }.keys),
+                                                         existingProfile: context.profile)
         guard !edited.isEmpty else { dismiss(); return }
         var changed: [String: JSONValue] = [:]
         if edited.contains("age") {

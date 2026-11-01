@@ -373,14 +373,11 @@ final class TrainingCoordinator {
         let controller = UIHostingController(rootView: root)
         controller.modalPresentationStyle = .overFullScreen
         controller.modalPresentationCapturesStatusBarAppearance = true
-        controller.overrideUserInterfaceStyle = styleProvider?() ?? .dark
+        let bridge = bridge
+        NativeAppearance.apply(to: controller, store: store, fallback: styleProvider?() ?? .dark) { bridge.readWebScheme($0) }
         controller.view.backgroundColor = .systemGroupedBackground
         sessionController = controller
         presenter.present(controller, animated: true)
-        bridge.readWebScheme { [weak controller] scheme in
-            guard let scheme else { return }
-            controller?.overrideUserInterfaceStyle = scheme == "light" ? .light : .dark
-        }
     }
 
     /// Nur mit aktueller Projektion, lesbaren Werten und laufendem Workout.
