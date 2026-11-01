@@ -320,7 +320,12 @@ struct NutritionProductRow: View {
         var parts: [String] = []
         if !product.brand.isEmpty { parts.append(product.brand) }
         if !product.source.isEmpty { parts.append(product.source) }
-        parts.append((product.kcal.map { text.integer(JSMath.round($0)) } ?? "–") + " kcal / 100 " + product.unit)
+        if product.unitKnown {
+            parts.append((product.kcal.map { text.integer(JSMath.round($0)) } ?? "–") + " kcal / 100 " + product.unit)
+        } else {
+            // OFF ohne g/ml-Angabe: kein Bezug erfinden.
+            parts.append((product.kcal.map { text.integer(JSMath.round($0)) + " kcal" } ?? "–") + " · " + text("Bezug unbekannt", "basis unknown"))
+        }
         if product.reviewRequired { parts.append(text("ungeprüft", "unreviewed")) }
         return parts.joined(separator: " · ")
     }

@@ -76,6 +76,8 @@ public enum NutritionOps {
     public static let waterName = "Trinkwasser"
     /// „+ Wasser“ addiert direkt 250 ml (Web `addWaterGlass`).
     public static let glassMl = 250
+    /// Höchstens so viele automatische Wiederholungen nach `busy` ohne Web-Sperre (Backoff 1/2/4/8/16 s).
+    public static let busyRetryLimit = 5
 
     /// Felder aus `ack.result.effect` (Web `entryResult`).
     public static let effectKeys = ["grams", "unit", "kcal", "p", "c", "f", "nutrients", "foodRef", "recipeId", "loggedAt"]
@@ -101,6 +103,21 @@ public enum NutritionOps {
         return value
     }
 
+    /// Erwartung für `microGoals.set`: rohes Objekt (inkl. Erweiterungsfelder) oder `null`. Formulare halten sie beim
+    /// Befüllen fest, damit ein inzwischen geänderter Stand zu `conflict` führt statt still überschrieben zu werden.
+    public static func microGoalsExpect(_ state: JSONValue) -> JSONValue {
+        let raw = rawGoal(state, "microGoals")
+        if case .object = raw { return raw }
+        return .null
+    }
+
+    /// Erwartung für `waterGoal.set`: rohe Zahl oder `null`.
+    public static func waterGoalExpect(_ state: JSONValue) -> JSONValue {
+        let raw = rawGoal(state, "waterGoal")
+        if case .number = raw { return raw }
+        return .null
+    }
+
     /// Gespeichertes Produkt zum Verweis (`custom` nach ID bzw. `catalogKey`).
     public static func customProduct(_ state: JSONValue, ref: ProductRef) -> JSONValue? {
         let custom = state["custom"]?.arrayValue ?? []
@@ -114,6 +131,26 @@ public enum NutritionOps {
     /// Wert eines Eintragsfelds wie `entryResult`: fehlend = `null`.
     static func normalized(_ value: JSONValue?) -> JSONValue {
         value ?? .null
+    }
+
+    /// JS-Wahrheitswert (für `if(food.barcode)`): leere Zeichenkette, 0, false und null sind falsch.
+    static func isTruthy(_ value: JSONValue) -> Bool {
+        switch value {
+        case .null: return false
+        case .bool(let flag): return flag
+        case .number(let number): return number != 0 && !number.isNaN
+        case .string(let text): return !text.isEmpty
+        default: return true
+        }
+    }
+
+    /// `if(food.source) x.source = String(food.source).slice(0,150)`; ohne Quelle im Ziel kein Vergleich (`matchEntry`).
+    static func matchesSource(_ stored: JSONValue?, expected: String?) -> Bool {
+        guard let expected, !expected.isEmpty else { return true }
+        guard let text = stored?.stringValue else { return false }
+        if expected.utf16.count <= 150 { return text == expected }
+        // Gekürzt: höchstens 150 Einheiten und Anfang der Originalquelle (ein getrenntes Surrogat wird U+FFFD).
+        return text.utf16.count <= 150 && (expected.hasPrefix(text) || expected.hasPrefix(String(text.dropLast())))
     }
 
     /// Alle `effect`-Felder stimmen mit dem gespeicherten Eintrag überein (fehlende optionale Felder als `null`).
@@ -203,18 +240,14 @@ extension BridgeOps {
     @Sendable
     public static func prepareMicroGoals(_ args: JSONValue, _ document: ProfileDocument) -> JSONValue {
         guard args["expect"] == nil else { return args }
-        let raw = NutritionOps.rawGoal(document.root, "microGoals")
-        if case .object = raw { return expectingValue(args, raw) }
-        return expectingValue(args, .null)
+        return expectingValue(args, NutritionOps.microGoalsExpect(document.root))
     }
 
     /// `expect` = rohes `waterGoal` (Zahl) oder `null`.
     @Sendable
     public static func prepareWaterGoal(_ args: JSONValue, _ document: ProfileDocument) -> JSONValue {
         guard args["expect"] == nil else { return args }
-        let raw = NutritionOps.rawGoal(document.root, "waterGoal")
-        if case .number = raw { return expectingValue(args, raw) }
-        return expectingValue(args, .null)
+        return expectingValue(args, NutritionOps.waterGoalExpect(document.root))
     }
 }
 
@@ -316,9 +349,28 @@ extension BridgeOps {
             guard let entry = NutritionOps.food(state, id: args["id"]?.stringValue),
                   entry["date"] == args["date"], entry["meal"] == args["meal"],
                   NutritionOps.matchesEffect(entry, result?["effect"]) else { return false }
+            guard let ref = ProductRef(json: args["product"]) else { return false }
+            let expect = args["expect"]
+            // Web `addSnapshot`: Quelle (auf 150 Einheiten gekürzt) und Barcode aus der Originalquelle; ein Rezept trägt keine.
+            let source: String?
+            let barcode: JSONValue?
+            switch ref {
+            case .recipeId:
+                source = nil
+                barcode = nil
+            case .catalogKey:
+                source = expect?["source"]?.stringValue
+                barcode = nil
+            case .id, .barcode:
+                source = expect?["source"]?.stringValue
+                barcode = expect?["barcode"].flatMap { NutritionOps.isTruthy($0) ? $0 : nil }
+            }
+            // Wie Web `matchEntry`: nur die Felder des Zielsnapshots prüfen (ohne Quelle/Barcode im Ziel kein Vergleich).
+            guard NutritionOps.matchesSource(entry["source"], expected: source) else { return false }
+            if let barcode, entry["barcode"] != barcode { return false }
             // Katalogzeilen kürzt das Web auf 100 Einheiten; gespeicherte Produkte und Rezepte behalten den Namen.
-            if case .catalogKey? = ProductRef(json: args["product"]) { return true }
-            return entry["name"] == args["expect"]?["name"]
+            if case .catalogKey = ref { return true }
+            return entry["name"] == expect?["name"]
         },
         // Vollständiger ursprünglicher Eintrag mit den neuen Web-Werten; Name/Datum/Mahlzeit/Referenzen unverändert.
         NutritionOps.foodUpdate: { args, state, result in
@@ -345,6 +397,7 @@ extension BridgeOps {
             guard let id = args["id"]?.stringValue, let date = args["date"]?.stringValue, let ml = args["ml"]?.doubleValue,
                   let entry = NutritionOps.food(state, id: id) else { return false }
             guard entry["date"]?.stringValue == date, entry["meal"]?.stringValue == NutritionOps.waterMeal,
+                  entry["name"]?.stringValue == NutritionOps.waterName,
                   entry["grams"]?.doubleValue == ml, entry["unit"]?.stringValue == "ml",
                   ["kcal", "p", "c", "f"].allSatisfy({ entry[$0]?.doubleValue == 0 }),
                   entry["nutrients"]?["water"]?.doubleValue == ml else { return false }
@@ -552,19 +605,21 @@ public enum NutritionCommands {
     }
 
     /// Ganzes Formular: jeder bekannte Schlüssel 0–1 000 000, `0` entfernt dessen Ziel.
-    public static func microGoals(_ goals: [String: Double]) -> Command? {
+    public static func microGoals(_ goals: [String: Double], expect: JSONValue? = nil) -> Command? {
         guard !goals.isEmpty, goals.allSatisfy({ !$0.key.isEmpty && $0.value.isFinite && $0.value >= 0 && $0.value <= 1_000_000 }) else {
             return nil
         }
-        return Command(op: NutritionOps.microGoalsSet, args: [
-            "goals": .object(goals.mapValues { JSONValue.number($0) }),
-        ])
+        var args: JSONValue = ["goals": .object(goals.mapValues { JSONValue.number($0) })]
+        if let expect { args["expect"] = expect }
+        return Command(op: NutritionOps.microGoalsSet, args: args)
     }
 
     /// `0` = kein Ziel.
-    public static func waterGoal(ml: Int) -> Command? {
+    public static func waterGoal(ml: Int, expect: JSONValue? = nil) -> Command? {
         guard (0...10_000).contains(ml) else { return nil }
-        return Command(op: NutritionOps.waterGoalSet, args: ["ml": .number(Double(ml))])
+        var args: JSONValue = ["ml": .number(Double(ml))]
+        if let expect { args["expect"] = expect }
+        return Command(op: NutritionOps.waterGoalSet, args: args)
     }
 
     /// Nur gespeicherte bzw. Basis-Produkte (keine neue Katalogzeile, kein Rezept).

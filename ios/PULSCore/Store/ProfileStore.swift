@@ -20,6 +20,9 @@ public struct StoreEnvironment: Sendable {
     public var effectChecks: [String: EffectCheck]
     /// Ops, die ein nativer Bereich braucht. Ein Bereich wird nur frei, wenn das Web Bereich und alle Ops meldet.
     public var screenRequirements: [String: Set<String>]
+    /// M7: Wartezeit vor dem n-ten (0-basiert) erneuten Senden eines Ernährungsbefehls nach `busy` ohne Web-Sperre
+    /// (z. B. Katalog lädt noch). Höchstens `NutritionOps.busyRetryLimit` Versuche, dieselbe Befehls-ID.
+    public var busyRetryDelay: @Sendable (Int) -> Duration = { attempt in .seconds(1 << min(attempt, 4)) }
 
     public static let defaultScreenRequirements: [String: Set<String>] = [
         "body": [BridgeOps.weightUpsert, BridgeOps.weightDelete],
@@ -257,6 +260,16 @@ public final class ProfileStore {
     @ObservationIgnored private var lastNutritionProjectionSeq: Int?
     @ObservationIgnored private var pendingNutritionQueries: [String: PendingNutritionQuery] = [:]
     @ObservationIgnored private var nutritionResultOrder: [String] = []
+    /// In dieser App-Sitzung gesendete, noch unbeantwortete Befehle (Ausgang ungewiss).
+    @ObservationIgnored private var unansweredSends: Set<String> = []
+    /// In dieser App-Sitzung beantwortete Befehle.
+    @ObservationIgnored private var answeredIds: Set<String> = []
+    /// M7: Rückgängig wartet auf den Ausgang des Löschens (Löschbefehls-ID → Wiederherstellen).
+    @ObservationIgnored private var waitingUndos: [String: Command] = [:]
+    /// M7: begrenzte Wiederholungen nach `busy` (Befehls-ID → bisherige Versuche).
+    @ObservationIgnored private var busyRetries: [String: Int] = [:]
+    /// M7: Stand je Rückgängig (Löschbefehls-ID), beobachtbar für die Oberfläche.
+    public private(set) var nutritionUndos: [String: NutritionUndoState] = [:]
 
     private struct PendingNutritionQuery {
         var request: NutritionQueryRequest
@@ -786,6 +799,114 @@ public final class ProfileStore {
         return true
     }
 
+    /// Web-Antworten, nach denen ein Befehl nachweislich **nicht** ausgeführt wurde und später erneut gesendet würde.
+    private static let heldCodes: Set<AckErrorCode> = [.persistFailed, .busy, .readonly, .notReady]
+
+    /// Natives Rückgängig eines eigenen `food.delete`, abgestimmt mit dessen Ausgang (nie ein Restore, das ein späteres
+    /// Delete-Retry wieder aufhebt):
+    /// - nie gesendet bzw. vom Web gehalten und gerade nicht unterwegs → Löschen aus der Outbox verwerfen,
+    /// - geparkt (`conflict`, `wrong_user`, …) → verwerfen, es wurde nie ausgeführt,
+    /// - bestätigt → `food.restore` einreihen und danach das bestätigte Löschen entfernen (kein Replay nach Neustart),
+    /// - unterwegs oder aus einer früheren Sitzung unbeantwortet → Ausgang abwarten (`waiting`).
+    /// Fehlt das Löschen schon in der Outbox, wird nur bei sichtbar fehlendem Eintrag wiederhergestellt.
+    @discardableResult
+    public func undoNutritionDelete(deleteCommandId id: String, restore: Command, asUser expectedUser: String?) throws -> NutritionUndoState {
+        guard userId == expectedUser else { throw TrainingCommandError.userChanged }
+        guard restore.op == NutritionOps.foodRestore else { throw ProfileStoreError.unsupportedOp(restore.op) }
+        let state: NutritionUndoState
+        if let entry = outbox.entries.first(where: { $0.command.id == id }) {
+            switch entry.status {
+            case .acked:
+                state = try restoreAfterDelete(id, restore)
+            case .parked:
+                try discardCommand(id: id)
+                state = .notNeeded
+            case .pending:
+                let quietlyHeld = answeredIds.contains(id) && entry.lastError.map { Self.heldCodes.contains($0.code) } == true
+                if !unansweredSends.contains(id), isUnsent(commandId: id) || quietlyHeld {
+                    try discardCommand(id: id)
+                    state = .cancelled
+                } else {
+                    waitingUndos[id] = restore
+                    state = .waiting
+                }
+            }
+        } else if NutritionOps.food(document.root, id: restore.args["entry"]?["id"]?.stringValue) == nil {
+            state = .restoring(try perform(restore).id)
+        } else {
+            state = .notNeeded
+        }
+        nutritionUndos[id] = state
+        log("undo delete -> \(state)")
+        return state
+    }
+
+    /// Restore einreihen, danach das bestätigte Löschen entfernen. Scheitert das Entfernen, bleibt es (Diagnose).
+    private func restoreAfterDelete(_ deleteId: String, _ restore: Command) throws -> NutritionUndoState {
+        let apply = try perform(restore)
+        do {
+            _ = try outbox.remove(id: deleteId)
+            syncOutbox()
+        } catch {
+            log("undo: acked delete not removed")
+        }
+        return .restoring(apply.id)
+    }
+
+    /// Wartendes Rückgängig nach dem Ack des Löschens auflösen.
+    private func settleNutritionUndo(ackId: String, ok: Bool) {
+        guard let restore = waitingUndos.removeValue(forKey: ackId) else { return }
+        let entry = outbox.entries.first { $0.command.id == ackId }
+        do {
+            if ok {
+                nutritionUndos[ackId] = try restoreAfterDelete(ackId, restore)
+            } else if entry != nil {
+                // Gehalten oder geparkt: nicht ausgeführt; verwerfen statt später doch zu löschen.
+                try discardCommand(id: ackId)
+                nutritionUndos[ackId] = entry?.status == .pending ? .cancelled : .notNeeded
+            } else {
+                nutritionUndos[ackId] = .notNeeded
+            }
+        } catch {
+            nutritionUndos[ackId] = .failed
+        }
+    }
+
+    /// Oberfläche hat den Stand übernommen.
+    public func forgetNutritionUndo(_ deleteCommandId: String) {
+        nutritionUndos[deleteCommandId] = nil
+    }
+
+    /// `busy` eines Ernährungsbefehls ohne aktuelle Web-Sperre (z. B. Katalog lädt): begrenzt erneut senden, gleiche ID.
+    /// Bei echter Sperre (`chrome.blocking`) sendet der Chrome-Pfad nach deren Ende.
+    private func scheduleNutritionBusyRetry(_ ack: AckMessage) {
+        guard !ack.ok, ack.error?.code == .busy else {
+            busyRetries[ack.id] = nil
+            return
+        }
+        guard let entry = outbox.entries.first(where: { $0.command.id == ack.id }), entry.status == .pending,
+              NutritionOps.isNutrition(entry.command.op), webChrome?.blocking != true else { return }
+        let attempt = busyRetries[ack.id, default: 0]
+        guard attempt < NutritionOps.busyRetryLimit else {
+            log("nutrition busy retries exhausted")
+            return
+        }
+        busyRetries[ack.id] = attempt + 1
+        let delay = environment.busyRetryDelay(attempt)
+        let id = ack.id
+        Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            self?.retryBusyNutrition(id: id)
+        }
+    }
+
+    func retryBusyNutrition(id: String) {
+        guard webChrome?.blocking != true, !isWaitingForWeb, !flags.isReadOnly, !unansweredSends.contains(id),
+              let command = outbox.replayableCommands.first(where: { $0.id == id }) else { return }
+        log("nutrition busy retry")
+        send(command)
+    }
+
     private func resetNutrition(keepProjection: Bool = false) {
         if !keepProjection {
             nutritionProjection = nil
@@ -965,6 +1086,12 @@ public final class ProfileStore {
         }
     }
     private func handleAck(_ ack: AckMessage) {
+        unansweredSends.remove(ack.id)
+        answeredIds.insert(ack.id)
+        defer {
+            settleNutritionUndo(ackId: ack.id, ok: ack.ok)
+            scheduleNutritionBusyRetry(ack)
+        }
         switch outbox.resolve(ack, session: environment.sessionID) {
         case .unknownCommand:
             log("ack \(ack.ok ? "ok" : "error") for unknown command")
@@ -1103,6 +1230,7 @@ public final class ProfileStore {
 
     private func send(_ command: ApplyCommand) {
         guard let sender else { return }
+        unansweredSends.insert(command.id)
         outbox.markSent(id: command.id)
         // Sendeversuch sofort sichtbar (M6: „nachweislich nicht gesendet“ entscheidet über Abbrechen).
         syncOutbox()

@@ -37,8 +37,10 @@ struct NutritionProductEditor: View {
     @State private var column = 0
     @State private var parse: NutritionLabelParse?
     @State private var reparsing = false
-    @State private var labelConfirmed = false
-    @State private var confirmWarnings = false
+    /// Bestätigungen gelten nur für genau den Formularstand, für den sie gegeben wurden; jede Änderung (Werte, Name,
+    /// Bezug, Spalte, Warnungen) hebt sie sofort auf.
+    @State private var labelConfirmedFor: FormSnapshot?
+    @State private var warningsConfirmedFor: FormSnapshot?
     @State private var commandId: String?
     @State private var status: String?
     @State private var savedId: String?
@@ -159,10 +161,14 @@ struct NutritionProductEditor: View {
                         Label(warning, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
                     }
                     if isLabel {
-                        Toggle(text("Name, Spalte, Bezug und Werte geprüft", "Name, column, basis and values checked"), isOn: $labelConfirmed)
+                        Toggle(text("Name, Spalte, Bezug und Werte geprüft", "Name, column, basis and values checked"),
+                               isOn: Binding(get: { labelConfirmed }, set: { labelConfirmedFor = $0 ? formSnapshot : nil }))
+                            .disabled(reparsing)
                     }
                     if !warnings.isEmpty {
-                        Toggle(text("Warnungen gelesen, Werte stimmen", "Warnings read, values are correct"), isOn: $confirmWarnings)
+                        Toggle(text("Warnungen gelesen, Werte stimmen", "Warnings read, values are correct"),
+                               isOn: Binding(get: { confirmWarnings }, set: { warningsConfirmedFor = $0 ? formSnapshot : nil }))
+                            .disabled(reparsing)
                     }
                 }
             }
@@ -199,6 +205,19 @@ struct NutritionProductEditor: View {
             }
         }
     }
+
+    private struct FormSnapshot: Equatable {
+        let fields: [String]
+        let warnings: [String]
+    }
+
+    private var formSnapshot: FormSnapshot {
+        FormSnapshot(fields: [name, brand, unit ?? "", kcal, p, c, f, fiber, packageAmount, basis.rawValue, portionAmount, String(column)],
+                     warnings: currentWarnings)
+    }
+
+    private var labelConfirmed: Bool { labelConfirmedFor == formSnapshot }
+    private var confirmWarnings: Bool { warningsConfirmedFor == formSnapshot }
 
     private var isLabel: Bool {
         if case .label = mode { return true }
@@ -278,14 +297,18 @@ struct NutritionProductEditor: View {
     private func reparse(_ newColumn: Int) async {
         guard case .label(let lines, _, _) = mode else { return }
         reparsing = true
-        defer { reparsing = false }
+        labelConfirmedFor = nil
+        warningsConfirmedFor = nil
+        defer { if column == newColumn { reparsing = false } }
         let result = await coordinator.fetch { NutritionQueryRequest.labelParse(lines: lines, column: newColumn, requestId: $0) }
+        // Nur die Antwort der aktuell gewählten Spalte übernehmen (schnelles Umschalten).
+        guard column == newColumn else { return }
         if case .loaded(let message) = result, case .labelParse(let parsed)? = message.result {
             parse = parsed
             apply(parsed)
-            labelConfirmed = false
-            confirmWarnings = false
         }
+        labelConfirmedFor = nil
+        warningsConfirmedFor = nil
     }
 
     private func barcode(_ detail: NutritionProductDetail) -> String? {
@@ -300,7 +323,7 @@ struct NutritionProductEditor: View {
     }
 
     private func command(_ text: OverviewText) -> Command? {
-        guard let kcal = number(kcal), let p = number(p), let c = number(c), let f = number(f) else { return nil }
+        guard !reparsing, let kcal = number(kcal), let p = number(p), let c = number(c), let f = number(f) else { return nil }
         let warnings = currentWarnings
         let confirm = warnings.isEmpty ? false : confirmWarnings
         if !warnings.isEmpty, !confirmWarnings { return nil }
@@ -358,7 +381,7 @@ struct NutritionProductEditor: View {
                     let warning = event.message ?? text("Bitte Warnungen prüfen.", "Please check the warnings.")
                     if !webWarnings.contains(warning) { webWarnings.append(warning) }
                     status = text("Prüfe die Werte und bestätige erneut.", "Check the values and confirm again.")
-                    confirmWarnings = false
+                    warningsConfirmedFor = nil
                     self.commandId = nil
                     return
                 default:

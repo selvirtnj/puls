@@ -207,12 +207,15 @@ final class NutritionTests: XCTestCase {
                                                               unit: XCTUnwrap(detail.unit("p0")), meal: "Snacks", date: "2026-10-28",
                                                               includePortionSnapshot: true))
         XCTAssertEqual(withPortion.args["portion"], detail.unit("p0")?.snapshot)
-        XCTAssertNil(NutritionCommands.add(entryId: "bad id", detail: detail, amount: 2, unit: XCTUnwrap(detail.unit("g")), date: "2026-10-28"))
-        XCTAssertNil(NutritionCommands.add(entryId: "x", detail: detail, amount: 2, unit: XCTUnwrap(detail.unit("g")), meal: "Brunch", date: "2026-10-28"))
-        XCTAssertNil(NutritionCommands.add(entryId: "x", detail: detail, amount: 400, unit: XCTUnwrap(detail.unit("p0")), date: "2026-10-28"),
+        let grams = try XCTUnwrap(detail.unit("g"))
+        let portion = try XCTUnwrap(detail.unit("p0"))
+        XCTAssertNil(NutritionCommands.add(entryId: "bad id", detail: detail, amount: 2, unit: grams, date: "2026-10-28"))
+        XCTAssertNil(NutritionCommands.add(entryId: "x", detail: detail, amount: 2, unit: grams, meal: "Brunch", date: "2026-10-28"))
+        XCTAssertNil(NutritionCommands.add(entryId: "x", detail: detail, amount: 400, unit: portion, date: "2026-10-28"),
                      "400 × 30 g > 10 000 g")
-        XCTAssertNil(NutritionCommands.add(entryId: "x", detail: try productDetail("nutrition-p2-result-off-product"), amount: 1,
-                                           unit: NutritionUnit(Loose(["key": "g", "factor": 1]))!, date: "2026-10-28"))
+        let off = try productDetail("nutrition-p2-result-off-product")
+        let anyGram = try XCTUnwrap(NutritionUnit(Loose(["key": "g", "factor": 1])))
+        XCTAssertNil(NutritionCommands.add(entryId: "x", detail: off, amount: 1, unit: anyGram, date: "2026-10-28"))
     }
 
     func testProductSaveReviewAndLabelMatchFixtures() throws {
@@ -446,6 +449,137 @@ final class NutritionTests: XCTestCase {
         missingOp.ops.removeAll { $0 == NutritionOps.foodRestore }
         store.receive(.hello(missingOp))
         XCTAssertFalse(store.webOffersNutrition, "alle neun P1-Ops nötig")
+    }
+
+    private func entryDetail(_ index: Int = 1, canRestore: Bool = true) throws -> NutritionEntryDetail {
+        let entry = try XCTUnwrap(Fixtures.value("nutrition-input")["profile"]?["foods"]?[index])
+        return try NutritionEntryDetail(json: ["entry": entry, "index": .number(Double(index)), "canRestore": .bool(canRestore)])
+    }
+
+    private final class Sent {
+        var commands: [ApplyCommand] = []
+    }
+
+    @MainActor
+    private func sendingStore(directory: URL? = nil) throws -> (ProfileStore, Sent) {
+        let (store, _) = try connectedStore(directory: directory)
+        let sent = Sent()
+        store.sender = { sent.commands.append($0) }
+        return (store, sent)
+    }
+
+    @MainActor
+    func testUndoOfUnsentOrHeldDeleteDiscardsInsteadOfRestore() throws {
+        let detail = try entryDetail()
+        let (store, sent) = try sendingStore()
+        store.sender = nil
+        // Nie gesendet → Löschen verwerfen.
+        let delete = try store.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: detail)), asUser: Self.user)
+        let restore = try XCTUnwrap(NutritionCommands.restore(detail: detail))
+        XCTAssertEqual(try store.undoNutritionDelete(deleteCommandId: delete.id, restore: restore, asUser: Self.user), .cancelled)
+        XCTAssertTrue(store.outboxEntries.isEmpty, "kein Restore, kein späteres Delete-Retry")
+
+        // Gesendet und mit persist_failed gehalten → ebenfalls verwerfen (würde sonst später doch löschen).
+        store.sender = { sent.commands.append($0) }
+        let held = try store.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: detail)), asUser: Self.user)
+        store.receive(.ack(AckMessage(id: held.id, ok: false, seq: 1, error: AckError(code: .persistFailed))))
+        XCTAssertEqual(try store.undoNutritionDelete(deleteCommandId: held.id, restore: restore, asUser: Self.user), .cancelled)
+        XCTAssertTrue(store.outboxEntries.isEmpty)
+        XCTAssertFalse(sent.commands.contains { $0.op == NutritionOps.foodRestore })
+    }
+
+    @MainActor
+    func testUndoWaitsForInFlightDeleteThenRestoresAndDropsDelete() throws {
+        let detail = try entryDetail()
+        let (store, sent) = try sendingStore()
+        let delete = try store.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: detail)), asUser: Self.user)
+        let restore = try XCTUnwrap(NutritionCommands.restore(detail: detail))
+        // Unterwegs: Ausgang abwarten, nichts senden.
+        XCTAssertEqual(try store.undoNutritionDelete(deleteCommandId: delete.id, restore: restore, asUser: Self.user), .waiting)
+        XCTAssertEqual(sent.commands.map(\.op), [NutritionOps.foodDelete])
+        // Bestätigt → Restore eingereiht und gesendet, das bestätigte Löschen entfernt (kein Replay nach Neustart).
+        store.receive(.ack(AckMessage(id: delete.id, ok: true, seq: 2)))
+        guard case .restoring(let restoreId)? = store.nutritionUndos[delete.id] else { return XCTFail("restore erwartet") }
+        XCTAssertEqual(sent.commands.last?.id, restoreId)
+        XCTAssertEqual(sent.commands.last?.args, restore.args)
+        XCTAssertEqual(store.outboxEntries.map(\.command.id), [restoreId])
+
+        // Unterwegs, dann gehalten (busy) → verwerfen statt wiederherstellen.
+        let second = try store.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: entryDetail(0))), asUser: Self.user)
+        let restore2 = try XCTUnwrap(NutritionCommands.restore(detail: entryDetail(0)))
+        XCTAssertEqual(try store.undoNutritionDelete(deleteCommandId: second.id, restore: restore2, asUser: Self.user), .waiting)
+        store.receive(.ack(AckMessage(id: second.id, ok: false, seq: 2, error: AckError(code: .busy))))
+        XCTAssertEqual(store.nutritionUndos[second.id], .cancelled)
+        XCTAssertFalse(store.outboxEntries.contains { $0.command.id == second.id })
+    }
+
+    @MainActor
+    func testBusyWithoutWebLockRetriesWithSameIdBounded() async throws {
+        let ids = SequentialIDs()
+        var environment = StoreEnvironment(directory: try makeTemporaryDirectory(), now: { fixedNow }, makeCommandID: { ids.make() },
+                                           sessionID: "app-1")
+        environment.busyRetryDelay = { _ in .milliseconds(5) }
+        let store = ProfileStore(environment: environment)
+        let sent = Sent()
+        store.sender = { sent.commands.append($0) }
+        store.receive(.hello(try hello()))
+        store.receive(.snapshot(SnapshotMessage(seq: 1, userId: Self.user, state: try state(), reason: "load")))
+        let water = try store.performNutrition(XCTUnwrap(NutritionCommands.water(id: "w1", date: "2026-10-28")), asUser: Self.user)
+        for round in 0..<(NutritionOps.busyRetryLimit + 2) {
+            store.receive(.ack(AckMessage(id: water.id, ok: false, seq: 1, error: AckError(code: .busy, message: "Katalog lädt"))))
+            try await Task.sleep(for: .milliseconds(60))
+            _ = round
+        }
+        XCTAssertEqual(Set(sent.commands.map(\.id)), [water.id], "immer dieselbe Befehls-ID")
+        XCTAssertEqual(sent.commands.count, 1 + NutritionOps.busyRetryLimit, "begrenzte Wiederholungen")
+
+        // Echte Web-Sperre: kein Timer, der Chrome-Pfad sendet nach deren Ende.
+        let other = try store.performNutrition(XCTUnwrap(NutritionCommands.water(id: "w2", date: "2026-10-28")), asUser: Self.user)
+        store.receive(.chrome(ChromeMessage(blocking: true, reason: "modal", page: "food")))
+        let before = sent.commands.count
+        store.receive(.ack(AckMessage(id: other.id, ok: false, seq: 1, error: AckError(code: .busy))))
+        try await Task.sleep(for: .milliseconds(60))
+        XCTAssertEqual(sent.commands.count, before)
+        store.receive(.chrome(ChromeMessage(blocking: false, reason: "none", page: "food")))
+        XCTAssertTrue(sent.commands.dropFirst(before).contains { $0.id == other.id })
+    }
+
+    func testFoodAddEffectChecksSourceBarcodeAndWaterName() throws {
+        let check = try XCTUnwrap(BridgeOps.defaultEffectChecks[NutritionOps.foodAdd])
+        var args = try ApplyCommand(json: Fixtures.value("apply-nutrition-food-add")).args
+        args["expect"]?["source"] = "Eigene Werte"
+        args["expect"]?["barcode"] = "4006381333931"
+        let ack = try XCTUnwrap(AckMessage(json: Fixtures.value("ack-nutrition-food-add")).result)
+        var stored: JSONValue = [
+            "id": "new-entry", "date": "2026-10-28", "meal": "Snacks", "name": "Synthetic product", "grams": 60, "unit": "g",
+            "kcal": 120, "p": 12, "c": 18, "f": 0, "nutrients": ["water": 24, "vitc": 0], "foodRef": "product",
+            "loggedAt": 1_793_188_800_000, "source": "Eigene Werte", "barcode": "4006381333931",
+        ]
+        XCTAssertTrue(check(args, try state(foods: [stored]), ack))
+        stored["source"] = "PULS Basis"
+        XCTAssertFalse(check(args, try state(foods: [stored]), ack))
+        stored["source"] = "Eigene Werte"
+        stored["barcode"] = nil
+        XCTAssertFalse(check(args, try state(foods: [stored]), ack))
+
+        let water = try XCTUnwrap(NutritionCommands.water(id: "w1", date: "2026-10-28"))
+        var entry = NutritionOps.waterEntry(id: "w1", date: "2026-10-28", ml: 250)
+        let waterCheck = try XCTUnwrap(BridgeOps.defaultEffectChecks[NutritionOps.waterAdd])
+        XCTAssertTrue(waterCheck(water.args, try state(foods: [entry]), nil))
+        entry["name"] = "Saft"
+        XCTAssertFalse(waterCheck(water.args, try state(foods: [entry]), nil))
+    }
+
+    func testGoalFormsSendObservedExpectation() throws {
+        let water = try XCTUnwrap(NutritionCommands.waterGoal(ml: 2000, expect: .null))
+        // Preparer überschreibt eine mitgegebene Erwartung nie mit dem neueren Dokument.
+        let prepared = BridgeOps.prepareWaterGoal(water.args, ProfileDocument(root: try state(extra: ["waterGoal": 1500])))
+        XCTAssertEqual(prepared["expect"], .null)
+        let micro = try XCTUnwrap(NutritionCommands.microGoals(["fiber": 30], expect: ["water": 12]))
+        XCTAssertEqual(BridgeOps.prepareMicroGoals(micro.args, ProfileDocument(root: try state(extra: ["microGoals": [:]])))["expect"],
+                       ["water": 12])
+        XCTAssertEqual(NutritionOps.waterGoalExpect(try state()), .null)
+        XCTAssertEqual(NutritionOps.microGoalsExpect(try state()), ["water": 12])
     }
 
     @MainActor

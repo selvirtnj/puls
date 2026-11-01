@@ -341,6 +341,8 @@ struct NutritionWaterGoalSheet: View {
     let coordinator: NutritionCoordinator
     @Environment(\.dismiss) private var dismiss
     @State private var mlText = ""
+    /// Beim Befüllen gesehener Rohwert: Erwartung des Befehls (ein inzwischen geänderter Stand → `conflict`).
+    @State private var origin: JSONValue?
 
     var body: some View {
         let text = coordinator.text
@@ -365,7 +367,7 @@ struct NutritionWaterGoalSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(text("Sichern", "Save")) {
-                        if let ml = value, coordinator.setWaterGoal(ml) { dismiss() }
+                        if let ml = value, let origin, coordinator.setWaterGoal(ml, expect: origin) { dismiss() }
                     }
                     .disabled(value == nil)
                 }
@@ -373,8 +375,10 @@ struct NutritionWaterGoalSheet: View {
         }
         .presentationDetents([.medium])
         .onAppear {
-            let goal = coordinator.projection?.settings.waterGoal ?? 0
-            mlText = NutritionInput.text(goal, locale: coordinator.text.locale)
+            guard origin == nil else { return }
+            let raw = NutritionOps.waterGoalExpect(coordinator.store.document.root)
+            origin = raw
+            mlText = NutritionInput.text(raw.doubleValue ?? 0, locale: coordinator.text.locale)
         }
     }
 
@@ -392,6 +396,8 @@ struct NutritionMicroGoalsSheet: View {
     let coordinator: NutritionCoordinator
     @Environment(\.dismiss) private var dismiss
     @State private var values: [String: String] = [:]
+    /// Beim Befüllen gesehenes rohes `microGoals` (Erwartung des Befehls).
+    @State private var origin: JSONValue?
 
     var body: some View {
         let text = coordinator.text
@@ -424,16 +430,18 @@ struct NutritionMicroGoalsSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(text("Sichern", "Save")) {
-                        if let goals = goals(micros), coordinator.setMicroGoals(goals) { dismiss() }
+                        if let goals = goals(micros), let origin, coordinator.setMicroGoals(goals, expect: origin) { dismiss() }
                     }
                     .disabled(goals(micros) == nil)
                 }
             }
         }
         .onAppear {
-            let custom = coordinator.projection?.settings.microGoals ?? [:]
+            guard origin == nil else { return }
+            let raw = NutritionOps.microGoalsExpect(coordinator.store.document.root)
+            origin = raw
             for micro in micros {
-                if let value = custom[micro.key], value > 0 {
+                if let value = raw[micro.key]?.doubleValue, value > 0 {
                     values[micro.key] = NutritionInput.text(value, locale: coordinator.text.locale)
                 }
             }

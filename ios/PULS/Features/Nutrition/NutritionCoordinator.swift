@@ -219,7 +219,7 @@ final class NutritionCoordinator {
         }
         guard sent else { return false }
         let clock = ContinuousClock()
-        let deadline = clock.now.advanced(by: timeout)
+        var deadline = clock.now.advanced(by: timeout)
         var last: NutritionResultMessage?
         var answered = false
         while !Task.isCancelled {
@@ -229,6 +229,11 @@ final class NutritionCoordinator {
                 answered = true
                 update(result)
                 if result.isFinal { return true }
+                // Zwischenstand: Registrierung bis `complete` behalten. Bei `rate_limited` setzt das Web nach
+                // `retryAfterMs` (bis ca. 60 s) selbst fort; das Zeitlimit wartet entsprechend länger.
+                let retry = result.onlineStatus == "rate_limited" ? (result.onlineRetryAfterMs ?? 60_000) : 0
+                let extended = clock.now.advanced(by: timeout + .milliseconds(Int(min(max(retry, 0), 120_000))))
+                if extended > deadline { deadline = extended }
             }
             guard store.isNutritionQueryPending(requestId), clock.now < deadline else { break }
             try? await Task.sleep(for: .milliseconds(40))
@@ -270,8 +275,8 @@ final class NutritionCoordinator {
     }
 
     @discardableResult
-    func setWaterGoal(_ ml: Int) -> Bool {
-        guard let command = NutritionCommands.waterGoal(ml: ml) else {
+    func setWaterGoal(_ ml: Int, expect: JSONValue) -> Bool {
+        guard let command = NutritionCommands.waterGoal(ml: ml, expect: expect) else {
             notice = TrainingNotice(text: text("Wasserziel 0 bis 10 000 ml.", "Water goal 0 to 10,000 ml."))
             return false
         }
@@ -280,8 +285,8 @@ final class NutritionCoordinator {
 
     /// Ganzes Formular (alle bekannten Mikros, `0` = kein eigenes Ziel).
     @discardableResult
-    func setMicroGoals(_ goals: [String: Double]) -> Bool {
-        guard let command = NutritionCommands.microGoals(goals) else {
+    func setMicroGoals(_ goals: [String: Double], expect: JSONValue) -> Bool {
+        guard let command = NutritionCommands.microGoals(goals, expect: expect) else {
             notice = TrainingNotice(text: text("Ziele 0 bis 1 000 000.", "Goals 0 to 1,000,000."))
             return false
         }
@@ -363,19 +368,50 @@ final class NutritionCoordinator {
     }
 
     /// Rückgängig: ein nachweislich nie gesendetes Löschen verwerfen, sonst den alten Snapshot per `food.restore`.
+    /// Rückgängig, abgestimmt mit dem ursprünglichen Löschen (`ProfileStore.undoNutritionDelete`): offenes Löschen wird
+    /// verworfen, ein bestätigtes per `food.restore` zurückgenommen, ein ungewisses erst nach seinem Ausgang. Der Eintrag
+    /// im Undo-Stapel bleibt, bis Verwerfen bzw. Wiederherstellen dauerhaft gespeichert ist.
     func undo(_ item: NutritionUndo) {
-        undoStack.removeAll { $0.id == item.id }
-        if store.isUnsent(commandId: item.deleteCommandId), (try? store.discardCommand(id: item.deleteCommandId)) != nil {
-            hiddenEntryIds.remove(item.detail.id)
-            return
-        }
-        guard let command = NutritionCommands.restore(detail: item.detail) else { return }
-        if perform(command) {
-            hiddenEntryIds.remove(item.detail.id)
+        guard !undoingIds.contains(item.deleteCommandId), let restore = NutritionCommands.restore(detail: item.detail) else { return }
+        do {
+            let state = try store.undoNutritionDelete(deleteCommandId: item.deleteCommandId, restore: restore, asUser: store.userId)
+            applyUndo(state, for: item)
+        } catch {
+            notice = TrainingNotice(text: describe(error))
         }
     }
 
+    /// Ids der Löschbefehle, deren Rückgängig auf den Ausgang wartet.
+    var undoingIds: Set<String> = []
+
+    private func applyUndo(_ state: NutritionUndoState, for item: NutritionUndo) {
+        switch state {
+        case .waiting:
+            undoingIds.insert(item.deleteCommandId)
+        case .failed:
+            undoingIds.remove(item.deleteCommandId)
+            store.forgetNutritionUndo(item.deleteCommandId)
+            notice = TrainingNotice(text: text("Rückgängig wurde nicht gespeichert. Bitte erneut versuchen.",
+                                               "Undo was not saved. Please try again."))
+        case .cancelled, .restoring, .notNeeded:
+            undoingIds.remove(item.deleteCommandId)
+            undoStack.removeAll { $0.id == item.id }
+            hiddenEntryIds.remove(item.detail.id)
+            store.forgetNutritionUndo(item.deleteCommandId)
+        }
+    }
+
+    /// Ausgang wartender Rückgängig-Aufträge übernehmen.
+    private func settleUndos() {
+        let states = store.nutritionUndos
+        for item in undoStack where undoingIds.contains(item.deleteCommandId) {
+            if let state = states[item.deleteCommandId], state != .waiting { applyUndo(state, for: item) }
+        }
+    }
+
+    /// Banner ausblenden; ein laufendes Rückgängig bleibt bis zu seinem Ausgang.
     func dismissUndo(_ item: NutritionUndo) {
+        guard !undoingIds.contains(item.deleteCommandId) else { return }
         undoStack.removeAll { $0.id == item.id }
     }
 
@@ -484,6 +520,7 @@ final class NutritionCoordinator {
         withObservationTracking {
             processAcks()
             resetOnGenerationChange()
+            settleUndos()
             pruneHidden()
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in self?.observeStore() }
@@ -498,6 +535,7 @@ final class NutritionCoordinator {
         sheet = nil
         notice = nil
         undoStack = []
+        undoingIds = []
         hiddenEntryIds = []
         deletingEntryIds = []
     }
