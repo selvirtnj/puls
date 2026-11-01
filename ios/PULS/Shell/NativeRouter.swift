@@ -21,6 +21,8 @@ final class NativeRouter {
     private weak var presented: UIViewController?
     private var isPresenting = false
     private var schemeToken = 0
+    /// M8: „Körpermaße & Körperfett“ im Körperbereich nativ öffnen; `false` = nicht möglich (dann Web).
+    var openMeasurements: (() -> Bool)?
 
     init(store: ProfileStore, host: UIViewController, webView: WKWebView, appHost: String, appPath: String) {
         self.store = store
@@ -54,11 +56,21 @@ final class NativeRouter {
             openInWeb(page: "account", section: Self.bodyScreen)
             return
         }
+        var measurementsAction: (() -> Void)?
+        if openMeasurements != nil {
+            measurementsAction = { [weak self] in
+                guard let self else { return }
+                if self.openMeasurements?() != true {
+                    self.dismiss { self.openInWeb(page: "account", section: Self.bodyScreen) }
+                }
+            }
+        }
         let view = BodyView(
             onClose: { [weak self] in self?.dismiss() },
             onOpenWeb: { [weak self] in
                 self?.dismiss { self?.openInWeb(page: "account", section: Self.bodyScreen) }
-            }
+            },
+            onOpenMeasurements: measurementsAction
         )
         .environment(store)
         let controller = UIHostingController(rootView: view)
@@ -84,11 +96,11 @@ final class NativeRouter {
 
     /// `window.pulsNativeNavigate({page, section, web:true})`: der Web-Bereich öffnet sich ohne erneutes `openNative`.
     /// Immer erst nach dem Schließen des eigenen Sheets aufrufen.
-    func openInWeb(page: String, section: String) {
+    func openInWeb(page: String, section: String?) {
         guard let webView, let url = webView.url, url.host == appHost, url.path.hasPrefix(appPath) else { return }
-        let argument = JSONValue.object([
-            "page": .string(page), "section": .string(section), "web": .bool(true),
-        ]).serializedString()
+        var object: [String: JSONValue] = ["page": .string(page), "web": .bool(true)]
+        if let section { object["section"] = .string(section) }
+        let argument = JSONValue.object(object).serializedString()
         webView.evaluateJavaScript(
             "window.pulsNativeNavigate&&window.pulsNativeNavigate(\(argument));void 0",
             completionHandler: nil

@@ -31,6 +31,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var activityCoordinator: ActivityCoordinator?
     // M7: native Ernährung (Features/Nutrition); nil ohne Brücke.
     private var nutritionCoordinator: NutritionCoordinator?
+    // M8: natives Konto (Features/Account); nil ohne Brücke.
+    private var accountCoordinator: AccountCoordinator?
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
@@ -69,7 +71,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // pulsNativeSetActivity(true) per openNative{screen:'activity'} weiter.
         // 'nativeNutrition' (M7): Essen-Tab nativ (Tagebuch, Suche, Ziele, ab P2 Barcode/Etikett/eigene Werte); das Web
         // berechnet die Projektion 'nutrition' nur nach pulsNativeSetInterest. Kamera/Vision liefern nur Code bzw. Text.
-        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress','nativeActivity','nativeNutrition'"
+        // 'nativeAccount' (M8): Konto-Tab nativ (Name/Avatar, Plan, Körper/Maße, adaptiver Erhalt, Darstellung, Klänge); die
+        // Projektion 'account' nur nach pulsNativeSetInterest. Anmeldung/Abmeldung/Konflikt/Import/Reset/Löschen/Export bleiben Web.
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress','nativeActivity','nativeNutrition','nativeAccount'"
         config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -81,17 +85,36 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             trainingCoordinator = training
             let activity = ActivityCoordinator(store: store, bridge: stateBridge, host: self)
             activityCoordinator = activity
-            stateBridge.onOpenNative = { [weak router, weak training, weak activity] open in
+            let account = AccountCoordinator(store: store, bridge: stateBridge)
+            accountCoordinator = account
+            let shell = RootTabShell(store: store, bridge: stateBridge)
+            stateBridge.onOpenNative = { [weak router, weak training, weak activity, weak account, weak shell] open in
                 if open.screen == TrainingCoordinator.screen {
                     training?.openFromWeb(workoutId: open.workoutId)
                 } else if open.screen == ActivityCoordinator.screen {
                     activity?.openFromWeb(startedAt: open.startedAt, routeId: open.routeId)
+                } else if open.screen == AccountCoordinator.screen {
+                    // Das Web öffnet seine Unterseite dann nicht mehr selbst: nativ zeigen, sonst sofort Web-Ausweg.
+                    if let account, let shell, shell.canShowNativeAccount {
+                        router?.dismiss { account.openFromWeb(section: open.section) }
+                    } else {
+                        router?.openInWeb(page: "account", section: open.section)
+                    }
                 } else {
                     router?.open(open.screen)
                 }
             }
-            let shell = RootTabShell(store: store, bridge: stateBridge)
             shell.openBody = { [weak router] in router?.open(NativeRouter.bodyScreen) }
+            shell.account = account
+            account.onOpenWeb = { [weak shell] exit in shell?.openAccountWeb(exit) }
+            account.onSelectAccountTab = { [weak shell] in shell?.selectAccountTab() }
+            account.onOpenBody = { [weak router] in router?.open(NativeRouter.bodyScreen) }
+            // M2-Körperbereich: „Körpermaße & Körperfett“ führt mit nativem Konto zu dessen Körperseite.
+            router.openMeasurements = { [weak router, weak account, weak shell] in
+                guard let account, let shell, shell.canShowNativeAccount else { return false }
+                router?.dismiss { account.openFromWeb(section: AccountRoute.body.rawValue) }
+                return true
+            }
             shell.onStyleChange = { [weak self] in self?.setNeedsStatusBarAppearanceUpdate() }
             shell.training = training
             let progress = ProgressCoordinator(store: store, bridge: stateBridge)

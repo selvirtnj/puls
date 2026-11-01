@@ -18,6 +18,8 @@ public struct StoreEnvironment: Sendable {
     public var preparers: [String: CommandPreparer]
     /// Prüft die Wirkung bestätigter Befehle im `load`-Snapshot.
     public var effectChecks: [String: EffectCheck]
+    /// M8: Wirkungsprüfungen mit ganzem Snapshot (z. B. `device.scheme`); Vorrang vor `effectChecks`.
+    public var snapshotEffectChecks: [String: SnapshotEffectCheck] = BridgeOps.defaultSnapshotEffectChecks
     /// Ops, die ein nativer Bereich braucht. Ein Bereich wird nur frei, wenn das Web Bereich und alle Ops meldet.
     public var screenRequirements: [String: Set<String>]
     /// M7: Wartezeit vor dem n-ten (0-basiert) erneuten Senden eines Ernährungsbefehls nach `busy` ohne Web-Sperre
@@ -35,6 +37,8 @@ public struct StoreEnvironment: Sendable {
         "activity": ActivityOps.all,
         // M7/P1: die native Ernährung braucht alle neun P1-Ops (§12.1/§12.4).
         "nutrition": NutritionOps.all,
+        // M8: Konto ist lesbar ohne Ops; jede Bearbeitung prüft ihre eigene gemeldete Op (§13.1).
+        "account": [],
     ]
 
     public init(
@@ -224,6 +228,16 @@ public final class ProfileStore {
     public private(set) var nutritionResults: [String: NutritionResultMessage] = [:]
     /// M7: steigt bei neuem Dokument, `hello.ownerPending:true` und Nutzerwechsel (wie `progressGeneration`).
     public private(set) var nutritionGeneration = 0
+    /// M8: zuletzt angenommene `account`-Projektion dieses Dokuments (nicht persistiert).
+    public private(set) var accountProjection: AccountProjectionMessage?
+    /// M8: angenommene `accountResult`-Antworten (nach `requestId`), höchstens 8, nie persistiert.
+    public private(set) var accountResults: [String: AccountResultMessage] = [:]
+    /// M8: steigt bei neuem Dokument, `hello.ownerPending:true` und Nutzerwechsel (wie `nutritionGeneration`).
+    public private(set) var accountGeneration = 0
+    /// M8: Unterseite aus dem letzten `openNative{screen:'account', section}`.
+    public private(set) var requestedAccountSection: String?
+    /// M8: `snapshot.device.scheme` des zuletzt angenommenen Snapshots (lokale Gerätedarstellung, kein Profilfeld).
+    public private(set) var deviceScheme: String?
     public let authority: DataAuthority = .web
 
     /// Übergibt einen Befehl an das Web (`StateBridge`). Ohne Sender bleibt er in der Outbox.
@@ -262,6 +276,15 @@ public final class ProfileStore {
     @ObservationIgnored private var nutritionResultOrder: [String] = []
     /// M7: begrenzte Wiederholungen nach `busy` (Befehls-ID → bisherige Versuche).
     @ObservationIgnored private var busyRetries: [String: Int] = [:]
+    @ObservationIgnored private var lastAccountProjectionSeq: Int?
+    @ObservationIgnored private var pendingAccountQueries: [String: PendingAccountQuery] = [:]
+    @ObservationIgnored private var accountResultOrder: [String] = []
+
+    private struct PendingAccountQuery {
+        var request: AccountQueryRequest
+        var userId: String?
+        var generation: Int
+    }
 
     private struct PendingNutritionQuery {
         var request: NutritionQueryRequest
@@ -353,6 +376,7 @@ public final class ProfileStore {
                 requestedActivityStartedAt = open.startedAt
                 requestedActivityRouteId = open.routeId
             }
+            if open.screen == Self.accountScreen { requestedAccountSection = open.section }
             log("openNative \(open.screen)")
             return true
         case .navigate(let navigate):
@@ -390,7 +414,119 @@ public final class ProfileStore {
             return handleNutritionProjection(projection)
         case .nutritionResult(let result):
             return handleNutritionResult(result)
+        case .accountProjection(let projection):
+            return handleAccountProjection(projection)
+        case .accountResult(let result):
+            return handleAccountResult(result)
         }
+    }
+
+    // MARK: M8 Konto und Profil
+
+    public static let accountScreen = "account"
+    /// Eintrag in `window.pulsNativeFeatures` für M8 (nur zusammen mit `stateBridge`).
+    public static let nativeAccountFeature = "nativeAccount"
+
+    /// Kontofähigkeiten des **aktuellen** Dokuments (`hello.account`), sonst `nil`.
+    public var accountCapabilities: AccountCapabilities? {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return nil }
+        return hello.account
+    }
+
+    /// Das aktuelle Dokument bietet das native Konto an: Screen, Projektion und Feature `account`/`nativeAccount`,
+    /// `hello.account` und geklärte Zuordnung. In der Vorschau nur lesbar (Schreiben sperrt `perform`).
+    public var webOffersAccount: Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending, hello.account != nil else { return false }
+        return hello.screens.contains(Self.accountScreen)
+            && hello.projections.contains(AccountProjectionMessage.accountName)
+            && hello.features.contains(Self.nativeAccountFeature)
+            && readableScreens.contains(Self.accountScreen)
+    }
+
+    /// Das aktuelle Dokument meldet die Op (und sie wurde nicht als `unknown_op` abgelehnt).
+    public func supportsOp(_ op: String) -> Bool {
+        guard let hello = documentHello, !hello.ownerPending else { return false }
+        return hello.ops.contains(op) && !unsupportedOps.contains(op)
+    }
+
+    /// Anzeigefähige Konto-Projektion desselben Nutzers wie der Spiegel (sonst `nil` → Lade-/Web-Ausweg).
+    public var currentAccount: AccountProjectionMessage? {
+        guard webOffersAccount, let projection = accountProjection, !projection.ownerPending else { return nil }
+        guard projection.flags.preview || projection.userId == userId else { return nil }
+        return projection
+    }
+
+    public func consumeAccountSectionRequest() -> String? {
+        defer { requestedAccountSection = nil }
+        return requestedAccountSection
+    }
+
+    public func registerAccountQuery(_ request: AccountQueryRequest) {
+        pendingAccountQueries[request.requestId] = PendingAccountQuery(request: request, userId: userId, generation: accountGeneration)
+    }
+
+    public func forgetAccountQuery(_ requestId: String) {
+        pendingAccountQueries[requestId] = nil
+        if accountResults[requestId] != nil {
+            accountResults[requestId] = nil
+            accountResultOrder.removeAll { $0 == requestId }
+        }
+    }
+
+    public func isAccountQueryPending(_ requestId: String) -> Bool {
+        pendingAccountQueries[requestId] != nil
+    }
+
+    public func accountResult(_ requestId: String?) -> AccountResultMessage? {
+        guard let requestId else { return nil }
+        return accountResults[requestId]
+    }
+
+    private func handleAccountProjection(_ message: AccountProjectionMessage) -> Bool {
+        guard !message.ownerPending else {
+            log("account projection ownerPending ignored")
+            return false
+        }
+        let freshDocument = message.projectionSeq <= 1 && message.reason == "load"
+        if let last = lastAccountProjectionSeq, message.projectionSeq <= last, !freshDocument {
+            log("account projection \(message.projectionSeq) stale (have \(last))")
+            return false
+        }
+        lastAccountProjectionSeq = message.projectionSeq
+        accountProjection = message
+        return true
+    }
+
+    /// Nur Antworten auf noch registrierte Anfragen derselben Generation und desselben Nutzers.
+    private func handleAccountResult(_ message: AccountResultMessage) -> Bool {
+        guard !message.ownerPending, let pending = pendingAccountQueries[message.requestId] else {
+            log("account result dropped")
+            return false
+        }
+        pendingAccountQueries[message.requestId] = nil
+        guard pending.generation == accountGeneration, pending.request.kind == message.kind,
+              message.flags.preview || (message.userId == pending.userId && message.userId == userId) else {
+            log("account result for other user/document dropped")
+            return false
+        }
+        accountResults[message.requestId] = message
+        accountResultOrder.removeAll { $0 == message.requestId }
+        accountResultOrder.append(message.requestId)
+        while accountResultOrder.count > 8 {
+            accountResults[accountResultOrder.removeFirst()] = nil
+        }
+        return true
+    }
+
+    private func resetAccount(keepProjection: Bool = false) {
+        if !keepProjection {
+            accountProjection = nil
+            lastAccountProjectionSeq = nil
+        }
+        pendingAccountQueries.removeAll()
+        accountResults.removeAll()
+        accountResultOrder.removeAll()
+        accountGeneration += 1
     }
 
     /// Aktuelle Web-Kontounterseite: `chrome` ist sofort aktuell, die Projektion folgt verzögert.
@@ -443,6 +579,8 @@ public final class ProfileStore {
         resetProgress()
         resetActivity()
         resetNutrition()
+        resetAccount()
+        requestedAccountSection = nil
         // Ein neues Dokument hat keinen offenen Dialog; Hello und Lade-Snapshot spielen die Outbox ohnehin ein.
         replayAfterWebDialog = false
         isWaitingForWebDialog = false
@@ -931,6 +1069,7 @@ public final class ProfileStore {
             resetProgress()
             resetActivity()
             resetNutrition()
+            resetAccount()
         }
         acceptAnySnapshotSeq = true
         // Wiederholte Status-Hellos verwerfen weder Spiegel noch Outbox noch gespeicherte Beobachtungen.
@@ -979,6 +1118,7 @@ public final class ProfileStore {
                 resetProgress(keepProjection: true)
                 resetActivity(keepProjection: true)
                 resetNutrition(keepProjection: true)
+                resetAccount(keepProjection: true)
             }
         }
         acceptAnySnapshotSeq = false
@@ -988,6 +1128,7 @@ public final class ProfileStore {
         userId = snapshot.userId
         cloud = snapshot.cloud
         flags = snapshot.flags
+        deviceScheme = snapshot.deviceScheme
         confirmedDocument = ProfileDocument(root: snapshot.state)
         hasDocument = true
         awaitingSnapshot.removeAll { $0.seq <= snapshot.seq }
@@ -1021,11 +1162,15 @@ public final class ProfileStore {
         var replay = Set<String>()
         for entry in outbox.entries {
             guard case .acked(let session) = entry.status, entry.command.userId == snapshot.userId else { continue }
-            guard let check = environment.effectChecks[entry.command.op] else {
+            let visible: Bool
+            if let check = environment.snapshotEffectChecks[entry.command.op] {
+                visible = check(entry.command.args, snapshot, entry.result)
+            } else if let check = environment.effectChecks[entry.command.op] {
+                visible = check(entry.command.args, snapshot.state, entry.result)
+            } else {
                 log("acked op=\(entry.command.op) without effect check, kept")
                 continue
             }
-            let visible = check(entry.command.args, snapshot.state, entry.result)
             if session == environment.sessionID {
                 seen[entry.command.id] = visible
             } else if decides {

@@ -68,7 +68,8 @@ struct OverviewText {
         case "plan": return self("Dein Plan", "Your plan")
         case "body": return self("Körper & Entwicklung", "Body & development")
         case "adaptive": return self("Adaptiver Erhalt", "Adaptive maintenance")
-        case "design": return self("Sprache & App-Icon", "Language & app icon")
+        // Wie die aktuelle Web-Registry (`accountSections`, M8-Projektion).
+        case "design": return self("Darstellung", "Appearance")
         case "sounds": return self("Klänge & Feedback", "Sounds & feedback")
         case "manage": return self("Konto verwalten", "Manage account")
         default: return nil

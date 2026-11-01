@@ -23,8 +23,12 @@ public enum BridgeOps {
         map.merge(progressPreparers) { first, _ in first }
         map.merge(activityPreparers) { first, _ in first }
         map.merge(nutritionPreparers) { first, _ in first }
+        map.merge(accountPreparers) { first, _ in first }
         return map
     }()
+
+    /// M8: Wirkungen, die neben `state` weitere Snapshot-Felder brauchen (`appearance.set` → `snapshot.device`).
+    public static let defaultSnapshotEffectChecks: [String: SnapshotEffectCheck] = accountSnapshotEffectChecks
 
     public static let defaultEffectChecks: [String: EffectCheck] = {
         var map: [String: EffectCheck] = [
@@ -35,6 +39,7 @@ public enum BridgeOps {
         map.merge(progressEffectChecks) { first, _ in first }
         map.merge(activityEffectChecks) { first, _ in first }
         map.merge(nutritionEffectChecks) { first, _ in first }
+        map.merge(accountEffectChecks) { first, _ in first }
         return map
     }()
 

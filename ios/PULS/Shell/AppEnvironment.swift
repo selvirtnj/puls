@@ -23,6 +23,8 @@ final class AppEnvironment {
         environment.reducers.merge(BridgeOps.activityReducers) { _, new in new }
         // M7: nur eindeutige Ernährungs-Wirkungen (Löschen/Wiederherstellen, Wasser, Tagesabschluss, Ziele, Favorit).
         environment.reducers.merge(BridgeOps.nutritionReducers) { _, new in new }
+        // M8: nur eindeutige Konto-Wirkungen (Name, Avatar entfernen, Maße, Sprache, Klänge).
+        environment.reducers.merge(BridgeOps.accountReducers) { _, new in new }
         store = ProfileStore(environment: environment)
     }
 }

@@ -149,6 +149,16 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
         evaluate(WebCall.nutritionQuery(request)) { result in completion?((result as? Bool) == true) }
     }
 
+    /// M8 Planner-Query; die Antwort kommt als `accountResult` in den Store. `completion(false)`: nicht gesendet.
+    func accountQuery(_ request: AccountQueryRequest, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.accountQuery(request)) { result in completion?((result as? Bool) == true) }
+    }
+
+    /// M8 fester Web-Ausstieg (§13.5, `web:true`). Nur nach dem Ausblenden der nativen Kontoansicht aufrufen.
+    func navigateAccount(_ target: AccountNavigation, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.accountNavigate(target)) { result in completion?((result as? Bool) == true) }
+    }
+
     /// Meldet die Projektionen der sichtbaren nativen Bildschirme (`pulsNativeSetInterest`). Je Dokument/Hello nur bei
     /// Änderung; nach jedem Hello wird neu gemeldet, damit ein neues Web-Dokument den Stand kennt.
     /// Abgleich und Wiederholung regelt `InterestSync` (PULSCore, getestet).

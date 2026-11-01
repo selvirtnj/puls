@@ -428,17 +428,8 @@ extension BridgeOps {
             NutritionOps.recipe(state, id: args["id"]?.stringValue) == nil
         },
         // Endgültiger Zielkontext nach Web-Neuberechnung: Profil, Plan, Ziele, Kalibrierung und die Records des Tages.
-        NutritionOps.goalsSet: { _, state, result in
-            guard let effect = result?["effect"], case .object = effect, let date = effect["date"]?.stringValue else { return false }
-            for key in ["profile", "plan", "goals", "tdeeCalibration"] {
-                guard NutritionOps.normalized(state[key]) == NutritionOps.normalized(effect[key]) else { return false }
-            }
-            for (record, history) in [("goalRecord", "goalHistory"), ("profileRecord", "profileHistory")] {
-                guard let wanted = effect[record], !wanted.isNull else { continue }
-                guard NutritionOps.historyRecord(state, history, date: date) == wanted else { return false }
-            }
-            return true
-        },
+        // M8: exakt wie Web `goals.set.effective` (erster Verlaufseintrag des Tages, fehlender Record = `null`).
+        NutritionOps.goalsSet: { _, state, result in AccountOps.plannerEffectIsVisible(state, result) },
         // Web `!!custom.find(ref)?.favorite === favorite` (fehlendes eigenes Produkt zählt als `false`).
         NutritionOps.productFavorite: { args, state, _ in
             guard let ref = ProductRef(json: args["product"]), let favorite = args["favorite"]?.boolValue else { return false }

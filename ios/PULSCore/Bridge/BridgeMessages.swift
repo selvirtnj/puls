@@ -48,6 +48,10 @@ public enum InboundMessage: Equatable, Sendable {
     case nutritionProjection(NutritionProjectionMessage)
     /// M7: Antwort auf `pulsNativeNutritionQuery` (keine Mutation, kein Ack).
     case nutritionResult(NutritionResultMessage)
+    /// M8: `projection{name:"account"}` (Name, Avatar, Profil/Plan, Körper, Darstellung, Klänge, Konto-Status).
+    case accountProjection(AccountProjectionMessage)
+    /// M8: Antwort auf `pulsNativeAccountQuery` (Planner-Kontext; keine Mutation, kein Ack).
+    case accountResult(AccountResultMessage)
 
     /// `nil` = ignorieren (kein/unbekannter `type`, anderes `protocol`). Wirft bei falscher Form einer bekannten Nachricht.
     public static func decode(_ value: JSONValue) throws -> InboundMessage? {
@@ -70,6 +74,7 @@ public enum InboundMessage: Equatable, Sendable {
             case ProgressProjectionMessage.progressName: return .progressProjection(try ProgressProjectionMessage(json: value))
             case ActivityProjectionMessage.activityName: return .activityProjection(try ActivityProjectionMessage(json: value))
             case NutritionProjectionMessage.nutritionName: return .nutritionProjection(try NutritionProjectionMessage(json: value))
+            case AccountProjectionMessage.accountName: return .accountProjection(try AccountProjectionMessage(json: value))
             default: return nil
             }
         case "chrome": return .chrome(try ChromeMessage(json: value))
@@ -77,6 +82,7 @@ public enum InboundMessage: Equatable, Sendable {
         case "progressResult": return .progressResult(try ProgressResultMessage(json: value))
         case "activityResult": return .activityResult(try ActivityResultMessage(json: value))
         case "nutritionResult": return .nutritionResult(try NutritionResultMessage(json: value))
+        case "accountResult": return .accountResult(try AccountResultMessage(json: value))
         default: return nil
         }
     }
@@ -110,6 +116,8 @@ public enum InboundMessage: Equatable, Sendable {
         case .activityResult(let message): return message.json
         case .nutritionProjection(let message): return message.json
         case .nutritionResult(let message): return message.json
+        case .accountProjection(let message): return message.json
+        case .accountResult(let message): return message.json
         }
     }
 }
@@ -171,9 +179,12 @@ public struct HelloMessage: Equatable, Sendable {
     public var features: [String]
     /// M7: `{stage, queries}` der Ernährungsschnittstelle; `nil` ohne `nativeNutrition` bzw. bei älterem Web.
     public var nutrition: NutritionCapabilities?
+    /// M8: `{queries, webActions}` der Kontoschnittstelle; `nil` ohne `nativeAccount` bzw. bei älterem Web.
+    public var account: AccountCapabilities?
 
     public init(webVersion: String? = nil, ops: [String] = [], screens: [String] = [], ownerPending: Bool = false,
-                projections: [String] = [], features: [String] = [], nutrition: NutritionCapabilities? = nil) {
+                projections: [String] = [], features: [String] = [], nutrition: NutritionCapabilities? = nil,
+                account: AccountCapabilities? = nil) {
         self.webVersion = webVersion
         self.ops = ops
         self.screens = screens
@@ -181,6 +192,7 @@ public struct HelloMessage: Equatable, Sendable {
         self.projections = projections
         self.features = features
         self.nutrition = nutrition
+        self.account = account
     }
 
     public init(json: JSONValue) throws {
@@ -197,6 +209,7 @@ public struct HelloMessage: Equatable, Sendable {
         features = try fields.stringArray("features")
         // Nachsichtig: eine unerwartete Form schaltet nur den Ernährungsbereich nicht frei.
         nutrition = NutritionCapabilities(json: fields["nutrition"])
+        account = AccountCapabilities(json: fields["account"])
     }
 
     public var json: JSONValue {
@@ -211,6 +224,7 @@ public struct HelloMessage: Equatable, Sendable {
         if !projections.isEmpty { object["projections"] = .array(projections.map(JSONValue.string)) }
         if !features.isEmpty { object["features"] = .array(features.map(JSONValue.string)) }
         if let nutrition { object["nutrition"] = nutrition.json }
+        if let account { object["account"] = account.json }
         return .object(object)
     }
 }
@@ -298,9 +312,11 @@ public struct SnapshotMessage: Equatable, Sendable {
     public var reason: String
     /// Pflichtfeld; bei tatsächlich gesendeten Snapshots immer `false`. Ein Snapshot mit `true` wird nicht übernommen.
     public var ownerPending: Bool
+    /// M8 (nur mit `nativeAccount`): `{scheme}` neben `state`; kein Profilfeld, nie synchronisiert. Roh erhalten.
+    public var device: JSONValue?
 
     public init(seq: Int, userId: String?, state: JSONValue, cloud: CloudStatus = .unknown,
-                flags: StateFlags = .none, reason: String = "save", ownerPending: Bool = false) {
+                flags: StateFlags = .none, reason: String = "save", ownerPending: Bool = false, device: JSONValue? = nil) {
         self.seq = seq
         self.userId = userId
         self.state = state
@@ -308,6 +324,13 @@ public struct SnapshotMessage: Equatable, Sendable {
         self.flags = flags
         self.reason = reason
         self.ownerPending = ownerPending
+        self.device = device
+    }
+
+    /// `system|light|dark` aus `device.scheme`, sonst `nil`.
+    public var deviceScheme: String? {
+        guard let scheme = device?["scheme"]?.stringValue, AccountScheme(rawValue: scheme) != nil else { return nil }
+        return scheme
     }
 
     public init(json: JSONValue) throws {
@@ -322,10 +345,12 @@ public struct SnapshotMessage: Equatable, Sendable {
         flags = try StateFlags(json: fields["flags"])
         reason = try fields.optionalString("reason") ?? "unknown"
         ownerPending = try fields.requiredBool("ownerPending")
+        // Nachsichtig: eine unerwartete Form ist eine unbekannte Gerätedarstellung, der Snapshot bleibt gültig.
+        if case .object? = fields["device"] { device = fields["device"] } else { device = nil }
     }
 
     public var json: JSONValue {
-        .object([
+        var object: [String: JSONValue] = [
             "type": .string("snapshot"),
             "protocol": .number(Double(BridgeProtocol.version)),
             "seq": .number(Double(seq)),
@@ -335,7 +360,9 @@ public struct SnapshotMessage: Equatable, Sendable {
             "flags": flags.json,
             "reason": .string(reason),
             "ownerPending": .bool(ownerPending),
-        ])
+        ]
+        if let device { object["device"] = device }
+        return .object(object)
     }
 }
 
@@ -459,12 +486,15 @@ public struct OpenNativeMessage: Equatable, Sendable {
     public var startedAt: Double?
     /// M6: „Diese Route nehmen“ im Web-Routenblatt: Native wählt diese Route in seiner Startansicht vor.
     public var routeId: String?
+    /// M8: `screen:"account"` nennt die Web-Kontounterseite (`plan`, `body`, `adaptive`, `design`, `sounds`, `manage`).
+    public var section: String?
 
-    public init(screen: String, workoutId: String? = nil, startedAt: Double? = nil, routeId: String? = nil) {
+    public init(screen: String, workoutId: String? = nil, startedAt: Double? = nil, routeId: String? = nil, section: String? = nil) {
         self.screen = screen
         self.workoutId = workoutId
         self.startedAt = startedAt
         self.routeId = routeId
+        self.section = section
     }
 
     public init(json: JSONValue) throws {
@@ -473,6 +503,7 @@ public struct OpenNativeMessage: Equatable, Sendable {
         workoutId = try fields.optionalString("workoutId")
         if let value = fields["startedAt"]?.doubleValue, value.isFinite { startedAt = value } else { startedAt = nil }
         if let value = fields["routeId"]?.stringValue, !value.isEmpty { routeId = value } else { routeId = nil }
+        if let value = fields["section"]?.stringValue, !value.isEmpty { section = value } else { section = nil }
     }
 
     public var json: JSONValue {
@@ -482,6 +513,7 @@ public struct OpenNativeMessage: Equatable, Sendable {
         if let workoutId { object["workoutId"] = .string(workoutId) }
         if let startedAt { object["startedAt"] = .number(startedAt) }
         if let routeId { object["routeId"] = .string(routeId) }
+        if let section { object["section"] = .string(section) }
         return .object(object)
     }
 }

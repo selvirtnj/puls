@@ -76,6 +76,9 @@ final class ShellState {
     var fallbackLanguage = "de"
     /// Web-Modal/Session offen (`chrome.blocking`): Datum und Tabs gesperrt.
     var isBlocked = false
+    /// M8: natives Konto sichtbar; dann bestimmt dessen Unterseite den Seitentitel (sonst `chrome.accountSection`).
+    var accountNative = false
+    var nativeAccountSection: String?
 }
 
 /// Aktionen der nativen Bereiche. Bewusst kein Environment-Wert (keine Closures im Environment).
@@ -103,6 +106,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     private var trainingHost: UIHostingController<WorkoutTabHost>?
     /// M7: nativer Essen-Tab (Tagebuch, Suche, Ziele); nur mit `NutritionCoordinator`.
     private var nutritionHost: UIHostingController<NutritionHost>?
+    /// M8: nativer Konto-Tab; nur mit `AccountCoordinator`.
+    private var accountHost: UIHostingController<AccountHost>?
     private var activeConstraints: [NSLayoutConstraint] = []
     private var inactiveConstraints: [NSLayoutConstraint] = []
 
@@ -141,6 +146,11 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     var activity: ActivityCoordinator?
     /// M7: native Ernährung im Essen-Tab. Vor `install` setzen.
     var nutrition: NutritionCoordinator?
+    /// M8: natives Konto im Konto-Tab. Vor `install` setzen.
+    var account: AccountCoordinator?
+    /// „Konto“ ist ausgewählt, zeigt aber die Web-Seite (Web-Ausweg, `navigate{web:true}`), bis der Tab neu gewählt wird.
+    private var accountShowsWeb = false
+    private var accountExitUntil = Date.distantPast
     /// „Essen“ ist ausgewählt, zeigt aber die Web-Seite (`navigate{web:true}`, Web-Tagebuch), bis der Tab neu gewählt wird.
     private var foodShowsWeb = false
     /// Ein Web-Dialog aus dem nativen Essen-Tab (Essensdialog, Bearbeiten) läuft: native Ansicht bis zu dessen Ende verdecken.
@@ -198,6 +208,16 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             nutritionView = nil
         }
 
+        let accountView: UIView?
+        if let account {
+            let hosting = UIHostingController(rootView: AccountHost(coordinator: account))
+            hosting.view.backgroundColor = .systemGroupedBackground
+            accountHost = hosting
+            accountView = hosting.view
+        } else {
+            accountView = nil
+        }
+
         statusFill.backgroundColor = .systemGroupedBackground
         header.view.backgroundColor = .systemGroupedBackground
         overview.view.backgroundColor = .systemGroupedBackground
@@ -213,8 +233,9 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         host.addChild(overview)
         if let trainingHost { host.addChild(trainingHost) }
         if let nutritionHost { host.addChild(nutritionHost) }
+        if let accountHost { host.addChild(accountHost) }
         webView.translatesAutoresizingMaskIntoConstraints = false
-        for view in ([statusFill, header.view, overview.view, trainingView, nutritionView, tabBar] as [UIView?]).compactMap({ $0 }) {
+        for view in ([statusFill, header.view, overview.view, trainingView, nutritionView, accountView, tabBar] as [UIView?]).compactMap({ $0 }) {
             view.translatesAutoresizingMaskIntoConstraints = false
             view.isHidden = true
             root.addSubview(view)
@@ -223,6 +244,15 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         overview.didMove(toParent: host)
         trainingHost?.didMove(toParent: host)
         nutritionHost?.didMove(toParent: host)
+        accountHost?.didMove(toParent: host)
+        if let accountView {
+            NSLayoutConstraint.activate([
+                accountView.topAnchor.constraint(equalTo: header.view.bottomAnchor),
+                accountView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                accountView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                accountView.bottomAnchor.constraint(equalTo: tabBar.topAnchor),
+            ])
+        }
         if let nutritionView {
             NSLayoutConstraint.activate([
                 nutritionView.topAnchor.constraint(equalTo: header.view.bottomAnchor),
@@ -395,6 +425,55 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             && activity?.awaitingWebCompletion != true
     }
 
+    /// M8: nativer Konto-Tab; nie über einem offenen Web-Ablauf (Auth-/Bestätigungs-Sheets bleiben sichtbar).
+    private var showsNativeAccount: Bool {
+        guard let account, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .account,
+              !accountShowsWeb else { return false }
+        return account.isOffered
+    }
+
+    /// M8 Web-Ausweg aus dem Konto: native Ansicht vor dem Aufruf ausblenden; die Web-Kontoseite bleibt sichtbar, bis
+    /// „Konto“ bewusst neu gewählt wird. Lehnt das Web ab (Sperre, nicht verfügbar), kehrt die native Ansicht zurück.
+    func openAccountWeb(_ exit: AccountWebExit) {
+        guard !state.isBlocked else { return }
+        state.selected = .account
+        accountShowsWeb = true
+        // Ein `navigate{page:'account'}`-Echo dieses Ausstiegs (ohne `web`) darf die Web-Ansicht nicht wieder überdecken.
+        accountExitUntil = Date().addingTimeInterval(3)
+        updateVisibility()
+        let restore: @MainActor (Bool) -> Void = { [weak self] accepted in
+            guard let self, !accepted else { return }
+            self.accountShowsWeb = false
+            self.updateVisibility()
+            if let account = self.account {
+                account.notice = TrainingNotice(text: account.text("Das ist in PULS gerade nicht möglich.", "This is not possible in PULS right now."))
+            }
+        }
+        switch exit {
+        case .action(let target):
+            bridge.navigateAccount(target, completion: restore)
+        case .section(let section):
+            guard let target = NavigationTarget(page: "account", section: section, web: true) else { return restore(false) }
+            bridge.navigate(target, completion: restore)
+        case .overview:
+            guard let target = NavigationTarget(page: "account", web: true) else { return restore(false) }
+            bridge.navigate(target, completion: restore)
+        }
+    }
+
+    /// M8: Konto-Tab nativ wählen (z. B. nach `openNative{screen:'account'}`), ohne Web-Navigation.
+    func selectAccountTab() {
+        guard !state.isBlocked else { return }
+        state.selected = .account
+        accountShowsWeb = false
+        updateVisibility()
+    }
+
+    /// M8: `openNative{screen:'account'}` kann nur nativ gezeigt werden, wenn Leiste und Konto aktiv sind.
+    var canShowNativeAccount: Bool {
+        isActive && !barsHiddenForSession && !state.isBlocked && account?.isOffered == true
+    }
+
     /// M7: nativer Essen-Tab; nie über einem offenen Web-Ablauf.
     private var showsNativeNutrition: Bool {
         guard let nutrition, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .food,
@@ -561,6 +640,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         }
         // M7: Ernährung nur, solange der native Essen-Tab sichtbar ist (bei Verlassen widerrufen).
         if showsNativeNutrition { names.insert(NutritionProjectionMessage.nutritionName) }
+        // M8: Konto nur, solange der native Konto-Tab sichtbar ist (bei Verlassen widerrufen).
+        if showsNativeAccount { names.insert(AccountProjectionMessage.accountName) }
         bridge.setInterest(ProjectionInterest(names.intersection(offered)), hello: store.helloCount)
     }
 
@@ -568,13 +649,19 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         let showOverview = showsNativeOverview
         let showTraining = showsNativeTraining
         let showNutrition = showsNativeNutrition
+        let showAccount = showsNativeAccount
         nutritionHost?.view.isHidden = !showNutrition
+        accountHost?.view.isHidden = !showAccount
+        // Seitenkopf: Unterseite des nativen Kontos bzw. der Web-Kontoseite.
+        let nativeSection = showAccount ? account?.visibleSection : nil
+        if state.accountNative != showAccount { state.accountNative = showAccount }
+        if state.nativeAccountSection != nativeSection { state.nativeAccountSection = nativeSection }
         overviewHost?.view.isHidden = !showOverview
         // M5: Rückkehr aus einem Web-Ablauf/anderen Tab: sichtbare Monate/Details neu laden (Web könnte geändert haben).
         if showTraining, trainingHost?.view.isHidden == true { progress?.refreshToken += 1 }
         trainingHost?.view.isHidden = !showTraining
         // Verdeckte Web-Inhalte nicht für VoiceOver erreichbar lassen; die WebView selbst bleibt sichtbar.
-        webView?.accessibilityElementsHidden = showOverview || showTraining || showNutrition
+        webView?.accessibilityElementsHidden = showOverview || showTraining || showNutrition || showAccount
         syncSelection()
         reportInterest()
     }
@@ -651,6 +738,13 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         if tab == .home { homeShowsWeb = navigation.web }
         if tab == .workout { workoutShowsWeb = navigation.web }
         if tab == .food { foodShowsWeb = navigation.web }
+        if tab == .account {
+            if navigation.web {
+                accountShowsWeb = true
+            } else if Date() >= accountExitUntil {
+                accountShowsWeb = false
+            }
+        }
     }
 
     // MARK: Native → Web
@@ -687,6 +781,10 @@ final class RootTabShell: NSObject, UITabBarDelegate {
                 if tab == .food {
                     foodShowsWeb = web
                     foodFlowHidden = false
+                }
+                if tab == .account {
+                    accountShowsWeb = web
+                    if !web { accountExitUntil = .distantPast }
                 }
             }
         case .action:
@@ -731,7 +829,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
 
     /// `light`/`dark` direkt aus der Projektion; bei `system` wie die Web-App (`data-scheme`).
     private func updateScheme(_ projection: ProjectionMessage?) {
-        let scheme = projection?.overview.colorScheme ?? "system"
+        // M8: ein gerade nativ gewählter Wunsch gilt sofort, bis der Snapshot ihn bestätigt.
+        let scheme = store.pendingScheme?.rawValue ?? projection?.overview.colorScheme ?? store.deviceScheme ?? "system"
         let key = "\(scheme)#\(projection?.projectionSeq ?? -1)"
         guard key != schemeKey else { return }
         schemeKey = key
@@ -746,13 +845,15 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     }
 
     private func applyStyle(_ newStyle: UIUserInterfaceStyle) {
-        for view in [statusFill, tabBar, headerHost?.view, overviewHost?.view, trainingHost?.view, nutritionHost?.view] as [UIView?] {
+        for view in [statusFill, tabBar, headerHost?.view, overviewHost?.view, trainingHost?.view, nutritionHost?.view,
+                     accountHost?.view] as [UIView?] {
             view?.overrideUserInterfaceStyle = newStyle
         }
         headerHost?.overrideUserInterfaceStyle = newStyle
         overviewHost?.overrideUserInterfaceStyle = newStyle
         trainingHost?.overrideUserInterfaceStyle = newStyle
         nutritionHost?.overrideUserInterfaceStyle = newStyle
+        accountHost?.overrideUserInterfaceStyle = newStyle
         guard newStyle != style else { return }
         style = newStyle
         onStyleChange?()
@@ -804,7 +905,7 @@ struct ShellHeader: View {
     }
 
     private func title(_ text: OverviewText) -> some View {
-        let section = state.selected == .account ? store.webAccountSection : nil
+        let section = state.selected != .account ? nil : state.accountNative ? state.nativeAccountSection : store.webAccountSection
         return Text(section.flatMap(text.accountSectionTitle) ?? state.selected.label(text))
             .font(.largeTitle.bold())
             .lineLimit(1)

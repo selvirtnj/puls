@@ -9,6 +9,8 @@ struct BodyView: View {
     let onClose: () -> Void
     /// Schließt das Sheet und öffnet den Web-Bereich (`pulsNativeNavigate`, `web:true`).
     let onOpenWeb: () -> Void
+    /// M8: „Körpermaße & Körperfett“ im nativen Konto statt im Web (nur mit `nativeAccount`).
+    var onOpenMeasurements: (() -> Void)? = nil
 
     @State private var editor: WeightEditorRequest?
     @State private var range: WeightRange = .days90
@@ -195,7 +197,7 @@ struct BodyView: View {
             }
 
             Section {
-                Button(action: onOpenWeb) {
+                Button(action: onOpenMeasurements ?? onOpenWeb) {
                     HStack {
                         Label(text("Körpermaße & Körperfett", "Measurements & body fat"), systemImage: "ruler")
                             .foregroundStyle(.primary)

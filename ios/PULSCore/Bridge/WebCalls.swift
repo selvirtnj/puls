@@ -97,7 +97,7 @@ public enum NavigationTarget: Equatable, Hashable, Sendable {
 public struct ProjectionInterest: Equatable, Hashable, Sendable {
     public static let allowed: Set<String> = [ProjectionMessage.overviewName, TrainingProjectionMessage.trainingName,
                                               ProgressProjectionMessage.progressName, ActivityProjectionMessage.activityName,
-                                              NutritionProjectionMessage.nutritionName]
+                                              NutritionProjectionMessage.nutritionName, AccountProjectionMessage.accountName]
 
     public let projections: [String]
 
@@ -225,6 +225,17 @@ public enum WebCall {
     /// `true` bei Versand bzw. (Suche) bei Annahme; eine abgelöste Suche bleibt ohne Antwort.
     public static func nutritionQuery(_ request: NutritionQueryRequest) -> String {
         "(typeof window.pulsNativeNutritionQuery==='function')?window.pulsNativeNutritionQuery(\(request.json.serializedString()))===true:false"
+    }
+
+    /// M8 `window.pulsNativeAccountQuery(request)`; Antwort kommt als `accountResult` mit derselben `requestId`.
+    /// `true` genau dann, wenn das Web die Antwort gesendet hat.
+    public static func accountQuery(_ request: AccountQueryRequest) -> String {
+        "(typeof window.pulsNativeAccountQuery==='function')?window.pulsNativeAccountQuery(\(request.json.serializedString()))===true:false"
+    }
+
+    /// M8 fester Web-Ausstieg `{action, web:true}` (§13.5); das Web führt den sensiblen Ablauf selbst aus.
+    public static func accountNavigate(_ target: AccountNavigation) -> String {
+        "(typeof window.pulsNativeNavigate==='function')?window.pulsNativeNavigate(\(target.json.serializedString()))===true:false"
     }
 
     /// `window.pulsNativeSetInterest({projections})`: nur die Projektionen sichtbarer nativer Bildschirme berechnen.
