@@ -1,0 +1,323 @@
+{
+  "protocol": 1,
+  "type": "projection",
+  "name": "account",
+  "projectionSeq": 1,
+  "seq": 1,
+  "userId": "a0000000-0000-4000-8000-0000000000aa",
+  "flags": {
+    "preview": false,
+    "recovery": false,
+    "uploadBlocked": false
+  },
+  "cloud": {
+    "signedIn": true,
+    "revision": 17,
+    "dirty": false,
+    "conflict": false
+  },
+  "accountSection": null,
+  "ownerPending": false,
+  "reason": "interest",
+  "account": {
+    "language": "de",
+    "locale": "de-DE",
+    "today": "2026-10-28",
+    "date": "2026-10-28",
+    "identity": {
+      "displayName": "Fixture",
+      "avatarImage": null,
+      "avatarOmitted": false,
+      "streak": 0,
+      "level": 1,
+      "current": 58,
+      "needed": 250,
+      "total": 58
+    },
+    "profile": {
+      "age": 30,
+      "height": 180,
+      "target": 78,
+      "activity": 1.55,
+      "method": "mifflin",
+      "rmr": 0,
+      "kcalMode": "baseline",
+      "baselineFactor": 1.3,
+      "weight": 84,
+      "sex": "male",
+      "special": false
+    },
+    "plan": {
+      "mode": "auto",
+      "direction": "lose",
+      "pace": "medium",
+      "macroMode": "auto",
+      "protein": 2,
+      "fat": 0.8,
+      "adaptive": true,
+      "learnTdee": true
+    },
+    "goals": {
+      "kcal": 2006,
+      "p": 167,
+      "c": 184,
+      "f": 67
+    },
+    "energy": {
+      "rmr": 1815,
+      "tdee": 2360,
+      "baseline": 2360,
+      "sport": 0,
+      "calibrated": false
+    },
+    "forecast": {
+      "html": "<h3 style=\"margin-top:15px\">Ziel-Szenario: 2. Juli 2027</h3><p class=\"note\">36 Wochen bis 78 kg · ab heute bei konstant 2.006 kcal/Tag.</p><details class=\"forecastdetails\"><summary class=\"note\">Annahmen & mögliche Abweichungen</summary><p class=\"note\">Sensitivität bei ±10 % Erhalt: 11. März 2027 bis 2. Juli 2027 · In einem Szenario kein Zieltermin innerhalb von fünf Jahren. Diese Spanne ist kein statistisches Konfidenzintervall.</p><p class=\"note\">Vereinfachte dynamische Näherung nach Hall: 24 kcal/Tag je kg langfristiger Gewichtsänderung, Halbzeit ca. ein Jahr. Nicht das vollständige NIH-Modell; individuelle Anpassung, Wasser und Körperzusammensetzung können deutlich abweichen. Für Muskelaufbau weniger aussagekräftig.</p></details>"
+    },
+    "body": {
+      "weight": 83.5,
+      "metrics": {
+        "bmi": 25.8,
+        "bf": 21.6,
+        "label": "Übergewicht"
+      },
+      "bodyFat": {
+        "value": 23,
+        "estimated": false,
+        "date": "2026-10-27"
+      },
+      "summary": {
+        "date": "2026-10-26",
+        "source": "entry",
+        "weekStart": "2026-10-26",
+        "weekCount": 1,
+        "weekMean": 83.5
+      },
+      "measurements": [
+        {
+          "id": "fixture-measure",
+          "date": "2026-10-27",
+          "waist": 95,
+          "bodyfat": 23,
+          "neck": 40
+        }
+      ],
+      "history": [
+        {
+          "id": "w0000000-0000-4000-8000-000000000003",
+          "date": "2026-10-26",
+          "kg": 83.5,
+          "bmi": 25.8,
+          "bodyFat": 21.6,
+          "estimated": true,
+          "method": "bmi-age"
+        },
+        {
+          "id": "w0000000-0000-4000-8000-000000000002",
+          "date": "2026-10-23",
+          "kg": 83.9,
+          "bmi": 25.9,
+          "bodyFat": 21.8,
+          "estimated": true,
+          "method": "bmi-age"
+        },
+        {
+          "id": "w0000000-0000-4000-8000-000000000001",
+          "date": "2026-10-20",
+          "kg": 84.2,
+          "bmi": 26,
+          "bodyFat": 21.9,
+          "estimated": true,
+          "method": "bmi-age"
+        }
+      ],
+      "fields": [
+        {
+          "key": "waist",
+          "label": "Taille",
+          "unit": "cm",
+          "min": 30,
+          "max": 250
+        },
+        {
+          "key": "chest",
+          "label": "Brust",
+          "unit": "cm",
+          "min": 30,
+          "max": 250
+        },
+        {
+          "key": "hip",
+          "label": "Hüfte",
+          "unit": "cm",
+          "min": 30,
+          "max": 250
+        },
+        {
+          "key": "arm",
+          "label": "Oberarm",
+          "unit": "cm",
+          "min": 10,
+          "max": 100
+        },
+        {
+          "key": "thigh",
+          "label": "Oberschenkel",
+          "unit": "cm",
+          "min": 15,
+          "max": 150
+        },
+        {
+          "key": "bodyfat",
+          "label": "Gemessener Körperfettanteil",
+          "unit": "%",
+          "min": 2,
+          "max": 70
+        },
+        {
+          "key": "restingHR",
+          "label": "Ruhepuls",
+          "unit": "bpm",
+          "min": 25,
+          "max": 220
+        },
+        {
+          "key": "neck",
+          "label": "Hals",
+          "unit": "cm",
+          "min": 15,
+          "max": 80
+        }
+      ],
+      "navyNote": "US Navy für Männer: Größe aus dem Profil, Hals und Taille vom selben Tag. Bauchumfang am Nabel und Hals unterhalb des Kehlkopfs messen. Grobe Schätzung, keine Messung."
+    },
+    "adaptive": {
+      "enabled": true,
+      "adaptive": true,
+      "disabled": true,
+      "observation": {
+        "eligible": false,
+        "coverage": 0,
+        "weightCount": 0,
+        "reason": "Verlaufskalibrierung im Modus Grundbedarf + Sport deaktiviert: unvollständige Sportaufzeichnungen würden den Grundbedarf verzerren."
+      },
+      "calibration": {
+        "date": "2026-10-20",
+        "value": 2650,
+        "base": 2580,
+        "activity": 1.55,
+        "windowStart": "2026-09-22",
+        "windowEnd": "2026-10-19"
+      }
+    },
+    "appearance": {
+      "scheme": "system",
+      "language": "de",
+      "resolvedScheme": "light",
+      "appIcon": "dark",
+      "nativeIcon": "dark"
+    },
+    "sound": {
+      "enabled": true,
+      "volume": 0.6,
+      "haptics": "web"
+    },
+    "cloud": {
+      "signedIn": true,
+      "configured": true,
+      "dirty": false,
+      "conflict": false,
+      "revision": 17,
+      "busy": false,
+      "uploadBlocked": false
+    },
+    "recovery": {
+      "pending": false,
+      "corrupt": false,
+      "uploadBlocked": false,
+      "localConflictBackup": false,
+      "remoteConflictBackup": false
+    },
+    "sections": [
+      {
+        "key": "plan",
+        "title": "Dein Plan",
+        "note": "Ziele, Kalorien & Makros"
+      },
+      {
+        "key": "body",
+        "title": "Körper & Entwicklung",
+        "note": "Gewichtstrend, Wochenmittel & Maße"
+      },
+      {
+        "key": "adaptive",
+        "title": "Adaptiver Erhalt",
+        "note": "Verlauf & Kalibrierung"
+      },
+      {
+        "key": "design",
+        "title": "Darstellung",
+        "note": "Hell, Dunkel, Sprache & App-Icon"
+      },
+      {
+        "key": "sounds",
+        "title": "Klänge & Feedback",
+        "note": "Töne & Lautstärke"
+      },
+      {
+        "key": "manage",
+        "title": "Konto verwalten",
+        "note": "Anmeldung, Sicherung & Löschen"
+      }
+    ],
+    "navigation": {
+      "accountSignIn": {
+        "action": "accountSignIn",
+        "web": true
+      },
+      "accountSignOut": {
+        "action": "accountSignOut",
+        "web": true
+      },
+      "accountConflict": {
+        "action": "accountConflict",
+        "web": true
+      },
+      "accountImport": {
+        "action": "accountImport",
+        "web": true
+      },
+      "accountReset": {
+        "action": "accountReset",
+        "web": true
+      },
+      "accountDelete": {
+        "action": "accountDelete",
+        "web": true
+      },
+      "accountExport": {
+        "action": "accountExport",
+        "web": true
+      },
+      "accountCSV": {
+        "action": "accountCSV",
+        "web": true
+      },
+      "accountRecovery": {
+        "action": "accountRecovery",
+        "web": true
+      },
+      "accountPlan": {
+        "action": "accountPlan",
+        "web": true
+      },
+      "accountAvatar": {
+        "action": "accountAvatar",
+        "web": true
+      }
+    },
+    "omitted": {
+      "measurements": 0,
+      "history": 0
+    }
+  }
+}

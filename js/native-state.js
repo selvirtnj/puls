@@ -23,6 +23,9 @@ const activityFeature=feature('nativeActivity');
 const activityAdapter=()=>activityFeature&&typeof window.pulsNativeActivity?.build==='function'?window.pulsNativeActivity:null;
 const nutritionFeature=feature('nativeNutrition');
 const nutritionAdapter=()=>nutritionFeature&&typeof window.pulsNativeNutrition?.build==='function'?window.pulsNativeNutrition:null;
+const accountFeature=feature('nativeAccount');
+const accountAdapter=()=>accountFeature&&typeof window.pulsNativeAccount?.build==='function'?window.pulsNativeAccount:null;
+let accountPreparing=false;
 const currentAccountSection=()=>page==='account'&&typeof accountSection==='string'&&accountSection?accountSection:null;
 const copy=value=>JSON.parse(JSON.stringify(value));
 const userId=()=>typeof cloudSession!=='undefined'?cloudSession?.user?.id??null:null;
@@ -34,12 +37,13 @@ function hello(force=false){
   const ownerPending=!profileReady();
   if(ownerPending){for(const view of Object.values(views))view.last=null;chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;activityConfirmed=false;syncNativeChrome()}
   if(!ready||!force&&ownerPending===helloOwnerPending)return;
-  const training=trainingAdapter(),progress=progressAdapter(),activity=activityAdapter(),nutrition=nutritionAdapter();
-  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...(training?Object.keys(training.ops):[]),...(progress?Object.keys(progress.ops):[]),...(activity?Object.keys(activity.ops):[]),...(nutrition?Object.keys(nutrition.ops):[])],
-    screens:['body',...(training?['training']:[]),...(progress?['calendar','progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[])],
-    projections:['overview',...(training?['training']:[]),...(progress?['progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[])],
-    features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[]),...(activity?['nativeActivity']:[]),...(nutrition?['nativeNutrition']:[])],
-    ...(nutrition?{nutrition:{stage:nutrition.stage,queries:nutrition.queries}}:{}),ownerPending})){
+  const training=trainingAdapter(),progress=progressAdapter(),activity=activityAdapter(),nutrition=nutritionAdapter(),account=accountAdapter();
+  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...[training,progress,activity,nutrition,account].flatMap(x=>x?Object.keys(x.ops):[])],
+    screens:['body',...(training?['training']:[]),...(progress?['calendar','progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[]),...(account?['account']:[])],
+    projections:['overview',...(training?['training']:[]),...(progress?['progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[]),...(account?['account']:[])],
+    features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[]),...(activity?['nativeActivity']:[]),...(nutrition?['nativeNutrition']:[]),...(account?['nativeAccount']:[])],
+    ...(nutrition?{nutrition:{stage:nutrition.stage,queries:nutrition.queries}}:{}),
+    ...(account?{account:{queries:account.queries,webActions:account.actions}}:{}),ownerPending})){
     helloOwnerPending=ownerPending;
     if(!ownerPending)queueProjection('ready',true);
   }
@@ -94,6 +98,8 @@ let openingWeb=false;
 if(typeof openAccountSection==='function'){
   const base=openAccountSection;
   openAccountSection=function(key,...args){
+    if(!openingWeb&&ready&&helloOwnerPending===false&&profileReady()&&accountAdapter()&&!chromeState().blocking&&
+      ['plan','body','adaptive','design','sounds','manage'].includes(key)&&post({type:'openNative',screen:'account',section:key}))return;
     if(key==='body'&&!openingWeb&&ready&&helloOwnerPending===false&&profileReady()&&
       Array.isArray(window.pulsNativeFeatures)&&window.pulsNativeFeatures.includes('nativeBody')&&
       post({type:'openNative',screen:'body'}))return;
@@ -109,6 +115,7 @@ window.pulsNativeNavigate=function(target){
     if(!ready||!profileReady()||typeof target.action!=='string'||target.page!==undefined||target.section!==undefined)return false;
     // These are Web UI entry points, never an eval string or a second mutation API.
     const actions={
+      ...(accountAdapter()?Object.fromEntries(accountAdapter().actions.map(action=>[action,()=>accountAdapter().navigate(target)])):{}),
       ...(progressAdapter()?Object.fromEntries(progressAdapter().actions.map(action=>[action,()=>progressAdapter().navigate(target)])):{}),
       ...(activityAdapter()?Object.fromEntries(activityAdapter().actions.map(action=>[action,()=>activityAdapter().navigate(target)])):{}),
       quickAdd:()=>{quickAddMenu();return true},
@@ -155,6 +162,9 @@ function progressInputs(){
 function activityInputs(){return [projectionRevision,state,today(),state.language,state.runSettings,state.runRoutes,state.runs,...activityAdapter().inputKey()]}
 function nutritionInputs(){return [projectionRevision,state,date,today(),state.language,state.goals,state.profile,state.plan,state.foods,state.foods.length,
   state.custom,state.custom.length,state.recipes,state.recipes?.length,state.microGoals,state.waterGoal,state.foodLogCompleted,window.pulsConnectivity?.online]}
+function accountInputs(){return [projectionRevision,state,date,today(),state.language,state.profile,state.plan,state.goals,state.measurements,state.weights,
+  state.displayName,state.avatarImage,state.soundEnabled,state.soundVolume,typeof getColorScheme==='function'?getColorScheme():null,
+  resolveColorScheme(getColorScheme(),!!pulsSchemeMedia?.matches),typeof cloudBusy!=='undefined'&&cloudBusy]}
 const sameInputs=(a,b)=>!!b&&a.length===b.length&&a.every((value,index)=>value===b[index]);
 // One cache/dedup record per projection name; projectionSeq is shared and monotonic per document.
 const views={
@@ -167,7 +177,9 @@ const views={
   activity:{feature:'nativeActivity',section:false,inputs:activityInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
     builder:()=>activityAdapter()?.build||null},
   nutrition:{feature:'nativeNutrition',section:false,inputs:nutritionInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
-    builder:()=>nutritionAdapter()?.build||null}
+    builder:()=>nutritionAdapter()?.build||null},
+  account:{feature:'nativeAccount',section:true,inputs:accountInputs,last:null,lastSection:undefined,cache:null,cachedInputs:null,force:false,
+    builder:()=>accountAdapter()?.build||null}
 };
 const supportedViews=()=>Object.entries(views).filter(([,view])=>feature(view.feature)&&view.builder());
 const enabledViews=()=>supportedViews().filter(([name])=>interests.has(name));
@@ -191,7 +203,7 @@ function projection(reason,force=false){
   clearTimeout(projectionTimer);projectionTimer=null;
   if(!ready||helloOwnerPending!==false||!profileReady()||applying||rollingBack||saveDepth)return;
   for(const [name,view] of enabledViews()){
-    if((name==='activity'||name==='nutrition')&&(pageHidden||activityPreparing))continue;
+    if((name==='activity'||name==='nutrition'||name==='account')&&(pageHidden||activityPreparing||accountPreparing))continue;
     if(name==='progress'&&(!progressIdle||setInputActive()||pageHidden))continue;
     const build=view.builder();
     try{
@@ -234,7 +246,8 @@ function snapshot(reason){
   if(!profileReady())throw Error('Profile owner not ready');
   const profile=persistedProfile(),next=Math.max(seq,readSeq())+1;
   if(!Number.isSafeInteger(next))throw Error('Sequence exhausted');
-  const message={type:'snapshot',seq:next,userId:userId(),state:profile,cloud:cloud(),flags:flags(),reason,ownerPending:false};
+  const message={type:'snapshot',seq:next,userId:userId(),state:profile,cloud:cloud(),flags:flags(),reason,ownerPending:false,
+    ...(accountAdapter()?{device:accountAdapter().device()}: {})};
   if(!preview)localStorage.setItem(seqKey,String(next));
   seq=next;return message;
 }
@@ -343,7 +356,7 @@ window.pulsNativeApply=function(cmd){
   if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)||!id||!/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(id)){ack(id,'invalid','Ungültige Befehls-ID');return}
   if(Object.values(flags()).some(Boolean)){ack(id,'readonly','Profil ist schreibgeschützt');return}
   if(cmd.userId!==userId()){ack(id,'wrong_user','Befehl gehört zu einem anderen Konto');return}
-  if(activityPreparing){ack(id,'busy','GPS-Abschluss läuft');return}
+  if(activityPreparing||accountPreparing){ack(id,'busy','Ein asynchroner Web-Abschluss läuft');return}
   const history=applied(),known=history.find(x=>x.id===id&&x.userId===cmd.userId);
   if(known){ack(id,undefined,undefined,known.result);queue('apply');flush();return}
   const training=trainingAdapter(),trainingOp=training&&typeof cmd.op==='string'&&Object.hasOwn(training.ops,cmd.op)?training.ops[cmd.op]:null;
@@ -354,6 +367,8 @@ window.pulsNativeApply=function(cmd){
   if(activityOp){if(activityOp.prepare)void prepareActivity(cmd,history,activity,activityOp);else applyTraining(cmd,history,activity,activityOp);return}
   const nutrition=nutritionAdapter(),nutritionOp=nutrition&&typeof cmd.op==='string'&&Object.hasOwn(nutrition.ops,cmd.op)?nutrition.ops[cmd.op]:null;
   if(nutritionOp){applyTraining(cmd,history,nutrition,nutritionOp);return}
+  const account=accountAdapter(),accountOp=account&&typeof cmd.op==='string'&&Object.hasOwn(account.ops,cmd.op)?account.ops[cmd.op]:null;
+  if(accountOp){if(accountOp.prepare)void prepareAccount(cmd,history,account,accountOp);else applyTraining(cmd,history,account,accountOp);return}
   if(!['weight.upsert','weight.delete'].includes(cmd.op)){ack(id,'unknown_op','Unbekannter Befehl');return}
   const args=cmd.args;
   const validExpect=value=>value===null||typeof value==='string'&&value.trim().length>0;
@@ -382,7 +397,7 @@ window.pulsNativeApply=function(cmd){
 // final state per kind is delivered once (if it differs from what Native already has); after a rollback none is.
 // Rest/workout messages are pure state, so an equivalent repeat (the bridge correcting itself) is always dropped.
 const nativeKind=(handler,message)=>handler==='pulsWorkout'?'workout':['restStart','restCancel','workoutActive'].includes(message?.type)?'rest':message?.type==='runActivity'?'run':
-  activityFeature&&['runGpsStart','runGpsStop'].includes(message?.type)?'gps':activityFeature&&message?.type==='runGpsSync'?'gpsSync':(activityFeature||nutritionFeature)&&message?.type==='haptic'?'haptic':null;
+  activityFeature&&['runGpsStart','runGpsStop'].includes(message?.type)?'gps':activityFeature&&message?.type==='runGpsSync'?'gpsSync':(activityFeature||nutritionFeature||accountFeature)&&message?.type==='haptic'?'haptic':null;
 // Identity of the rest a restStart describes: same selection as native-bridge.js activeRest(), read when the bridge
 // posts (synchronously from the current state). Two rests with equal end time and label stay different rests.
 const nativeRestKey=()=>{
@@ -420,7 +435,7 @@ function releaseNative(confirmed){
   // A haptic is an event, not a state: an equal earlier haptic never suppresses the confirmed one.
   for(const record of last.values())if(record.kind==='haptic'||!nativeSame(record.kind,nativeSent.get(record.kind),record))try{record.deliver(record)}catch{}
 }
-if(trainingFeature||activityFeature||nutritionFeature){gateNativeHandler('pulsNative');gateNativeHandler('pulsWorkout')}
+if(trainingFeature||activityFeature||nutritionFeature||accountFeature){gateNativeHandler('pulsNative');gateNativeHandler('pulsWorkout')}
 const webDialogOpen=()=>(typeof modal!=='undefined'&&!!modal.open)||!!document.querySelector('dialog[open]');
 // Finish pauses/persists exactly as the Web button and asynchronously drains the existing native recorder.
 // Never hold a rollback copy across await: a cloud takeover or Web edit must not be undone by an old command.
@@ -445,7 +460,25 @@ async function prepareActivity(cmd,history,adapter,op){
   }catch{ack(cmd.id,'busy','GPS-Abschluss noch nicht bestätigt')}
   finally{activityPreparing=false;reportChrome();queueProjection('activity')}
 }
-function applyTraining(cmd,history,training,op){
+async function prepareAccount(cmd,history,adapter,op){
+  let plan;try{plan=op.check(cmd.args)}catch{plan={code:'invalid',message:'Ungültige Argumente'}}
+  if(plan.code){ack(cmd.id,plan.code,plan.message);return}
+  cmd={...cmd,args:copy(cmd.args)};
+  if(plan.noop||!cmd.args.dataUrl){applyTraining(cmd,history,adapter,op);return}
+  if(chromeState().blocking){ack(cmd.id,'busy','Ein Web-Ablauf ist geöffnet');return}
+  const owner=userId(),profile=state;accountPreparing=true;
+  try{
+    const prepared=await op.prepare(cmd.args);
+    if(!profileReady()||owner!==userId()){ack(cmd.id,'not_ready','Profilzuordnung geändert');return}
+    if(pageHidden){ack(cmd.id,'busy','Web-Dokument ist ausgeblendet');return}
+    if(profile!==state){ack(cmd.id,'busy','Profil neu geladen – erneut senden');return}
+    if(Object.values(flags()).some(Boolean)){ack(cmd.id,'readonly','Profil ist schreibgeschützt');return}
+    if(prepared?.code){ack(cmd.id,prepared.code,prepared.message);return}
+    applyTraining(cmd,history,adapter,op,prepared);
+  }catch{ack(cmd.id,'invalid','Profilbild konnte nicht gelesen werden')}
+  finally{accountPreparing=false;queueProjection('account')}
+}
+function applyTraining(cmd,history,training,op,prepared){
   const id=cmd.id,args=cmd.args;
   if(!args||typeof args!=='object'||Array.isArray(args)){ack(id,'invalid','Ungültige Argumente');return}
   // lifecycle.js closes sessions older than five hours on focus/visibility; do the same before acting on one.
@@ -453,12 +486,13 @@ function applyTraining(cmd,history,training,op){
   let plan;try{
     // blur may commit a Web onchange/save: validate expect only after that event has finished.
     if(training===progressAdapter()&&!webDialogOpen()&&!['run','session'].includes(chromeState().reason))document.activeElement?.blur?.();
-    plan=op.check(args);
+    plan=op.check(args,prepared);
   }catch{plan={code:'invalid',message:'Ungültige Argumente'}}
   if(plan.code){ack(id,plan.code,plan.message);return}
   // These Web functions close #modal; never discard an unrelated open Web form. Native retries after chrome changes.
   if(plan.busy&&(webDialogOpen()||(training===progressAdapter()||training===activityAdapter())&&['run','session'].includes(chromeState().reason)||
-    training===nutritionAdapter()&&chromeState().blocking)){ack(id,'busy','Ein Web-Ablauf ist geöffnet');return}
+    (training===nutritionAdapter()||training===accountAdapter())&&chromeState().blocking)){ack(id,'busy','Ein Web-Ablauf ist geöffnet');return}
+  if(prepared)plan.prepared=prepared;
   commit(cmd,history,{ui:training,run:()=>plan.noop?plan.result:op.run(args,plan),verify:(stored,result)=>op.effective(stored,args,plan,result)});
 }
 function commit(cmd,history,{run,verify,ui}){
@@ -588,6 +622,14 @@ if(progressFeature)window.pulsNativeProgressQuery=function(request){
   return !!result&&post({type:'progressResult',requestId:request.requestId,seq,userId:userId(),ownerPending:false,
     flags:flags(),cloud:cloud(),language:state.language==='en'?'en':'de',...result});
 };
+if(accountFeature)window.pulsNativeAccountQuery=function(request){
+  const adapter=accountAdapter();
+  if(!adapter||!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||activityPreparing||accountPreparing||saveDepth||
+    !request||typeof request!=='object'||Array.isArray(request)||typeof request.requestId!=='string'||!request.requestId.trim()||request.requestId.length>100)return false;
+  let result;try{result=adapter.query(copy(request))}catch{return false}
+  if(!result||JSON.stringify(result).length>48*1024)return false;
+  return post({type:'accountResult',requestId:request.requestId,seq,userId:userId(),ownerPending:false,flags:flags(),cloud:cloud(),...result});
+};
 if(nutritionFeature){
   let queryEpoch=0;
   const invalidateQueries=()=>{queryEpoch++;nutritionAdapter()?.cancelQueries()};
@@ -640,5 +682,10 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 for(const event of ['close','toggle'])document.addEventListener(event,reportChrome,true);
 for(const event of ['focusin','focusout'])document.addEventListener(event,()=>setTimeout(reportChrome,0),true);
 window.addEventListener('puls:connectivity',()=>queueProjection('connectivity'));
+if(accountFeature&&typeof pulsSchemeMedia!=='undefined'&&pulsSchemeMedia){
+  const changed=()=>queueProjection('scheme');
+  if(pulsSchemeMedia.addEventListener)pulsSchemeMedia.addEventListener('change',changed);
+  else pulsSchemeMedia.addListener?.(changed);
+}
 if(document.readyState==='complete')loaded();else window.addEventListener('load',loaded,{once:true});
 })();

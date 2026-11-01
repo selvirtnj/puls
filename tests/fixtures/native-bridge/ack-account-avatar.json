@@ -1,0 +1,10 @@
+{
+  "protocol": 1,
+  "type": "ack",
+  "id": "a0000000-0000-4000-8000-000000000029",
+  "ok": true,
+  "seq": 2,
+  "result": {
+    "avatarImage": "data:image/jpeg;base64,REVG"
+  }
+}
