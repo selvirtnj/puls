@@ -108,6 +108,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     private var nutritionHost: UIHostingController<NutritionHost>?
     /// M8: nativer Konto-Tab; nur mit `AccountCoordinator`.
     private var accountHost: UIHostingController<AccountHost>?
+    /// Feste Kopfhöhe = natürliche SwiftUI-Höhe bei aktueller Breite/Dynamic Type (`layoutHeader()`).
+    private var headerHeightConstraint: NSLayoutConstraint?
     private var activeConstraints: [NSLayoutConstraint] = []
     private var inactiveConstraints: [NSLayoutConstraint] = []
 
@@ -185,6 +187,13 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         )
         let header = UIHostingController(rootView: ShellHeaderHost(store: store, state: state, actions: actions))
         header.sizingOptions = .intrinsicContentSize
+        // Gerätetest ipa-41: Der Kopf wurde auf ~85 % der Höhe gedehnt. Ursache: Kopf und Inhalts-Hosts (zwischen
+        // header.bottom und tabBar.top) melden beide eine intrinsische Höhe mit gleicher Hugging-Priorität (250); Auto Layout
+        // gab dem Inhalt seine kleine Idealhöhe und dehnte den Kopf. Der Kopf ist jetzt fest auf seine natürliche Höhe
+        // gesetzt (required), die Inhalts-Hosts haben keine eigene Höhenpräferenz mehr.
+        // Hohe, aber nicht required Prioritäten: maßgeblich ist die required Höhe aus `layoutHeader()` (kein Konflikt).
+        header.view.setContentHuggingPriority(UILayoutPriority(999), for: .vertical)
+        header.view.setContentCompressionResistancePriority(UILayoutPriority(999), for: .vertical)
         let overview = UIHostingController(rootView: OverviewHost(store: store, actions: actions))
         headerHost = header
         overviewHost = overview
@@ -242,6 +251,15 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         }
         header.didMove(toParent: host)
         overview.didMove(toParent: host)
+        // Inhaltsbereiche füllen immer genau den Platz zwischen Kopf und Leiste; ihre SwiftUI-Idealhöhe zählt nicht.
+        for content in [overview.view, trainingView, nutritionView, accountView] as [UIView?] {
+            content?.setContentHuggingPriority(UILayoutPriority(1), for: .vertical)
+            content?.setContentCompressionResistancePriority(UILayoutPriority(1), for: .vertical)
+        }
+        let headerHeight = header.view.heightAnchor.constraint(equalToConstant: 60)
+        headerHeight.priority = .required
+        headerHeight.isActive = true
+        headerHeightConstraint = headerHeight
         trainingHost?.didMove(toParent: host)
         nutritionHost?.didMove(toParent: host)
         accountHost?.didMove(toParent: host)
@@ -305,6 +323,25 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         ]
         NSLayoutConstraint.activate(inactiveConstraints)
         observeStore()
+    }
+
+    /// Kopfhöhe auf die natürliche SwiftUI-Höhe bei aktueller Breite setzen (nach jedem Layout: Drehen, Dynamic Type,
+    /// Sprach-/Titelwechsel). Aufruf aus `viewDidLayoutSubviews` des Hosts.
+    func layoutHeader() {
+        guard let header = headerHost, let constraint = headerHeightConstraint, let root = host?.viewIfLoaded,
+              root.bounds.width > 0 else { return }
+        let fitting = header.sizeThatFits(in: CGSize(width: root.bounds.width, height: UIView.layoutFittingExpandedSize.height))
+        // Nie mehr als ein Drittel des Bildschirms; ungültige Messung → alte Höhe behalten.
+        guard fitting.height.isFinite, fitting.height > 0 else { return }
+        let height = min(ceil(fitting.height), max(44, root.bounds.height / 3))
+        if abs(constraint.constant - height) > 0.5 {
+            constraint.constant = height
+        }
+        #if DEBUG
+        if !root.traitCollection.preferredContentSizeCategory.isAccessibilityCategory, root.bounds.height >= 600 {
+            assert(header.view.bounds.height < 200, "Seitenkopf zu hoch: \(header.view.bounds.height) pt")
+        }
+        #endif
     }
 
     /// Re-registriert sich nach jeder Änderung (iOS 17: keine automatische UIKit-Beobachtung).
@@ -909,6 +946,8 @@ struct ShellHeader: View {
         .padding(.top, 4)
         .padding(.bottom, 2)
         .frame(maxWidth: .infinity, alignment: .leading)
+        // Nur so hoch wie der Inhalt; der Host misst diese Höhe (`layoutHeader`).
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color(.systemGroupedBackground))
         .environment(\.locale, text.locale)
     }

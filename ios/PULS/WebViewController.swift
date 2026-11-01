@@ -164,6 +164,12 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         webView.load(URLRequest(url: Self.home))
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // Seitenkopf auf natürliche Höhe (Breite, Dynamic Type); der Inhalt füllt den Rest bis zur Tab-Leiste.
+        tabShell?.layoutHeader()
+    }
+
     override var preferredStatusBarStyle: UIStatusBarStyle {
         // Das Fenster folgt dem Web-Wunsch (bzw. dem iPhone bei „System“); `.default` passt sich daran an.
         guard let tabShell else { return .lightContent }
