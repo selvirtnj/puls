@@ -180,14 +180,16 @@ function labelInputs(a){return {...reviewInputs('label-',a.product,a.confirmWarn
 // A persisted native outbox must survive an empty offDrafts cache after reload. Accept only the Web mapper's draft schema.
 function validReviewDraft(d,barcode){return fields(d,['barcode','name','brand',...keys,'unit','source','sourceUrl','prepared','fetched','packageAmount','packageUnit','packageChecked','nutrients','portions'])&&
   d.barcode===barcode&&typeof d.name==='string'&&d.name.length<=100&&typeof d.brand==='string'&&d.brand.length<=100&&d.unit===''&&
-  keys.every(k=>d[k]===null||finite(d[k],0,k==='kcal'?1000:100))&&['Open Food Facts','Eigene Eingabe'].includes(d.source)&&
+  // Value bounds follow the Web mapper, not the form: kcal/p/c/f are replaced by the checked product values anyway
+  // (kJ conversion can exceed 1000), micros are any finite raw*factor >= 0, portions any amount > 0 up to 10000.
+  keys.every(k=>d[k]===null||finite(d[k],0,Number.MAX_VALUE))&&['Open Food Facts','Eigene Eingabe'].includes(d.source)&&
   (d.source==='Open Food Facts'?d.sourceUrl==='https://world.openfoodfacts.org/product/'+barcode:d.sourceUrl===undefined)&&
   (d.prepared===undefined||typeof d.prepared==='boolean')&&['fetched','packageChecked'].every(k=>d[k]===undefined||day(d[k]))&&
   // portions.js packageReference rounds to one decimal and may yield 0 for tiny packages; the saved value comes from product.
   (d.packageAmount===undefined||finite(d.packageAmount,0,10000))&&(d.packageUnit===undefined||['g','ml'].includes(d.packageUnit))&&
-  (d.nutrients===undefined||fields(d.nutrients,['fiber','vitc','calcium','iron','b12','potassium','magnesium','folate'])&&Object.values(d.nutrients).every(x=>finite(x,0,1e12)))&&
+  (d.nutrients===undefined||fields(d.nutrients,['fiber','vitc','calcium','iron','b12','potassium','magnesium','folate'])&&Object.values(d.nutrients).every(x=>finite(x,0,Number.MAX_VALUE)))&&
   (d.portions===undefined||Array.isArray(d.portions)&&d.portions.length<=30&&d.portions.every(x=>fields(x,['name','amount','unit','source'])&&
-    typeof x.name==='string'&&x.name.length>0&&x.name.length<=80&&finite(x.amount,.1,10000)&&['g','ml'].includes(x.unit)&&x.source==='Open Food Facts'))}
+    typeof x.name==='string'&&x.name.length>0&&x.name.length<=80&&finite(x.amount,0,10000)&&x.amount>0&&['g','ml'].includes(x.unit)&&x.source==='Open Food Facts'))}
 function checkedProduct(a){
   if(!fields(a,['kind','product','expect','draft','confirmWarnings','label'])||!['custom','review','label'].includes(a.kind)||
     !fields(a.product,['id','name','unit',...keys,'barcode','brand','packageAmount','fiber'])||!newId(a.product.id)||!name(a.product.name)||

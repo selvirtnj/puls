@@ -179,6 +179,15 @@ async function checkP2Review(){
   t=start();code(t.apply(cmd('product.save',{...review,draft:{...review.draft,nutrients:{water:100}}})),'invalid');
   // packageReference may round a tiny package to 0: the genuine Web draft stays acceptable; the form value decides.
   ok(start().apply(cmd('product.save',{...review,draft:{...review.draft,packageAmount:0}})));
+  // Review 9dd39ac: value bounds of the Web mapper (kJ conversion > 1000 kcal, serving 0.05 g, large micro raw values).
+  for(const draft of [{kcal:1001.4},{portions:[{name:'Portion · 0.05 g',amount:.05,unit:'g',source:'Open Food Facts'}]},{nutrients:{b12:5e8}}]){
+    t=start();const ack=t.apply(cmd('product.save',{...review,draft:{...review.draft,...draft}}));ok(ack);const saved=t.state().custom.find(x=>x.id===review.product.id);
+    assert.equal(saved.kcal,ack.result.product.kcal);assert.notEqual(saved.kcal,1001.4,'draft macros are replaced by the checked product values');
+    if(draft.portions)assert.deepEqual(saved.portions,draft.portions);if(draft.nutrients)assert.equal(saved.nutrients.b12,5e8);
+  }
+  // Beyond the existing Web data rule (validNutrients <= 1e9) the shared validData rejects, not the draft whitelist.
+  t=start();const huge=t.apply(cmd('product.save',{...review,draft:{...review.draft,nutrients:{b12:2e12}}}));code(huge,'invalid');assert.equal(huge.error.message,'Produkt verletzt Web-Datenregeln');
+  code(start().apply(cmd('product.save',{...review,draft:{...review.draft,portions:[{name:'Zero',amount:0,unit:'g',source:'Open Food Facts'}]}})),'invalid');
   code(t.apply(cmd('product.save',{...review,draft:{...review.draft,portions:[{name:'Bad',amount:1,unit:'g',source:'Open Food Facts',density:1}]}})),'invalid');
   for(const unit of ['g','ml']){
     t=start();const a={...review,product:{...review.product,unit},draft:{...review.draft,nutrients:{vitc:0,fiber:2}}};op=cmd('product.save',a);ok(t.apply(op));
