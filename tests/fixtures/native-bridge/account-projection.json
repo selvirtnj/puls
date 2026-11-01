@@ -212,7 +212,7 @@
     "appearance": {
       "scheme": "system",
       "language": "de",
-      "resolvedScheme": "system",
+      "resolvedScheme": "light",
       "appIcon": "dark",
       "nativeIcon": "dark"
     },

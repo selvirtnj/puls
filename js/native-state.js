@@ -164,7 +164,7 @@ function nutritionInputs(){return [projectionRevision,state,date,today(),state.l
   state.custom,state.custom.length,state.recipes,state.recipes?.length,state.microGoals,state.waterGoal,state.foodLogCompleted,window.pulsConnectivity?.online]}
 function accountInputs(){return [projectionRevision,state,date,today(),state.language,state.profile,state.plan,state.goals,state.measurements,state.weights,
   state.displayName,state.avatarImage,state.soundEnabled,state.soundVolume,typeof getColorScheme==='function'?getColorScheme():null,
-  typeof dsCurrentScheme==='function'?dsCurrentScheme():null,typeof cloudBusy!=='undefined'&&cloudBusy]}
+  resolveColorScheme(getColorScheme(),!!pulsSchemeMedia?.matches),typeof cloudBusy!=='undefined'&&cloudBusy]}
 const sameInputs=(a,b)=>!!b&&a.length===b.length&&a.every((value,index)=>value===b[index]);
 // One cache/dedup record per projection name; projectionSeq is shared and monotonic per document.
 const views={
@@ -682,5 +682,10 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 for(const event of ['close','toggle'])document.addEventListener(event,reportChrome,true);
 for(const event of ['focusin','focusout'])document.addEventListener(event,()=>setTimeout(reportChrome,0),true);
 window.addEventListener('puls:connectivity',()=>queueProjection('connectivity'));
+if(accountFeature&&typeof pulsSchemeMedia!=='undefined'&&pulsSchemeMedia){
+  const changed=()=>queueProjection('scheme');
+  if(pulsSchemeMedia.addEventListener)pulsSchemeMedia.addEventListener('change',changed);
+  else pulsSchemeMedia.addListener?.(changed);
+}
 if(document.readyState==='complete')loaded();else window.addEventListener('load',loaded,{once:true});
 })();

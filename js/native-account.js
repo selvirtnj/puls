@@ -172,7 +172,7 @@ function build(){
       fields:Object.entries(measurementFields).map(([key,[name,unit,min,max]])=>({key,label:label(name),unit,min,max})),navyNote:label(navyMeasurementNote)},
     adaptive:{enabled:!!state.plan.learnTdee,adaptive:state.plan.adaptive!==false,disabled:p?.kcalMode==='baseline',
       observation:{...pick(observation,['eligible','start','end','coverage','weightCount','mean','slope','estimate','base','low','high']),reason:label(observation.reason)},calibration:state.tdeeCalibration?pick(state.tdeeCalibration,['date','value','base','activity','windowStart','windowEnd']):null},
-    appearance:{...appearance(),resolvedScheme:typeof dsCurrentScheme==='function'?dsCurrentScheme():resolveColorScheme(getColorScheme(),!!pulsSchemeMedia?.matches),appIcon:currentAppIcon(),nativeIcon:'dark'},
+    appearance:{...appearance(),resolvedScheme:resolveColorScheme(getColorScheme(),!!pulsSchemeMedia?.matches),appIcon:currentAppIcon(),nativeIcon:'dark'},
     sound:{...sound(),haptics:'web'},
     cloud:{signedIn:!!cloudSession,configured:!!cloudConfigured,dirty:!!cloudDirty,conflict:!!cloudConflict,revision:cloudRevision,busy:!!cloudBusy,
       uploadBlocked:!!cloudUploadBlocked||!!stateUploadBlockPending},

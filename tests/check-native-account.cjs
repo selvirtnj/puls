@@ -13,7 +13,9 @@ const source=fs.readFileSync('tests/check-native-training.cjs','utf8').split('co
 const compare=(name,value)=>{if(process.argv.includes('--write-fixtures'))fs.writeFileSync('tests/fixtures/native-bridge/'+name+'.json',JSON.stringify(value,null,2)+'\n');assert.deepEqual(value,fixture(name),name)};
 if(process.argv.includes('--write-fixtures')){const input=fixture('nutrition-input');input.profile.measurements=[{id:'fixture-measure',date:'2026-10-27',neck:40,waist:95,bodyfat:23,extra:'preserve'}];input.profile.displayName='Fixture';compare('account-input',input)}
 const app=vm.runInNewContext('(function(require){'+source+';return app})(require)',{require,console});
-function start(o={}){const t=app(o);t.ctx.document.documentElement.setAttribute=()=>{};for(const id of ['barcode-camera','ff-torch']){t.el(id).classList.contains=()=>false;t.el(id).setAttribute=()=>{}}t.run(fs.readFileSync('js/color-scheme.js','utf8'));
+function start(o={}){const t=app(o),listeners=[];t.media={matches:!!o.systemDark,...(o.legacyMedia?{addListener:fn=>listeners.push(fn)}:{addEventListener:(name,fn)=>{if(name==='change')listeners.push(fn)}})};
+  t.systemScheme=dark=>{t.media.matches=dark;for(const fn of listeners)fn({matches:dark})};t.ctx.matchMedia=()=>t.media;
+  t.ctx.document.documentElement.setAttribute=(k,v)=>{if(k==='data-scheme')t.ctx.document.documentElement.dataset.scheme=v};for(const id of ['barcode-camera','ff-torch']){t.el(id).classList.contains=()=>false;t.el(id).setAttribute=()=>{}}t.run(fs.readFileSync('js/color-scheme.js','utf8'));
   t.run('date="2026-10-28"');if(o.local)t.run('cloudSession=null');t.start();return t}
 const interest=t=>assert.equal(t.ctx.window.pulsNativeSetInterest({projections:['account']}),true);
 const projection=t=>t.messages.filter(x=>x.type==='projection'&&x.name==='account').at(-1);
@@ -131,4 +133,15 @@ function mockImages(t){
   for(const bad of [NaN,Infinity,-Infinity])assert.equal(t.ctx.window.pulsNativeAccount.ops['profile.set'].check({profile:{height:bad},expect:typedContext}).code,'invalid');
   ok(t.apply(cmd('profile.set',{profile:{height:181,activity:1.55,baselineFactor:1.3,method:'mifflin',kcalMode:'classic'},expect:typedContext})));
   console.log('PASS R review: retryable avatar timeout/late-callback cleanup, PNG/JPEG/WebP pre-decode dimension gates, final decode gate, strictly typed profile numbers/enums');
+  for(const legacyMedia of [false,true]){
+    t=start({systemDark:false,legacyMedia});interest(t);assert.equal(t.run('dsCurrentScheme()'),'system');assert.equal(projection(t).account.appearance.resolvedScheme,'light');
+    const raw=t.store.get('puls-v1'),seq=t.snapshots().at(-1).seq;let builds=0;const build=t.ctx.window.pulsNativeAccount.build;t.ctx.window.pulsNativeAccount.build=(...a)=>{builds++;return build(...a)};
+    t.systemScheme(true);t.tick(300);assert.equal(projection(t).account.appearance.resolvedScheme,'dark');assert.equal(builds,1);assert.equal(t.snapshots().at(-1).seq,seq);assert.equal(t.store.get('puls-v1'),raw);
+    t.systemScheme(true);t.tick(300);assert.equal(builds,1,'unchanged effective scheme does not build');
+    t.run('setColorScheme("light")');t.tick(300);assert.equal(projection(t).account.appearance.resolvedScheme,'light');const before=builds;
+    t.systemScheme(false);t.tick(300);assert.equal(builds,before,'explicit light ignores OS changes');
+    assert.equal(t.ctx.window.pulsNativeSetInterest({projections:[]}),true);t.run('setColorScheme("system")');t.systemScheme(true);t.tick(300);assert.equal(builds,before,'no account build without interest');
+  }
+  t=start({systemDark:true});interest(t);assert.equal(projection(t).account.appearance.resolvedScheme,'dark');
+  console.log('PASS account scheme: system resolves to effective light/dark, modern/legacy OS listener refreshes without profile saves, no redundant/inactive builds');
 })().catch(e=>{console.error(e);process.exitCode=1});
