@@ -256,6 +256,21 @@ public final class Outbox {
         return true
     }
 
+    /// Ersetzt den Eintrag `id` atomar (eine Transaktion, ein Speichern) durch einen neuen wartenden Befehl an derselben
+    /// Stelle. `false`, wenn `id` fehlt oder die neue ID schon vorhanden ist. Bei Schreibfehler bleibt alles unverändert.
+    @discardableResult
+    public func replace(id: String, with command: ApplyCommand, at date: Date) throws -> Bool {
+        reloadIfBlocked()
+        guard !isBlocked else { throw OutboxError.notLoaded }
+        guard let index = entries.firstIndex(where: { $0.command.id == id }), !contains(id: command.id) else { return false }
+        guard command.args.fitsDepth(JSONLimits.bridgeDepth) else { throw OutboxError.tooDeep }
+        let millis = (date.timeIntervalSince1970 * 1000).rounded()
+        try transaction {
+            entries[index] = OutboxEntry(command: command, createdAt: Date(timeIntervalSince1970: millis / 1000))
+        }
+        return true
+    }
+
     /// Befehle zum (erneuten) Senden, in Einreihungsreihenfolge.
     public var replayableCommands: [ApplyCommand] {
         entries.filter { $0.status == .pending }.map(\.command)

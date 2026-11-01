@@ -1,21 +1,12 @@
 import Foundation
 
-/// Stand eines nativen Rückgängig (`ProfileStore.undoNutritionDelete`).
+/// Ergebnis eines nativen Rückgängig (`ProfileStore.undoNutritionDelete`); beide Fälle sind dauerhaft gespeichert.
 public enum NutritionUndoState: Equatable, Sendable {
-    /// Ausgang des Löschens ist ungewiss (unterwegs bzw. aus früherer Sitzung); Entscheidung nach dessen Ack.
-    case waiting
-    /// Löschen dauerhaft aus der Outbox verworfen, bevor es ausgeführt wurde.
-    case cancelled
-    /// `food.restore` dauerhaft eingereiht (Befehls-ID); das bestätigte Löschen ist entfernt.
+    /// `food.restore` (Befehls-ID) steht anstelle des Löschens in der Outbox bzw. wurde eingereiht.
     case restoring(String)
-    /// Löschen wurde nie ausgeführt (abgelehnt/geparkt); nichts wiederherzustellen.
+    /// Das Löschen war geparkt bzw. nicht wirksam; nichts wiederherzustellen.
     case notNeeded
-    /// Nicht gespeichert; Rückgängig bleibt anbietbar.
-    case failed
-
-    public var isTerminal: Bool { self != .waiting && self != .failed }
 }
-
 extension ProfileStore {
     /// `perform` nur für Ernährungs-Ops und nur, wenn das Konto noch dasselbe ist wie beim Start der Aktion.
     @discardableResult

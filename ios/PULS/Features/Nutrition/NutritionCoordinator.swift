@@ -35,6 +35,8 @@ struct NutritionUndo: Identifiable, Equatable {
     let id = UUID()
     let detail: NutritionEntryDetail
     let deleteCommandId: String
+    /// Konto beim Löschen; Rückgängig nur für dasselbe Konto.
+    let userId: String?
 }
 
 /// M7/P1: native Ernährung (docs/native/NATIVE-BRIDGE-PROTOCOL.md §12).
@@ -356,7 +358,7 @@ final class NutritionCoordinator {
         hiddenEntryIds.insert(detail.id)
         do {
             let apply = try store.performNutrition(command, asUser: store.userId)
-            undoStack.append(NutritionUndo(detail: detail, deleteCommandId: apply.id))
+            undoStack.append(NutritionUndo(detail: detail, deleteCommandId: apply.id, userId: apply.userId))
             if undoStack.count > 10 { undoStack.removeFirst(undoStack.count - 10) }
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             return true
@@ -368,50 +370,20 @@ final class NutritionCoordinator {
     }
 
     /// Rückgängig: ein nachweislich nie gesendetes Löschen verwerfen, sonst den alten Snapshot per `food.restore`.
-    /// Rückgängig, abgestimmt mit dem ursprünglichen Löschen (`ProfileStore.undoNutritionDelete`): offenes Löschen wird
-    /// verworfen, ein bestätigtes per `food.restore` zurückgenommen, ein ungewisses erst nach seinem Ausgang. Der Eintrag
-    /// im Undo-Stapel bleibt, bis Verwerfen bzw. Wiederherstellen dauerhaft gespeichert ist.
+    /// Rückgängig: das eigene Löschen wird in einer Outbox-Transaktion durch `food.restore` ersetzt (bzw. ein geparktes
+    /// verworfen), unter dem Konto des Löschens. Der Banner verschwindet erst nach dauerhaftem Speichern.
     func undo(_ item: NutritionUndo) {
-        guard !undoingIds.contains(item.deleteCommandId), let restore = NutritionCommands.restore(detail: item.detail) else { return }
+        guard let restore = NutritionCommands.restore(detail: item.detail) else { return }
         do {
-            let state = try store.undoNutritionDelete(deleteCommandId: item.deleteCommandId, restore: restore, asUser: store.userId)
-            applyUndo(state, for: item)
+            _ = try store.undoNutritionDelete(deleteCommandId: item.deleteCommandId, restore: restore, asUser: item.userId)
+            undoStack.removeAll { $0.id == item.id }
+            hiddenEntryIds.remove(item.detail.id)
         } catch {
             notice = TrainingNotice(text: describe(error))
         }
     }
-
-    /// Ids der Löschbefehle, deren Rückgängig auf den Ausgang wartet.
-    var undoingIds: Set<String> = []
-
-    private func applyUndo(_ state: NutritionUndoState, for item: NutritionUndo) {
-        switch state {
-        case .waiting:
-            undoingIds.insert(item.deleteCommandId)
-        case .failed:
-            undoingIds.remove(item.deleteCommandId)
-            store.forgetNutritionUndo(item.deleteCommandId)
-            notice = TrainingNotice(text: text("Rückgängig wurde nicht gespeichert. Bitte erneut versuchen.",
-                                               "Undo was not saved. Please try again."))
-        case .cancelled, .restoring, .notNeeded:
-            undoingIds.remove(item.deleteCommandId)
-            undoStack.removeAll { $0.id == item.id }
-            hiddenEntryIds.remove(item.detail.id)
-            store.forgetNutritionUndo(item.deleteCommandId)
-        }
-    }
-
-    /// Ausgang wartender Rückgängig-Aufträge übernehmen.
-    private func settleUndos() {
-        let states = store.nutritionUndos
-        for item in undoStack where undoingIds.contains(item.deleteCommandId) {
-            if let state = states[item.deleteCommandId], state != .waiting { applyUndo(state, for: item) }
-        }
-    }
-
-    /// Banner ausblenden; ein laufendes Rückgängig bleibt bis zu seinem Ausgang.
+    /// Banner ausblenden (das Löschen bleibt bestehen).
     func dismissUndo(_ item: NutritionUndo) {
-        guard !undoingIds.contains(item.deleteCommandId) else { return }
         undoStack.removeAll { $0.id == item.id }
     }
 
@@ -520,7 +492,6 @@ final class NutritionCoordinator {
         withObservationTracking {
             processAcks()
             resetOnGenerationChange()
-            settleUndos()
             pruneHidden()
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in self?.observeStore() }
@@ -535,7 +506,6 @@ final class NutritionCoordinator {
         sheet = nil
         notice = nil
         undoStack = []
-        undoingIds = []
         hiddenEntryIds = []
         deletingEntryIds = []
     }

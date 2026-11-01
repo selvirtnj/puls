@@ -545,16 +545,9 @@ private struct NutritionUndoBar: View {
             Text(text("„\(item.detail.name)“ gelöscht", "“\(item.detail.name)” deleted"))
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if coordinator.undoingIds.contains(item.deleteCommandId) {
-                // Ausgang des Löschens wird abgewartet, bevor wiederhergestellt bzw. verworfen wird.
-                ProgressView()
-                    .frame(minWidth: 44, minHeight: 44)
-                    .accessibilityLabel(text("Wird rückgängig gemacht", "Undoing"))
-            } else {
-                Button(text("Rückgängig", "Undo")) { coordinator.undo(item) }
-                    .font(.headline)
-                    .frame(minHeight: 44)
-            }
+            Button(text("Rückgängig", "Undo")) { coordinator.undo(item) }
+                .font(.headline)
+                .frame(minHeight: 44)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

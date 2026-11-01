@@ -468,51 +468,76 @@ final class NutritionTests: XCTestCase {
         return (store, sent)
     }
 
+    /// Das Löschen steht danach nicht mehr in der Outbox, an seiner Stelle wartet genau ein Restore mit dem alten Snapshot.
     @MainActor
-    func testUndoOfUnsentOrHeldDeleteDiscardsInsteadOfRestore() throws {
-        let detail = try entryDetail()
-        let (store, sent) = try sendingStore()
-        store.sender = nil
-        // Nie gesendet → Löschen verwerfen.
-        let delete = try store.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: detail)), asUser: Self.user)
-        let restore = try XCTUnwrap(NutritionCommands.restore(detail: detail))
-        XCTAssertEqual(try store.undoNutritionDelete(deleteCommandId: delete.id, restore: restore, asUser: Self.user), .cancelled)
-        XCTAssertTrue(store.outboxEntries.isEmpty, "kein Restore, kein späteres Delete-Retry")
-
-        // Gesendet und mit persist_failed gehalten → ebenfalls verwerfen (würde sonst später doch löschen).
-        store.sender = { sent.commands.append($0) }
-        let held = try store.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: detail)), asUser: Self.user)
-        store.receive(.ack(AckMessage(id: held.id, ok: false, seq: 1, error: AckError(code: .persistFailed))))
-        XCTAssertEqual(try store.undoNutritionDelete(deleteCommandId: held.id, restore: restore, asUser: Self.user), .cancelled)
-        XCTAssertTrue(store.outboxEntries.isEmpty)
-        XCTAssertFalse(sent.commands.contains { $0.op == NutritionOps.foodRestore })
+    private func assertReplaced(_ store: ProfileStore, delete: ApplyCommand, restore: Command, state: NutritionUndoState,
+                                file: StaticString = #filePath, line: UInt = #line) {
+        guard case .restoring(let id) = state else { return XCTFail("restore erwartet", file: file, line: line) }
+        XCTAssertFalse(store.outboxEntries.contains { $0.command.id == delete.id }, file: file, line: line)
+        let restored = store.outboxEntries.filter { $0.command.op == NutritionOps.foodRestore }
+        XCTAssertEqual(restored.map(\.command.id), [id], file: file, line: line)
+        XCTAssertEqual(restored.first?.command.args, restore.args, file: file, line: line)
+        XCTAssertEqual(restored.first?.status, .pending, file: file, line: line)
     }
 
     @MainActor
-    func testUndoWaitsForInFlightDeleteThenRestoresAndDropsDelete() throws {
-        let detail = try entryDetail()
-        let (store, sent) = try sendingStore()
-        let delete = try store.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: detail)), asUser: Self.user)
-        let restore = try XCTUnwrap(NutritionCommands.restore(detail: detail))
-        // Unterwegs: Ausgang abwarten, nichts senden.
-        XCTAssertEqual(try store.undoNutritionDelete(deleteCommandId: delete.id, restore: restore, asUser: Self.user), .waiting)
-        XCTAssertEqual(sent.commands.map(\.op), [NutritionOps.foodDelete])
-        // Bestätigt → Restore eingereiht und gesendet, das bestätigte Löschen entfernt (kein Replay nach Neustart).
-        store.receive(.ack(AckMessage(id: delete.id, ok: true, seq: 2)))
-        guard case .restoring(let restoreId)? = store.nutritionUndos[delete.id] else { return XCTFail("restore erwartet") }
-        XCTAssertEqual(sent.commands.last?.id, restoreId)
-        XCTAssertEqual(sent.commands.last?.args, restore.args)
-        XCTAssertEqual(store.outboxEntries.map(\.command.id), [restoreId])
+    func testUndoReplacesPendingAckedOrInFlightDeleteAtomically() throws {
+        let restore = try XCTUnwrap(NutritionCommands.restore(detail: entryDetail()))
+        // Nie gesendet (wartend).
+        let (unsent, _) = try sendingStore()
+        unsent.sender = nil
+        let pending = try unsent.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: entryDetail())), asUser: Self.user)
+        assertReplaced(unsent, delete: pending, restore: restore,
+                       state: try unsent.undoNutritionDelete(deleteCommandId: pending.id, restore: restore, asUser: Self.user))
 
-        // Unterwegs, dann gehalten (busy) → verwerfen statt wiederherstellen.
-        let second = try store.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: entryDetail(0))), asUser: Self.user)
-        let restore2 = try XCTUnwrap(NutritionCommands.restore(detail: entryDetail(0)))
-        XCTAssertEqual(try store.undoNutritionDelete(deleteCommandId: second.id, restore: restore2, asUser: Self.user), .waiting)
-        store.receive(.ack(AckMessage(id: second.id, ok: false, seq: 2, error: AckError(code: .busy))))
-        XCTAssertEqual(store.nutritionUndos[second.id], .cancelled)
-        XCTAssertFalse(store.outboxEntries.contains { $0.command.id == second.id })
+        // Unterwegs: Restore wird nach dem Löschen gesendet (Web: Ankunftsreihenfolge), ein spätes Ack ist unbekannt.
+        let (flying, sent) = try sendingStore()
+        let delete = try flying.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: entryDetail())), asUser: Self.user)
+        let state = try flying.undoNutritionDelete(deleteCommandId: delete.id, restore: restore, asUser: Self.user)
+        assertReplaced(flying, delete: delete, restore: restore, state: state)
+        XCTAssertEqual(sent.commands.map(\.op), [NutritionOps.foodDelete, NutritionOps.foodRestore])
+        flying.receive(.ack(AckMessage(id: delete.id, ok: true, seq: 2)))
+        assertReplaced(flying, delete: delete, restore: restore, state: state)
+
+        // Bestätigt: ebenfalls ersetzt, also kein Replay des Löschens nach einem Neustart.
+        let (acked, _) = try sendingStore()
+        let done = try acked.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: entryDetail())), asUser: Self.user)
+        acked.receive(.ack(AckMessage(id: done.id, ok: true, seq: 2)))
+        assertReplaced(acked, delete: done, restore: restore,
+                       state: try acked.undoNutritionDelete(deleteCommandId: done.id, restore: restore, asUser: Self.user))
+
+        // Geparkt (conflict): nie ausgeführt, nur verwerfen.
+        let (parked, parkedSent) = try sendingStore()
+        let conflict = try parked.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: entryDetail())), asUser: Self.user)
+        parked.receive(.ack(AckMessage(id: conflict.id, ok: false, seq: 1, error: AckError(code: .conflict))))
+        XCTAssertEqual(try parked.undoNutritionDelete(deleteCommandId: conflict.id, restore: restore, asUser: Self.user), .notNeeded)
+        XCTAssertTrue(parked.outboxEntries.isEmpty)
+        XCTAssertFalse(parkedSent.commands.contains { $0.op == NutritionOps.foodRestore })
+
+        // Anderes Konto: kein Rückgängig.
+        XCTAssertThrowsError(try acked.undoNutritionDelete(deleteCommandId: done.id, restore: restore, asUser: "someone-else"))
     }
 
+    @MainActor
+    func testRestartBetweenUndoAndAckKeepsEntry() throws {
+        let directory = try makeTemporaryDirectory()
+        let (store, _) = try sendingStore(directory: directory)
+        let detail = try entryDetail()
+        let delete = try store.performNutrition(XCTUnwrap(NutritionCommands.delete(detail: detail)), asUser: Self.user)
+        let restore = try XCTUnwrap(NutritionCommands.restore(detail: detail))
+        try store.undoNutritionDelete(deleteCommandId: delete.id, restore: restore, asUser: Self.user)
+        // Absturz vor jedem Ack: nach dem Neustart wird nur das Restore erneut gesendet, nie das Löschen.
+        let restarted = ProfileStore(environment: StoreEnvironment(directory: directory, now: { fixedNow }, sessionID: "app-2"))
+        let sent = Sent()
+        restarted.sender = { sent.commands.append($0) }
+        restarted.receive(.hello(try hello()))
+        restarted.receive(.snapshot(SnapshotMessage(seq: 3, userId: Self.user, state: try state(), reason: "load")))
+        XCTAssertEqual(sent.commands.map(\.op), [NutritionOps.foodRestore])
+        XCTAssertEqual(sent.commands.first?.args["entry"], detail.entry)
+        // Ein verspätetes Ack des ersetzten Löschens ändert nichts mehr.
+        restarted.receive(.ack(AckMessage(id: delete.id, ok: true, seq: 4)))
+        XCTAssertEqual(restarted.outboxEntries.map(\.command.op), [NutritionOps.foodRestore])
+    }
     @MainActor
     func testBusyWithoutWebLockRetriesWithSameIdBounded() async throws {
         let ids = SequentialIDs()

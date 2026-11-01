@@ -267,10 +267,14 @@ final class TrainingTests: XCTestCase {
     func testBusyIsResentAfterNonModalChrome() throws {
         let (store, log) = try connectedStore()
         let apply = try store.performTraining(TrainingCommands.discard(workoutId: Self.workoutID), asUser: Self.user)
+        // Ohne gemeldete Web-Sperre ist `busy` kein offener Dialog (z. B. Katalog/GPS-Abschluss): kein Dialog-Hinweis.
+        store.receive(.ack(AckMessage(id: apply.id, ok: false, seq: 1, error: AckError(code: .busy))))
+        XCTAssertFalse(store.isWaitingForWebDialog)
+        // Echter Web-Dialog: Hinweis zeigen, nach dessen Ende erneut senden.
+        store.receive(.chrome(ChromeMessage(blocking: true, reason: "modal", page: "workout")))
         store.receive(.ack(AckMessage(id: apply.id, ok: false, seq: 1, error: AckError(code: .busy))))
         XCTAssertTrue(store.isWaitingForWebDialog)
         XCTAssertEqual(store.pending.map(\.command.id), [apply.id])
-        store.receive(.chrome(ChromeMessage(blocking: true, reason: "modal", page: "workout")))
         XCTAssertEqual(log.commands.filter { $0.id == apply.id }.count, 1, "Dialog noch offen: nicht erneut senden")
         store.receive(.chrome(ChromeMessage(blocking: false, reason: "none", page: "workout")))
         XCTAssertEqual(log.commands.filter { $0.id == apply.id }.count, 2)

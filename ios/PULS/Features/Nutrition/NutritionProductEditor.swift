@@ -47,6 +47,8 @@ struct NutritionProductEditor: View {
     @State private var prefilled = false
     /// Vom Web beim Speichern gemeldete Warnung (`conflict`), die erst bestätigt werden muss.
     @State private var webWarnings: [String] = []
+    /// Packungsgröße wurde beim Wechsel von g/ml geleert (sie bezog sich auf die alte Einheit).
+    @State private var packageCleared = false
 
     init(coordinator: NutritionCoordinator, mode: NutritionEditorMode, onSaved: ((String) -> Void)? = nil, onDone: (() -> Void)? = nil) {
         self.coordinator = coordinator
@@ -102,7 +104,7 @@ struct NutritionProductEditor: View {
                         numberField(text("Portionsgröße (\(basis.unit))", "Serving size (\(basis.unit))"), $portionAmount)
                     }
                 } else {
-                    Picker(text("Werte je 100", "Values per 100"), selection: Binding(get: { unit ?? "" }, set: { unit = $0.isEmpty ? nil : $0 })) {
+                    Picker(text("Werte je 100", "Values per 100"), selection: Binding(get: { unit ?? "" }, set: { changeUnit($0.isEmpty ? nil : $0) })) {
                         if unit == nil { Text(text("Bitte wählen", "Please choose")).tag("") }
                         Text("g").tag("g")
                         Text("ml").tag("ml")
@@ -151,6 +153,11 @@ struct NutritionProductEditor: View {
             if !isLabel {
                 Section {
                     numberField(text("Packungsgröße (\(unit ?? "g/ml"), optional)", "Package size (\(unit ?? "g/ml"), optional)"), $packageAmount)
+                } footer: {
+                    if packageCleared {
+                        Text(text("Packungsgröße geleert, weil sich die Einheit geändert hat. Bitte neu eintragen.",
+                                  "Package size cleared because the unit changed. Please enter it again."))
+                    }
                 }
             }
 
@@ -219,6 +226,21 @@ struct NutritionProductEditor: View {
     private var labelConfirmed: Bool { labelConfirmedFor == formSnapshot }
     private var confirmWarnings: Bool { warningsConfirmedFor == formSnapshot }
 
+    /// g/ml wechseln: eine eingetragene Packungsgröße bezog sich auf die alte Einheit und wird sichtbar geleert.
+    private func changeUnit(_ newUnit: String?) {
+        guard newUnit != unit else { return }
+        // Bisher unbekannter Bezug: die Entwurfspackung gilt nur für ihre eigene Einheit (`packageUnit`).
+        var packageUnit = unit
+        if packageUnit == nil, case .review(let detail) = mode {
+            packageUnit = detail.draft?["packageUnit"]?.stringValue ?? detail.expect?["unit"]?.stringValue
+        }
+        if let packageUnit, packageUnit != newUnit, !packageAmount.trimmingCharacters(in: .whitespaces).isEmpty {
+            packageAmount = ""
+            packageCleared = true
+        }
+        unit = newUnit
+    }
+
     private var isLabel: Bool {
         if case .label = mode { return true }
         return false
@@ -276,7 +298,8 @@ struct NutritionProductEditor: View {
             p = show(numberValue("p") ?? detail.product.p)
             c = show(numberValue("c") ?? detail.product.c)
             f = show(numberValue("f") ?? detail.product.f)
-            packageAmount = show(numberValue("packageAmount"))
+            // 0 bzw. fehlend = leeres Packungsfeld (nie „0“ vorbelegen).
+            packageAmount = show(numberValue("packageAmount").flatMap { $0 > 0 ? $0 : nil })
         case .label(_, let parse, let column):
             self.parse = parse
             self.column = column
