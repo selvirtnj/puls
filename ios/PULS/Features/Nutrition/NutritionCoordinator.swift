@@ -193,6 +193,18 @@ final class NutritionCoordinator {
         canWrite && capabilities?.supports(.recipeImport) == true && supportsOp(NutritionOps.recipeImportSave) && supportsSearch
     }
 
+    /// Das Dokument liefert die Nährwert-Vorschau eines Rezeptentwurfs (`hello.nutrition.queries`). Sonst keine Vorschau.
+    var offersRecipePreview: Bool { capabilities?.supports(query: "recipePreview") == true && extras != nil }
+
+    /// Summen, Werte je 100 g und `validRecipe` des Entwurfs (`RecipeDraft.previewJSON`), ohne eigene Rechnung. Abbruch der
+    /// aufrufenden Task gibt die Anfrage auf; `store` nimmt nur Antworten desselben Nutzers/Dokuments an.
+    func recipePreview(_ draft: JSONValue) async -> RecipePreview? {
+        guard offersRecipePreview, let extras else { return nil }
+        let outcome = await extras.fetch(timeout: .seconds(3)) { NativeQueryRequest.recipePreview(draft: draft, requestId: $0) }
+        guard case .ok(let result) = outcome else { return nil }
+        return RecipePreview(json: result)
+    }
+
     /// `build` baut die Anfrage (Adresse oder eingefügter Text). URL-Abruf im Web bis 12 s, dazu ggf. der Katalog.
     func recipeImport(_ build: (String) -> NutritionQueryRequest?) async -> NutritionRecipeImport? {
         lastQueryError = nil
@@ -273,6 +285,16 @@ final class NutritionCoordinator {
     func saveProduct(_ command: Command) -> String? {
         do {
             return try store.performNutrition(command, asUser: store.userId).id
+        } catch {
+            notice = TrainingNotice(text: describe(error))
+            return nil
+        }
+    }
+
+    /// Rezept speichern: nur für den Besitzer, unter dem Editor bzw. Import geöffnet wurden. Ergebnis wie bei `saveProduct`.
+    func saveRecipe(_ command: Command, owner: DraftOwner) -> String? {
+        do {
+            return try store.performNutrition(command, owner: owner).id
         } catch {
             notice = TrainingNotice(text: describe(error))
             return nil

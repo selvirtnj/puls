@@ -687,4 +687,55 @@ final class ActivityTests: XCTestCase {
         XCTAssertFalse(check(prepared, state, ["routeId": "q2"]))
         XCTAssertNil(ActivityCommands.saveRoute(id: "q3", name: " ", line: [], waypoints: [], distanceKm: 1, ascentM: nil))
     }
+
+    @MainActor
+    func testPlannerKeepsExpectFromOpening() throws {
+        let (store, _) = try connectedStore()
+        let raw = try XCTUnwrap(ActivityOps.route(store.document.root, id: Self.route1))
+        // Die Anzeige hinkt nach: Punkte, Name und Erwartung kommen aus derselben Rohroute des Dokuments.
+        var stale = try RouteDetail(json: raw)
+        stale.name = "Veraltet"
+        let opening = RouteOpening(existing: stale, document: store.document.root)
+        XCTAssertEqual(opening.expect, raw)
+        XCTAssertEqual(opening.name, raw["name"]?.stringValue)
+        XCTAssertEqual(RouteOpening(existing: nil, document: store.document.root).expect, .null)
+
+        var plan = opening.plan
+        plan.waypoints = [GeoPoint(lat: 51, lon: 10), GeoPoint(lat: 51.01, lon: 10.01)]
+        plan.straighten()
+        let command = try XCTUnwrap(plan.saveCommand(id: Self.route1, name: "Neu", maxLinePoints: 800, expect: opening.expect))
+        // Eine neuere Sync-Änderung ändert die gesendete Erwartung nicht: Das Web meldet `conflict`, statt zu überschreiben.
+        var changed = store.document.root
+        var routes = ActivityOps.routes(changed)
+        routes[0]["name"] = "Vom anderen Gerät"
+        changed["runRoutes"] = .array(routes)
+        store.receive(.snapshot(SnapshotMessage(seq: 2, userId: Self.user, state: changed, reason: "cloud")))
+        let apply = try store.performActivity(command, owner: store.activityDraftOwner)
+        XCTAssertEqual(apply.args["expect"], raw)
+    }
+
+    @MainActor
+    func testPlannerDraftIsBoundToOwner() throws {
+        let (store, log) = try connectedStore()
+        let owner = store.activityDraftOwner
+        let waypoints = [GeoPoint(lat: 51, lon: 10), GeoPoint(lat: 51.01, lon: 10.01)]
+        let command = try XCTUnwrap(ActivityCommands.saveRoute(id: "q4", name: "A", line: waypoints, waypoints: waypoints,
+                                                               distanceKm: 1, ascentM: nil, expect: .null))
+        store.receive(.snapshot(SnapshotMessage(seq: 2, userId: "b0000000-0000-4000-8000-0000000000bb", state: profile(), reason: "cloud")))
+        XCTAssertThrowsError(try store.performActivity(command, owner: owner), "Route von A landet nie unter B")
+        XCTAssertTrue(log.commands.isEmpty)
+
+        // Gleiches Konto, neues Dokument: Die Generation weicht ab, auch wenn der Nutzer gleich bleibt.
+        let (same, sameLog) = try connectedStore()
+        let before = same.activityDraftOwner
+        var pending = activityHello
+        if case .hello(var hello) = pending {
+            hello.ownerPending = true
+            pending = .hello(hello)
+        }
+        same.receive(pending)
+        XCTAssertNotEqual(same.activityDraftOwner, before)
+        XCTAssertThrowsError(try same.performActivity(command, owner: before))
+        XCTAssertTrue(sameLog.commands.isEmpty)
+    }
 }

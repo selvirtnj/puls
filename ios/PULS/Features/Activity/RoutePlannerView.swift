@@ -121,6 +121,10 @@ struct RoutePlannerView: View {
     @State private var model: RoutePlannerModel
     @State private var routeId: String
     @State private var name: String
+    /// Konto und Dokument beim Öffnen: Ein Wechsel schließt den Planer, gespeichert wird nur für diesen Besitzer.
+    @State private var owner: DraftOwner
+    /// Beim Öffnen gesehene Route (bzw. `.null`); nie der Stand beim Speichern.
+    @State private var expect: JSONValue
     @State private var position: MapCameraPosition
     @State private var confirmsClear = false
     @State private var location = CLLocationManager()
@@ -129,10 +133,12 @@ struct RoutePlannerView: View {
     init(coordinator: ActivityCoordinator, existing: RouteDetail?) {
         self.coordinator = coordinator
         self.existing = existing
-        let plan = existing.map { RoutePlan(detail: $0) } ?? RoutePlan()
-        _model = State(initialValue: RoutePlannerModel(plan: plan, info: coordinator.projection?.planner))
+        let opening = RouteOpening(existing: existing, document: coordinator.store.document.root)
+        _model = State(initialValue: RoutePlannerModel(plan: opening.plan, info: coordinator.projection?.planner))
         _routeId = State(initialValue: existing?.id ?? UUID().uuidString.lowercased())
-        _name = State(initialValue: existing?.name ?? "")
+        _name = State(initialValue: opening.name)
+        _owner = State(initialValue: coordinator.store.activityDraftOwner)
+        _expect = State(initialValue: opening.expect)
         let fallback = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.2, longitude: 10.4),
                                           span: MKCoordinateSpan(latitudeDelta: 8, longitudeDelta: 8))
         let start: MapCameraPosition = existing == nil ? .userLocation(fallback: .region(fallback)) : .automatic
@@ -144,8 +150,10 @@ struct RoutePlannerView: View {
     private var command: Command? {
         let fallback = text("Meine Route", "My route")
         return model.plan.saveCommand(id: routeId, name: RoutePlan.name(name, fallback: fallback),
-                                      maxLinePoints: coordinator.projection?.planner?.maxLinePoints ?? 800)
+                                      maxLinePoints: coordinator.projection?.planner?.maxLinePoints ?? 800, expect: expect)
     }
+
+    private var isOwner: Bool { coordinator.store.activityDraftOwner == owner }
 
     var body: some View {
         let text = self.text
@@ -159,9 +167,9 @@ struct RoutePlannerView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(text("Speichern", "Save")) {
-                    if let command, coordinator.savePlannedRoute(command, id: routeId) { dismiss() }
+                    if let command, coordinator.savePlannedRoute(command, id: routeId, owner: owner) { dismiss() }
                 }
-                .disabled(model.isRouting || command == nil || !coordinator.canWrite)
+                .disabled(model.isRouting || command == nil || !coordinator.canWrite || !isOwner)
             }
         }
         .confirmationDialog(text("Alle Punkte entfernen?", "Remove all points?"), isPresented: $confirmsClear, titleVisibility: .visible) {
@@ -172,6 +180,10 @@ struct RoutePlannerView: View {
             if location.authorizationStatus == .notDetermined { location.requestWhenInUseAuthorization() }
         }
         .onDisappear { model.cancel() }
+        .onChange(of: coordinator.store.activityDraftOwner) { _, current in
+            // Konto- oder Dokumentwechsel: Der Entwurf gehört nicht zum neuen Stand.
+            if current != owner { dismiss() }
+        }
     }
 
     private func coordinate(_ point: GeoPoint) -> CLLocationCoordinate2D {

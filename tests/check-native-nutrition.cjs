@@ -28,6 +28,45 @@ const ok=a=>assert.equal(a.ok,true,JSON.stringify(a)),code=(a,c)=>{assert.equal(
 const query=(t,kind,args={})=>{assert.equal(t.ctx.window.pulsNativeNutritionQuery({requestId:'q',kind,...args}),true);return t.messages.filter(x=>x.type==='nutritionResult').at(-1)};
 const addArgs=(t,extra={})=>({id:'new-entry',date:'2026-10-28',meal:'Snacks',product:{id:'product'},amount:2,unit:'p0',expect:t.state().custom[0],...extra});
 const microtask=async()=>{for(let i=0;i<12;i++)await Promise.resolve()};
+
+// Draft preview is available with nutrition alone, including while the editor blocks navigation.
+{
+  const t=start(),draft={...clone(profile.recipes[0]),name:'  Vorschau  ',yield:333.3};
+  const hello=t.messages.find(x=>x.type==='hello');assert(hello.nutrition.queries.includes('recipePreview'));
+  const ask=d=>{const before=t.messages.length;assert.equal(t.ctx.window.pulsNativeQuery({requestId:'draft',kind:'recipePreview',draft:d}),true);
+    const messages=t.messages.slice(before);assert.equal(messages.length,1);assert.equal(messages[0].type,'nativeResult');return messages[0].result};
+  t.run('recipeDraft={id:"web-draft",name:"Unberührt",yield:0,ingredients:[]};var keptDraft=recipeDraft;modal.showModal()');
+  const state=t.state(),store=[...t.store],writes=t.writes.length,seq=t.snapshots().at(-1).seq,original=clone(draft);
+  const preview=ask(draft);assert.deepEqual(draft,original);assert.deepEqual(preview.totals,t.run('recipeTotals('+JSON.stringify(draft)+')'));
+  assert.deepEqual(preview.per100,t.run('recipeNutrients('+JSON.stringify(draft)+')'));assert.equal(preview.validation.valid,true);
+  assert.equal(t.run('recipeDraft===keptDraft'),true);assert.deepEqual(t.state(),state);assert.deepEqual([...t.store],store);
+  assert.equal(t.writes.length,writes);assert.equal(t.snapshots().at(-1).seq,seq);
+  // Compare display strings directly with the final Web preview, rather than repeating its arithmetic.
+  for(const yieldValue of [333.3,0]){
+    const d={...draft,yield:yieldValue},r=ask(d);t.run('recipeDraft='+JSON.stringify(d)+';recipePreview()');
+    const html=t.el('recipe-summary').innerHTML;
+    assert(html.includes(r.display.totals.kcal+' kcal'));assert(html.includes('P '+r.display.totals.p+' · KH '+r.display.totals.c+' · F '+r.display.totals.f+' g'));
+    if(yieldValue){assert(html.includes(r.display.per100.kcal+' kcal'));assert(r.per100)}else{assert.equal(r.per100,null);assert.equal(r.display.per100,null);assert(html.includes('Gesamtgewicht fehlt'))}
+  }
+  const concentrated={...draft,yield:1},invalid=ask(concentrated);assert.equal(invalid.validation.valid,false);
+  t.run('recipeDraft='+JSON.stringify(concentrated));t.el('recipe-name').value=concentrated.name;t.el('recipe-yield').value='1';
+  t.run('saveRecipe({preventDefault(){}})');assert.equal(invalid.validation.message,t.el('recipe-error').textContent);
+  for(const d of [{...draft,name:''},{...draft,ingredients:[]},{...draft,yield:0}])assert.equal(ask(d).validation.valid,false);
+  assert.equal(ask({...draft,ingredients:Array.from({length:100},()=>clone(draft.ingredients[0])),yield:10000}).validation.valid,true);
+  for(const d of [null,{}, {...draft,id:'bad id'}, {...draft,yield:'100'}, {...draft,yield:Infinity},
+    {...draft,ingredients:[null]}, {...draft,ingredients:[{...draft.ingredients[0],kcal:null}]},
+    {...draft,ingredients:Array(101).fill(draft.ingredients[0])},{...draft,extra:'x'.repeat(48*1024)}]){
+    const before=t.messages.length;assert.equal(t.ctx.window.pulsNativeQuery({requestId:'bad',kind:'recipePreview',draft:d}),false);assert.equal(t.messages.length,before);
+  }
+  for(const args of [{unexpected:true},{requestId:' '},{cursor:'x'}])assert.equal(t.ctx.window.pulsNativeQuery({requestId:'bad',kind:'recipePreview',draft,...args}),false);
+  t.event('window','pagehide');assert.equal(t.ctx.window.pulsNativeQuery({requestId:'hidden',kind:'recipePreview',draft}),false);
+  for(const setup of ['cloudSession={user:{id:"another-owner"}};cloudStatusChanged()', 'cloudUploadBlocked=true', 'stateRecoveryPending=true']){
+    const r=start();r.run(setup);const accepted=r.ctx.window.pulsNativeQuery({requestId:'mode',kind:'recipePreview',draft});
+    assert.equal(accepted,!setup.startsWith('cloudSession'));if(accepted)assert.deepEqual(r.messages.at(-1).result.totals,preview.totals);
+  }
+  const pending=start({deferLoad:true});assert.equal(pending.ctx.window.pulsNativeQuery({requestId:'early',kind:'recipePreview',draft}),false);
+  console.log('PASS: read-only draft recipe preview, exact Web values/format/save validation, bounds and owner/lifecycle guards');
+}
 async function checkP2(){
   const fresh=o=>{const t=app(o);Object.assign(t.ctx,{AbortController,URLSearchParams,URL,fetch:async()=>{throw Error('fixture offline')},
     DOMParser:class{parseFromString(raw){return {querySelectorAll:()=>[...raw.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map(x=>({textContent:x[1]}))}}}});

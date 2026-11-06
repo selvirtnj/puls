@@ -65,7 +65,7 @@ public struct NativePageQuery: Equatable, Hashable, Sendable {
 /// Argument für `window.pulsNativeQuery(request)`; nur die Felder des jeweiligen Vertrags (das Web lehnt andere ab).
 public struct NativeQueryRequest: Equatable, Hashable, Sendable {
     public enum Kind: String, Sendable {
-        case completion, page, pageItem, indexChart, export, share
+        case completion, page, pageItem, indexChart, export, share, recipePreview
     }
 
     public var requestId: String
@@ -133,6 +133,11 @@ public struct NativeQueryRequest: Equatable, Hashable, Sendable {
         fields["collection"] = JSONValue.string(kind.rawValue)
         fields["id"] = JSONValue.string(id)
         return NativeQueryRequest(requestId: requestId, kind: .completion, fields: fields)
+    }
+
+    /// §12.5: Vorschau eines Rezeptentwurfs (`RecipeDraft.previewJSON`). Gemeldet in `hello.nutrition.queries`, nicht in `extras`.
+    public static func recipePreview(draft: JSONValue, requestId: String) -> NativeQueryRequest? {
+        NativeQueryRequest(requestId: requestId, kind: .recipePreview, fields: ["draft": draft])
     }
 
     public var json: JSONValue {

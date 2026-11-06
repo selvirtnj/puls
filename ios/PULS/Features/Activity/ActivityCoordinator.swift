@@ -97,6 +97,7 @@ final class ActivityCoordinator {
     @ObservationIgnored private var suppressedHello: Int?
     @ObservationIgnored private var suppressionSawBlocking = false
     @ObservationIgnored private var handledAckSerial = 0
+    @ObservationIgnored private var seenGeneration: Int?
     /// Befehls-ID → Aktionsschlüssel, auf deren Ack die Oberfläche wartet.
     @ObservationIgnored private var waiting: [String: String] = [:]
     @ObservationIgnored private var countdownToken = 0
@@ -167,7 +168,17 @@ final class ActivityCoordinator {
         }
     }
 
+    /// Neues Dokument, ungeklärte Zuordnung oder Kontowechsel: Sheets mit Daten des bisherigen Stands schließen.
+    private func closeSheetsOnGenerationChange() {
+        let generation = store.activityGeneration
+        defer { seenGeneration = generation }
+        guard let seen = seenGeneration, seen != generation else { return }
+        showsRoutes = false
+        detail = nil
+    }
+
     private func applyStoreState() {
+        closeSheetsOnGenerationChange()
         updateConfirmation()
         processAcks()
         dropLiveConflicts()
@@ -601,9 +612,10 @@ final class ActivityCoordinator {
         projection?.planner?.native == true && store.supportsOp(ActivityOps.routeSave)
     }
 
-    /// `true`, wenn der Befehl eingereiht wurde. Die stabile ID steht im Befehl und bleibt in der Outbox.
-    func savePlannedRoute(_ command: Command, id: String) -> Bool {
-        perform(command, busyKey: "route:" + id) != nil
+    /// `true`, wenn der Befehl eingereiht wurde. Die stabile ID steht im Befehl und bleibt in der Outbox. Gespeichert wird nur
+    /// für den Besitzer, unter dem der Planer geöffnet wurde.
+    func savePlannedRoute(_ command: Command, id: String, owner: DraftOwner) -> Bool {
+        perform(command, busyKey: "route:" + id, owner: owner) != nil
     }
 
     func deleteRoute(id: String) {
@@ -645,9 +657,14 @@ final class ActivityCoordinator {
     // MARK: Befehle
 
     @discardableResult
-    private func perform(_ command: Command, busyKey: String?) -> ApplyCommand? {
+    private func perform(_ command: Command, busyKey: String?, owner: DraftOwner? = nil) -> ApplyCommand? {
         do {
-            let apply = try store.performActivity(command, asUser: store.userId)
+            let apply: ApplyCommand
+            if let owner {
+                apply = try store.performActivity(command, owner: owner)
+            } else {
+                apply = try store.performActivity(command, asUser: store.userId)
+            }
             if let busyKey {
                 busyActions.insert(busyKey)
                 heldActions.remove(busyKey)

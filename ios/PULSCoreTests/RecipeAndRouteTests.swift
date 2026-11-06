@@ -102,6 +102,117 @@ final class RecipeAndRouteTests: XCTestCase {
         XCTAssertNil(NutritionQueryRequest.recipeImport(text: "", requestId: "r"))
     }
 
+    func testRecognizedAmountKeepsItsUnit() throws {
+        let result = try imported()
+        XCTAssertEqual(result.suggestions[0].unit, "g")
+        XCTAssertNil(result.suggestions[1].unit, "angenommene Menge hat keine Einheit")
+        let milk = try XCTUnwrap(NutritionProduct(json: ["ref": ["id": "p"], "name": "Milch", "unit": "g", "kcal": 47, "p": 3.4, "c": 4.8, "f": 1.5]))
+        XCTAssertNil(try XCTUnwrap(RecipeIngredient(product: milk, amount: 200, amountUnit: "ml")).amount, "200 ml sind ohne Dichte keine 200 g")
+        XCTAssertEqual(try XCTUnwrap(RecipeIngredient(product: milk, amount: 200, amountUnit: "g")).amount, 200)
+        XCTAssertEqual(try XCTUnwrap(RecipeIngredient(product: milk, amount: 100)).amount, 100, "freier Startwert ohne erkannte Einheit")
+    }
+
+    func testIngredientSearchStaysLocal() throws {
+        XCTAssertEqual(try XCTUnwrap(NutritionQueryRequest.search("Milch", limit: 60, online: false, requestId: "r")).json["online"], false)
+        XCTAssertNil(try XCTUnwrap(NutritionQueryRequest.search("Milch", requestId: "r")).json["online"])
+    }
+
+    func testUntouchedNumbersKeepFullPrecision() {
+        let parse: (String) -> Double? = { Double($0.replacingOccurrences(of: ",", with: ".")) }
+        var field = RecipeNumberField(original: 1.23456, shown: "1,235")
+        XCTAssertEqual(field.value(parse: parse), 1.23456, "bloßes Umbenennen ändert die Zahl nicht")
+        field.text = "1,24"
+        XCTAssertEqual(field.value(parse: parse), 1.24)
+        field.text = "1,235"
+        XCTAssertEqual(field.value(parse: parse), 1.23456, "derselbe Text ist derselbe Wert")
+        XCTAssertNil(RecipeNumberField(original: nil, shown: "").value(parse: parse))
+    }
+
+    // MARK: Vorschau
+
+    func testPreviewDraftAcceptsIncompleteDrafts() throws {
+        var draft = RecipeDraft(id: "new-recipe")
+        var json = try XCTUnwrap(draft.previewJSON)
+        XCTAssertEqual(json["name"], "")
+        XCTAssertEqual(json["yield"], 0, "fehlendes Gewicht: das Web zeigt „Gesamtgewicht fehlt“")
+        XCTAssertEqual(json["ingredients"], [])
+
+        var ingredient = try ownIngredient()
+        ingredient.amount = nil
+        draft.ingredients = [ingredient]
+        draft.name = "  Pfanne "
+        json = try XCTUnwrap(draft.previewJSON)
+        XCTAssertEqual(json["name"], "Pfanne")
+        XCTAssertEqual(json["ingredients"]?[0]?["amount"], 0, "fehlende Menge zählt nicht mit")
+        XCTAssertEqual(json["ingredients"]?[0]?["kcal"], 350)
+    }
+
+    func testPreviewDraftStaysWithinTransportLimits() throws {
+        var bad = RecipeDraft(id: "bad id")
+        XCTAssertNil(bad.previewJSON)
+        bad = RecipeDraft(id: "new-recipe")
+        bad.yieldGrams = 100_001
+        XCTAssertNil(bad.previewJSON)
+        bad.yieldGrams = -1
+        XCTAssertNil(bad.previewJSON)
+        bad.yieldGrams = 100
+        bad.name = String(repeating: "a", count: 101)
+        XCTAssertNil(bad.previewJSON)
+        bad.name = "x"
+        var ingredient = try ownIngredient()
+        ingredient.amount = 100_001
+        bad.ingredients = [ingredient]
+        XCTAssertNil(bad.previewJSON)
+        // Fehlende Nährwerte werden nicht mit 0 ergänzt.
+        bad.ingredients = [RecipeIngredient(raw: ["name": "Ohne Werte", "unit": "g", "kcal": 10, "p": 1, "c": 1], amount: 100)]
+        XCTAssertNil(bad.previewJSON)
+    }
+
+    func testPreviewDraftKeepsUnknownFields() throws {
+        let draft = RecipeDraft(recipe: try recipe())
+        XCTAssertEqual(try XCTUnwrap(draft.previewJSON)["extra"], "preserve")
+    }
+
+    func testPreviewRequestAndResult() throws {
+        let draft = try XCTUnwrap(RecipeDraft(id: "new-recipe").previewJSON)
+        XCTAssertEqual(NativeQueryRequest.recipePreview(draft: draft, requestId: "r")?.json,
+                       ["requestId": "r", "kind": "recipePreview", "draft": draft])
+        XCTAssertNil(NativeQueryRequest.recipePreview(draft: draft, requestId: " "))
+
+        let full: JSONValue = [
+            "totals": ["kcal": 350.4, "p": 7, "c": 78, "f": 1], "per100": ["kcal": 175.2, "p": 3.5, "c": 39, "f": 0.5],
+            "display": ["totals": ["kcal": "350", "p": "7", "c": "78", "f": "1"], "per100": ["kcal": "175", "p": "3,5", "c": "39", "f": "0,5"]],
+            "validation": ["valid": true, "message": .null],
+        ]
+        let preview = try XCTUnwrap(RecipePreview(json: full))
+        XCTAssertTrue(preview.isValid)
+        XCTAssertNil(preview.message)
+        XCTAssertEqual(preview.totals.kcal, "350")
+        XCTAssertEqual(preview.per100?.p, "3,5", "fertiger Web-Text")
+
+        let empty: JSONValue = [
+            "display": ["totals": ["kcal": "0", "p": "0", "c": "0", "f": "0"], "per100": .null],
+            "validation": ["valid": false, "message": "Bitte prüfen"],
+        ]
+        let missing = try XCTUnwrap(RecipePreview(json: empty))
+        XCTAssertNil(missing.per100)
+        XCTAssertFalse(missing.isValid)
+        XCTAssertEqual(missing.message, "Bitte prüfen")
+
+        XCTAssertNil(RecipePreview(json: ["display": ["totals": ["kcal": 1]], "validation": ["valid": true]]), "Zahlen statt Texten")
+        XCTAssertNil(RecipePreview(json: ["validation": ["valid": true]]))
+    }
+
+    func testPreviewArrivesAsNativeResult() throws {
+        let message = try NativeResultMessage(json: [
+            "protocol": 1, "type": "nativeResult", "requestId": "q", "kind": "recipePreview", "seq": 3, "userId": .null, "ownerPending": false,
+            "flags": ["preview": false, "recovery": false, "uploadBlocked": false], "language": "de", "ok": true,
+            "result": ["display": ["totals": ["kcal": "0", "p": "0", "c": "0", "f": "0"], "per100": .null], "validation": ["valid": false]],
+        ])
+        XCTAssertEqual(message.kind, NativeQueryRequest.Kind.recipePreview.rawValue)
+        XCTAssertNotNil(message.result.flatMap { RecipePreview(json: $0) })
+    }
+
     // MARK: Route
 
     private let a = GeoPoint(lat: 51, lon: 10)
@@ -161,13 +272,14 @@ final class RecipeAndRouteTests: XCTestCase {
         var plan = RoutePlan()
         plan.waypoints = [a, b]
         plan.apply(BRouterResult(line: [a, b], distanceKm: 5.125, ascentM: 42.4))
-        let command = try XCTUnwrap(plan.saveCommand(id: "route-1", name: "Runde", maxLinePoints: 800))
+        let command = try XCTUnwrap(plan.saveCommand(id: "route-1", name: "Runde", maxLinePoints: 800, expect: .null))
         XCTAssertEqual(command.op, ActivityOps.routeSave)
         XCTAssertEqual(command.args["route"]?["distanceKm"], 5.13)
         XCTAssertEqual(command.args["route"]?["ascentM"], 42)
-        XCTAssertNil(RoutePlan().saveCommand(id: "route-1", name: "Runde", maxLinePoints: 800), "mindestens zwei Punkte")
+        XCTAssertEqual(command.args["expect"], .null, "neue Route: ausdrücklich keine Erwartung")
+        XCTAssertNil(RoutePlan().saveCommand(id: "route-1", name: "Runde", maxLinePoints: 800, expect: .null), "mindestens zwei Punkte")
         plan.ascentM = nil
-        XCTAssertNil(try XCTUnwrap(plan.saveCommand(id: "route-1", name: "Runde", maxLinePoints: 800)).args["route"]?["ascentM"])
+        XCTAssertNil(try XCTUnwrap(plan.saveCommand(id: "route-1", name: "Runde", maxLinePoints: 800, expect: .null)).args["route"]?["ascentM"])
     }
 
     func testExistingRouteKeepsLineUntilChanged() throws {

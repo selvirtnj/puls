@@ -114,9 +114,33 @@ public struct RoutePlan: Equatable, Sendable {
         return String(decoding: Array((trimmed.isEmpty ? fallback : trimmed).utf16.prefix(60)), as: UTF16.self)
     }
 
-    /// `route.save`; `expect` ergänzt der Store aus dem Profil.
-    public func saveCommand(id: String, name: String, maxLinePoints: Int) -> Command? {
+    /// `route.save`; `expect` ist der beim Öffnen festgehaltene Stand (`RouteOpening`), damit eine inzwischen synchronisierte
+    /// Änderung als Konflikt auffällt, statt überschrieben zu werden.
+    public func saveCommand(id: String, name: String, maxLinePoints: Int, expect: JSONValue) -> Command? {
         ActivityCommands.saveRoute(id: id, name: name, line: Self.thinned(line, limit: maxLinePoints), waypoints: waypoints,
-                                   distanceKm: roundedKm, ascentM: ascentM.map { JSMath.round($0) })
+                                   distanceKm: roundedKm, ascentM: ascentM.map { JSMath.round($0) }, expect: expect)
+    }
+}
+
+/// Stand beim Öffnen des Planers. Punkte, Name und `expect` stammen aus derselben gespeicherten Route des Dokuments, damit
+/// `route.save` nur gegen das geht, was der Nutzer gesehen hat (das Web vergleicht `expect` mit der Rohroute).
+public struct RouteOpening: Equatable, Sendable {
+    public var plan: RoutePlan
+    public var name: String
+    /// Rohroute; `.null` = neu bzw. im Dokument nicht auffindbar (das Web meldet dann `conflict`, falls sie doch existiert).
+    public var expect: JSONValue
+
+    public init(existing: RouteDetail?, document: JSONValue) {
+        guard let existing else {
+            plan = RoutePlan()
+            name = ""
+            expect = .null
+            return
+        }
+        let raw = ActivityOps.route(document, id: existing.id)
+        let source = raw.flatMap { try? RouteDetail(json: $0) } ?? existing
+        plan = RoutePlan(detail: source)
+        name = source.name
+        expect = raw ?? .null
     }
 }

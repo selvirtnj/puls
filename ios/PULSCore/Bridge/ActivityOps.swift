@@ -496,9 +496,10 @@ public enum ActivityCommands {
         return Command(op: ActivityOps.routeDelete, args: ["id": .string(id)])
     }
 
-    /// Route mit von Native erzeugter stabiler ID (Planer). Grenzen wie `route.save`.
+    /// Route mit von Native erzeugter stabiler ID (Planer). Grenzen wie `route.save`. `expect` = beim Öffnen gesehene Rohroute
+    /// bzw. `.null`; ohne Angabe ergänzt der Store den Stand beim Speichern (nur für das erneute Übernehmen eines Konflikts).
     public static func saveRoute(id: String, name: String, line: [GeoPoint], waypoints: [GeoPoint], distanceKm: Double,
-                                 ascentM: Double?) -> Command? {
+                                 ascentM: Double?, expect: JSONValue? = nil) -> Command? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard ActivityIDs.isValid(id), !trimmed.isEmpty, trimmed.utf16.count <= 60,
               (2...800).contains(line.count), (2...60).contains(waypoints.count),
@@ -516,6 +517,8 @@ public enum ActivityCommands {
             guard ascentM.isFinite, ascentM >= 0, ascentM <= 100_000 else { return nil }
             route["ascentM"] = .number(ascentM)
         }
-        return Command(op: ActivityOps.routeSave, args: ["route": route])
+        var args: JSONValue = ["route": route]
+        if let expect { args["expect"] = expect }
+        return Command(op: ActivityOps.routeSave, args: args)
     }
 }

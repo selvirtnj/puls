@@ -440,10 +440,13 @@ public struct NutritionQueryRequest: Equatable, Hashable, Sendable {
         self.fields = fields
     }
 
-    /// Lokale Suche: `q` höchstens 100 UTF-16-Einheiten, `limit` 1–60.
-    public static func search(_ q: String, filter: SearchFilter = .all, limit: Int? = nil, requestId: String) -> NutritionQueryRequest? {
+    /// Lokale Suche: `q` höchstens 100 UTF-16-Einheiten, `limit` 1–60. `online: false` schließt Open Food Facts aus; ohne Angabe
+    /// sendet das Web Suchbegriffe ab drei Zeichen dorthin.
+    public static func search(_ q: String, filter: SearchFilter = .all, limit: Int? = nil, online: Bool? = nil,
+                              requestId: String) -> NutritionQueryRequest? {
         guard ProgressQueryRequest.isValidRequestID(requestId), q.utf16.count <= 100 else { return nil }
         var fields: [String: JSONValue] = ["q": .string(q), "filter": .string(filter.rawValue)]
+        if let online { fields["online"] = .bool(online) }
         if let limit {
             guard (1...60).contains(limit) else { return nil }
             fields["limit"] = .number(Double(limit))
@@ -511,6 +514,8 @@ public struct NutritionRecipeImport: Equatable, Sendable {
         public var query: String
         /// Erkannte g/ml-Menge; `nil`, wenn sie nur angenommen wäre.
         public var amount: Double?
+        /// Einheit der erkannten Menge (`g` oder `ml`). Gilt nur für eine Zutat in derselben Einheit.
+        public var unit: String?
         public var matches: [Match]
     }
 
@@ -532,8 +537,11 @@ public struct NutritionRecipeImport: Equatable, Sendable {
                 guard let ingredient = item["ingredient"], case .object = ingredient else { return nil }
                 return Match(id: position, name: ingredient["name"]?.stringValue ?? "", ingredient: ingredient)
             }
+            // Eine Menge ohne bekannte Einheit ist keine verlässliche Menge.
+            let unit = parsed?.string("unit").flatMap { ["g", "ml"].contains($0) ? $0 : nil }
+            let known = !assumed && unit != nil
             return Suggestion(id: index, line: row.string("line") ?? "", query: parsed?.string("query") ?? "",
-                              amount: assumed ? nil : parsed?.number("amount"), matches: matches)
+                              amount: known ? parsed?.number("amount") : nil, unit: known ? unit : nil, matches: matches)
         }
         omitted = o.int("omitted") ?? 0
     }

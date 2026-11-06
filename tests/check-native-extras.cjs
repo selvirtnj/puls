@@ -78,7 +78,7 @@ function compare(name,value){
 const applyAsync=async(t,a)=>{const before=t.messages.length;t.ctx.window.pulsNativeApply(clone(a));await new Promise(resolve=>setImmediate(resolve));return t.messages.slice(before).filter(x=>x.type==='ack').at(-1)};
 (async()=>{
   for(const o of [{handler:false},{features:['stateBridge']},{features:['nativeExtras','nativeCompletion']},{features:features.filter(x=>!['nativeExtras','nativeCompletion'].includes(x))}]){
-    const t=start(o);assert.equal(t.ctx.window.pulsNativeQuery,undefined);
+    const t=start(o);assert.equal(typeof t.ctx.window.pulsNativeQuery,o.handler!==false&&o.features.includes('stateBridge')&&o.features.includes('nativeNutrition')?'function':'undefined');
     assert.equal(t.ctx.window.pulsNativeNutrition?.pageRows,undefined);assert.equal(t.ctx.window.pulsNativeAccount?.pageRows,undefined);
     if(t.ctx.window.pulsNativeApply)code(t.apply(cmd('completion.dismiss',{id:'missing'})),'unknown_op');
   }

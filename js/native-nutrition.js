@@ -478,6 +478,24 @@ async function importPreview(r,current){
   const answer=result(r.kind,{preview,suggestions,reviewRequired:true,yield:null,websiteNutrientsUsed:false,omitted:0});
   while(JSON.stringify(answer).length>48*1024&&suggestions.length){suggestions.pop();answer.result.omitted++}return bounded(answer);
 }
+// Accept incomplete editor drafts; save validity is a result, not the transport shape check.
+function validRecipePreviewDraft(r){
+  const d=r.draft;
+  if(!fields(r,['requestId','kind','draft'])||!plain(d)||!newId(d.id)||typeof d.name!=='string'||d.name.length>100||
+    !finite(d.yield,0,100000)||!Array.isArray(d.ingredients)||d.ingredients.length>100||
+    !d.ingredients.every(x=>plain(x)&&typeof x.name==='string'&&x.name.length<=100&&['g','ml'].includes(x.unit)&&
+      finite(x.amount,0,100000)&&keys.every(k=>finite(x[k],0,k==='kcal'?1000:100))))return false;
+  try{return JSON.stringify(d).length<=48*1024}catch{return false}
+}
+function recipeDraftPreview(draft){
+  // Same providers and formatting as the last Web recipePreview (food-flow.js). No editor/DOM mutation.
+  const totals=recipeTotals(draft),per100=draft.yield>0?recipeNutrients(draft):null;
+  const display=x=>x===null?null:{kcal:n(Math.round(x.kcal)),p:n(round(x.p)),c:n(round(x.c)),f:n(round(x.f))};
+  // saveRecipe trims the form name before calling validRecipe; never normalize the caller's draft in place.
+  const valid=!!validRecipe({...draft,name:draft.name.trim()});
+  return result('recipePreview',{totals,per100,display:{totals:display(totals),per100:display(per100)},validation:{valid,
+    message:valid?null:'Bitte einen Namen, mindestens eine vollständige Zutat und ein plausibles fertiges Gesamtgewicht eingeben. Prüfe auch die Zutatenmengen.'}});
+}
 function validQuery(r){
   if(!plain(r)||!id(r.requestId)||r.requestId.length>100)return false;
   if(r.kind==='search')return fields(r,['requestId','kind','q','filter','limit','online','page'])&&typeof r.q==='string'&&r.q.length<=100&&
@@ -486,6 +504,7 @@ function validQuery(r){
   if(r.kind==='product')return fields(r,['requestId','kind','product'])&&(validRef(r.product)||fields(r.product,['barcode'])&&typeof r.product.barcode==='string'&&r.product.barcode.length<=40);
   if(r.kind==='recipe'||r.kind==='entry')return fields(r,['requestId','kind','id'])&&id(r.id);
   if(r.kind==='goals')return fields(r,['requestId','kind']);
+  if(r.kind==='recipePreview')return validRecipePreviewDraft(r);
   if(r.kind==='recipeImport')return fields(r,['requestId','kind','url','jsonLd','text'])&&['url','jsonLd','text'].filter(k=>Object.hasOwn(r,k)).length===1&&
     ['url','jsonLd','text'].every(k=>r[k]===undefined||typeof r[k]==='string'&&r[k].trim().length>0&&r[k].length<=(k==='url'?2048:100000));
   if(r.kind==='labelParse')return fields(r,['requestId','kind','text','lines','column'])&&(r.column===undefined||[0,1,2].includes(r.column))&&
@@ -536,6 +555,7 @@ async function search(r,current,emit){
   }finally{if(searchNetwork===controller)searchNetwork=null}
 }
 function query(r,current=()=>true,emit){
+  if(r.kind==='recipePreview')return recipeDraftPreview(r.draft);
   if(r.kind==='search')return search(r,current,emit);
   if(r.kind==='recipeImport')return importPreview(r,current);
   if(r.kind==='goals')return bounded(result(r.kind,{expect:goalContext()}));
@@ -551,7 +571,7 @@ function query(r,current=()=>true,emit){
     if(r.collection==='recipes')return (state.recipes||[]).filter(x=>id(x.id)).map(x=>({id:x.id,name:text(x.name),yield:x.yield,ingredients:x.ingredients.length,...recipeNutrients(x)}));
     return null;
   }
-  window.pulsNativeNutrition={...(window.pulsNativeFeatures.includes('nativeExtras')?{pageRows}:{}),ops,build,query,validQuery,cancelSearch,cancelQueries,stage:'P2',queries:['search','product','recipe','entry','labelParse','recipeImport','goals'],
+  window.pulsNativeNutrition={...(window.pulsNativeFeatures.includes('nativeExtras')?{pageRows}:{}),ops,build,query,validQuery,cancelSearch,cancelQueries,stage:'P2',queries:['search','product','recipe','entry','labelParse','recipeImport','goals','recipePreview'],
   captureUi:()=>{previousSelection=foodSelection;previousDrafts={productDraft,recipeDraft};previousGoalsExtra=copy(Object.fromEntries(Object.entries(state.goals).filter(([k])=>!keys.includes(k))));return {date,foodSelection,undo:undoDiaryItems.slice(),...previousDrafts}},
   restoreUi:ui=>{date=ui.date;foodSelection=ui.foodSelection;undoDiaryItems=ui.undo;productDraft=ui.productDraft;recipeDraft=ui.recipeDraft},
   afterRender:r=>{if(previousGoalsExtra)Object.assign(state.goals,previousGoalsExtra);if(!goalPending)return;

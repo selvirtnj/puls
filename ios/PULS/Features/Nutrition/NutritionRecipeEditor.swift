@@ -3,15 +3,16 @@ import UIKit
 import PULSCore
 
 // §12.5: Rezept anlegen, bearbeiten und importieren. Native sammelt Zutaten, Mengen und das gewogene Endgewicht; Prüfung,
-// Summen und je-100-Werte macht allein das Web. Es gibt keine Vorschau der Nährwerte des Entwurfs: Dafür fehlt eine Query, und
-// eine eigene Rechnung gäbe es nur doppelt. Nach dem Speichern zeigt die Produktansicht die Web-Werte.
+// Summen und je-100-Werte macht allein das Web. Die Vorschau kommt aus der Query `recipePreview`, wenn das Dokument sie meldet;
+// ohne sie gibt es keine Vorschau und keine eigene Rechnung, und das Web prüft beim Speichern.
 
-/// Auswahl einer Zutat; `line` = Importzeile, zu der sie gehört.
+/// Auswahl einer Zutat; `line` = Importzeile, zu der sie gehört, `amountUnit` = Einheit einer dort erkannten Menge.
 private struct RecipePickRequest: Identifiable {
     let id = UUID()
     let line: Int?
     let query: String
     let amount: Double?
+    var amountUnit: String?
     let matches: [NutritionRecipeImport.Match]
 }
 
@@ -20,10 +21,16 @@ struct NutritionRecipeEditor: View {
     /// Import: Quelle, Vorschläge und Bestätigungspflicht.
     let source: NutritionRecipeImport?
     let onDone: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    /// Konto und Dokument beim Öffnen: Ein Wechsel schließt den Editor, gespeichert wird nur für diesen Besitzer.
+    @State private var owner: DraftOwner
     @State private var draft: RecipeDraft
-    @State private var yieldText: String
-    @State private var amounts: [UUID: String]
+    @State private var yieldField: RecipeNumberField
+    @State private var amounts: [UUID: RecipeNumberField]
     @State private var picking: RecipePickRequest?
+    @State private var preview: RecipePreview?
+    /// Entwurf, zu dem `preview` gehört; bei Abweichung ist die Anzeige veraltet und gilt nicht als Prüfergebnis.
+    @State private var previewFor: JSONValue?
     /// Importzeilen, die übernommen oder bewusst übersprungen sind.
     @State private var handled: Set<Int> = []
     /// Die Bestätigung gilt nur für genau diesen Stand; jede Änderung hebt sie auf.
@@ -37,30 +44,47 @@ struct NutritionRecipeEditor: View {
         self.source = source
         self.onDone = onDone
         let locale = coordinator.text.locale
+        _owner = State(initialValue: coordinator.store.nutritionDraftOwner)
         _draft = State(initialValue: draft)
-        _yieldText = State(initialValue: draft.yieldGrams.map { NutritionInput.text($0, locale: locale) } ?? "")
-        var texts: [UUID: String] = [:]
+        _yieldField = State(initialValue: Self.field(draft.yieldGrams, locale: locale))
+        var fields: [UUID: RecipeNumberField] = [:]
         for ingredient in draft.ingredients {
-            texts[ingredient.id] = ingredient.amount.map { NutritionInput.text($0, locale: locale) } ?? ""
+            fields[ingredient.id] = Self.field(ingredient.amount, locale: locale)
         }
-        _amounts = State(initialValue: texts)
+        _amounts = State(initialValue: fields)
+    }
+
+    private static func field(_ value: Double?, locale: Locale) -> RecipeNumberField {
+        RecipeNumberField(original: value, shown: value.map { NutritionInput.text($0, locale: locale) } ?? "")
     }
 
     private func number(_ value: String) -> Double? {
         NutritionInput.number(value, locale: coordinator.text.locale)
     }
 
-    /// Entwurf mit den aktuellen Eingaben.
+    /// Entwurf mit den aktuellen Eingaben; unberührte Felder behalten ihren genauen Ausgangswert.
     private var currentDraft: RecipeDraft {
         var result = draft
-        result.yieldGrams = number(yieldText)
+        result.yieldGrams = yieldField.value(parse: number)
         for index in result.ingredients.indices {
-            result.ingredients[index].amount = number(amounts[result.ingredients[index].id] ?? "")
+            result.ingredients[index].amount = amounts[result.ingredients[index].id]?.value(parse: number)
         }
         return result
     }
 
     private var isConfirmed: Bool { confirmedFor == currentDraft }
+
+    private var isOwner: Bool { coordinator.store.nutritionDraftOwner == owner }
+
+    /// Anfrage für die Vorschau; `nil` ohne gemeldete Query oder außerhalb der Transportgrenzen.
+    private var previewDraft: JSONValue? {
+        coordinator.offersRecipePreview ? currentDraft.previewJSON : nil
+    }
+
+    private var isPreviewCurrent: Bool { previewFor != nil && previewFor == previewDraft }
+
+    /// Das Web hat genau diesen vollständigen Entwurf abgelehnt.
+    private var previewRejects: Bool { isPreviewCurrent && preview?.isValid == false && currentDraft.isComplete }
 
     private var command: Command? {
         if let source {
@@ -80,7 +104,7 @@ struct NutritionRecipeEditor: View {
             ingredientsSection(text)
             Section {
                 HStack {
-                    TextField(text("Gesamtgewicht", "Total weight"), text: $yieldText)
+                    TextField(text("Gesamtgewicht", "Total weight"), text: $yieldField.text)
                         .keyboardType(.decimalPad)
                         .focused($focused)
                         .monospacedDigit()
@@ -90,9 +114,10 @@ struct NutritionRecipeEditor: View {
             } header: {
                 Text(text("Fertiges Gericht wiegen", "Weigh the finished dish"))
             } footer: {
-                Text(text("Ohne Topf, nach dem Kochen. Nudelwasser erhöht das Gewicht, Verdampfen verringert es. Nicht einfach die Rohgewichte addieren. Die Werte je 100 g berechnet PULS beim Speichern.",
-                          "Without the pot, after cooking. Pasta water adds weight, evaporation reduces it. Do not simply add up the raw weights. PULS calculates the values per 100 g when saving."))
+                Text(text("Ohne Topf, nach dem Kochen. Nudelwasser erhöht das Gewicht, Verdampfen verringert es. Nicht einfach die Rohgewichte addieren.",
+                          "Without the pot, after cooking. Pasta water adds weight, evaporation reduces it. Do not simply add up the raw weights."))
             }
+            previewSection(text)
             if source != nil {
                 Section {
                     Toggle(text("Zutaten und Mengen geprüft", "Ingredients and amounts checked"),
@@ -118,7 +143,7 @@ struct NutritionRecipeEditor: View {
                     .frame(minHeight: 36)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(command == nil || commandId != nil || !coordinator.canWrite)
+                .disabled(command == nil || commandId != nil || !coordinator.canWrite || !isOwner || previewRejects)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
             }
@@ -133,12 +158,84 @@ struct NutritionRecipeEditor: View {
             }
         }
         .sheet(item: $picking) { request in
-            RecipeIngredientPicker(coordinator: coordinator, query: request.query, amount: request.amount, matches: request.matches,
-                                   canSkip: request.line != nil,
+            RecipeIngredientPicker(coordinator: coordinator, query: request.query, amount: request.amount, amountUnit: request.amountUnit,
+                                   matches: request.matches, canSkip: request.line != nil,
                                    onPick: { ingredient in add(ingredient, line: request.line) },
                                    onSkip: { if let line = request.line { handled.insert(line) } })
         }
         .task(id: commandId) { await awaitAck() }
+        .task(id: previewDraft) { await refreshPreview() }
+        .onChange(of: coordinator.store.nutritionDraftOwner) { _, current in
+            // Konto- oder Dokumentwechsel: Der Entwurf gehört nicht zum neuen Stand.
+            if current != owner { dismiss() }
+        }
+    }
+
+    /// Entprellt: Jede Änderung bricht die Task ab, ihre Anfrage wird aufgegeben und eine späte Antwort verworfen.
+    private func refreshPreview() async {
+        guard let wanted = previewDraft else {
+            preview = nil
+            previewFor = nil
+            return
+        }
+        guard wanted != previewFor else { return }
+        try? await Task.sleep(for: .milliseconds(300))
+        guard !Task.isCancelled else { return }
+        let answer = await coordinator.recipePreview(wanted)
+        guard !Task.isCancelled, wanted == previewDraft else { return }
+        preview = answer
+        previewFor = answer == nil ? nil : wanted
+    }
+
+    private func macroLine(_ values: RecipePreview.Values, text: OverviewText) -> String {
+        "\(values.kcal) kcal · P \(values.p) · \(text("KH", "C")) \(values.c) · F \(values.f) g"
+    }
+
+    /// Fertig formatierte Web-Werte, wie die Rezeptvorschau im Web. Veraltete Werte bleiben bis zur neuen Antwort abgeblendet.
+    @ViewBuilder
+    private func previewSection(_ text: OverviewText) -> some View {
+        if let preview {
+            Section {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(text("Das gesamte Gericht", "The whole dish")).font(.subheadline.weight(.semibold))
+                    Text(macroLine(preview.totals, text: text)).monospacedDigit()
+                }
+                .accessibilityElement(children: .combine)
+                .opacity(isPreviewCurrent ? 1 : 0.5)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(text("Pro 100 g fertig", "Per 100 g finished")).font(.subheadline.weight(.semibold))
+                    if let per100 = preview.per100 {
+                        Text(macroLine(per100, text: text)).monospacedDigit()
+                    } else {
+                        Text(text("Für die Portionswerte fehlt noch das fertige Gesamtgewicht.",
+                                  "The finished total weight is still missing for the portion values."))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .opacity(isPreviewCurrent ? 1 : 0.5)
+            } header: {
+                Text(text("Vorschau", "Preview"))
+            } footer: {
+                previewFooter(preview, text: text)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func previewFooter(_ preview: RecipePreview, text: OverviewText) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if currentDraft.ingredients.contains(where: { $0.amount == nil }) {
+                Text(text("Zutaten ohne Menge zählen noch nicht mit.", "Ingredients without an amount do not count yet."))
+            }
+            // Vor der ersten Zutat wäre der Hinweis nur Lärm. Der Web-Text ist nur deutsch; eine andere Meldung kennt das Web nicht.
+            if isPreviewCurrent, !preview.isValid, !draft.ingredients.isEmpty {
+                let fallback = "Bitte einen Namen, mindestens eine vollständige Zutat und ein plausibles fertiges Gesamtgewicht eingeben. Prüfe auch die Zutatenmengen."
+                Text(text(preview.message ?? fallback,
+                          "Please enter a name, at least one complete ingredient and a plausible finished total weight. Also check the ingredient amounts."))
+                    .foregroundStyle(previewRejects ? Color.red : Color.secondary)
+            }
+        }
     }
 
     @ViewBuilder
@@ -146,7 +243,8 @@ struct NutritionRecipeEditor: View {
         Section {
             ForEach(source.suggestions) { suggestion in
                 Button {
-                    picking = RecipePickRequest(line: suggestion.id, query: suggestion.query, amount: suggestion.amount, matches: suggestion.matches)
+                    picking = RecipePickRequest(line: suggestion.id, query: suggestion.query, amount: suggestion.amount,
+                                                amountUnit: suggestion.unit, matches: suggestion.matches)
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: handled.contains(suggestion.id) ? "checkmark.circle.fill" : "circle")
@@ -190,6 +288,11 @@ struct NutritionRecipeEditor: View {
                             .accessibilityLabel(text("Menge von \(ingredient.name)", "Amount of \(ingredient.name)"))
                         Text(ingredient.unit).foregroundStyle(.secondary)
                     }
+                    if amounts[ingredient.id]?.text.isEmpty != false {
+                        Text(text("Bitte die Menge in \(ingredient.unit) eingeben.", "Please enter the amount in \(ingredient.unit)."))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
@@ -215,7 +318,7 @@ struct NutritionRecipeEditor: View {
     }
 
     private func amountBinding(_ id: UUID) -> Binding<String> {
-        Binding(get: { amounts[id] ?? "" }, set: { amounts[id] = $0 })
+        Binding(get: { amounts[id]?.text ?? "" }, set: { amounts[id]?.text = $0 })
     }
 
     private func remove(_ ingredient: RecipeIngredient) {
@@ -226,7 +329,7 @@ struct NutritionRecipeEditor: View {
     private func add(_ ingredient: RecipeIngredient, line: Int?) {
         guard draft.ingredients.count < 100 else { return }
         draft.ingredients.append(ingredient)
-        amounts[ingredient.id] = ingredient.amount.map { NutritionInput.text($0, locale: coordinator.text.locale) } ?? ""
+        amounts[ingredient.id] = Self.field(ingredient.amount, locale: coordinator.text.locale)
         if let line { handled.insert(line) }
     }
 
@@ -234,7 +337,7 @@ struct NutritionRecipeEditor: View {
         guard let command else { return }
         focused = false
         status = nil
-        commandId = coordinator.saveProduct(command)
+        commandId = coordinator.saveRecipe(command, owner: owner)
     }
 
     /// Wartet auf das Ack: `invalid` nennt den Web-Grund (z. B. Nährwertgrenze), `conflict` heißt, das Rezept wurde anderswo geändert.
@@ -273,6 +376,8 @@ struct NutritionRecipeEditor: View {
 private struct RecipeIngredientPicker: View {
     let coordinator: NutritionCoordinator
     let amount: Double?
+    /// Einheit einer erkannten Menge; `nil` beim freien Hinzufügen (der Startwert gilt dann in der Einheit der Zutat).
+    let amountUnit: String?
     let matches: [NutritionRecipeImport.Match]
     let canSkip: Bool
     let onPick: (RecipeIngredient) -> Void
@@ -282,10 +387,11 @@ private struct RecipeIngredientPicker: View {
     @State private var items: [NutritionProduct] = []
     @State private var searching = false
 
-    init(coordinator: NutritionCoordinator, query: String, amount: Double?, matches: [NutritionRecipeImport.Match], canSkip: Bool,
-         onPick: @escaping (RecipeIngredient) -> Void, onSkip: @escaping () -> Void) {
+    init(coordinator: NutritionCoordinator, query: String, amount: Double?, amountUnit: String?, matches: [NutritionRecipeImport.Match],
+         canSkip: Bool, onPick: @escaping (RecipeIngredient) -> Void, onSkip: @escaping () -> Void) {
         self.coordinator = coordinator
         self.amount = amount
+        self.amountUnit = amountUnit
         self.matches = matches
         self.canSkip = canSkip
         self.onPick = onPick
@@ -311,7 +417,7 @@ private struct RecipeIngredientPicker: View {
                 Section {
                     ForEach(items) { product in
                         Button {
-                            if let ingredient = RecipeIngredient(product: product, amount: amount) { pick(ingredient) }
+                            if let ingredient = RecipeIngredient(product: product, amount: amount, amountUnit: amountUnit) { pick(ingredient) }
                         } label: {
                             NutritionProductRow(product: product, text: text)
                                 .foregroundStyle(.primary)
@@ -329,12 +435,19 @@ private struct RecipeIngredientPicker: View {
                 } header: {
                     Text(text("Lebensmittel", "Foods"))
                 } footer: {
-                    Text(text("Nur geprüfte Lebensmittel mit vollständigen Werten. Barcode-Produkte vorher speichern.",
-                              "Only reviewed foods with complete values. Save barcode products first."))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(text("Nur geprüfte Lebensmittel mit vollständigen Werten. Barcode-Produkte vorher speichern.",
+                                  "Only reviewed foods with complete values. Save barcode products first."))
+                        if let amount, let amountUnit {
+                            let recognized = NutritionInput.text(amount, locale: text.locale) + " " + amountUnit
+                            Text(text("Erkannt: \(recognized). Gramm und Milliliter werden nicht gleichgesetzt: Bei einem Lebensmittel in der anderen Einheit gibst du die Menge neu ein.",
+                                      "Recognized: \(recognized). Grams and millilitres are not treated as equal: for a food in the other unit, enter the amount again."))
+                        }
+                    }
                 }
                 Section {
                     NavigationLink {
-                        RecipeOwnIngredientForm(coordinator: coordinator, amount: amount) { pick($0) }
+                        RecipeOwnIngredientForm(coordinator: coordinator, amount: amount, amountUnit: amountUnit) { pick($0) }
                     } label: {
                         Label(text("Eigene Zutatenwerte eingeben", "Enter own ingredient values"), systemImage: "square.and.pencil")
                     }
@@ -366,7 +479,7 @@ private struct RecipeIngredientPicker: View {
         dismiss()
     }
 
-    /// Lokale Web-Suche; OFF-Treffer bleiben außen vor, sie wären ungeprüft.
+    /// Lokale Web-Suche mit `online: false`: OFF-Treffer wären ungeprüft, also geht auch kein Suchbegriff dorthin.
     private func search() async {
         var trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         while trimmed.utf16.count > 100 { trimmed.removeLast() }
@@ -378,7 +491,7 @@ private struct RecipeIngredientPicker: View {
         defer { if !Task.isCancelled { searching = false } }
         let term = trimmed
         _ = await coordinator.search({
-            NutritionQueryRequest.search(term, filter: .all, limit: 60, requestId: $0)
+            NutritionQueryRequest.search(term, filter: .all, limit: 60, online: false, requestId: $0)
         }) { result in
             guard !Task.isCancelled else { return }
             items = result.items.filter { $0.complete && $0.unitKnown && !$0.reviewRequired }
@@ -390,18 +503,25 @@ private struct RecipeIngredientPicker: View {
 private struct RecipeOwnIngredientForm: View {
     let coordinator: NutritionCoordinator
     let onAdd: (RecipeIngredient) -> Void
+    /// Einheit der erkannten Menge und ihr Text: Sie gilt nur in dieser Einheit.
+    private let amountUnit: String?
+    private let recognizedText: String
     @State private var name = ""
-    @State private var unit = "g"
+    @State private var unit: String
     @State private var kcal = ""
     @State private var p = ""
     @State private var c = ""
     @State private var f = ""
     @State private var amountText: String
 
-    init(coordinator: NutritionCoordinator, amount: Double?, onAdd: @escaping (RecipeIngredient) -> Void) {
+    init(coordinator: NutritionCoordinator, amount: Double?, amountUnit: String?, onAdd: @escaping (RecipeIngredient) -> Void) {
         self.coordinator = coordinator
         self.onAdd = onAdd
-        _amountText = State(initialValue: amount.map { NutritionInput.text($0, locale: coordinator.text.locale) } ?? "")
+        self.amountUnit = amountUnit
+        let shown = amount.map { NutritionInput.text($0, locale: coordinator.text.locale) } ?? ""
+        recognizedText = shown
+        _unit = State(initialValue: amountUnit ?? "g")
+        _amountText = State(initialValue: shown)
     }
 
     private func number(_ value: String) -> Double? {
@@ -444,6 +564,10 @@ private struct RecipeOwnIngredientForm: View {
         }
         .navigationTitle(text("Eigene Zutat", "Own ingredient"))
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: unit) { _, chosen in
+            // Wechsel zwischen g und ml: Die erkannte Menge gilt nicht mehr und wird ausdrücklich neu erfasst.
+            if let amountUnit { amountText = chosen == amountUnit ? recognizedText : "" }
+        }
     }
 
     private func field(_ title: String, _ value: Binding<String>) -> some View {
@@ -463,6 +587,9 @@ private struct RecipeOwnIngredientForm: View {
 struct NutritionRecipeImportView: View {
     let coordinator: NutritionCoordinator
     let onDone: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    /// Konto und Dokument beim Öffnen; eine Antwort für einen anderen Stand wird nicht übernommen.
+    @State private var owner: DraftOwner
     @State private var url = ""
     @State private var pasted = ""
     @State private var isLoading = false
@@ -472,6 +599,7 @@ struct NutritionRecipeImportView: View {
     init(coordinator: NutritionCoordinator, onDone: @escaping () -> Void) {
         self.coordinator = coordinator
         self.onDone = onDone
+        _owner = State(initialValue: coordinator.store.nutritionDraftOwner)
     }
 
     var body: some View {
@@ -524,6 +652,10 @@ struct NutritionRecipeImportView: View {
         }
         .navigationTitle(text("Rezept importieren", "Import recipe"))
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: coordinator.store.nutritionDraftOwner) { _, current in
+            // Nur am Formular: Der geöffnete Editor schließt sich selbst.
+            if current != owner { dismiss() }
+        }
     }
 
     private func run(_ build: @escaping (String) -> NutritionQueryRequest?) {
@@ -533,6 +665,7 @@ struct NutritionRecipeImportView: View {
         Task { @MainActor in
             let result = await coordinator.recipeImport(build)
             isLoading = false
+            guard coordinator.store.nutritionDraftOwner == owner else { return }
             if let result {
                 imported = result
             } else {

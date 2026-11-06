@@ -713,13 +713,15 @@ function nativeExport(r){
   });
   return chunkNative(r,content,scope,{name,type});
 }
-if(completionFeature||extrasFeature){
+if(completionFeature||extrasFeature||nutritionFeature){
   window.pulsNativeQuery=function(request){
     if(!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||activityPreparing||accountPreparing||saveDepth||
-      !nativeFields(request,['requestId','kind','collection','cursor','limit','date','month','metric','range','mode','offset','filter','exerciseId','id','format','csvOptions','itemIndex'])||
+      !nativeFields(request,['requestId','kind','collection','cursor','limit','date','month','metric','range','mode','offset','filter','exerciseId','id','format','csvOptions','itemIndex','draft'])||
       typeof request.requestId!=='string'||!request.requestId.trim()||request.requestId.length>100)return false;
-    const r=copy(request);queryContext();let answer;
+    if(request.kind==='recipePreview'&&!nutritionAdapter()?.validQuery(request))return false;
+    const r=copy(request);if(completionFeature||extrasFeature)queryContext();let answer;
     try{
+      if(r.kind==='recipePreview')answer=nutritionAdapter().query(r);
       if(r.kind==='completion'&&completionFeature&&nativeFields(r,['requestId','kind','collection','id','cursor'])&&nativeId(r.id)&&
         (r.collection===undefined||['workout','run'].includes(r.collection))){
         const history=applied(),index=history.findLastIndex(x=>x.userId===userId()&&x.result?.completion?.id===r.id&&(!r.collection||x.result.completion.kind===r.collection)),
