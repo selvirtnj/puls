@@ -45,7 +45,8 @@
       "entry",
       "labelParse",
       "recipeImport",
-      "goals"
+      "goals",
+      "recipePreview"
     ]
   },
   "ownerPending": false

@@ -115,7 +115,8 @@
       "entry",
       "labelParse",
       "recipeImport",
-      "goals"
+      "goals",
+      "recipePreview"
     ]
   },
   "account": {

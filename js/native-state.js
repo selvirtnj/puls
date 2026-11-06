@@ -713,13 +713,17 @@ function nativeExport(r){
   });
   return chunkNative(r,content,scope,{name,type});
 }
-if(completionFeature||extrasFeature){
+if(completionFeature||extrasFeature||nutritionFeature){
   window.pulsNativeQuery=function(request){
-    if(!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||activityPreparing||accountPreparing||saveDepth||
-      !nativeFields(request,['requestId','kind','collection','cursor','limit','date','month','metric','range','mode','offset','filter','exerciseId','id','format','csvOptions','itemIndex'])||
-      typeof request.requestId!=='string'||!request.requestId.trim()||request.requestId.length>100)return false;
-    const r=copy(request);queryContext();let answer;
+    if(!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||activityPreparing||accountPreparing||saveDepth)return false;
+    let r,answer;
     try{
+      r=copy(request);
+      if(!nativeFields(r,['requestId','kind','collection','cursor','limit','date','month','metric','range','mode','offset','filter','exerciseId','id','format','csvOptions','itemIndex','draft'])||
+        typeof r.requestId!=='string'||!r.requestId.trim()||r.requestId.length>100)return false;
+      if(r.kind==='recipePreview'&&!nutritionAdapter()?.validQuery(r))return false;
+      if(completionFeature||extrasFeature)queryContext();
+      if(r.kind==='recipePreview')answer=nutritionAdapter().query(r);
       if(r.kind==='completion'&&completionFeature&&nativeFields(r,['requestId','kind','collection','id','cursor'])&&nativeId(r.id)&&
         (r.collection===undefined||['workout','run'].includes(r.collection))){
         const history=applied(),index=history.findLastIndex(x=>x.userId===userId()&&x.result?.completion?.id===r.id&&(!r.collection||x.result.completion.kind===r.collection)),
@@ -852,12 +856,12 @@ if(nutritionFeature){
   const invalidateQueries=()=>{queryEpoch++;nutritionAdapter()?.cancelQueries()};
   window.pulsNativeNutritionQuery=function(request){
     const adapter=nutritionAdapter();
-    if(!adapter||!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||activityPreparing||saveDepth||!adapter.validQuery(request))return false;
+    if(!adapter||!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||activityPreparing||saveDepth)return false;
+    try{request=copy(request);if(!adapter.validQuery(request))return false}catch{return false}
     const epoch=queryEpoch,owner=userId(),profile=state,revision=projectionRevision;
     const current=()=>epoch===queryEpoch&&!pageHidden&&ready&&helloOwnerPending===false&&profileReady()&&owner===userId()&&profile===state&&revision===projectionRevision&&!applying&&!rollingBack;
     const send=answer=>!!answer&&current()&&post({type:'nutritionResult',requestId:request.requestId,seq,userId:userId(),ownerPending:false,
       flags:flags(),cloud:cloud(),language:state.language==='en'?'en':'de',...answer});
-    request=copy(request);
     try{const answer=adapter.query(request,current,send);if(answer&&typeof answer.then==='function'){void answer.then(send).catch(()=>{
       if(current())send({kind:request.kind,ok:false,error:{code:'unavailable',message:'Lokale Suche derzeit nicht verfügbar'}})});return true}return !!send(answer)}catch{return false}
   };
