@@ -62,7 +62,8 @@
 - CI #44 bis #46: nicht gestartet, GitHub fand keinen ARM-macOS-Runner („job was not acquired“). Workflow auf `native-ios` deshalb auf `macos-15-intel`; vor dem Merge nach `main` entscheiden, ob das bleibt. `ios/.ci-run` ist nur ein CI-Auslöser und kann weg.
 - CI #47 (`8addb60`) grün, Testversion `PULS-ipa-47`: https://github.com/selvirtnj/puls/actions/runs/42204430413
 - Web als **v81** live (`f42df02`), geprüft: Cache `puls-static-81`, `cycleId` im ausgelieferten Code, keine Konsolenfehler. `native-ios` per Merge auf v81.
-- Offen: Gerätetest; Routenplaner, Rezept-Editor/Import nativ; alte Workouts bearbeiten nur analysiert (§15.8); Anmeldung/Abmeldung/Konflikte/Import/Recovery/Reset/Kontolöschung sind Phase B.
+- Rezept-Editor mit Web-Vorschau, Rezept-Import, Routenplaner mit MapKit: Commits `2ec5e62`, `4ce6462`, `6b3290c`. Codex-Review 1×P1, 3×P2, 1×P3 behoben und nachgeprüft; Claude-Review der Query 2×P3 behoben. CI #49 grün, Testversion `PULS-ipa-49`: https://github.com/selvirtnj/puls/actions/runs/42209851779
+- Offen: Gerätetest; alte Workouts bearbeiten nur analysiert (§15.8); Anmeldung/Abmeldung/Konflikte/Import/Recovery/Reset/Kontolöschung sind Phase B.
 
 ## Stand gesamt
 
