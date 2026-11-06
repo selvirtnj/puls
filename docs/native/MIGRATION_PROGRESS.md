@@ -55,6 +55,12 @@
 - Web (Codex, Paket R): `js/native-account.js`; keine E-Mail/Tokens; sensible Abläufe nur Web. Live als **v80**.
 - Native (Claude, Paket S): `Features/Account/*`, `Shell/NativeAppearance.swift`; „System“-Darstellung folgt dem iPhone (erzwungenes Dark entfernt). Codex: 2×P1/5×P2, dann 1×P1/2×P2 — behoben und nachgeprüft. CI #41 grün (`PULS-ipa-41`).
 
+## Gerätetest-Korrekturen und Welle N1 (06.11.2026)
+
+- Gerätetest `PULS-ipa-41`/`-42`: Startbildschirm, Plus-Knopf, Quick-Add in dieselben Abläufe, Nährstoff-Wischkarte, kleiner Wasser-Knopf, Gewicht direkt nativ, Karte beim Laufen, Gruppe-A-Webausgänge. Commit `10c6600`, CI #43 grün.
+- Welle N1, Web (Codex) und App (Claude): native Abschlussansichten, Pagination, Indexchart, `exercise.settings.set`, `route.fromRun`, Export, Teilen (§15). Commits `3a503a3`, `1374bb2`; Reviews über Kreuz, letzte Nachprüfung ohne Befund.
+- CI #44 und #45: nicht gestartet, GitHub fand keinen macOS-Runner („job was not acquired“). N1-Swift-Code ist damit noch nicht kompiliert.
+
 ## Stand gesamt
 
 Nativ: Tab-Leiste/Kopf, Übersicht, Körper & Gewicht, Training (Routinen, Editor, Session), Kalender, Fortschritt, Aktivitäten, Ernährung, Konto/Profil. Weiter Web (bewusst): Anmeldung/Abmeldung/Sync-Konflikt/Import/Export/Recovery/Reset/Kontolöschung, Routenplaner, Teilen, Bearbeiten alter Einträge, Rezept-Editor/Import-UI. Datenbesitzer ist weiter das Web (Phase A).
