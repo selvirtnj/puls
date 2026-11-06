@@ -489,7 +489,8 @@ function validRecipePreviewDraft(r){
 }
 function recipeDraftPreview(draft){
   // Same providers and formatting as the last Web recipePreview (food-flow.js). No editor/DOM mutation.
-  const totals=recipeTotals(draft),per100=draft.yield>0?recipeNutrients(draft):null;
+  const totals=recipeTotals(draft),calculated=draft.yield>0?recipeNutrients(draft):null;
+  const per100=calculated&&keys.every(k=>Number.isFinite(calculated[k]))?calculated:null;
   const display=x=>x===null?null:{kcal:n(Math.round(x.kcal)),p:n(round(x.p)),c:n(round(x.c)),f:n(round(x.f))};
   // saveRecipe trims the form name before calling validRecipe; never normalize the caller's draft in place.
   const valid=!!validRecipe({...draft,name:draft.name.trim()});

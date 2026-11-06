@@ -49,6 +49,20 @@ const microtask=async()=>{for(let i=0;i<12;i++)await Promise.resolve()};
     if(yieldValue){assert(html.includes(r.display.per100.kcal+' kcal'));assert(r.per100)}else{assert.equal(r.per100,null);assert.equal(r.display.per100,null);assert(html.includes('Gesamtgewicht fehlt'))}
   }
   const concentrated={...draft,yield:1},invalid=ask(concentrated);assert.equal(invalid.validation.valid,false);
+  const tiny=ask({...draft,yield:1e-320});assert.equal(tiny.per100,null);assert.equal(tiny.display.per100,null);
+  assert.equal(tiny.validation.valid,false);assert.deepEqual(tiny.totals,preview.totals);
+  // Validate exactly the JSON copy used by the provider, including toJSON substitutions on either API.
+  for(const api of ['pulsNativeQuery','pulsNativeNutritionQuery']){
+    const altered={...draft,toJSON(){return {...draft,yield:'200'}}};
+    const before=t.messages.length;
+    assert.equal(t.ctx.window[api]({requestId:'serialized-invalid',kind:'recipePreview',draft:altered}),false);
+    const throwing=Object.defineProperty({requestId:'copy-error',kind:'recipePreview',draft},'toJSON',{value(){throw Error('copy failed')}});
+    assert.equal(t.ctx.window[api](throwing),false,'copy exceptions return false');
+    const substituted=Object.defineProperty({requestId:'valid-raw',kind:'recipePreview',draft},'toJSON',{
+      value(){return {requestId:' ',kind:'recipePreview',draft}}});
+    assert.equal(t.ctx.window[api](substituted),false,'request envelope is validated after copying');
+    assert.equal(t.messages.length,before,'invalid serialized requests send no response');
+  }
   t.run('recipeDraft='+JSON.stringify(concentrated));t.el('recipe-name').value=concentrated.name;t.el('recipe-yield').value='1';
   t.run('saveRecipe({preventDefault(){}})');assert.equal(invalid.validation.message,t.el('recipe-error').textContent);
   for(const d of [{...draft,name:''},{...draft,ingredients:[]},{...draft,yield:0}])assert.equal(ask(d).validation.valid,false);
