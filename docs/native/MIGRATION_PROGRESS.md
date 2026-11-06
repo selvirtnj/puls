@@ -59,7 +59,10 @@
 
 - Gerätetest `PULS-ipa-41`/`-42`: Startbildschirm, Plus-Knopf, Quick-Add in dieselben Abläufe, Nährstoff-Wischkarte, kleiner Wasser-Knopf, Gewicht direkt nativ, Karte beim Laufen, Gruppe-A-Webausgänge. Commit `10c6600`, CI #43 grün.
 - Welle N1, Web (Codex) und App (Claude): native Abschlussansichten, Pagination, Indexchart, `exercise.settings.set`, `route.fromRun`, Export, Teilen (§15). Commits `3a503a3`, `1374bb2`; Reviews über Kreuz, letzte Nachprüfung ohne Befund.
-- CI #44 und #45: nicht gestartet, GitHub fand keinen macOS-Runner („job was not acquired“). N1-Swift-Code ist damit noch nicht kompiliert.
+- CI #44 bis #46: nicht gestartet, GitHub fand keinen ARM-macOS-Runner („job was not acquired“). Workflow auf `native-ios` deshalb auf `macos-15-intel`; vor dem Merge nach `main` entscheiden, ob das bleibt. `ios/.ci-run` ist nur ein CI-Auslöser und kann weg.
+- CI #47 (`8addb60`) grün, Testversion `PULS-ipa-47`: https://github.com/selvirtnj/puls/actions/runs/42204430413
+- Web als **v81** live (`f42df02`), geprüft: Cache `puls-static-81`, `cycleId` im ausgelieferten Code, keine Konsolenfehler. `native-ios` per Merge auf v81.
+- Offen: Gerätetest; Routenplaner, Rezept-Editor/Import nativ; alte Workouts bearbeiten nur analysiert (§15.8); Anmeldung/Abmeldung/Konflikte/Import/Recovery/Reset/Kontolöschung sind Phase B.
 
 ## Stand gesamt
 
