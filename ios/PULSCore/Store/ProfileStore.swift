@@ -482,7 +482,7 @@ public final class ProfileStore {
     /// Eine sichtbare Abschlussansicht darf nur bei bestätigtem Besitzer stehen bleiben.
     public func completionIsVisible(_ record: CompletionRecord) -> Bool {
         guard completionOwnerConfirmed, record.userId == userId else { return false }
-        return completions.contains { $0.id == record.id && $0.userId == record.userId && $0.commandId == record.commandId }
+        return completions.contains { $0.isSameCycle(as: record) }
     }
 
     /// Native zeigt den Abschluss selbst: Das Ack trägt ihn, meldet ihn als verloren, oder das Dokument unterdrückt seinen
@@ -509,7 +509,8 @@ public final class ProfileStore {
     /// Vorgemerkte Bestätigungen des aktiven Kontos einreihen, sobald die Outbox sie annimmt.
     private func flushCompletionDismissals() {
         for pending in completionLedger.pendingDismissals where pending.userId == userId && completionOwnerConfirmed {
-            guard supportsOp(ExtrasOps.completionDismiss), let command = ExtrasCommands.dismissCompletion(id: pending.id) else { continue }
+            guard supportsOp(ExtrasOps.completionDismiss),
+                  let command = ExtrasCommands.dismissCompletion(id: pending.id, cycleId: pending.cycleId) else { continue }
             do {
                 try performExtras(command, asUser: pending.userId)
                 completionLedger.finishDismissal(pending)

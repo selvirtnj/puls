@@ -347,7 +347,7 @@ function ack(id,code,message,result){
   // The complete immutable completion remains in the existing owner-bound replay record. Large routes/wins are
   // read in chunks; do not post a multi-megabyte ack. Ordinary/old-IPA acknowledgements keep their exact shape.
   if(completionFeature&&result?.completion&&JSON.stringify(result).length>40*1024){const c=result.completion;
-    result={...result,completion:{kind:c.kind,id:c.id,xp:c.xp,durationXp:c.durationXp,level:c.level,streak:c.streak,chunked:true}}}
+    result={...result,completion:{kind:c.kind,id:c.id,...(c.cycleId?{cycleId:c.cycleId}:{}),xp:c.xp,durationXp:c.durationXp,level:c.level,streak:c.streak,chunked:true}}}
   post({type:'ack',id,ok:!code,seq,...(code?{error:{code,message}}:result!==undefined?{result}:{})});
 }
 function applied(){
@@ -372,9 +372,10 @@ window.pulsNativeApply=function(cmd){
   if(known){ack(id,undefined,undefined,known.result);queue('apply');flush();return}
   if(completionFeature&&cmd.op==='completion.dismiss'){
     const a=cmd.args;
-    if(!a||Object.keys(a).some(k=>k!=='id')||!nativeId(a.id)){ack(id,'invalid','Abschluss-ID erforderlich');return}
-    if(!completionFor(a.id)){ack(id,'gone','Abschluss nicht mehr im Replay-Speicher');return}
-    commit(cmd,history,{run:()=>({dismissedId:a.id}),verify:()=>true});return;
+    if(!nativeFields(a,['id','cycleId'])||!nativeId(a.id)||a.cycleId!==undefined&&!nativeId(a.cycleId)){ack(id,'invalid','Abschluss-ID und gültiger optionaler Zyklus erforderlich');return}
+    const completion=a.cycleId===undefined?completionFor(a.id):history.findLast(x=>x.userId===cmd.userId&&x.result?.completion?.id===a.id&&x.result.completion.cycleId===a.cycleId)?.result.completion;
+    if(!completion){ack(id,'gone','Abschlusszyklus nicht mehr im Replay-Speicher');return}
+    commit(cmd,history,{run:()=>({dismissedId:a.id,...(completion.cycleId?{dismissedCycleId:completion.cycleId}:{})}),verify:()=>true});return;
   }
   const training=trainingAdapter(),trainingOp=training&&typeof cmd.op==='string'&&Object.hasOwn(training.ops,cmd.op)?training.ops[cmd.op]:null;
   if(trainingOp){applyTraining(cmd,history,training,trainingOp);return}
@@ -516,7 +517,7 @@ function applyTraining(cmd,history,training,op,prepared){
       const kind=cmd.op==='workout.finish'?'workout':'run',id=kind==='workout'?args.workoutId:result?.runId;
       const cached=completionFor(id,kind);
       // A lost replay log may still find an already finished entry. Never invent/recalculate its original award.
-      const completion=plan.noop?cached:buildCompletion(kind,id);
+      const completion=plan.noop?cached:buildCompletion(kind,id,cmd.id);
       if(!plan.noop)clearCompletion();
       return {...(result||{}),...(kind==='workout'?{workoutId:id}:{}),...(completion?{completion}:{completionUnavailable:true})};
     }
@@ -588,7 +589,7 @@ function completionFor(id,kind){
   if(!id)return null;
   return applied().findLast(x=>x.userId===userId()&&x.result?.completion?.id===id&&(!kind||x.result.completion.kind===kind))?.result.completion??null;
 }
-function buildCompletion(kind,id){
+function buildCompletion(kind,id,cycleId){
   const w=kind==='workout'?state.workouts.find(x=>x.id===id&&x.finished):(state.runs||[]).find(x=>x.id===id);
   if(!w)throw Error('Abschluss fehlt');
   // The Web has a derived XP model, not an incrementing ledger. Capture one award-map result here, once after
@@ -601,7 +602,7 @@ function buildCompletion(kind,id){
       durationClock:formatClock(w.durationSeconds),paceSeconds:runPace(w),distanceText:runKm(w.distanceKm)};
   const weekStartDay=weekStart(today()),trained=new Set(completedWorkouts().map(x=>x.date));
   const week=Array.from({length:7},(_,i)=>{const d=new Date(weekStartDay+'T12:00:00');d.setDate(d.getDate()+i);const day=localISO(d);return {date:day,trained:trained.has(day),today:day===today()}});
-  return {kind,id,xp:award.xp,durationXp:award.durationXp??0,wins:copy(award.wins||[]),level,
+  return {kind,id,cycleId,xp:award.xp,durationXp:award.durationXp??0,wins:copy(award.wins||[]),level,
     streak:dailyWorkoutStreak(),weekStreak:trainingStreak(),week,summary,webStateCleared:true};
 }
 let nativeCursorSerial=0,nativeCursorContext=null;
@@ -722,7 +723,7 @@ if(completionFeature||extrasFeature){
       if(r.kind==='completion'&&completionFeature&&nativeFields(r,['requestId','kind','collection','id','cursor'])&&nativeId(r.id)&&
         (r.collection===undefined||['workout','run'].includes(r.collection))){
         const history=applied(),index=history.findLastIndex(x=>x.userId===userId()&&x.result?.completion?.id===r.id&&(!r.collection||x.result.completion.kind===r.collection)),
-          c=index<0?null:history[index].result.completion,dismissed=history.slice(index+1).some(x=>x.userId===userId()&&x.result?.dismissedId===r.id);
+          c=index<0?null:history[index].result.completion,dismissed=(c?.cycleId?history:history.slice(index+1)).some(x=>x.userId===userId()&&x.result?.dismissedId===r.id&&(!c?.cycleId||x.result.dismissedCycleId===c.cycleId));
         answer=c?chunkNative(r,c,'completion:'+c.kind+':'+r.id,{id:r.id,dismissed}):nativeError(r.kind,'gone','Kein gespeicherter Abschluss; niemals XP erneut berechnen');
       }
       if(extrasFeature){

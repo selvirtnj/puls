@@ -1,12 +1,21 @@
 import Foundation
 
 /// Ein erhaltener, noch nicht bewusst geschlossener Abschluss. `completion` ist das unveränderte Web-Objekt (bei großen
-/// Abschlüssen nach dem Nachladen der vollständige Inhalt). `commandId` trennt die Finish-Zyklen derselben Workout-ID.
+/// Abschlüssen nach dem Nachladen der vollständige Inhalt). `cycleId` kommt aus dem Web; `commandId` bleibt für Altstände.
 public struct CompletionRecord: Equatable, Sendable, Identifiable {
     public var userId: String?
     public var id: String
     public var commandId: String?
     public var completion: JSONValue
+
+    public var cycleId: String? { NativeCompletion(json: completion)?.cycleId }
+
+    /// Zyklusidentität für sichtbare Records und verspätet geladene Inhalte; keine Fingerprints im cycleId-Pfad.
+    func isSameCycle(as other: CompletionRecord) -> Bool {
+        guard id == other.id, userId == other.userId else { return false }
+        if let cycleId { return other.cycleId == cycleId }
+        return other.cycleId == nil && commandId == other.commandId
+    }
 
     public init(userId: String?, id: String, commandId: String?, completion: JSONValue) {
         self.userId = userId
@@ -20,12 +29,13 @@ public struct CompletionRecord: Equatable, Sendable, Identifiable {
 struct PendingCompletionDismiss: Equatable, Sendable {
     var userId: String?
     var id: String
+    var cycleId: String? = nil
 }
 
 /// Native hält Abschlüsse nutzergebunden selbst vor (§15.2): sie überstehen einen Neustart, und ein bewusst geschlossener
-/// Finish-Zyklus öffnet sich durch einen wiederholten Ack nie erneut. Ein Zyklus ist die Finish-Befehls-ID; ein anderer
-/// Befehl mit inhaltsgleichem Abschluss (Replay nach verlorener Befehls-ID) zählt als derselbe. Wird dieselbe Workout-ID
-/// wirklich erneut abgeschlossen, ist das ein neuer Zyklus und wird angezeigt. Kein Profilfeld, kein Sync.
+/// Finish-Zyklus öffnet sich durch einen wiederholten Ack nie erneut. Das Web liefert cycleId auch im gekürzten Kopf:
+/// Noops behalten sie, ein tatsächliches erneutes Finish erzeugt eine neue. Nur ohne cycleId bleibt der alte
+/// commandId-/Fingerprint-Fallback aktiv. Kein Profilfeld, kein Sync.
 ///
 /// Nicht threadsicher; gehört dem `ProfileStore` (Main Actor). Klein, Schreiben erfolgt synchron.
 final class CompletionLedger {
@@ -38,6 +48,7 @@ final class CompletionLedger {
         var userId: String?
         var id: String
         var commandId: String?
+        var cycleId: String?
         /// Fingerabdrücke des Abschlusses (vollständig und als gekürzter Ack-Kopf).
         var prints: [String]
     }
@@ -73,7 +84,7 @@ final class CompletionLedger {
     /// Der Kopf, den das Ack bei großen Abschlüssen statt des ganzen Objekts trägt (§15.2).
     static func head(_ completion: JSONValue) -> JSONValue {
         var object: [String: JSONValue] = ["chunked": .bool(true)]
-        for key in ["kind", "id", "xp", "durationXp", "level", "streak"] {
+        for key in ["kind", "id", "cycleId", "xp", "durationXp", "level", "streak"] {
             if let value = completion[key] { object[key] = value }
         }
         return .object(object)
@@ -90,18 +101,29 @@ final class CompletionLedger {
     @discardableResult
     func add(_ record: CompletionRecord) -> Bool {
         let unavailable = NativeCompletion(json: record.completion)?.unavailable == true
-        let arrival = Self.fingerprint(record.completion)
+        let cycleId = record.cycleId
         let closed = dismissed.filter { $0.id == record.id && $0.userId == record.userId }
         // Ersatzansicht ohne Web-Abschluss: nie über einem schon geschlossenen Abschluss derselben ID.
         if unavailable, !closed.isEmpty { return false }
         let repeatsClosed = closed.contains { cycle in
-            (record.commandId != nil && cycle.commandId == record.commandId) || cycle.prints.contains(arrival)
+            if let cycleId { return cycle.cycleId == cycleId }
+            return (record.commandId != nil && cycle.commandId == record.commandId)
+                || cycle.prints.contains(Self.fingerprint(record.completion))
         }
         guard !repeatsClosed else { return false }
         if let index = records.firstIndex(where: { $0.id == record.id && $0.userId == record.userId }) {
             let open = records[index]
-            let sameCycle = (record.commandId != nil && open.commandId == record.commandId) || Self.prints(open.completion).contains(arrival)
+            let sameCycle: Bool
+            if let cycleId {
+                sameCycle = open.cycleId == cycleId
+            } else {
+                sameCycle = (record.commandId != nil && open.commandId == record.commandId)
+                    || Self.prints(open.completion).contains(Self.fingerprint(record.completion))
+            }
             guard !sameCycle, !unavailable else { return false }
+            // Ein bereits beobachteter älterer Zyklus darf auch nach seiner Ablösung nicht durch einen späten
+            // Replay-Ack wieder nach vorn springen. Dafür ist kein zusätzlicher Web-Dismiss nötig.
+            if cycleId != nil, open.cycleId != nil { rememberClosed(open) }
             records[index] = record
             persist()
             return true
@@ -115,9 +137,8 @@ final class CompletionLedger {
     /// Vollständig nachgeladenen Inhalt dauerhaft übernehmen. `false`, wenn der Abschluss nicht mehr offen ist.
     @discardableResult
     func replace(_ record: CompletionRecord, completion: JSONValue) -> Bool {
-        guard let index = records.firstIndex(where: {
-            $0.id == record.id && $0.userId == record.userId && $0.commandId == record.commandId
-        }) else { return false }
+        guard let parsed = NativeCompletion(json: completion), parsed.id == record.id, parsed.cycleId == record.cycleId,
+              let index = records.firstIndex(where: { $0.isSameCycle(as: record) }) else { return false }
         records[index].completion = completion
         persist()
         return true
@@ -126,18 +147,22 @@ final class CompletionLedger {
     /// Bewusst geschlossen: entfernen, Zyklus merken und `completion.dismiss` dauerhaft vormerken. Die Ersatzansicht hat im Web
     /// keinen Abschluss, dort gibt es nichts zu bestätigen.
     func dismiss(_ record: CompletionRecord) {
-        records.removeAll { $0.id == record.id && $0.userId == record.userId && $0.commandId == record.commandId }
-        dismissed.append(DismissedCycle(userId: record.userId, id: record.id, commandId: record.commandId,
-                                        prints: Self.prints(record.completion)))
-        if dismissed.count > Self.dismissedLimit { dismissed.removeFirst(dismissed.count - Self.dismissedLimit) }
+        records.removeAll { $0.isSameCycle(as: record) }
+        rememberClosed(record)
         if NativeCompletion(json: record.completion)?.unavailable != true {
-            let pending = PendingCompletionDismiss(userId: record.userId, id: record.id)
+            let pending = PendingCompletionDismiss(userId: record.userId, id: record.id, cycleId: record.cycleId)
             if !pendingDismissals.contains(pending) { pendingDismissals.append(pending) }
             if pendingDismissals.count > Self.pendingLimit {
                 pendingDismissals.removeFirst(pendingDismissals.count - Self.pendingLimit)
             }
         }
         persist()
+    }
+
+    private func rememberClosed(_ record: CompletionRecord) {
+        dismissed.append(DismissedCycle(userId: record.userId, id: record.id, commandId: record.commandId,
+                                        cycleId: record.cycleId, prints: record.cycleId == nil ? Self.prints(record.completion) : []))
+        if dismissed.count > Self.dismissedLimit { dismissed.removeFirst(dismissed.count - Self.dismissedLimit) }
     }
 
     /// Steht in der Outbox: die Vormerkung ist erledigt.
@@ -167,11 +192,12 @@ final class CompletionLedger {
         dismissed = (value["cycles"]?.arrayValue ?? []).compactMap { item -> DismissedCycle? in
             guard let id = item["id"]?.stringValue else { return nil }
             return DismissedCycle(userId: item["userId"]?.stringValue, id: id, commandId: item["commandId"]?.stringValue,
+                                  cycleId: item["cycleId"]?.stringValue,
                                   prints: (item["prints"]?.arrayValue ?? []).compactMap(\.stringValue))
         }
         pendingDismissals = (value["pendingDismissals"]?.arrayValue ?? []).compactMap { item -> PendingCompletionDismiss? in
             guard let id = item["id"]?.stringValue else { return nil }
-            return PendingCompletionDismiss(userId: item["userId"]?.stringValue, id: id)
+            return PendingCompletionDismiss(userId: item["userId"]?.stringValue, id: id, cycleId: item["cycleId"]?.stringValue)
         }
     }
 
@@ -188,10 +214,11 @@ final class CompletionLedger {
         }
         let cycles = dismissed.map { cycle -> JSONValue in
             .object(["userId": Self.optional(cycle.userId), "id": .string(cycle.id), "commandId": Self.optional(cycle.commandId),
+                     "cycleId": Self.optional(cycle.cycleId),
                      "prints": .array(cycle.prints.map(JSONValue.string))])
         }
         let pending = pendingDismissals.map { item -> JSONValue in
-            .object(["userId": Self.optional(item.userId), "id": .string(item.id)])
+            .object(["userId": Self.optional(item.userId), "id": .string(item.id), "cycleId": Self.optional(item.cycleId)])
         }
         let value = JSONValue.object(["records": .array(rows), "cycles": .array(cycles), "pendingDismissals": .array(pending)])
         try? ProtectedFile.write(Data(value.serializedString().utf8), to: fileURL)

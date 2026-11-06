@@ -58,6 +58,7 @@ final class ExtrasTests: XCTestCase {
         let completion = try XCTUnwrap(NativeCompletion(json: ack.result?["completion"]))
         XCTAssertEqual(completion.kind, .workout)
         XCTAssertEqual(completion.id, "o0000000-0000-4000-8000-000000000003")
+        XCTAssertEqual(completion.cycleId, ack.id)
         XCTAssertEqual(completion.xp, 14)
         XCTAssertEqual(completion.level?.level, 1)
         XCTAssertEqual(completion.level?.needed, 250)
@@ -78,6 +79,7 @@ final class ExtrasTests: XCTestCase {
         XCTAssertEqual(completion.kind, .run)
         XCTAssertTrue(completion.chunked)
         XCTAssertNil(completion.summary)
+        XCTAssertNil(completion.cycleId, "alter Kopf ohne expliziten Zyklus")
         XCTAssertNil(NativeCompletion(json: ["kind": "other", "id": "r"]))
         XCTAssertNil(NativeCompletion(json: nil))
     }
@@ -131,6 +133,56 @@ final class ExtrasTests: XCTestCase {
         var replay = record
         replay.commandId = "c9"
         XCTAssertFalse(ledger.add(replay), "gekürzter Kopf desselben Zyklus öffnet nichts neu")
+    }
+
+    func testExplicitCycleSurvivesNoopNewCommandAndRestart() throws {
+        let directory = try makeTemporaryDirectory()
+        let ledger = CompletionLedger(directory: directory)
+        let head: JSONValue = ["kind": "workout", "id": "w", "cycleId": "finish-1", "xp": 14, "chunked": true]
+        let first = CompletionRecord(userId: "u", id: "w", commandId: "finish-1", completion: head)
+        XCTAssertEqual(NativeCompletion(json: head)?.cycleId, "finish-1")
+        XCTAssertTrue(ledger.add(first))
+        let noop = CompletionRecord(userId: "u", id: "w", commandId: "noop-2", completion: head)
+        XCTAssertFalse(ledger.add(noop), "andere Befehls-ID erzeugt keinen neuen Zyklus")
+        ledger.dismiss(first)
+        let restarted = CompletionLedger(directory: directory)
+        XCTAssertFalse(restarted.add(noop), "Zyklus-Dismiss übersteht Neustart")
+        var changedPayload = head
+        changedPayload["xp"] = 999
+        XCTAssertFalse(restarted.add(CompletionRecord(userId: "u", id: "w", commandId: "noop-3", completion: changedPayload)),
+                       "explizite Identität statt Inhaltsheuristik")
+        XCTAssertEqual(restarted.pendingDismissals.first?.cycleId, "finish-1")
+        XCTAssertTrue(restarted.add(CompletionRecord(userId: "other", id: "w", commandId: "noop-2", completion: head)), "nutzergetrennt")
+    }
+
+    func testExplicitRefinishWithMatchingChunkedValuesIsShown() throws {
+        let directory = try makeTemporaryDirectory()
+        let ledger = CompletionLedger(directory: directory)
+        let full: JSONValue = ["kind": "workout", "id": "w", "cycleId": "finish-1", "xp": 14, "durationXp": 14,
+                               "level": ["level": 1], "streak": 1, "summary": ["name": "old"]]
+        let first = CompletionRecord(userId: "u", id: "w", commandId: "finish-1", completion: CompletionLedger.head(full))
+        XCTAssertTrue(ledger.add(first))
+        XCTAssertTrue(ledger.replace(first, completion: full))
+        ledger.dismiss(try XCTUnwrap(ledger.records.first))
+        let restarted = CompletionLedger(directory: directory)
+        var nextFull = full
+        nextFull["cycleId"] = "finish-2"
+        nextFull["summary"] = ["name": "renamed after reopening"]
+        let next = CompletionRecord(userId: "u", id: "w", commandId: "finish-2", completion: CompletionLedger.head(nextFull))
+        XCTAssertTrue(restarted.add(next), "gleiche XP/Level/Serie ohne Summary im Kopf, aber echter neuer Zyklus")
+        XCTAssertEqual(restarted.records.first?.cycleId, "finish-2")
+        XCTAssertFalse(restarted.replace(first, completion: full), "verspätetes Nachladen des alten Zyklus")
+        XCTAssertFalse(restarted.replace(next, completion: full), "Full-Result muss zum Kopf-Zyklus passen")
+        XCTAssertTrue(restarted.replace(next, completion: nextFull))
+        restarted.dismiss(first)
+        XCTAssertEqual(restarted.records.first?.cycleId, "finish-2", "verspätetes Schließen des alten Records erhält den neuen")
+        XCTAssertEqual(CompletionLedger(directory: directory).records.first?.completion, nextFull)
+        // Bei cycleId hat selbst die alte commandId keine Vorrangwirkung.
+        var thirdHead = next.completion
+        thirdHead["cycleId"] = "finish-3"
+        XCTAssertTrue(restarted.add(CompletionRecord(userId: "u", id: "w", commandId: "finish-1", completion: thirdHead)))
+        XCTAssertFalse(restarted.add(next), "Replay des zuvor offenen, inzwischen abgelösten Zyklus")
+        XCTAssertEqual(CompletionLedger(directory: directory).records.first?.cycleId, "finish-3")
     }
 
     func testUnavailableFallbackNeverCoversAClosedCompletion() throws {
@@ -222,6 +274,45 @@ final class ExtrasTests: XCTestCase {
         XCTAssertFalse(store.pending.contains { $0.command.op == ExtrasOps.completionDismiss }, "gerade nur lesbar")
         store.receive(.snapshot(SnapshotMessage(seq: 4, userId: "a", state: ["workouts": []], reason: "save")))
         XCTAssertEqual(store.pending.filter { $0.command.op == ExtrasOps.completionDismiss }.map { $0.command.args["id"] }, ["w"])
+    }
+
+    @MainActor
+    func testStoreCarriesCycleThroughDeferredDismissAndFullLoad() throws {
+        let (store, apply) = try finishedStore(user: "a")
+        let head: JSONValue = ["kind": "workout", "id": "w", "cycleId": "web-cycle", "xp": 14, "chunked": true]
+        try acknowledge(apply, result: ["completion": head], on: store)
+        let first = try XCTUnwrap(store.currentCompletion)
+        XCTAssertEqual(first.cycleId, "web-cycle")
+        let noop = try store.perform(Command(op: TrainingOps.workoutFinish, args: ["workoutId": "w"]))
+        try acknowledge(noop, result: ["completion": head], on: store)
+        XCTAssertEqual(store.currentCompletion?.commandId, apply.id, "noop erhält das ursprüngliche Receipt")
+        XCTAssertTrue(store.completionIsVisible(CompletionRecord(userId: "a", id: "w", commandId: noop.id, completion: head)),
+                      "Sichtbarkeit folgt cycleId statt Versand-ID")
+        var wrongFull = head
+        wrongFull["cycleId"] = "another-cycle"
+        wrongFull["summary"] = ["name": "wrong"]
+        store.storeFullCompletion(first, completion: wrongFull)
+        XCTAssertNil(store.currentCompletion?.completion["summary"])
+        var full = head
+        full["chunked"] = false
+        full["summary"] = ["name": "correct"]
+        store.storeFullCompletion(first, completion: full)
+        XCTAssertEqual(store.currentCompletion?.completion["summary"]?["name"], "correct")
+        store.receive(.snapshot(SnapshotMessage(seq: 3, userId: "a", state: ["workouts": []],
+                                                flags: StateFlags(uploadBlocked: true), reason: "save")))
+        store.dismissCompletion(try XCTUnwrap(store.currentCompletion))
+        XCTAssertFalse(store.pending.contains { $0.command.op == ExtrasOps.completionDismiss })
+        store.receive(.snapshot(SnapshotMessage(seq: 4, userId: "a", state: ["workouts": []], reason: "save")))
+        let dismiss = try XCTUnwrap(store.pending.first { $0.command.op == ExtrasOps.completionDismiss })
+        XCTAssertEqual(dismiss.command.args["cycleId"], "web-cycle", "verzögerte Outbox bindet den ursprünglichen Zyklus")
+        try acknowledge(noop, result: ["completion": head], on: store)
+        XCTAssertNil(store.currentCompletion, "Noop-Ack öffnet keinen geschlossenen Zyklus")
+        let next = try store.perform(Command(op: TrainingOps.workoutFinish, args: ["workoutId": "w"]))
+        var nextHead = head
+        nextHead["cycleId"] = "next-web-cycle"
+        try acknowledge(next, result: ["completion": nextHead], on: store)
+        XCTAssertEqual(store.currentCompletion?.cycleId, "next-web-cycle")
+        XCTAssertFalse(store.completionIsVisible(first), "alter Zyklus bleibt unsichtbar")
     }
 
     // MARK: Anfragen
@@ -408,6 +499,13 @@ final class ExtrasTests: XCTestCase {
         XCTAssertEqual(command.args, ["runId": "run-1", "routeId": "route-1", "name": " Runde "], "den Namen normalisiert das Web")
         XCTAssertNil(ExtrasCommands.routeFromRun(runId: "run 1", routeId: "r", name: ""))
         XCTAssertNil(ExtrasCommands.routeFromRun(runId: "r", routeId: "r", name: String(repeating: "a", count: 257)))
+    }
+
+    func testDismissCommandBindsOptionalCycle() throws {
+        XCTAssertEqual(ExtrasCommands.dismissCompletion(id: "w")?.args, ["id": "w"], "kompatibler Altpfad")
+        XCTAssertEqual(ExtrasCommands.dismissCompletion(id: "w", cycleId: "finish-1")?.args, ["id": "w", "cycleId": "finish-1"])
+        XCTAssertNil(ExtrasCommands.dismissCompletion(id: "w", cycleId: ""))
+        XCTAssertNil(ExtrasCommands.dismissCompletion(id: "w", cycleId: String(repeating: "a", count: 257)))
     }
 
     func testEffects() throws {

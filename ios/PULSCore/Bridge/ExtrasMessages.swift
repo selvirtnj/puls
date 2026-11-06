@@ -352,6 +352,8 @@ public struct NativeCompletion: Equatable, Sendable, Identifiable {
 
     public var kind: Kind
     public var id: String
+    /// Stabile ID des tatsächlichen Finish-Zyklus; fehlt nur bei alten Web-Receipts/Ersatzansichten.
+    public var cycleId: String?
     public var xp: Double?
     public var durationXp: Double?
     public var wins: [String]
@@ -377,6 +379,7 @@ public struct NativeCompletion: Equatable, Sendable, Identifiable {
         guard let rawKind = o.string("kind"), let kind = Kind(rawValue: rawKind), let id = o.string("id"), !id.isEmpty else { return nil }
         self.kind = kind
         self.id = id
+        cycleId = o.string("cycleId").flatMap { $0.isEmpty ? nil : $0 }
         xp = o.number("xp")
         durationXp = o.number("durationXp")
         wins = o.array("wins").compactMap(\.stringValue)
@@ -611,8 +614,11 @@ public enum ExtrasCommands {
         return Command(op: ExtrasOps.routeFromRun, args: ["runId": .string(runId), "routeId": .string(routeId), "name": .string(name)])
     }
 
-    public static func dismissCompletion(id: String) -> Command? {
+    public static func dismissCompletion(id: String, cycleId: String? = nil) -> Command? {
         guard !id.isEmpty, id.utf16.count <= 256 else { return nil }
-        return Command(op: ExtrasOps.completionDismiss, args: ["id": .string(id)])
+        if let cycleId, cycleId.isEmpty || cycleId.utf16.count > 256 { return nil }
+        var args: JSONValue = ["id": .string(id)]
+        if let cycleId { args["cycleId"] = .string(cycleId) }
+        return Command(op: ExtrasOps.completionDismiss, args: args)
     }
 }

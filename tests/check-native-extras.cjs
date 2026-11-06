@@ -19,7 +19,9 @@ const mutations={
   activitySuppression:['js/native-state.js',"if(typeof activityDoneShow==='function'){const base=activityDoneShow;activityDoneShow=function(...args){if(nativeCompleting&&!rollingBack){clearCompletion();return}return base.apply(this,args)}}",''],
   sessionSuppression:['js/native-state.js','if(nativeCompleting&&!rollingBack)clearCompletion();',''],
   scopeReset:['js/native-state.js','nativeCompleting=previousCompleting;',''],
-  dismissal:['js/native-state.js','history.slice(index+1).some(','history.some('],
+  dismissal:['js/native-state.js','(!c?.cycleId||x.result.dismissedCycleId===c.cycleId)','true'],
+  cycleNoop:['js/native-state.js','const completion=plan.noop?cached:buildCompletion(kind,id,cmd.id);','const completion=plan.noop?{...cached,cycleId:cmd.id}:buildCompletion(kind,id,cmd.id);'],
+  cycleHead:['js/native-state.js','...(c.cycleId?{cycleId:c.cycleId}:{}),',''],
   bodyContext:['js/native-account.js','bodyMetrics(w.kg,historical)','bodyMetrics(w.kg,state.profile)'],
   authKeys:['js/native-state.js','/^(?:auth|jwt)$/i.test(key)','false'],
   rowCache:['js/native-state.js',"return nativeCached('rows:'+scope,()=>adapter.pageRows(r));",'return adapter.pageRows(r);'],
@@ -93,6 +95,7 @@ const applyAsync=async(t,a)=>{const before=t.messages.length;t.ctx.window.pulsNa
   t=start({profile:training});
   const finished=cmd('workout.finish',{workoutId:W,confirmUnfinished:true,bodyweight:84.2}),a=ok(t.apply(finished));
   compare('n1-workout-completion',a);
+  assert.equal(a.result.completion.cycleId,finished.id);
   const web=start({profile:training,features:features.filter(x=>x!=='nativeCompletion')});ok(web.apply(finished));
   assert.deepEqual(t.state(),web.state(),'native completion preserves the exact Web finish profile');
   assert.equal(web.run('completionId'),W);assert.equal(t.run('completionId'),null);assert.equal(t.run('completionStep'),0);
@@ -106,6 +109,11 @@ const applyAsync=async(t,a)=>{const before=t.messages.length;t.ctx.window.pulsNa
   assert.deepEqual(ok(t.apply({...finished,id:cmd('',{}).id})).result.completion,a.result.completion,'lost command ID uses original award');
   const reboot=start({profile:t.state(),store:t.store});assert.deepEqual(whole(reboot,'completion',{id:W}),a.result.completion,'reload retains the frozen completion');
   const dismiss=cmd('completion.dismiss',{id:W});ok(reboot.apply(dismiss));ok(reboot.apply(dismiss));assert.equal(query(reboot,'completion',{id:W}).result.dismissed,true);
+  const noopAfterDismiss=cmd('workout.finish',finished.args),nooped=ok(reboot.apply(noopAfterDismiss));
+  assert.equal(nooped.result.completion.cycleId,finished.id,'new command ID for noop retains original finish cycle');
+  assert.equal(query(reboot,'completion',{id:W}).result.dismissed,true,'appending a noop receipt after dismiss cannot reopen the cycle');
+  assert.equal(ok(reboot.apply(noopAfterDismiss)).result.completion.cycleId,finished.id,'known replay also retains cycle');
+  const dismissedRestart=start({profile:reboot.state(),store:reboot.store});assert.equal(query(dismissedRestart,'completion',{id:W}).result.dismissed,true);
   t.store.delete('puls-native-applied');const noAward=ok(t.apply({...finished,id:cmd('',{}).id}));assert.equal(noAward.result.completionUnavailable,true);code(query(t,'completion',{id:W}),'gone');
   console.log('PASS N1: workout completion equals Web, no Web completion state, frozen XP/level, replay/reload/dismiss, lost history never recalculates award');
 
@@ -144,7 +152,11 @@ const applyAsync=async(t,a)=>{const before=t.messages.length;t.ctx.window.pulsNa
   code(cycles.apply(cmd('completion.dismiss',{id:'foreign-completion'})),'gone');
   cycles.run('reopenWorkout('+JSON.stringify(W)+');state.workouts.find(w=>w.id==='+JSON.stringify(W)+').exercises[0].sets[0].kg=100;save()');
   const second=ok(cycles.apply({...finished,id:cmd('',{}).id}));assert.notEqual(second.result.completion.xp,a.result.completion.xp);
+  assert.notEqual(second.result.completion.cycleId,finished.id);
   assert.equal(query(cycles,'completion',{id:W}).result.dismissed,false,'old dismissal cannot hide a new finish cycle');
+  const oldCycleDismiss=ok(cycles.apply(cmd('completion.dismiss',{id:W,cycleId:finished.id})));
+  assert.equal(oldCycleDismiss.result.dismissedCycleId,finished.id);assert.equal(query(cycles,'completion',{id:W}).result.dismissed,false,'late old-cycle dismissal cannot dismiss new cycle');
+  code(cycles.apply(cmd('completion.dismiss',{id:W,cycleId:'unknown-cycle'})),'gone');
   const boundHistory=JSON.parse(cycles.store.get('puls-native-applied'));
   boundHistory.push({id:cmd('',{}).id,userId:'foreign-owner',result:{completion:{...second.result.completion,xp:99999}}},{id:cmd('',{}).id,userId:'foreign-owner',result:{dismissedId:W}});
   cycles.store.set('puls-native-applied',JSON.stringify(boundHistory));assert.equal(whole(cycles,'completion',{id:W}).xp,second.result.completion.xp);assert.equal(query(cycles,'completion',{id:W}).result.dismissed,false);
@@ -155,7 +167,16 @@ const applyAsync=async(t,a)=>{const before=t.messages.length;t.ctx.window.pulsNa
 
   const huge=clone(training);huge.workouts.find(w=>w.id===W).name='Synthetic 😀'.repeat(6000);
   t=start({profile:huge});const bigAck=ok(t.apply(finished));assert.equal(bigAck.result.completion.chunked,true);assert(JSON.stringify(bigAck).length<48*1024);
+  assert.equal(bigAck.result.completion.cycleId,finished.id,'chunked head carries the same explicit cycle key');
   assert.equal(whole(t,'completion',{collection:'workout',id:W}).summary.name,huge.workouts.find(w=>w.id===W).name);
+  ok(t.apply(cmd('completion.dismiss',{id:W,cycleId:finished.id})));
+  t.run('reopenWorkout('+JSON.stringify(W)+');state.workouts.find(w=>w.id==='+JSON.stringify(W)+').name='+JSON.stringify('Changed synthetic 😀'.repeat(6000))+';save()');
+  const largeAgain=cmd('workout.finish',finished.args),largeAgainAck=ok(t.apply(largeAgain));
+  assert.equal(largeAgainAck.result.completion.chunked,true);assert.equal(largeAgainAck.result.completion.cycleId,largeAgain.id);
+  assert.equal(largeAgainAck.result.completion.xp,bigAck.result.completion.xp,'same reward values are a real new cycle after reopen');
+  assert.equal(query(t,'completion',{id:W}).result.dismissed,false);assert.equal(t.run('completionId'),null);
+  const largeAgainFull=whole(t,'completion',{id:W});assert.equal(largeAgainFull.cycleId,largeAgain.id);assert.equal(largeAgainFull.summary.name,'Changed synthetic 😀'.repeat(6000));
+  assert.equal(ok(t.apply(cmd('workout.finish',finished.args))).result.completion.cycleId,largeAgain.id);
   code(query(t,'completion',{collection:'run',id:W}),'gone');
   assert.equal(t.ctx.window.pulsNativeQuery({requestId:'q',kind:'completion',collection:'bad',id:W}),false);
   console.log('PASS N1: large completions use bounded acks and lossless chunks, completion kind checked');
@@ -165,6 +186,7 @@ const applyAsync=async(t,a)=>{const before=t.messages.length;t.ctx.window.pulsNa
   const save=cmd('run.summary.save',{startedAt:begun,pausedAt:t.state().activeRun.pausedAt,feeling:4,terrain:null,note:'Synthetic N1 run'});
   const saved=ok(t.apply(save));assert.equal(t.run('activityDoneId'),null);assert.equal(t.run('runView'),null);
   const c=saved.result.completion;assert.equal(c.kind,'run');assert.equal(c.summary.durationSeconds,90);assert.equal(c.summary.note,'Synthetic N1 run');
+  assert.equal(c.cycleId,save.id);assert.equal(ok(t.apply({...save,id:cmd('',{}).id})).result.completion.cycleId,save.id);
   assert.deepEqual(whole(t,'completion',{id:saved.result.runId}),clone(c));assert.deepEqual(ok(t.apply(save)).result,clone(saved.result));
   console.log('PASS N1: real activity finish/save chain supplies summary and frozen award, no activity Web end screen');
 
