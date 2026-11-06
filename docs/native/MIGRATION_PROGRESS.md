@@ -45,9 +45,31 @@
 - Web (Paket N, von Codex begonnen, Claude `puls-backend` fertig): `js/native-activity.js`, 12 Ops; Claude-Review + 2 Codex-Nachprüfungen (u. a. veralteter Entwurf → 0 km + Spurlöschung verhindert). Live als **v78**.
 - Native (Paket O, Claude): `Features/Activity/*`; Codex: 3×P2+1×P3, dann 2×P2 (Start-Abbruch/Outbox-Neuverknüpfung) — behoben. Routenplaner bleibt Web. CI #30 grün (`PULS-ipa-30`).
 
+## M7 Ernährung — fertig (01.11.2026)
+
+- Web (Codex P1/P2, Korrekturen teils Claude `puls-backend` bei Codex-Limit): `js/native-nutrition.js`, 18 Ops, Suche lokal+OFF, Barcode, Etikett über Web-`labelReviewValues`, Rezepte/Import. Claude-Reviews P1, P2, Re-Review. Live als **v79**.
+- Native (Paket Q, Claude): `Features/Nutrition/*` inkl. VisionKit-Barcode-Scanner und Vision-Texterkennung fürs Nährwertfoto; Undo ersetzt Delete atomar (`Outbox.replace`). Codex-Review 1×P1/4×P2/2×P3 + Claude-Re-Review — behoben. CI #35 grün.
+
+## M8 Konto/Profil, Phase A — fertig (01.11.2026)
+
+- Web (Codex, Paket R): `js/native-account.js`; keine E-Mail/Tokens; sensible Abläufe nur Web. Live als **v80**.
+- Native (Claude, Paket S): `Features/Account/*`, `Shell/NativeAppearance.swift`; „System“-Darstellung folgt dem iPhone (erzwungenes Dark entfernt). Codex: 2×P1/5×P2, dann 1×P1/2×P2 — behoben und nachgeprüft. CI #41 grün (`PULS-ipa-41`).
+
+## Gerätetest-Korrekturen und Welle N1 (06.11.2026)
+
+- Gerätetest `PULS-ipa-41`/`-42`: Startbildschirm, Plus-Knopf, Quick-Add in dieselben Abläufe, Nährstoff-Wischkarte, kleiner Wasser-Knopf, Gewicht direkt nativ, Karte beim Laufen, Gruppe-A-Webausgänge. Commit `10c6600`, CI #43 grün.
+- Welle N1, Web (Codex) und App (Claude): native Abschlussansichten, Pagination, Indexchart, `exercise.settings.set`, `route.fromRun`, Export, Teilen (§15). Commits `3a503a3`, `1374bb2`; Reviews über Kreuz, letzte Nachprüfung ohne Befund.
+- CI #44 und #45: nicht gestartet, GitHub fand keinen macOS-Runner („job was not acquired“). N1-Swift-Code ist damit noch nicht kompiliert.
+
+## Stand gesamt
+
+Nativ: Tab-Leiste/Kopf, Übersicht, Körper & Gewicht, Training (Routinen, Editor, Session), Kalender, Fortschritt, Aktivitäten, Ernährung, Konto/Profil. Weiter Web (bewusst): Anmeldung/Abmeldung/Sync-Konflikt/Import/Export/Recovery/Reset/Kontolöschung, Routenplaner, Teilen, Bearbeiten alter Einträge, Rezept-Editor/Import-UI. Datenbesitzer ist weiter das Web (Phase A).
+
 ## Nächste Schritte
 
-0. M7 Ernährung (läuft: Codex Paket P), dann M8 Konto/Profil + Phase B.
+1. **Gerätetest durch Selvir** mit `PULS-ipa-41` (Sideloadly). Prüfliste: jeder Tab nativ, Daten erscheinen im Web/auf dem PC, Pausen-Live-Aktivität, GPS-Lauf, Barcode/Nährwertfoto, Hell/Dunkel/System, Offline → wieder online.
+2. Danach Phase B (§14 Protokoll) nur mit Selvirs Freigabe; braucht serverseitige Owner-/Epochen-Markierung (SQL/RLS) und Kill-Switch.
+3. Bei Erfolg: `native-ios` nach `main` (erzeugt Release-IPA).
 1. Selvir testet die Branch-IPA (Actions-Artifact `PULS-ipa-<Lauf>`) auf dem iPhone: Konto → „Körper & Entwicklung“ öffnet den nativen Bildschirm; Gewicht eintragen/bearbeiten/löschen erscheint im Web und auf dem PC; Live-Aktivität und GPS unverändert.
 2. Nach erfolgreichem Gerätetest `native-ios` nach `main` (erzeugt Release-IPA).
 3. M3: native Übersicht + native Tab-Leiste.

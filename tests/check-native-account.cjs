@@ -144,4 +144,5 @@ function mockImages(t){
   }
   t=start({systemDark:true});interest(t);assert.equal(projection(t).account.appearance.resolvedScheme,'dark');
   console.log('PASS account scheme: system resolves to effective light/dark, modern/legacy OS listener refreshes without profile saves, no redundant/inactive builds');
-})().catch(e=>{console.error(e);process.exitCode=1});
+// N1 stays in the allowed tests/ ownership; this existing suite entry also runs its additive bridge regression.
+})().then(()=>require('./check-native-extras.cjs')).catch(e=>{console.error(e);process.exitCode=1});

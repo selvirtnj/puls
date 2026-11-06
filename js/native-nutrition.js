@@ -545,7 +545,13 @@ function query(r,current=()=>true,emit){
   if(r.product.barcode!==undefined)return barcodeQuery(r,current);
   jobs.get('barcode')?.abort();jobs.delete('barcode');return localDetail(r.product,current);
 }
-window.pulsNativeNutrition={ops,build,query,validQuery,cancelSearch,cancelQueries,stage:'P2',queries:['search','product','recipe','entry','labelParse','recipeImport','goals'],
+  function pageRows(r){
+    if(r.collection==='diary'&&day(r.date))return state.foods.filter(x=>x.date===r.date&&id(x.id)).reverse().map(x=>({id:x.id,name:text(x.name),date:x.date,meal:text(x.meal),amount:x.grams,unit:ffBase(x),
+      ...Object.fromEntries(keys.map(k=>[k,x[k]])),nutrients:nutrients(x.nutrients),foodRef:id(x.foodRef)?x.foodRef:null,recipeId:id(x.recipeId)?x.recipeId:null,source:text(x.source)}));
+    if(r.collection==='recipes')return (state.recipes||[]).filter(x=>id(x.id)).map(x=>({id:x.id,name:text(x.name),yield:x.yield,ingredients:x.ingredients.length,...recipeNutrients(x)}));
+    return null;
+  }
+  window.pulsNativeNutrition={...(window.pulsNativeFeatures.includes('nativeExtras')?{pageRows}:{}),ops,build,query,validQuery,cancelSearch,cancelQueries,stage:'P2',queries:['search','product','recipe','entry','labelParse','recipeImport','goals'],
   captureUi:()=>{previousSelection=foodSelection;previousDrafts={productDraft,recipeDraft};previousGoalsExtra=copy(Object.fromEntries(Object.entries(state.goals).filter(([k])=>!keys.includes(k))));return {date,foodSelection,undo:undoDiaryItems.slice(),...previousDrafts}},
   restoreUi:ui=>{date=ui.date;foodSelection=ui.foodSelection;undoDiaryItems=ui.undo;productDraft=ui.productDraft;recipeDraft=ui.recipeDraft},
   afterRender:r=>{if(previousGoalsExtra)Object.assign(state.goals,previousGoalsExtra);if(!goalPending)return;
