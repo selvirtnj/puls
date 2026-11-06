@@ -596,6 +596,16 @@ final class ActivityCoordinator {
         return perform(command, busyKey: "delete:" + id) != nil
     }
 
+    /// Nativer Planer: Das Web meldet ihn samt `route.save`. Sonst bleibt der Web-Planer.
+    var offersNativePlanner: Bool {
+        projection?.planner?.native == true && store.supportsOp(ActivityOps.routeSave)
+    }
+
+    /// `true`, wenn der Befehl eingereiht wurde. Die stabile ID steht im Befehl und bleibt in der Outbox.
+    func savePlannedRoute(_ command: Command, id: String) -> Bool {
+        perform(command, busyKey: "route:" + id) != nil
+    }
+
     func deleteRoute(id: String) {
         guard let command = ActivityCommands.deleteRoute(id: id) else { return }
         if selectedRouteId == id { selectedRouteId = nil }

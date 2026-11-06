@@ -82,6 +82,8 @@ final class NutritionCoordinator {
     @ObservationIgnored private var queryCounter = 0
     @ObservationIgnored private var handledAckSerial = 0
     @ObservationIgnored private var seenGeneration: Int?
+    /// Web-Text der letzten fehlgeschlagenen Query (z. B. warum eine Rezeptseite nicht lesbar ist).
+    @ObservationIgnored private(set) var lastQueryError: String?
 
     init(store: ProfileStore, bridge: StateBridge) {
         self.store = store
@@ -171,6 +173,7 @@ final class NutritionCoordinator {
         while !Task.isCancelled {
             if let result = store.nutritionResult(requestId) {
                 store.forgetNutritionQuery(requestId)
+                lastQueryError = result.error?.message
                 if result.ok { return .loaded(result) }
                 return result.isGone ? .gone : .failed
             }
@@ -180,6 +183,22 @@ final class NutritionCoordinator {
         }
         store.forgetNutritionQuery(requestId)
         return .failed
+    }
+
+    /// Native Rezeptbearbeitung: `recipe.save` gemeldet und die `recipe`-Query vorhanden. Sonst bleibt der Web-Dialog.
+    var canEditRecipes: Bool { canWrite && supportsRecipe && supportsOp(NutritionOps.recipeSave) && supportsSearch }
+
+    /// Nativer Rezept-Import: Query und `recipe.import.save` gemeldet.
+    var canImportRecipes: Bool {
+        canWrite && capabilities?.supports(.recipeImport) == true && supportsOp(NutritionOps.recipeImportSave) && supportsSearch
+    }
+
+    /// `build` baut die Anfrage (Adresse oder eingefügter Text). URL-Abruf im Web bis 12 s, dazu ggf. der Katalog.
+    func recipeImport(_ build: (String) -> NutritionQueryRequest?) async -> NutritionRecipeImport? {
+        lastQueryError = nil
+        guard case .loaded(let message) = await fetch(timeout: .seconds(20), build),
+              case .recipeImport(let result)? = message.result else { return nil }
+        return result
     }
 
     func productDetail(_ ref: ProductRef) async -> LoadPhase<NutritionProductDetail> {
@@ -585,6 +604,8 @@ final class NutritionCoordinator {
         case NutritionOps.productExtrasSet: return text("Produktzusätze", "Product details")
         case NutritionOps.recipeCopy: return text("Rezept kopieren", "Copy recipe")
         case NutritionOps.recipeDelete: return text("Rezept löschen", "Delete recipe")
+        case NutritionOps.recipeSave: return text("Rezept speichern", "Save recipe")
+        case NutritionOps.recipeImportSave: return text("Rezept importieren", "Import recipe")
         default: return entry.command.op
         }
     }
@@ -637,8 +658,8 @@ final class NutritionCoordinator {
                 hiddenEntryIds.remove(id)
                 undoStack.removeAll { $0.deleteCommandId == event.commandId }
             }
-            // `product.save`-Fehler zeigt der Speichern-Ablauf selbst (Warnungsbestätigung).
-            guard !event.ok, event.op != NutritionOps.productSave else { continue }
+            // `product.save`- und Rezept-Fehler zeigt der jeweilige Speichern-Ablauf selbst.
+            guard !event.ok, ![NutritionOps.productSave, NutritionOps.recipeSave, NutritionOps.recipeImportSave].contains(event.op) else { continue }
             switch event.code {
             case .busy?, .readonly?, .persistFailed?, .notReady?:
                 continue

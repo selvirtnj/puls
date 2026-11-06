@@ -423,7 +423,7 @@ public struct NutritionOmitted: Equatable, Sendable {
 /// Argument für `window.pulsNativeNutritionQuery(request)`; nur die Tabellenfelder, schon nativ geprüft.
 public struct NutritionQueryRequest: Equatable, Hashable, Sendable {
     public enum Kind: String, Sendable, CaseIterable {
-        case search, product, entry, recipe, labelParse
+        case search, product, entry, recipe, labelParse, recipeImport
     }
 
     public enum SearchFilter: String, Sendable, CaseIterable {
@@ -475,11 +475,67 @@ public struct NutritionQueryRequest: Equatable, Hashable, Sendable {
         return NutritionQueryRequest(requestId: requestId, kind: .labelParse, fields: fields)
     }
 
+    /// Rezept-Import aus einer Adresse (das Web lädt und prüft sie selbst, höchstens 2048 Einheiten).
+    public static func recipeImport(url: String, requestId: String) -> NutritionQueryRequest? {
+        guard ProgressQueryRequest.isValidRequestID(requestId), !url.isEmpty, url.utf16.count <= 2048 else { return nil }
+        return NutritionQueryRequest(requestId: requestId, kind: .recipeImport, fields: ["url": .string(url)])
+    }
+
+    /// Rezept-Import aus eingefügtem JSON-LD oder einer Zutatenliste, höchstens 100 000 Einheiten.
+    public static func recipeImport(text: String, requestId: String) -> NutritionQueryRequest? {
+        guard ProgressQueryRequest.isValidRequestID(requestId), !text.isEmpty, text.utf16.count <= 100_000 else { return nil }
+        return NutritionQueryRequest(requestId: requestId, kind: .recipeImport, fields: ["text": .string(text)])
+    }
+
     public var json: JSONValue {
         var object = fields
         object["requestId"] = .string(requestId)
         object["kind"] = .string(kind.rawValue)
         return .object(object)
+    }
+}
+
+/// Ergebnis von `recipeImport` (§12.5): nur Vorschläge. Nichts wird automatisch gespeichert, keine Website-Nährwerte, und bei
+/// `assumed` gibt es keine verlässliche Menge.
+public struct NutritionRecipeImport: Equatable, Sendable {
+    public struct Match: Equatable, Sendable, Identifiable {
+        public var id: Int
+        public var name: String
+        /// Vollständige Zutat des Webs inklusive erkannter Menge.
+        public var ingredient: JSONValue
+    }
+
+    public struct Suggestion: Equatable, Sendable, Identifiable {
+        public var id: Int
+        public var line: String
+        public var query: String
+        /// Erkannte g/ml-Menge; `nil`, wenn sie nur angenommen wäre.
+        public var amount: Double?
+        public var matches: [Match]
+    }
+
+    public var name: String
+    public var lines: [String]
+    public var suggestions: [Suggestion]
+    /// Zeilen ohne Vorschlag (Größenbudget); sie stehen weiter in `lines`.
+    public var omitted: Int
+
+    init?(_ o: Loose) {
+        guard let preview = o.object("preview"), let name = preview.string("name") else { return nil }
+        self.name = name
+        lines = preview.array("lines").compactMap(\.stringValue)
+        suggestions = o.array("suggestions").enumerated().map { index, value -> Suggestion in
+            let row = Loose(value)
+            let parsed = row.object("parsed")
+            let assumed = parsed?.bool("assumed") ?? true
+            let matches = row.array("matches").enumerated().compactMap { position, item -> Match? in
+                guard let ingredient = item["ingredient"], case .object = ingredient else { return nil }
+                return Match(id: position, name: ingredient["name"]?.stringValue ?? "", ingredient: ingredient)
+            }
+            return Suggestion(id: index, line: row.string("line") ?? "", query: parsed?.string("query") ?? "",
+                              amount: assumed ? nil : parsed?.number("amount"), matches: matches)
+        }
+        omitted = o.int("omitted") ?? 0
     }
 }
 
@@ -542,6 +598,7 @@ public enum NutritionQueryResult: Equatable, Sendable {
     case entry(NutritionEntryDetail)
     case recipe(NutritionRecipeDetail)
     case labelParse(NutritionLabelParse)
+    case recipeImport(NutritionRecipeImport)
     case unknown(JSONValue)
 
     init(kind: String, json: JSONValue) throws {
@@ -551,6 +608,9 @@ public enum NutritionQueryResult: Equatable, Sendable {
         case "entry": self = .entry(try NutritionEntryDetail(json: json))
         case "recipe": self = .recipe(try NutritionRecipeDetail(json: json))
         case "labelParse": self = .labelParse(NutritionLabelParse(Loose(json)))
+        case "recipeImport":
+            guard let result = NutritionRecipeImport(Loose(json)) else { throw BridgeDecodingError.invalidField("result.preview") }
+            self = .recipeImport(result)
         default: self = .unknown(json)
         }
     }

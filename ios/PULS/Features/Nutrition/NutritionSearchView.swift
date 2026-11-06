@@ -8,6 +8,10 @@ enum NutritionRoute: Hashable {
     case custom
     /// N1: alle Rezepte (Query `page`).
     case allRecipes
+    /// Neues Rezept (`recipe.save`).
+    case newRecipe
+    /// Rezept importieren (`recipe.import.save`).
+    case importRecipe
 }
 
 enum NutritionSearchScope: String, CaseIterable, Hashable {
@@ -116,6 +120,10 @@ struct NutritionSearchSheet: View {
                     NutritionProductEditor(coordinator: coordinator, mode: .custom) { dismiss() }
                 case .allRecipes:
                     NutritionAllRecipesView(coordinator: coordinator)
+                case .newRecipe:
+                    NutritionRecipeEditor(coordinator: coordinator, draft: RecipeDraft(id: NutritionOps.makeID())) { path = [] }
+                case .importRecipe:
+                    NutritionRecipeImportView(coordinator: coordinator) { path = [] }
                 }
             }
         }
@@ -296,12 +304,26 @@ struct NutritionSearchSheet: View {
                 }
             }
         } footer: {
-            Text(text("Rezepte anlegen, bearbeiten und importieren im Web-Dialog.",
-                      "Create, edit and import recipes in the web dialog."))
+            if !coordinator.canEditRecipes || !coordinator.canImportRecipes {
+                Text(text("Rezepte anlegen, bearbeiten und importieren im Web-Dialog.",
+                          "Create, edit and import recipes in the web dialog."))
+            }
         }
         Section {
-            NutritionLinkRow(title: text("Rezepte bearbeiten", "Edit recipes"), symbol: "frying.pan", opensWeb: true) {
-                coordinator.openWebAdd()
+            if coordinator.canEditRecipes {
+                NavigationLink(value: NutritionRoute.newRecipe) {
+                    Label(text("Neues Rezept", "New recipe"), systemImage: "plus")
+                }
+            }
+            if coordinator.canImportRecipes {
+                NavigationLink(value: NutritionRoute.importRecipe) {
+                    Label(text("Rezept importieren", "Import recipe"), systemImage: "square.and.arrow.down")
+                }
+            }
+            if !coordinator.canEditRecipes || !coordinator.canImportRecipes {
+                NutritionLinkRow(title: text("Rezepte bearbeiten", "Edit recipes"), symbol: "frying.pan", opensWeb: true) {
+                    coordinator.openWebAdd()
+                }
             }
         }
     }

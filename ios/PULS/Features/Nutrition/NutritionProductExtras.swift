@@ -355,6 +355,14 @@ struct NutritionRecipeActionsSection: View {
 
     var body: some View {
         Section {
+            if coordinator.canEditRecipes {
+                NavigationLink {
+                    NutritionRecipeEditor(coordinator: coordinator, draft: RecipeDraft(recipe: recipe), onDone: onDone)
+                } label: {
+                    Label(text("Rezept bearbeiten", "Edit recipe"), systemImage: "pencil")
+                }
+                .disabled(!isEnabled)
+            }
             if coordinator.supportsOp(NutritionOps.recipeCopy) {
                 Button {
                     if coordinator.copyRecipe(recipe) { onDone() }
@@ -380,8 +388,10 @@ struct NutritionRecipeActionsSection: View {
                 }
             }
         } footer: {
-            Text(text("Rezepte anlegen, bearbeiten und importieren im Web-Dialog.",
-                      "Create, edit and import recipes in the web dialog."))
+            if !coordinator.canEditRecipes {
+                Text(text("Rezepte anlegen, bearbeiten und importieren im Web-Dialog.",
+                          "Create, edit and import recipes in the web dialog."))
+            }
         }
     }
 }

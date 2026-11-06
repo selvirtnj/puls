@@ -488,17 +488,37 @@ struct ActivityRoutesList: View {
     var body: some View {
         let routes = coordinator.projection?.routes ?? []
         List {
-            Section {
-                Button {
-                    coordinator.openWeb(ActivityNavigation(action: "routePlanner"))
-                } label: {
-                    Label(text("Neue Route planen", "Plan a new route"), systemImage: "plus")
-                        .frame(minHeight: 44)
+            if coordinator.notice != nil {
+                Section {
+                    ActivityNoticeBanner(coordinator: coordinator, text: text)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
                 }
-                .disabled(!coordinator.canWrite)
+            }
+            Section {
+                if coordinator.offersNativePlanner {
+                    NavigationLink {
+                        RoutePlannerView(coordinator: coordinator, existing: nil)
+                    } label: {
+                        Label(text("Neue Route planen", "Plan a new route"), systemImage: "plus")
+                            .frame(minHeight: 44)
+                    }
+                    .disabled(!coordinator.canWrite)
+                } else {
+                    Button {
+                        coordinator.openWeb(ActivityNavigation(action: "routePlanner"))
+                    } label: {
+                        Label(text("Neue Route planen", "Plan a new route"), systemImage: "plus")
+                            .frame(minHeight: 44)
+                    }
+                    .disabled(!coordinator.canWrite)
+                }
             } footer: {
-                Text(text("Der Planer öffnet sich in PULS. Die Route folgt Fuß- und Feldwegen (BRouter, OpenStreetMap).",
-                          "The planner opens in PULS. The route follows footpaths and tracks (BRouter, OpenStreetMap)."))
+                Text(coordinator.offersNativePlanner
+                     ? text("Die Route folgt Fuß- und Feldwegen (BRouter, OpenStreetMap).",
+                            "The route follows footpaths and tracks (BRouter, OpenStreetMap).")
+                     : text("Der Planer öffnet sich in PULS. Die Route folgt Fuß- und Feldwegen (BRouter, OpenStreetMap).",
+                            "The planner opens in PULS. The route follows footpaths and tracks (BRouter, OpenStreetMap)."))
             }
             Section {
                 if picking {
@@ -610,13 +630,23 @@ private struct RouteDetailView: View {
                 }
                 .disabled(coordinator.active != nil || !coordinator.canWrite)
                 if route.editable {
-                    Button {
-                        coordinator.openWeb(ActivityNavigation(action: "routePlanner", id: route.id))
-                    } label: {
-                        Label(text("Im Planer bearbeiten (PULS)", "Edit in planner (PULS)"), systemImage: "arrow.up.forward.app")
-                            .frame(minHeight: 44)
+                    if coordinator.offersNativePlanner, let detail = phase.value {
+                        NavigationLink {
+                            RoutePlannerView(coordinator: coordinator, existing: detail)
+                        } label: {
+                            Label(text("Im Planer bearbeiten", "Edit in planner"), systemImage: "pencil")
+                                .frame(minHeight: 44)
+                        }
+                        .disabled(!coordinator.canWrite)
+                    } else {
+                        Button {
+                            coordinator.openWeb(ActivityNavigation(action: "routePlanner", id: route.id))
+                        } label: {
+                            Label(text("Im Planer bearbeiten (PULS)", "Edit in planner (PULS)"), systemImage: "arrow.up.forward.app")
+                                .frame(minHeight: 44)
+                        }
+                        .disabled(!coordinator.canWrite)
                     }
-                    .disabled(!coordinator.canWrite)
                 }
                 if coordinator.canWrite {
                     Button(text("Löschen", "Delete"), role: .destructive) { confirmsDelete = true }

@@ -500,7 +500,7 @@ public enum ActivityCommands {
     public static func saveRoute(id: String, name: String, line: [GeoPoint], waypoints: [GeoPoint], distanceKm: Double,
                                  ascentM: Double?) -> Command? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard ActivityIDs.isValid(id), !trimmed.isEmpty, trimmed.count <= 60,
+        guard ActivityIDs.isValid(id), !trimmed.isEmpty, trimmed.utf16.count <= 60,
               (2...800).contains(line.count), (2...60).contains(waypoints.count),
               distanceKm.isFinite, distanceKm >= 0, distanceKm <= 1000 else { return nil }
         let valid = { (point: GeoPoint) in abs(point.lat) <= 90 && abs(point.lon) <= 180 && point.lat.isFinite && point.lon.isFinite }
