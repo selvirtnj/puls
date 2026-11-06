@@ -516,8 +516,9 @@ private struct NutritionEntriesSection: View {
                 .disabled(!coordinator.supportsEntry)
             }
             if projection.omitted.entries > 0 {
-                Button(text("Alle \(projection.entryCount) im Web anzeigen", "Show all \(projection.entryCount) in the web view")) {
-                    coordinator.openWebDiary()
+                Button(coordinator.offersLists ? text("Alle \(projection.entryCount) anzeigen", "Show all \(projection.entryCount)")
+                                               : text("Alle \(projection.entryCount) im Web anzeigen", "Show all \(projection.entryCount) in the web view")) {
+                    coordinator.showAllEntries()
                 }
             }
         } header: {
@@ -530,7 +531,7 @@ private struct NutritionEntriesSection: View {
     }
 }
 
-private struct NutritionEntryRow: View {
+struct NutritionEntryRow: View {
     let entry: NutritionEntry
     let text: OverviewText
     let isDeleting: Bool

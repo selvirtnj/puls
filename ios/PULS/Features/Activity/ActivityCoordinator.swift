@@ -88,6 +88,8 @@ final class ActivityCoordinator {
     /// Shell: Web-Ausweg (Routenplaner, Web-Detail) nach dem Schließen nativer Ansichten.
     @ObservationIgnored var onOpenWeb: ((ActivityNavigation) -> Void)?
     @ObservationIgnored var styleProvider: (() -> UIUserInterfaceStyle)?
+    /// N1: Teilen und „Als Route sichern“. Vor `install` gesetzt.
+    @ObservationIgnored var extras: ExtrasCoordinator?
 
     @ObservationIgnored private var confirmedHello: Int?
     @ObservationIgnored private var confirming = false
@@ -878,13 +880,14 @@ final class ActivityCoordinator {
 
     private func handleSave(_ event: AckEvent) {
         if event.ok {
-            // Das Web zeigt jetzt seinen Endscreen (`chrome.reason:'session'`).
+            // N1: Trägt das Ack einen Abschluss oder unterdrückt das Dokument seinen eigenen, zeigt Native ihn
+            // (`ExtrasCoordinator`, ohne erhaltenen Abschluss die Ersatzansicht). Sonst das Web (`chrome.reason:'session'`).
             summaryForm = nil
             summaryDetails = nil
             summaryQueryKey = nil
             stage = .start
             selectedRouteId = nil
-            beginWebCompletion()
+            if !store.showsNativeCompletion(for: event.result) { beginWebCompletion() }
             close()
             return
         }

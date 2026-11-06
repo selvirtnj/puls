@@ -200,7 +200,14 @@ function navigate(t){if(t.web!==true||!fields(t,['action','web']))return false;
     default:return false;
   }return true;
 }
-window.pulsNativeAccount={ops,build:()=>read(build),actions,queries:['planner'],navigate,device:()=>({scheme:getColorScheme()}),
+function pageRows(r){return read(()=>{
+  if(r.collection==='measurements')return (state.measurements||[]).slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>pick(x,['id','date',...Object.keys(measurementFields)]));
+  if(r.collection==='bodyHistory')return state.weights.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(w=>{
+    const historical=(state.profileHistory||[]).filter(p=>p.date<=w.date).sort((a,b)=>b.date.localeCompare(a.date))[0]||state.profile,m=bodyMetrics(w.kg,historical);
+    return {id:w.id,date:w.date,kg:shown(w.kg),bmi:rounded(m?.bmi),bodyFat:rounded(m?.bf),estimated:true,method:'bmi-age'};
+  });return null;
+})}
+window.pulsNativeAccount={...(window.pulsNativeFeatures.includes('nativeExtras')?{pageRows}:{}),ops,build:()=>read(build),actions,queries:['planner'],navigate,device:()=>({scheme:getColorScheme()}),
   query(r){if(!fields(r,['requestId','kind'])||r.kind!=='planner')return null;return {kind:'planner',ok:true,result:{expect:context(),planOps:!!nutrition}}},
   captureUi(){pendingProfile=null;delegated=false;goalExtras=copy(Object.fromEntries(Object.entries(state.goals).filter(([k])=>!macros.includes(k))));
     historyExtras={date:today(),goalRecord:copy(state.goalHistory?.find(x=>x.date===today())??null),profileRecord:copy(state.profileHistory?.find(x=>x.date===today())??null)};

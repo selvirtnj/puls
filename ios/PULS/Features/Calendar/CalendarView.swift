@@ -294,8 +294,9 @@ private struct DayDetailSection: View {
             }
             if result.isIncomplete(day) {
                 OmittedNote(message: text("Nicht alle Einträge dieses Tages passen in diese Ansicht.",
-                                          "Not every entry of this day fits this view."), text: text) {
-                    coordinator.openWeb(action: "calendar")
+                                          "Not every entry of this day fits this view."), text: text,
+                            actionTitle: coordinator.listActionTitle) {
+                    coordinator.showAll(.monthEntries(month: result.month), webAction: "calendar")
                 }
             }
         } header: {

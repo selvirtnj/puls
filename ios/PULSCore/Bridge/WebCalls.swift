@@ -233,6 +233,12 @@ public enum WebCall {
         "(typeof window.pulsNativeAccountQuery==='function')?window.pulsNativeAccountQuery(\(request.json.serializedString()))===true:false"
     }
 
+    /// N1 `window.pulsNativeQuery(request)`; Antwort kommt als `nativeResult` mit derselben `requestId`.
+    /// Ältere Web-Stände ohne Funktion liefern `false`.
+    public static func nativeQuery(_ request: NativeQueryRequest) -> String {
+        "(typeof window.pulsNativeQuery==='function')?window.pulsNativeQuery(\(request.json.serializedString()))===true:false"
+    }
+
     /// M8 fester Web-Ausstieg `{action, web:true}` (§13.5); das Web führt den sensiblen Ablauf selbst aus.
     public static func accountNavigate(_ target: AccountNavigation) -> String {
         "(typeof window.pulsNativeNavigate==='function')?window.pulsNativeNavigate(\(target.json.serializedString()))===true:false"

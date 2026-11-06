@@ -48,6 +48,8 @@ public enum InboundMessage: Equatable, Sendable {
     case nutritionProjection(NutritionProjectionMessage)
     /// M7: Antwort auf `pulsNativeNutritionQuery` (keine Mutation, kein Ack).
     case nutritionResult(NutritionResultMessage)
+    /// N1: Antwort auf `pulsNativeQuery` (keine Mutation, kein Ack).
+    case nativeResult(NativeResultMessage)
     /// M8: `projection{name:"account"}` (Name, Avatar, Profil/Plan, Körper, Darstellung, Klänge, Konto-Status).
     case accountProjection(AccountProjectionMessage)
     /// M8: Antwort auf `pulsNativeAccountQuery` (Planner-Kontext; keine Mutation, kein Ack).
@@ -83,6 +85,7 @@ public enum InboundMessage: Equatable, Sendable {
         case "activityResult": return .activityResult(try ActivityResultMessage(json: value))
         case "nutritionResult": return .nutritionResult(try NutritionResultMessage(json: value))
         case "accountResult": return .accountResult(try AccountResultMessage(json: value))
+        case "nativeResult": return .nativeResult(try NativeResultMessage(json: value))
         default: return nil
         }
     }
@@ -118,6 +121,7 @@ public enum InboundMessage: Equatable, Sendable {
         case .nutritionResult(let message): return message.json
         case .accountProjection(let message): return message.json
         case .accountResult(let message): return message.json
+        case .nativeResult(let message): return message.json
         }
     }
 }
@@ -181,10 +185,12 @@ public struct HelloMessage: Equatable, Sendable {
     public var nutrition: NutritionCapabilities?
     /// M8: `{queries, webActions}` der Kontoschnittstelle; `nil` ohne `nativeAccount` bzw. bei älterem Web.
     public var account: AccountCapabilities?
+    /// N1: `{queries, ops}` der Erweiterungen; `nil` ohne `nativeCompletion`/`nativeExtras` bzw. bei älterem Web.
+    public var extras: ExtrasCapabilities?
 
     public init(webVersion: String? = nil, ops: [String] = [], screens: [String] = [], ownerPending: Bool = false,
                 projections: [String] = [], features: [String] = [], nutrition: NutritionCapabilities? = nil,
-                account: AccountCapabilities? = nil) {
+                account: AccountCapabilities? = nil, extras: ExtrasCapabilities? = nil) {
         self.webVersion = webVersion
         self.ops = ops
         self.screens = screens
@@ -193,6 +199,7 @@ public struct HelloMessage: Equatable, Sendable {
         self.features = features
         self.nutrition = nutrition
         self.account = account
+        self.extras = extras
     }
 
     public init(json: JSONValue) throws {
@@ -210,6 +217,7 @@ public struct HelloMessage: Equatable, Sendable {
         // Nachsichtig: eine unerwartete Form schaltet nur den Ernährungsbereich nicht frei.
         nutrition = NutritionCapabilities(json: fields["nutrition"])
         account = AccountCapabilities(json: fields["account"])
+        extras = ExtrasCapabilities(json: fields["extras"])
     }
 
     public var json: JSONValue {
@@ -225,6 +233,7 @@ public struct HelloMessage: Equatable, Sendable {
         if !features.isEmpty { object["features"] = .array(features.map(JSONValue.string)) }
         if let nutrition { object["nutrition"] = nutrition.json }
         if let account { object["account"] = account.json }
+        if let extras { object["extras"] = extras.json }
         return .object(object)
     }
 }

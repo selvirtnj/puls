@@ -301,7 +301,33 @@ function navigate(t){
   if(!(state.runs||[]).some(r=>r.id===t.id))return false;
   if(t.action==='runDetail')runDetail(t.id);else if(t.action==='editRun')runEditForm(t.id);else return false;return true;
 }
-window.pulsNativeProgress={build:context=>read(()=>build(context)),query:(request,context)=>read(()=>query(request,context)),ops,actions,navigate,
+function pageRows(r){return read(()=>{
+  if(r.collection==='historyDays')return trendData().map(x=>({date:x.date,weight:number(x.weight),strength:number(x.strength),kcal:Number.isFinite(x.kcal)?Math.round(x.kcal):null}));
+  if(r.collection==='metricPoints'){
+    if(!Object.hasOwn(progressRanges,r.range))return null;
+    const m=data(null,true).metrics.definitions.find(x=>x.key===r.metric);return m?filteredMetricPoints(m,r.range).map(x=>({date:x.date,value:shown(x.value)})):null;
+  }
+  if(r.collection==='records')return exerciseProviders(data(),()=>state.exerciseBook.filter(b=>id(b.id)).map(record));
+  if(r.collection==='exerciseHistory'){
+    if(!id(r.exerciseId))return null;
+    const b=state.exerciseBook.find(x=>x.id===r.exerciseId);if(!b)return fail('gone','Übung nicht mehr vorhanden');
+    return exerciseHistory(b).slice().reverse().map(x=>({workoutId:id(x.w.id)?x.w.id:null,date:x.w.date,name:text(x.w.name),e1rm:x.best?number(x.best):null,volume:number(x.volume),sets:x.sets.map(s=>({kg:s.kg,reps:s.reps}))}));
+  }
+  if(r.collection==='monthEntries'){
+    if(typeof r.month!=='string'||!/^\d{4}-\d{2}$/.test(r.month)||!day(r.month+'-01'))return null;
+    return [...state.workouts.filter(w=>w.finished&&w.date.startsWith(r.month+'-')).map(entry=>({kind:'workout',type:'gym',entry})),
+      ...(state.runs||[]).filter(x=>x.date.startsWith(r.month+'-')).map(entry=>({kind:'activity',type:entry.type??'run',entry}))]
+      .sort((a,b)=>a.entry.date.localeCompare(b.entry.date)).filter(x=>id(x.entry.id)).map(activityRow);
+  }
+  if(r.collection==='activityEntries'){
+    if(!['week','month'].includes(r.mode)||!Number.isInteger(r.offset)||r.offset>0||r.offset< -1200||typeof r.filter!=='string'||!/^[a-z]{2,20}$/.test(r.filter))return null;
+    const range=activityPeriodRange(r.mode,today(),r.offset);
+    const types=new Set(activityEntries('0000-01-01',today()).map(x=>x.type)),filter=types.has(r.filter)?r.filter:'all';
+    return activityEntries(range.start,range.end).filter(x=>(filter==='all'||x.type===filter)&&id(x.entry.id)).reverse().map(activityRow);
+  }
+  return null;
+})}
+window.pulsNativeProgress={...(window.pulsNativeFeatures.includes('nativeExtras')?{pageRows}:{}),build:context=>read(()=>build(context)),query:(request,context)=>read(()=>query(request,context)),ops,actions,navigate,
   captureUi:()=>({page,tab:trainTab,modal:!!modal.open}),
   restoreUi(ui){page=ui.page;trainTab=ui.tab;if(!ui.modal&&modal.open)modal.close()}};
 })();

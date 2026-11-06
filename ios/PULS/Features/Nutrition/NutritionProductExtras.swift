@@ -12,6 +12,8 @@ private struct PortionDraft: Identifiable {
     let name: String
     let amountText: String
     let isNew: Bool
+    /// Hinweis, wenn die alte Menge in einer anderen Einheit steht und deshalb neu einzugeben ist.
+    let note: String?
 }
 
 /// Gespeicherte Portionen des Produkts: antippen ändert die Menge, wischen löscht, unten neue anlegen.
@@ -40,12 +42,10 @@ struct NutritionPortionsSection: View {
         Section {
             ForEach(detail.portions) { portion in
                 Button {
-                    draft = PortionDraft(name: portion.name,
-                                         amountText: portion.amount.map { NutritionInput.text($0, locale: text.locale) } ?? "",
-                                         isNew: false)
+                    draft = editDraft(portion)
                 } label: {
                     LabeledContent {
-                        Text(portion.amount.map { "\(text.number($0)) \(portion.unit)" } ?? "–").monospacedDigit()
+                        Text(amountLabel(portion)).monospacedDigit()
                     } label: {
                         Text(portion.name).foregroundStyle(.primary)
                     }
@@ -63,7 +63,7 @@ struct NutritionPortionsSection: View {
                 }
             }
             Button {
-                draft = PortionDraft(name: "", amountText: "", isNew: true)
+                draft = PortionDraft(name: "", amountText: "", isNew: true, note: nil)
             } label: {
                 HStack {
                     Label(text("Portion hinzufügen", "Add portion"), systemImage: "plus")
@@ -98,12 +98,29 @@ struct NutritionPortionsSection: View {
                       "Only weighed or documented amounts. Swipe left to delete."))
         }
     }
+
+    private func amountLabel(_ portion: NutritionPortion) -> String {
+        portion.amount.map { "\(text.number($0)) \(portion.unit ?? "")" } ?? "–"
+    }
+
+    /// Das Web speichert jede Menge in der Produktbasis. Eine Portion in anderer Einheit (z. B. 30 ml bei g-Produkt ohne
+    /// Dichte) wird nicht vorbelegt: Unverändert sichern würde sonst 30 g speichern. Die neue Menge gibt der Nutzer ein.
+    private func editDraft(_ portion: NutritionPortion) -> PortionDraft {
+        guard portion.matches(base: detail.base) else {
+            let note = text("Bisher \(amountLabel(portion)). Bitte die Menge in \(detail.base) neu eingeben.",
+                            "Previously \(amountLabel(portion)). Please enter the amount in \(detail.base) again.")
+            return PortionDraft(name: portion.name, amountText: "", isNew: false, note: note)
+        }
+        return PortionDraft(name: portion.name, amountText: portion.amount.map { NutritionInput.text($0, locale: text.locale) } ?? "",
+                            isNew: false, note: nil)
+    }
 }
 
 private struct PortionEditorSheet: View {
     let coordinator: NutritionCoordinator
     let detail: NutritionProductDetail
     let isNew: Bool
+    let note: String?
     let text: OverviewText
     @Environment(\.dismiss) private var dismiss
     // Einmalige Startwerte aus dem Entwurf; danach gehört die Eingabe dem Blatt.
@@ -114,6 +131,7 @@ private struct PortionEditorSheet: View {
         self.coordinator = coordinator
         self.detail = detail
         self.isNew = draft.isNew
+        self.note = draft.note
         self.text = text
         _name = State(initialValue: draft.name)
         _amountText = State(initialValue: draft.amountText)
@@ -141,8 +159,11 @@ private struct PortionEditorSheet: View {
                         Text(detail.base).foregroundStyle(.secondary)
                     }
                 } footer: {
-                    Text(text("Menge 0,1 bis 10 000 \(detail.base). Stückgewichte werden nicht geschätzt.",
-                              "Amount 0.1 to 10,000 \(detail.base). Piece weights are never estimated."))
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let note { Text(note) }
+                        Text(text("Menge 0,1 bis 10 000 \(detail.base). Stückgewichte werden nicht geschätzt.",
+                                  "Amount 0.1 to 10,000 \(detail.base). Piece weights are never estimated."))
+                    }
                 }
             }
             .navigationTitle(isNew ? text("Neue Portion", "New portion") : text("Portion ändern", "Change portion"))

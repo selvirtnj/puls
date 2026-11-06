@@ -104,6 +104,14 @@ struct WorkoutTabView: View {
             RunDetailScreen(coordinator: progress, runId: id, title: name)
         case .exercise(let id, let name):
             ExerciseHistoryScreen(coordinator: progress, exerciseId: id, title: name)
+        case .list(let list):
+            if let extras = progress.extras {
+                ProgressListScreen(coordinator: progress, extras: extras, route: list)
+            }
+        case .indexChart:
+            if let extras = progress.extras {
+                IndexChartScreen(coordinator: progress, extras: extras)
+            }
         }
     }
 }

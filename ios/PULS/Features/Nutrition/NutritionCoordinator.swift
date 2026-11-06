@@ -15,6 +15,8 @@ enum NutritionSheet: Identifiable, Equatable {
     case label
     /// P2: eigene Werte (`product.save` kind custom).
     case custom
+    /// N1: vollständiges Tagebuch des Tages (Query `page`).
+    case allEntries(String)
 
     var id: String {
         switch self {
@@ -26,6 +28,7 @@ enum NutritionSheet: Identifiable, Equatable {
         case .barcode: return "barcode"
         case .label: return "label"
         case .custom: return "custom"
+        case .allEntries(let date): return "allEntries:" + date
         }
     }
 }
@@ -73,6 +76,8 @@ final class NutritionCoordinator {
     @ObservationIgnored var onSelectFoodTab: (() -> Void)?
     /// Shell: nativen Plan im Konto-Tab öffnen; `false` = nativ gerade nicht möglich.
     @ObservationIgnored var onOpenGoals: (() -> Bool)?
+    /// N1: vollständige Listen. Vor `install` gesetzt.
+    @ObservationIgnored var extras: ExtrasCoordinator?
 
     @ObservationIgnored private var queryCounter = 0
     @ObservationIgnored private var handledAckSerial = 0
@@ -504,6 +509,18 @@ final class NutritionCoordinator {
     /// Vollständiges Web-Tagebuch (`navigation` der Projektion).
     func openWebDiary() {
         openWeb(projection?.navigation ?? NavigationTarget(page: "food", web: true))
+    }
+
+    /// N1: Das aktuelle Dokument liefert vollständige Listen per `page`.
+    var offersLists: Bool { extras?.offers(.page) == true }
+
+    /// Ganzes Tagebuch: nativ, ohne `page` das Web-Tagebuch.
+    func showAllEntries() {
+        if offersLists, let date = projection?.date {
+            present(.allEntries(date))
+        } else {
+            openWebDiary()
+        }
     }
 
     /// Kalorien- und Makroziele: nativer Plan im Konto-Tab, ohne natives Konto die Web-Planseite.

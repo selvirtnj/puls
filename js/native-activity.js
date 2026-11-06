@@ -198,6 +198,22 @@ const ops={
     run(a){return perform(()=>confirmed(()=>runDeleteRoute(a.id)))},effective:(s,a)=>!(s?.runRoutes||[]).some(r=>r.id===a.id)
   }
 };
+if(window.pulsNativeFeatures.includes('nativeExtras'))ops['route.fromRun']={
+  check(a){
+    if(!fields(a,['runId','routeId','name'])||!id(a.runId)||!id(a.routeId)||typeof a.name!=='string'||a.name.length>256)return fail('invalid','Lauf, stabile Routen-ID und Name erforderlich');
+    const r=saved(a.runId);if(!r?.route)return fail('gone','Lauf hat keine Route');
+    const line=runLineString(runRoutePoints(r.route).flat()),name=(a.name.trim()||runText('Route','Route')).slice(0,60),current=route(a.routeId);
+    if(current)return current.name===name&&same(current.line,line)&&current.distanceKm===r.distanceKm?{noop:true,next:copy(current),result:{routeId:a.routeId}}:fail('conflict','Routen-ID bereits anders belegt');
+    if((state.runRoutes?.length||0)>=200)return fail('invalid','Höchstens 200 Routen');return busy({});
+  },
+  run(a,p){return perform(()=>{
+    const base=globalThis.prompt,before=new Set((state.runRoutes||[]).map(x=>x.id));globalThis.prompt=()=>a.name;
+    try{runSaveRouteFromRun(a.runId)}finally{globalThis.prompt=base}
+    const r=(state.runRoutes||[]).find(x=>!before.has(x.id));if(!r)throw Error('Route nicht erstellt');
+    r.id=a.routeId;p.next=copy(r);save();return {routeId:r.id};
+  })},
+  effective:(s,a,p)=>s?.runRoutes?.some(r=>r.id===a.routeId&&same(r,p.next))===true
+};
 function coordinates(x,max){return Array.isArray(x)&&x.length>=2&&x.length<=max&&x.every(p=>Array.isArray(p)&&p.length===2&&finite(p[0],-90,90)&&finite(p[1],-180,180))}
 // A Web "Resume" keeps its old runSummary in memory; only a summary of the current pause is a valid draft basis.
 function currentSummary(){

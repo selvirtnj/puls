@@ -46,6 +46,7 @@ public enum BridgeOps {
         map.merge(activityEffectChecks) { first, _ in first }
         map.merge(nutritionEffectChecks) { first, _ in first }
         map.merge(accountEffectChecks) { first, _ in first }
+        map.merge(extrasEffectChecks) { first, _ in first }
         return map
     }()
 

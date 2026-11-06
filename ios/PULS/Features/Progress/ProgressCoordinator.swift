@@ -12,6 +12,10 @@ enum ProgressRoute: Hashable {
     case workout(id: String, name: String)
     case run(id: String, name: String)
     case exercise(id: String, name: String)
+    /// N1: vollständige Liste statt „Weitere im Web“.
+    case list(ProgressListRoute)
+    /// N1: kombinierter Indexchart.
+    case indexChart
 }
 
 /// Ladezustand einer Query-Ansicht.
@@ -65,6 +69,8 @@ final class ProgressCoordinator {
     @ObservationIgnored var onOpenWeb: ((ProgressNavigation) -> Void)?
     /// Shell: gespeicherte Aktivität nativ zeigen (ID, Titel, gleich bearbeiten); `false` = nativ gerade nicht möglich.
     @ObservationIgnored var onOpenRun: ((String, String, Bool) -> Bool)?
+    /// N1: Seiten, Indexchart, Übungseinstellungen und Teilen. Vor `install` gesetzt.
+    @ObservationIgnored var extras: ExtrasCoordinator?
 
     @ObservationIgnored private var queryCounter = 0
     @ObservationIgnored private var handledAckSerial = 0
@@ -160,6 +166,29 @@ final class ProgressCoordinator {
 
     func openWeb(action: String, id: String? = nil) {
         openWeb(ProgressNavigation(action: action, id: id))
+    }
+
+    /// N1: Das aktuelle Dokument liefert vollständige Listen per `page`.
+    var offersLists: Bool { extras?.offers(.page) == true }
+    /// N1: Das aktuelle Dokument liefert den Indexchart; sonst bleibt der Gesamtverlauf im Web.
+    var offersIndexChart: Bool { extras?.offers(.indexChart) == true }
+
+    /// Beschriftung für `OmittedNote`: nativ „Alle anzeigen“, sonst der bisherige Web-Text.
+    var listActionTitle: String? { offersLists ? text("Alle anzeigen", "Show all") : nil }
+
+    /// Vollständige native Liste, ohne `page` der bisherige Web-Weg.
+    func showAll(_ route: ProgressListRoute, webAction: String, id: String? = nil) {
+        if offersLists {
+            show(.list(route))
+        } else {
+            openWeb(action: webAction, id: id)
+        }
+    }
+
+    /// „Verlauf ansehen“: Indexchart im Bereich Fortschritt.
+    func openIndexChart() {
+        path = [.indexChart]
+        segment = .progress
     }
 
     /// Karte, Details und Bearbeiten einer Aktivität: natives Detail der Aktivitäten, ohne sie das Web-Ziel `fallback`.

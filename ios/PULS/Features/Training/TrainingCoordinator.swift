@@ -182,8 +182,9 @@ final class TrainingCoordinator {
             guard !pendingCode else { return }
             busyActions.remove("finish")
             if event.ok {
-                // Das Web zeigt jetzt seine Abschlussansicht (`chrome.reason:'session'`).
-                beginWebCompletion()
+                // N1: Trägt das Ack einen Abschluss oder unterdrückt das Dokument seinen eigenen, zeigt Native ihn
+                // (`ExtrasCoordinator`, ohne erhaltenen Abschluss die Ersatzansicht). Sonst das Web (`chrome.reason:'session'`).
+                if !store.showsNativeCompletion(for: event.result) { beginWebCompletion() }
                 closeSession(workoutId: workoutId)
             } else if event.code == .gone {
                 closeSession(workoutId: workoutId)

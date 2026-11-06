@@ -16,10 +16,12 @@ struct ExerciseHistoryScreen: View {
     @State private var reload = 0
     /// Generation (Dokument/Konto), zu der der angezeigte Inhalt gehört.
     @State private var loadedGeneration: Int?
+    @State private var editingSettings = false
 
     var body: some View {
         let text = coordinator.text
         List {
+            ProgressNoticeSection(coordinator: coordinator)
             switch visiblePhase {
             case .loaded(let history):
                 content(history, text: text)
@@ -33,6 +35,12 @@ struct ExerciseHistoryScreen: View {
         .listStyle(.insetGrouped)
         .navigationTitle(title.isEmpty ? text("Übung", "Exercise") : title)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $editingSettings) {
+            if let extras = coordinator.extras,
+               let row = ExtrasOps.exerciseRow(coordinator.store.document.root, id: exerciseId) {
+                ExerciseSettingsSheet(extras: extras, exerciseId: exerciseId, name: title, expect: row)
+            }
+        }
         .task(id: "\(exerciseId)|\(coordinator.dataRevision)|\(reload)") { @MainActor in
             // Beim Nachladen (neuer Snapshot, Rückkehr aus dem Web) bisherigen Inhalt stehen lassen.
             // Nur im selben Dokument/Konto; nach einem Wechsel nie alte Daten stehen lassen.
@@ -95,19 +103,27 @@ struct ExerciseHistoryScreen: View {
                 sessionRow(session, text: text)
             }
             if history.omitted > 0 {
-                OmittedNote(message: text("\(history.omitted) ältere Trainings stehen in PULS.", "\(history.omitted) older sessions are in PULS."),
-                            text: text) {
-                    coordinator.openWeb(action: "exerciseHistory", id: history.id)
+                OmittedNote(message: text("\(history.omitted) ältere Trainings.", "\(history.omitted) older sessions."),
+                            text: text, actionTitle: coordinator.listActionTitle) {
+                    coordinator.showAll(.exerciseHistory(id: history.id, name: history.name), webAction: "exerciseHistory", id: history.id)
                 }
             }
         } header: {
             Text(text("Trainings", "Sessions"))
         }
         Section {
-            Button {
-                coordinator.openWeb(action: "exerciseSettings", id: history.id)
-            } label: {
-                Label(text("Ziel und Progression in PULS", "Goal and progression in PULS"), systemImage: "slider.horizontal.3")
+            if canEditSettings(history) {
+                Button {
+                    editingSettings = true
+                } label: {
+                    Label(text("Ziel und Progression", "Goal and progression"), systemImage: "slider.horizontal.3")
+                }
+            } else {
+                Button {
+                    coordinator.openWeb(action: "exerciseSettings", id: history.id)
+                } label: {
+                    Label(text("Ziel und Progression in PULS", "Goal and progression in PULS"), systemImage: "slider.horizontal.3")
+                }
             }
             Button {
                 coordinator.openWeb(action: "exerciseHistory", id: history.id)
@@ -115,6 +131,12 @@ struct ExerciseHistoryScreen: View {
                 Label(text("Verlauf in PULS öffnen", "Open history in PULS"), systemImage: "arrow.up.forward.app")
             }
         }
+    }
+
+    /// N1: nativ nur mit gemeldeter Op, schreibbar und vorhandener Rohzeile (die ganze Zeile ist die Erwartung).
+    private func canEditSettings(_ history: ExerciseHistoryResult) -> Bool {
+        coordinator.extras != nil && coordinator.store.supportsOp(ExtrasOps.exerciseSettingsSet) && !coordinator.store.isReadOnly
+            && ExtrasOps.exerciseRow(coordinator.store.document.root, id: history.id) != nil
     }
 
     @ViewBuilder

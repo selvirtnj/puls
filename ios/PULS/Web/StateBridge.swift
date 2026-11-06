@@ -149,6 +149,12 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
         evaluate(WebCall.nutritionQuery(request)) { result in completion?((result as? Bool) == true) }
     }
 
+    /// N1 gemeinsame Query; die Antwort kommt als `nativeResult` in den Store. `completion(false)`: nicht gesendet
+    /// (Web nicht bereit, laufende Transaktion, ungültig, alter Web-Stand ohne `pulsNativeQuery`).
+    func nativeQuery(_ request: NativeQueryRequest, completion: (@MainActor (Bool) -> Void)? = nil) {
+        evaluate(WebCall.nativeQuery(request)) { result in completion?((result as? Bool) == true) }
+    }
+
     /// M8 Planner-Query; die Antwort kommt als `accountResult` in den Store. `completion(false)`: nicht gesendet.
     func accountQuery(_ request: AccountQueryRequest, completion: (@MainActor (Bool) -> Void)? = nil) {
         evaluate(WebCall.accountQuery(request)) { result in completion?((result as? Bool) == true) }

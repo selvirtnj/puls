@@ -238,6 +238,14 @@ public final class ProfileStore {
     public private(set) var requestedAccountSection: String?
     /// M8: `snapshot.device.scheme` des zuletzt angenommenen Snapshots (lokale Gerätedarstellung, kein Profilfeld).
     public private(set) var deviceScheme: String?
+    /// N1: angenommene `nativeResult`-Antworten (nach `requestId`), höchstens 16, nie persistiert.
+    public private(set) var nativeResults: [String: NativeResultMessage] = [:]
+    /// N1: steigt bei neuem Dokument, `hello.ownerPending:true` und Nutzerwechsel; Cursor sind danach wertlos.
+    public private(set) var extrasGeneration = 0
+    /// N1: erhaltene, noch nicht bewusst geschlossene Abschlüsse (dauerhaft, nutzergebunden).
+    public private(set) var completions: [CompletionRecord] = []
+    /// N1: Das aktuelle Dokument hat einen Snapshot geliefert (nicht bloß der Spiegel eines früheren Stands).
+    private var documentSnapshotConfirmed = false
     public let authority: DataAuthority = .web
 
     /// Übergibt einen Befehl an das Web (`StateBridge`). Ohne Sender bleibt er in der Outbox.
@@ -248,7 +256,10 @@ public final class ProfileStore {
     private let environment: StoreEnvironment
     private let outbox: Outbox
     private let mirror: MirrorFile
+    private let completionLedger: CompletionLedger
 
+    @ObservationIgnored private var pendingNativeQueries: [String: PendingNativeQuery] = [:]
+    @ObservationIgnored private var nativeResultOrder: [String] = []
     @ObservationIgnored private var acceptAnySnapshotSeq = false
     @ObservationIgnored private var replayWhenWritable = false
     @ObservationIgnored private var unsupportedOps: Set<String> = []
@@ -279,6 +290,12 @@ public final class ProfileStore {
     @ObservationIgnored private var lastAccountProjectionSeq: Int?
     @ObservationIgnored private var pendingAccountQueries: [String: PendingAccountQuery] = [:]
     @ObservationIgnored private var accountResultOrder: [String] = []
+
+    private struct PendingNativeQuery {
+        var request: NativeQueryRequest
+        var userId: String?
+        var generation: Int
+    }
 
     private struct PendingAccountQuery {
         var request: AccountQueryRequest
@@ -313,7 +330,9 @@ public final class ProfileStore {
         self.environment = environment
         self.mirror = MirrorFile(directory: environment.directory)
         self.outbox = Outbox(directory: environment.directory)
+        self.completionLedger = CompletionLedger(directory: environment.directory)
         outboxEntries = outbox.entries
+        completions = completionLedger.records
         if let problem = outbox.loadError {
             notice = .outboxProblem(problem)
         }
@@ -418,7 +437,154 @@ public final class ProfileStore {
             return handleAccountProjection(projection)
         case .accountResult(let result):
             return handleAccountResult(result)
+        case .nativeResult(let result):
+            return handleNativeResult(result)
         }
+    }
+
+    // MARK: N1 Abschlüsse, Seiten, Inhaltsabschnitte
+
+    /// Das aktuelle Dokument zeigt Abschlüsse nicht mehr selbst: `nativeCompletion` samt `completion.dismiss` gemeldet.
+    public var webOffersCompletion: Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return false }
+        return hello.features.contains(ExtrasOps.nativeCompletionFeature)
+            && hello.extras?.ops.contains(ExtrasOps.completionDismiss) == true
+    }
+
+    /// Das aktuelle Dokument beantwortet diese `pulsNativeQuery`-Art. Fehlt sie, bleibt der bisherige Weg.
+    public func offersExtras(_ kind: NativeQueryRequest.Kind) -> Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending else { return false }
+        let feature = kind == .completion ? ExtrasOps.nativeCompletionFeature : ExtrasOps.nativeExtrasFeature
+        return hello.features.contains(feature) && hello.extras?.queries.contains(kind.rawValue) == true
+    }
+
+    /// `perform` nur für N1-Ops und nur, wenn das Konto noch dasselbe ist wie beim Start der Aktion.
+    @discardableResult
+    public func performExtras(_ command: Command, asUser expectedUser: String?) throws -> ApplyCommand {
+        guard userId == expectedUser else { throw TrainingCommandError.userChanged }
+        guard ExtrasOps.isExtras(command.op) else { throw ProfileStoreError.unsupportedOp(command.op) }
+        return try perform(command)
+    }
+
+    /// Das aktuelle Dokument hat sein Konto bestätigt: Hello ohne `ownerPending` und ein angenommener Snapshot. Vorher kann
+    /// `userId` noch aus dem Spiegel des früheren Kontos stammen.
+    private var completionOwnerConfirmed: Bool {
+        guard let hello = documentHello, !hello.ownerPending, !ownerPending, documentSnapshotConfirmed else { return false }
+        return hasDocument && !flags.preview
+    }
+
+    /// Ältester offener Abschluss des bestätigten Kontos. Abschlüsse eines anderen Kontos erscheinen nie.
+    public var currentCompletion: CompletionRecord? {
+        guard completionOwnerConfirmed else { return nil }
+        return completions.first { $0.userId == userId }
+    }
+
+    /// Eine sichtbare Abschlussansicht darf nur bei bestätigtem Besitzer stehen bleiben.
+    public func completionIsVisible(_ record: CompletionRecord) -> Bool {
+        guard completionOwnerConfirmed, record.userId == userId else { return false }
+        return completions.contains { $0.id == record.id && $0.userId == record.userId && $0.commandId == record.commandId }
+    }
+
+    /// Native zeigt den Abschluss selbst: Das Ack trägt ihn, meldet ihn als verloren, oder das Dokument unterdrückt seinen
+    /// Web-Abschluss. Nur sonst bleibt der Web-Abschluss zuständig.
+    public func showsNativeCompletion(for result: JSONValue?) -> Bool {
+        result?["completion"] != nil || result?["completionUnavailable"]?.boolValue == true || webOffersCompletion
+    }
+
+    /// Bewusst geschlossen: dauerhaft für das Konto des Abschlusses, nie für das gerade aktive. `completion.dismiss` bleibt
+    /// vorgemerkt, bis es in der Outbox steht (§15.2); XP und Workout ändert das nie.
+    public func dismissCompletion(_ record: CompletionRecord) {
+        completionLedger.dismiss(record)
+        completions = completionLedger.records
+        flushCompletionDismissals()
+    }
+
+    /// Vollständig nachgeladenen Inhalt dauerhaft übernehmen, damit ein Neustart nicht nur den gekürzten Kopf kennt.
+    public func storeFullCompletion(_ record: CompletionRecord, completion: JSONValue) {
+        guard NativeCompletion(json: completion)?.id == record.id,
+              completionLedger.replace(record, completion: completion) else { return }
+        completions = completionLedger.records
+    }
+
+    /// Vorgemerkte Bestätigungen des aktiven Kontos einreihen, sobald die Outbox sie annimmt.
+    private func flushCompletionDismissals() {
+        for pending in completionLedger.pendingDismissals where pending.userId == userId && completionOwnerConfirmed {
+            guard supportsOp(ExtrasOps.completionDismiss), let command = ExtrasCommands.dismissCompletion(id: pending.id) else { continue }
+            do {
+                try performExtras(command, asUser: pending.userId)
+                completionLedger.finishDismissal(pending)
+            } catch {
+                log("completion dismiss kept for later")
+            }
+        }
+    }
+
+    private func noteCompletion(_ command: ApplyCommand, result: JSONValue?) {
+        guard command.op == TrainingOps.workoutFinish || command.op == ActivityOps.summarySave else { return }
+        let kind: NativeCompletion.Kind = command.op == TrainingOps.workoutFinish ? .workout : .run
+        let completion: JSONValue
+        if let value = result?["completion"], NativeCompletion(json: value) != nil {
+            completion = value
+        } else {
+            // Kein Abschluss erhalten (z. B. `completionUnavailable` nach verlorenem Replay): Ersatzansicht ohne erfundene XP.
+            let target = kind == .workout ? result?["workoutId"]?.stringValue ?? command.args["workoutId"]?.stringValue
+                                          : result?["runId"]?.stringValue
+            guard showsNativeCompletion(for: result), let target else { return }
+            completion = NativeCompletion.unavailableJSON(kind: kind, id: target)
+        }
+        guard let parsed = NativeCompletion(json: completion) else { return }
+        if completionLedger.add(CompletionRecord(userId: command.userId, id: parsed.id, commandId: command.id, completion: completion)) {
+            completions = completionLedger.records
+        }
+    }
+
+    /// Vor dem Senden aufrufen; nur registrierte Anfragen dieses Dokuments/Nutzers werden angenommen.
+    public func registerNativeQuery(_ request: NativeQueryRequest) {
+        pendingNativeQueries[request.requestId] = PendingNativeQuery(request: request, userId: userId, generation: extrasGeneration)
+    }
+
+    public func forgetNativeQuery(_ requestId: String) {
+        pendingNativeQueries[requestId] = nil
+        if nativeResults[requestId] != nil {
+            nativeResults[requestId] = nil
+            nativeResultOrder.removeAll { $0 == requestId }
+        }
+    }
+
+    public func isNativeQueryPending(_ requestId: String) -> Bool {
+        pendingNativeQueries[requestId] != nil
+    }
+
+    public func nativeResult(_ requestId: String?) -> NativeResultMessage? {
+        guard let requestId else { return nil }
+        return nativeResults[requestId]
+    }
+
+    private func handleNativeResult(_ message: NativeResultMessage) -> Bool {
+        guard !message.ownerPending, let pending = pendingNativeQueries[message.requestId] else {
+            log("native result dropped")
+            return false
+        }
+        pendingNativeQueries[message.requestId] = nil
+        guard pending.generation == extrasGeneration, pending.request.kind.rawValue == message.kind,
+              message.flags.preview || (message.userId == pending.userId && message.userId == userId) else {
+            log("native result for other user/document dropped")
+            return false
+        }
+        nativeResults[message.requestId] = message
+        nativeResultOrder.removeAll { $0 == message.requestId }
+        nativeResultOrder.append(message.requestId)
+        while nativeResultOrder.count > 16 {
+            nativeResults[nativeResultOrder.removeFirst()] = nil
+        }
+        return true
+    }
+
+    private func resetExtras() {
+        pendingNativeQueries.removeAll()
+        nativeResults.removeAll()
+        nativeResultOrder.removeAll()
+        extrasGeneration += 1
     }
 
     // MARK: M8 Konto und Profil
@@ -580,6 +746,8 @@ public final class ProfileStore {
         resetActivity()
         resetNutrition()
         resetAccount()
+        resetExtras()
+        documentSnapshotConfirmed = false
         requestedAccountSection = nil
         // Ein neues Dokument hat keinen offenen Dialog; Hello und Lade-Snapshot spielen die Outbox ohnehin ein.
         replayAfterWebDialog = false
@@ -1070,6 +1238,8 @@ public final class ProfileStore {
             resetActivity()
             resetNutrition()
             resetAccount()
+            resetExtras()
+            documentSnapshotConfirmed = false
         }
         acceptAnySnapshotSeq = true
         // Wiederholte Status-Hellos verwerfen weder Spiegel noch Outbox noch gespeicherte Beobachtungen.
@@ -1078,6 +1248,8 @@ public final class ProfileStore {
         let ops = Set(hello.ops)
         unsupportedOps.subtract(ops)
         outbox.reloadIfBlocked()
+        completionLedger.reloadIfBlocked()
+        if completions != completionLedger.records { completions = completionLedger.records }
         let unparked = outbox.unpark { entry in
             entry.status == .parked(.unknownOp) && ops.contains(entry.command.op)
         }
@@ -1119,6 +1291,7 @@ public final class ProfileStore {
                 resetActivity(keepProjection: true)
                 resetNutrition(keepProjection: true)
                 resetAccount(keepProjection: true)
+                resetExtras()
             }
         }
         acceptAnySnapshotSeq = false
@@ -1131,6 +1304,7 @@ public final class ProfileStore {
         deviceScheme = snapshot.deviceScheme
         confirmedDocument = ProfileDocument(root: snapshot.state)
         hasDocument = true
+        documentSnapshotConfirmed = true
         awaitingSnapshot.removeAll { $0.seq <= snapshot.seq }
         trackAcked(with: snapshot)
         syncOutbox()
@@ -1145,6 +1319,7 @@ public final class ProfileStore {
             replayWhenWritable = false
             replayOutbox()
         }
+        flushCompletionDismissals()
         return true
     }
 
@@ -1213,6 +1388,7 @@ public final class ProfileStore {
             log("ack ok op=\(command.op) seq=\(seqText)")
             // Das Web hat wieder ausgeführt: kein offener Dialog mehr anzuzeigen.
             isWaitingForWebDialog = false
+            noteCompletion(command, result: ack.result)
             recordAck(ack, command: command, code: nil, message: nil)
         case .rejected(let command, let error):
             notice = .commandRejected(id: command.id, op: command.op, message: error.message)

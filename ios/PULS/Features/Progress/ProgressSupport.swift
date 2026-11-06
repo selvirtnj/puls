@@ -192,6 +192,8 @@ struct QueryPhaseView: View {
 struct OmittedNote: View {
     let message: String
     let text: ProgressText
+    /// N1: nativer Knopftext („Alle anzeigen“), sonst der Web-Ausweg.
+    var actionTitle: String? = nil
     let openWeb: () -> Void
 
     var body: some View {
@@ -199,7 +201,7 @@ struct OmittedNote: View {
             Label(message, systemImage: "info.circle")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-            Button(text("Vollständig in PULS ansehen", "See everything in PULS"), action: openWeb)
+            Button(actionTitle ?? text("Vollständig in PULS ansehen", "See everything in PULS"), action: openWeb)
                 .font(.footnote.weight(.semibold))
                 .buttonStyle(.borderless)
                 .frame(minHeight: 44, alignment: .leading)

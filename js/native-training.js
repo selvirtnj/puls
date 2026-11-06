@@ -480,5 +480,27 @@ function restoreUi(ui){
   if(typeof xpCelebrationPending!=='undefined')xpCelebrationPending=ui.celebration;
   try{if(!ui.modal&&typeof modal!=='undefined'&&modal.open)modal.close()}catch{}
 }
+if(window.pulsNativeFeatures.includes('nativeExtras'))ops['exercise.settings.set']={
+  check(a){
+    const fields=['e1rmTarget','repMin','repMax','loadStep','muscles'];
+    if(!plain(a)||JSON.stringify(a).length>24*1024||Object.keys(a).some(k=>!['exerciseId','expect',...fields].includes(k))||!isId(a.exerciseId)||!plain(a.expect)||!fields.some(k=>Object.hasOwn(a,k)))return fail('invalid','Übung, expect und Einstellungen erforderlich (höchstens 24 Ki)');
+    const b=exerciseBookItem(a.exerciseId);if(!b)return fail('gone','Übung fehlt');
+    const next={...copy(a.expect),target:a.e1rmTarget??a.expect.target??0,repMin:a.repMin??a.expect.repMin??6,repMax:a.repMax??a.expect.repMax??10,loadStep:a.loadStep??a.expect.loadStep??2.5};
+    if(Object.hasOwn(a,'muscles')){
+      if(!Array.isArray(a.muscles)||a.muscles.length!==1||!Object.hasOwn(muscleNames,a.muscles[0]))return fail('invalid','Eine primäre Web-Muskelgruppe erforderlich');
+      next.muscles=a.muscles.slice();
+    }
+    if(fields.some(k=>Object.hasOwn(a,k)&&a[k]===null)||!finite(next.target,0,2000)||!int(next.repMin,1,30)||!int(next.repMax,next.repMin,30)||!finite(next.loadStep,.25,25))return fail('invalid','Ungültiger Rep-Bereich, e1RM oder Gewichtsschritt');
+    if(same(b,next))return {noop:true,next,result:{exercise:copy(b)}};
+    return same(b,a.expect)?{busy:true,next}:fail('conflict','Übungseinstellungen geändert');
+  },
+  run(a,p){
+    const base=document.getElementById,values={'prog-target':p.next.target,'prog-min':p.next.repMin,'prog-max':p.next.repMax,'prog-step':p.next.loadStep,'prog-muscle':a.muscles?.[0]??''};
+    document.getElementById=function(k){return Object.hasOwn(values,k)?{value:String(values[k])}:base.call(this,k)};
+    try{saveProgression({preventDefault(){}},a.exerciseId)}finally{document.getElementById=base}
+    return {exercise:copy(exerciseBookItem(a.exerciseId))};
+  },
+  effective:(s,a,p)=>same(s?.exerciseBook?.find(b=>b.id===a.exerciseId),p.next)
+};
 window.pulsNativeTraining={ops,build,search,captureUi,restoreUi};
 })();

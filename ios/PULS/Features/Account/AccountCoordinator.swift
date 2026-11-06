@@ -93,6 +93,8 @@ final class AccountCoordinator {
     @ObservationIgnored var onOpenBody: (() -> Void)?
     /// Shell: Konto-Tab wählen (z. B. nach `openNative{screen:'account'}`).
     @ObservationIgnored var onSelectAccountTab: (() -> Void)?
+    /// N1: vollständige Listen und Export. Vor `install` gesetzt.
+    @ObservationIgnored var extras: ExtrasCoordinator?
 
     @ObservationIgnored private var queryCounter = 0
     @ObservationIgnored private var handledAckSerial = 0

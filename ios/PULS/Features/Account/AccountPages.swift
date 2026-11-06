@@ -182,8 +182,25 @@ struct AccountBodyPage: View {
 
             if projection.omittedHistory + projection.omittedMeasurements > 0 {
                 Section {
-                    AccountWebRow(title: text("Alle älteren Einträge im Web", "All older entries in the web view"), symbol: "list.bullet", text: text) {
-                        coordinator.openWebSection(.body)
+                    if let extras = coordinator.extras, extras.offers(.page) {
+                        if projection.omittedHistory > 0 {
+                            NavigationLink {
+                                AccountAllHistoryView(extras: extras, text: text)
+                            } label: {
+                                Label(text("Ganzer Gewichtsverlauf", "Full weight history"), systemImage: "list.bullet")
+                            }
+                        }
+                        if projection.omittedMeasurements > 0 {
+                            NavigationLink {
+                                AccountAllMeasurementsView(extras: extras, fields: bodyData.fields, text: text)
+                            } label: {
+                                Label(text("Alle Körpermaße", "All body measurements"), systemImage: "ruler")
+                            }
+                        }
+                    } else {
+                        AccountWebRow(title: text("Alle älteren Einträge im Web", "All older entries in the web view"), symbol: "list.bullet", text: text) {
+                            coordinator.openWebSection(.body)
+                        }
                     }
                 }
             }
@@ -429,6 +446,8 @@ struct AccountSoundPage: View {
 struct AccountManagePage: View {
     let coordinator: AccountCoordinator
     let projection: AccountProjection
+    /// N1: Export gehört der Seite; beim Verlassen wird er abgebrochen.
+    @State private var export = ExportController()
 
     var body: some View {
         let text = coordinator.text
@@ -454,8 +473,12 @@ struct AccountManagePage: View {
             }
 
             Section(text("Sicherung", "Backup")) {
-                row("accountExport", text("Sicherung exportieren (JSON)", "Export backup (JSON)"), "square.and.arrow.up", text)
-                row("accountCSV", text("CSV-Export", "CSV export"), "tablecells", text)
+                if let extras = coordinator.extras, extras.offers(.export) {
+                    NativeExportRows(coordinator: extras, controller: export, text: text)
+                } else {
+                    row("accountExport", text("Sicherung exportieren (JSON)", "Export backup (JSON)"), "square.and.arrow.up", text)
+                    row("accountCSV", text("CSV-Export", "CSV export"), "tablecells", text)
+                }
                 row("accountImport", text("Sicherung importieren", "Import backup"), "square.and.arrow.down", text)
                 row("accountRecovery", text("Wiederherstellung & Konfliktsicherungen", "Recovery & conflict backups"), "lifepreserver", text)
             }
@@ -469,6 +492,7 @@ struct AccountManagePage: View {
             }
         }
         .listStyle(.insetGrouped)
+        .modifier(NativeExportPresenter(controller: export, text: text))
     }
 
     @ViewBuilder

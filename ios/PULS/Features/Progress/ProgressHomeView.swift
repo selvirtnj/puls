@@ -315,8 +315,14 @@ private struct ExplorerSection: View {
             PointSeriesChart(values: metrics.points, unit: definition?.unit ?? "", text: text)
             if metrics.omitted > 0 {
                 OmittedNote(message: text("Gezeigt: die letzten \(metrics.points.count) von \(metrics.total) Punkten.",
-                                          "Showing the latest \(metrics.points.count) of \(metrics.total) points."), text: text) {
-                    coordinator.openWeb(action: "progress")
+                                          "Showing the latest \(metrics.points.count) of \(metrics.total) points."), text: text,
+                            actionTitle: metrics.metric != nil && metrics.range != nil ? coordinator.listActionTitle : nil) {
+                    if let metric = metrics.metric, let range = metrics.range {
+                        coordinator.showAll(.metricPoints(metric: metric, range: range, unit: definition?.unit ?? "",
+                                                          title: definition?.label ?? text("Messwerte", "Measures")), webAction: "progress")
+                    } else {
+                        coordinator.openWeb(action: "progress")
+                    }
                 }
             }
         } header: {
@@ -385,15 +391,25 @@ private struct TrendSection: View {
             TrendRowsCharts(chart: chart, lines: lines, text: text)
             if chart.omitted > 0 {
                 OmittedNote(message: text("Gezeigt: die letzten \(chart.rows.count) von \(chart.total) Tagen.",
-                                          "Showing the latest \(chart.rows.count) of \(chart.total) days."), text: text) {
-                    coordinator.openWeb(action: "progress")
+                                          "Showing the latest \(chart.rows.count) of \(chart.total) days."), text: text,
+                            actionTitle: coordinator.listActionTitle) {
+                    coordinator.showAll(.historyDays, webAction: "progress")
+                }
+            }
+            if coordinator.offersIndexChart {
+                Button {
+                    coordinator.show(.indexChart)
+                } label: {
+                    Label(text("Kombinierter Indexchart", "Combined index chart"), systemImage: "chart.xyaxis.line")
                 }
             }
         } header: {
             Text(text("Gesamtverlauf", "Overall progress"))
         } footer: {
-            Text(text("Tage ohne Messung bleiben leer. Den kombinierten Indexchart zeigt PULS.",
-                      "Days without a measurement stay empty. PULS shows the combined index chart."))
+            Text(coordinator.offersIndexChart
+                 ? text("Tage ohne Messung bleiben leer.", "Days without a measurement stay empty.")
+                 : text("Tage ohne Messung bleiben leer. Den kombinierten Indexchart zeigt PULS.",
+                        "Days without a measurement stay empty. PULS shows the combined index chart."))
         }
     }
 
@@ -434,9 +450,10 @@ private struct RecordsSection: View {
                 .accessibilityHint(text("Öffnet den Verlauf", "Opens the history"))
             }
             if progress.recordCount > progress.records.count {
-                OmittedNote(message: text("\(progress.recordCount - progress.records.count) weitere Übungen in PULS.",
-                                          "\(progress.recordCount - progress.records.count) more exercises in PULS."), text: text) {
-                    coordinator.openWeb(action: "records")
+                OmittedNote(message: text("\(progress.recordCount - progress.records.count) weitere Übungen.",
+                                          "\(progress.recordCount - progress.records.count) more exercises."), text: text,
+                            actionTitle: coordinator.listActionTitle) {
+                    coordinator.showAll(.records, webAction: "records")
                 }
             }
         } header: {
@@ -547,8 +564,9 @@ private struct ActivitySection: View {
                     }
                 }
                 if view.entries.count > 10 || view.omitted > 0 || view.typesOmitted > 0 {
-                    OmittedNote(message: text("Weitere Einträge stehen in PULS.", "More entries are in PULS."), text: text) {
-                        coordinator.openWeb(action: "progress")
+                    OmittedNote(message: text("Es gibt weitere Einträge.", "There are more entries."), text: text,
+                                actionTitle: coordinator.listActionTitle) {
+                        coordinator.showAll(.activityEntries(mode: currentMode, filter: currentFilter), webAction: "progress")
                     }
                 }
             } else if !usesProjection {

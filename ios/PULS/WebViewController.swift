@@ -33,6 +33,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var nutritionCoordinator: NutritionCoordinator?
     // M8: natives Konto (Features/Account); nil ohne Brücke.
     private var accountCoordinator: AccountCoordinator?
+    // N1: gemeinsame Query, Abschlüsse, Export, Teilen (Features/Extras); nil ohne Brücke.
+    private var extrasCoordinator: ExtrasCoordinator?
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
@@ -73,7 +75,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // berechnet die Projektion 'nutrition' nur nach pulsNativeSetInterest. Kamera/Vision liefern nur Code bzw. Text.
         // 'nativeAccount' (M8): Konto-Tab nativ (Name/Avatar, Plan, Körper/Maße, adaptiver Erhalt, Darstellung, Klänge); die
         // Projektion 'account' nur nach pulsNativeSetInterest. Anmeldung/Abmeldung/Konflikt/Import/Reset/Löschen/Export bleiben Web.
-        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress','nativeActivity','nativeNutrition','nativeAccount'"
+        // 'nativeCompletion'/'nativeExtras' (N1): native Abschlüsse, Seiten, Indexchart, Export, Teilen. Ein Web-Stand ohne N1
+        // ignoriert beide; Native nutzt sie erst, wenn das Hello sie meldet.
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress','nativeActivity','nativeNutrition','nativeAccount','nativeCompletion','nativeExtras'"
         config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -149,6 +153,26 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                 guard let account, let shell, shell.canShowNativeAccount else { return false }
                 account.openFromWeb(section: AccountRoute.plan.rawValue)
                 return true
+            }
+            // N1: gemeinsame Query, Abschlüsse, Listen, Export, Teilen.
+            let extras = ExtrasCoordinator(store: store, bridge: stateBridge, host: self)
+            extrasCoordinator = extras
+            progress.extras = extras
+            activity.extras = extras
+            nutrition.extras = extras
+            account.extras = extras
+            extras.styleProvider = { [weak shell] in
+                guard let shell, shell.isActive else { return .dark }
+                return shell.style
+            }
+            extras.canPresentCompletion = { [weak training, weak activity] in
+                training?.sessionWorkoutId == nil && activity?.isPresented != true
+            }
+            extras.onSettingsNotice = { [weak progress] message in
+                progress?.notice = TrainingNotice(text: message)
+            }
+            extras.onRouteNotice = { [weak activity] message in
+                activity?.notice = TrainingNotice(text: message, isWarning: false)
             }
             tabShell = shell
         }

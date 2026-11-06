@@ -985,14 +985,15 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         if let fallback { perform(fallback) } else { openBodyScreen() }
     }
 
-    /// „Verlauf ansehen“: nativer Fortschritt im Trainings-Tab (M5), sonst das Web-Ziel `fallback`.
+    /// „Verlauf ansehen“: der Gesamtverlauf. Nativ nur als Indexchart (N1); solange das Web ihn nicht anbietet, bleibt das
+    /// bisherige Web-Ziel `fallback` (die Trainingsanalyse ist nicht derselbe Inhalt).
     private func openProgress(fallback: NavigationTarget) {
         guard !state.isBlocked else { return }
-        if let progress, progress.offersProgress, training != nil {
-            progress.path = []
-            progress.segment = .progress
+        if let progress, progress.offersProgress, progress.offersIndexChart, training != nil {
+            progress.openIndexChart()
             selectWorkoutTab()
             if showsNativeTraining { return }
+            progress.path = []
         }
         perform(fallback)
     }

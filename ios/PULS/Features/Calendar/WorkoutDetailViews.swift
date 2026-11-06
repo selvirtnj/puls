@@ -119,13 +119,17 @@ struct WorkoutReviewScreen: View {
             }
         }
         Section {
-            Button {
-                coordinator.openWeb(action: "shareWorkout", id: review.id)
-            } label: {
-                Label(text("Teilen in PULS", "Share in PULS"), systemImage: "square.and.arrow.up")
+            if let extras = coordinator.extras, extras.offers(.share) {
+                NativeShareButton(coordinator: extras, collection: "workout", id: review.id, title: text("Teilen", "Share"))
+            } else {
+                Button {
+                    coordinator.openWeb(action: "shareWorkout", id: review.id)
+                } label: {
+                    Label(text("Teilen in PULS", "Share in PULS"), systemImage: "square.and.arrow.up")
+                }
+                .accessibilityHint(text("Öffnet den Rückblick in PULS mit der Teilen-Schaltfläche",
+                                        "Opens the review in PULS with its share button"))
             }
-            .accessibilityHint(text("Öffnet den Rückblick in PULS mit der Teilen-Schaltfläche",
-                                    "Opens the review in PULS with its share button"))
             Button {
                 coordinator.openWeb(action: "editWorkout", id: review.id)
             } label: {

@@ -192,6 +192,13 @@ final class BridgeMessagesTests: XCTestCase {
                 XCTAssertNotNil(value["profile"]?.objectValue)
             case "invalid-message-no-type":
                 XCTAssertNil(try InboundMessage.decode(value))
+            case "n1-hello":
+                guard case .hello(let hello)? = try InboundMessage.decode(value) else { return XCTFail(name) }
+                XCTAssertNotNil(hello.extras, name)
+            case "n1-workout-completion":
+                // Ack-Hülle mit `result.completion`, kein nacktes DTO.
+                guard case .ack(let ack)? = try InboundMessage.decode(value) else { return XCTFail(name) }
+                XCTAssertNotNil(NativeCompletion(json: ack.result?["completion"]), name)
             case _ where name.hasPrefix("apply-") || name.hasPrefix("invalid-"):
                 XCTAssertNoThrow(try ApplyCommand(json: value), name)
             default:

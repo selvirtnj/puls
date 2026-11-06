@@ -25,6 +25,8 @@ const nutritionFeature=feature('nativeNutrition');
 const nutritionAdapter=()=>nutritionFeature&&typeof window.pulsNativeNutrition?.build==='function'?window.pulsNativeNutrition:null;
 const accountFeature=feature('nativeAccount');
 const accountAdapter=()=>accountFeature&&typeof window.pulsNativeAccount?.build==='function'?window.pulsNativeAccount:null;
+const completionFeature=feature('nativeCompletion'),extrasFeature=feature('nativeExtras');
+let nativeCompleting=false;
 let accountPreparing=false;
 const currentAccountSection=()=>page==='account'&&typeof accountSection==='string'&&accountSection?accountSection:null;
 const copy=value=>JSON.parse(JSON.stringify(value));
@@ -35,13 +37,15 @@ if(!preview&&stateOwner!==null)try{if(localStorage.getItem(ownerPendingKey)===st
 const profileReady=()=>!activating&&stateOwner===userId();
 function hello(force=false){
   const ownerPending=!profileReady();
+  if(ready&&(ownerPending||force))resetNativeCursors();
   if(ownerPending){for(const view of Object.values(views))view.last=null;chromeRequested=false;chromeSessionHold=false;trainingConfirmed=false;activityConfirmed=false;syncNativeChrome()}
   if(!ready||!force&&ownerPending===helloOwnerPending)return;
   const training=trainingAdapter(),progress=progressAdapter(),activity=activityAdapter(),nutrition=nutritionAdapter(),account=accountAdapter();
-  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...[training,progress,activity,nutrition,account].flatMap(x=>x?Object.keys(x.ops):[])],
+  if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...[training,progress,activity,nutrition,account].flatMap(x=>x?Object.keys(x.ops):[]),...(completionFeature?['completion.dismiss']:[])],
     screens:['body',...(training?['training']:[]),...(progress?['calendar','progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[]),...(account?['account']:[])],
     projections:['overview',...(training?['training']:[]),...(progress?['progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[]),...(account?['account']:[])],
-    features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[]),...(activity?['nativeActivity']:[]),...(nutrition?['nativeNutrition']:[]),...(account?['nativeAccount']:[])],
+    features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[]),...(activity?['nativeActivity']:[]),...(nutrition?['nativeNutrition']:[]),...(account?['nativeAccount']:[]),...(completionFeature?['nativeCompletion']:[]),...(extrasFeature?['nativeExtras']:[])],
+    ...(completionFeature||extrasFeature?{extras:{queries:[...(completionFeature?['completion']:[]),...(extrasFeature?['page','pageItem','indexChart','export','share']:[])],ops:completionFeature?['completion.dismiss']:[]}}:{}),
     ...(nutrition?{nutrition:{stage:nutrition.stage,queries:nutrition.queries}}:{}),
     ...(account?{account:{queries:account.queries,webActions:account.actions}}:{}),ownerPending})){
     helloOwnerPending=ownerPending;
@@ -339,8 +343,15 @@ if(typeof signOutCloud==='function'){
 }
 
 // Training ops may return a small result (e.g. the Web-generated workout ID); weight acks keep their v1 shape.
-function ack(id,code,message,result){post({type:'ack',id,ok:!code,seq,...(code?{error:{code,message}}:result!==undefined?{result}:{})})}
+function ack(id,code,message,result){
+  // The complete immutable completion remains in the existing owner-bound replay record. Large routes/wins are
+  // read in chunks; do not post a multi-megabyte ack. Ordinary/old-IPA acknowledgements keep their exact shape.
+  if(completionFeature&&result?.completion&&JSON.stringify(result).length>40*1024){const c=result.completion;
+    result={...result,completion:{kind:c.kind,id:c.id,xp:c.xp,durationXp:c.durationXp,level:c.level,streak:c.streak,chunked:true}}}
+  post({type:'ack',id,ok:!code,seq,...(code?{error:{code,message}}:result!==undefined?{result}:{})});
+}
 function applied(){
+  if(preview)return [];
   try{
     const rows=JSON.parse(localStorage.getItem(appliedKey)||'[]');
     return Array.isArray(rows)?rows.filter(x=>x&&typeof x.id==='string'&&(x.userId===null||typeof x.userId==='string')).slice(-200):[];
@@ -359,6 +370,12 @@ window.pulsNativeApply=function(cmd){
   if(activityPreparing||accountPreparing){ack(id,'busy','Ein asynchroner Web-Abschluss läuft');return}
   const history=applied(),known=history.find(x=>x.id===id&&x.userId===cmd.userId);
   if(known){ack(id,undefined,undefined,known.result);queue('apply');flush();return}
+  if(completionFeature&&cmd.op==='completion.dismiss'){
+    const a=cmd.args;
+    if(!a||Object.keys(a).some(k=>k!=='id')||!nativeId(a.id)){ack(id,'invalid','Abschluss-ID erforderlich');return}
+    if(!completionFor(a.id)){ack(id,'gone','Abschluss nicht mehr im Replay-Speicher');return}
+    commit(cmd,history,{run:()=>({dismissedId:a.id}),verify:()=>true});return;
+  }
   const training=trainingAdapter(),trainingOp=training&&typeof cmd.op==='string'&&Object.hasOwn(training.ops,cmd.op)?training.ops[cmd.op]:null;
   if(trainingOp){applyTraining(cmd,history,training,trainingOp);return}
   const progress=progressAdapter(),progressOp=progress&&typeof cmd.op==='string'&&Object.hasOwn(progress.ops,cmd.op)?progress.ops[cmd.op]:null;
@@ -493,17 +510,29 @@ function applyTraining(cmd,history,training,op,prepared){
   if(plan.busy&&(webDialogOpen()||(training===progressAdapter()||training===activityAdapter())&&['run','session'].includes(chromeState().reason)||
     (training===nutritionAdapter()||training===accountAdapter())&&chromeState().blocking)){ack(id,'busy','Ein Web-Ablauf ist geöffnet');return}
   if(prepared)plan.prepared=prepared;
-  commit(cmd,history,{ui:training,run:()=>plan.noop?plan.result:op.run(args,plan),verify:(stored,result)=>op.effective(stored,args,plan,result)});
+  commit(cmd,history,{ui:training,completion:!plan.noop&&completionFeature&&['workout.finish','run.summary.save'].includes(cmd.op),run:()=>{
+    const result=plan.noop?plan.result:op.run(args,plan);
+    if(completionFeature&&(cmd.op==='workout.finish'||cmd.op==='run.summary.save')){
+      const kind=cmd.op==='workout.finish'?'workout':'run',id=kind==='workout'?args.workoutId:result?.runId;
+      const cached=completionFor(id,kind);
+      // A lost replay log may still find an already finished entry. Never invent/recalculate its original award.
+      const completion=plan.noop?cached:buildCompletion(kind,id);
+      if(!plan.noop)clearCompletion();
+      return {...(result||{}),...(kind==='workout'?{workoutId:id}:{}),...(completion?{completion}:{completionUnavailable:true})};
+    }
+    return result;
+  },verify:(stored,result)=>op.effective(stored,args,plan,result)});
 }
-function commit(cmd,history,{run,verify,ui}){
+function commit(cmd,history,{run,verify,ui,completion=false}){
   const id=cmd.id;
   let before,target,raw,oldHistory,metaKey,metaRaw,dirty,message,view,result,wrote=false,failed=false,code='persist_failed',reason;
-  const previousReason=contextReason,waiting=pending;
+  const previousReason=contextReason,waiting=pending,previousCompleting=nativeCompleting;
   try{
     raw=localStorage.getItem('puls-v1');try{oldHistory=localStorage.getItem(appliedKey)}catch{oldHistory=null}
     metaKey=userId()===null?null:cloudStorageKey(userId());if(metaKey)metaRaw=localStorage.getItem(metaKey);
     dirty=typeof cloudDirty!=='undefined'?cloudDirty:undefined;message=typeof cloudMessage!=='undefined'?cloudMessage:undefined;
     before=copy(state);target=state;view=ui?ui.captureUi():undefined;applying=true;trainingApplying=!!ui;contextReason='apply';
+    nativeCompleting=completion;
     if(ui)nativeBuffer=[];
     // Training ops call Web functions; an exception there is a rejected command, not a storage problem.
     try{result=run()}catch(error){if(ui){code='invalid';reason=error?.message}throw error}
@@ -540,14 +569,201 @@ function commit(cmd,history,{run,verify,ui}){
     // After the ack: one reconciliation from the final state, or nothing at all after a rollback.
     if(ui)releaseNative(!failed);
     if(ui?.settled)ui.settled(!failed);
-    applying=false;trainingApplying=false;contextReason=previousReason;if(failed&&pending)queue(pending);if(!failed)projection('apply');
+    applying=false;trainingApplying=false;nativeCompleting=previousCompleting;contextReason=previousReason;if(failed&&pending)queue(pending);if(!failed)projection('apply');
     if(ui){reportNavigation();reportChrome()}
   }
+}
+// N1: one demand-only query envelope, sharing the existing ownership/transaction gates. No profile schema change.
+const nativeId=x=>typeof x==='string'&&x.length>0&&x.length<=256;
+const nativeFields=(x,keys)=>!!x&&typeof x==='object'&&!Array.isArray(x)&&Object.keys(x).every(k=>keys.includes(k));
+const nativeError=(kind,code,message)=>({kind,ok:false,error:{code,message}});
+function clearCompletion(){
+  if(typeof completionId!=='undefined')completionId=null;
+  if(typeof completionStep!=='undefined')completionStep=0;
+  if(typeof activityDoneId!=='undefined')activityDoneId=null;
+  if(typeof xpCelebrationPending!=='undefined')xpCelebrationPending=null;
+  if(typeof completionReview!=='undefined')completionReview=false;
+}
+function completionFor(id,kind){
+  if(!id)return null;
+  return applied().findLast(x=>x.userId===userId()&&x.result?.completion?.id===id&&(!kind||x.result.completion.kind===kind))?.result.completion??null;
+}
+function buildCompletion(kind,id){
+  const w=kind==='workout'?state.workouts.find(x=>x.id===id&&x.finished):(state.runs||[]).find(x=>x.id===id);
+  if(!w)throw Error('Abschluss fehlt');
+  // The Web has a derived XP model, not an incrementing ledger. Capture one award-map result here, once after
+  // the final finish chain. Replay/query NEVER calls workoutAwards again for this completion.
+  const awards=workoutAwards(),award=awards[id]||{xp:0,wins:[]},level=xpProgress(Object.values(awards).reduce((n,a)=>n+a.xp,0));
+  const summary=kind==='workout'?{name:w.name,date:w.date,durationSeconds:w.durationSeconds??null,
+    durationClock:w.durationSeconds==null?null:formatClock(w.durationSeconds),bodyweight:w.bodyweight??null,
+    exerciseCount:w.exercises.filter(e=>e.sets.length).length,...workoutStats([w])}:
+    {...activityAdapter().query({kind:'run',id,requestId:'completion'}).result,
+      durationClock:formatClock(w.durationSeconds),paceSeconds:runPace(w),distanceText:runKm(w.distanceKm)};
+  const weekStartDay=weekStart(today()),trained=new Set(completedWorkouts().map(x=>x.date));
+  const week=Array.from({length:7},(_,i)=>{const d=new Date(weekStartDay+'T12:00:00');d.setDate(d.getDate()+i);const day=localISO(d);return {date:day,trained:trained.has(day),today:day===today()}});
+  return {kind,id,xp:award.xp,durationXp:award.durationXp??0,wins:copy(award.wins||[]),level,
+    streak:dailyWorkoutStreak(),weekStreak:trainingStreak(),week,summary,webStateCleared:true};
+}
+let nativeCursorSerial=0,nativeCursorContext=null;
+// An old document's cursor must never accidentally address a newly issued cursor after reload.
+const nativeCursorEpoch=completionFeature||extrasFeature?Math.random().toString(36).slice(2)+Date.now().toString(36):'';
+const nativeCursors=completionFeature||extrasFeature?new Map():null;
+const nativeQueryCache=new Map();
+function nativeCached(key,build){
+  if(nativeQueryCache.has(key))return nativeQueryCache.get(key);
+  const value=build();nativeQueryCache.set(key,value);
+  if(nativeQueryCache.size>32)nativeQueryCache.delete(nativeQueryCache.keys().next().value);
+  return value;
+}
+function resetNativeCursors(){nativeCursors?.clear();nativeQueryCache.clear();nativeCursorContext=null}
+function queryContext(){
+  const values=[state,userId(),seq,projectionRevision,today(),state.language,state.chartPeriod,JSON.stringify(state.chartLines)];
+  if(!nativeCursorContext||values.some((v,i)=>v!==nativeCursorContext[i])){nativeCursors.clear();nativeQueryCache.clear();nativeCursorContext=values}
+}
+function touchCursor(token){
+  const cursor=nativeCursors.get(token);
+  if(cursor){nativeCursors.delete(token);nativeCursors.set(token,cursor)}
+  return cursor;
+}
+function cursorFor(scope,offset,afterItemCursor=null){
+  const token='n1-'+nativeCursorEpoch+'-'+(++nativeCursorSerial);nativeCursors.set(token,{scope,offset,afterItemCursor});
+  if(nativeCursors.size>64)nativeCursors.delete(nativeCursors.keys().next().value);return token;
+}
+function offsetFor(r,scope){
+  if(r.cursor===undefined||r.cursor===null)return 0;
+  if(typeof r.cursor!=='string'||r.cursor.length>100)return null;
+  const c=nativeCursors.get(r.cursor);
+  if(c?.scope!==scope)return null;
+  touchCursor(r.cursor);if(c.afterItemCursor)touchCursor(c.afterItemCursor);
+  return c.offset;
+}
+function chunkNative(r,value,scope,meta={}){
+  const content=nativeCached('content:'+scope,()=>typeof value==='string'?value:JSON.stringify(value)),offset=offsetFor(r,scope);
+  if(offset===null)return nativeError(r.kind,'stale_cursor','Datenstand geändert; erneut ab der ersten Seite lesen');
+  // The page continuation belongs to this row's active chunk chain. Refresh its LRU position before allocating
+  // another chunk cursor, otherwise a row of >64 chunks would evict the page cursor needed after that row.
+  const afterItemCursor=meta.afterItemCursor??nativeCursors.get(r.cursor)?.afterItemCursor??null;
+  if(afterItemCursor)touchCursor(afterItemCursor);
+  let end=Math.min(content.length,offset+12*1024);
+  while(JSON.stringify(content.slice(offset,end)).length>38*1024)end=offset+Math.floor((end-offset)/2);
+  // JSON file text is itself chunked: keep both short escapes and complete \uXXXX sequences together.
+  const slash=content.lastIndexOf('\\',end-1);
+  if(end<content.length&&slash>=offset&&end-slash<=5){let begin=slash;while(begin>offset&&content[begin-1]==='\\')begin--;
+    if((slash-begin+1)%2===1&&(end===slash+1||content[slash+1]==='u'&&/^[0-9a-f]{4}$/i.test(content.slice(slash+2,slash+6))&&end<slash+6))end=slash;
+  }
+  if(end<content.length&&/[\uD800-\uDBFF]/.test(content[end-1])&&/[\uDC00-\uDFFF]/.test(content[end]))end--;
+  return {kind:r.kind,ok:true,result:{...meta,encoding:typeof value==='string'?'text':'json',content:content.slice(offset,end),offset,totalLength:content.length,
+    nextCursor:end<content.length?cursorFor(scope,end,afterItemCursor):null}};
+}
+const nativeCollections={diary:['date'],recipes:[],monthEntries:['month'],metricPoints:['metric','range'],historyDays:[],records:[],activityEntries:['mode','offset','filter'],exerciseHistory:['exerciseId'],bodyHistory:[],measurements:[]};
+function nativeRows(r,scope){
+  const adapter=['diary','recipes'].includes(r.collection)?nutritionAdapter():['bodyHistory','measurements'].includes(r.collection)?accountAdapter():progressAdapter();
+  if(!adapter?.pageRows)return {code:'unavailable',message:'Provider nicht verfügbar'};
+  return nativeCached('rows:'+scope,()=>adapter.pageRows(r));
+}
+function nativePage(r){
+  const keys=Object.hasOwn(nativeCollections,r.collection)?nativeCollections[r.collection]:null;
+  if(!keys||!nativeFields(r,['requestId','kind','collection','cursor','limit',...keys])||!keys.every(k=>Object.hasOwn(r,k))||
+    r.limit!==undefined&&(!Number.isInteger(r.limit)||r.limit<1||r.limit>200))return null;
+  const scope=JSON.stringify([r.collection,...keys.map(k=>r[k])]),offset=offsetFor(r,scope);
+  if(offset===null)return nativeError(r.kind,'stale_cursor','Datenstand geändert; erneut laden');
+  const rows=nativeRows(r,scope);
+  if(rows===null)return null;
+  if(rows.code)return nativeError(r.kind,rows.code,rows.message);
+  const items=[];let length=0;
+  for(const item of rows.slice(offset,offset+(r.limit??60))){const size=JSON.stringify(item).length;
+    // Oversize individual rows (e.g. imported exercise with thousands of sets) can be read losslessly in chunks.
+    if(!items.length&&size>38*1024){
+      const afterItemCursor=offset+1<rows.length?cursorFor(scope,offset+1):null;
+      return chunkNative({...r,cursor:undefined},item,scope+':item:'+offset,{collection:r.collection,itemIndex:offset,total:rows.length,
+        itemCursor:cursorFor(scope+':item:'+offset,0,afterItemCursor),afterItemCursor});
+    }
+    if(length+size>38*1024)break;items.push(item);length+=size;
+  }
+  const end=offset+items.length;
+  return {kind:r.kind,ok:true,result:{collection:r.collection,items,total:rows.length,nextCursor:end<rows.length?cursorFor(scope,end):null}};
+}
+function nativeIndex(){
+  // experience.js:progressChart normalization, using the LAST effective trendData (weekly weight wrapper included).
+  // Keep full precision just as the SVG; Swift only plots these values, never normalizes them.
+  const data=trendData(),series={};
+  for(const k of ['weight','strength','kcal'].filter(k=>state.chartLines?.[k]!==false)){
+    const baseline=data.find(x=>x[k]!==null&&x[k]>0)?.[k];
+    series[k]=baseline?data.filter(x=>x[k]!==null).map(x=>({date:x.date,raw:x[k],v:x[k]/baseline*100})):[];
+  }
+  const points=Object.values(series).flat();
+  return {period:state.chartPeriod||'month',series,min:points.length?Math.min(90,...points.map(x=>x.v))-5:80,max:points.length?Math.max(110,...points.map(x=>x.v))+5:120,
+    first:data[0]?.date??null,last:data.at(-1)?.date??null};
+}
+function nativeExport(r){
+  if(!nativeFields(r,['requestId','kind','format','csvOptions','cursor'])||!['json','csv'].includes(r.format)||
+    r.format==='json'&&r.csvOptions!==undefined||r.format==='csv'&&(!nativeFields(r.csvOptions,['kind'])||!['foods','workouts','weights','measurements'].includes(r.csvOptions.kind)))return null;
+  const scope=JSON.stringify(['export',r.format,r.csvOptions?.kind??null]);
+  const {content,name,type}=nativeCached(scope,()=>{let content,name,type;
+  if(r.format==='json'){
+    // Only state, never localStorage/Auth/session/cloud keys. Unknown ordinary profile fields remain lossless.
+    content=JSON.stringify(state,(key,value)=>/(?:password|token|secret|session|cloud|supabase|authorization|authentication|credential|api[_-]?key)/i.test(key)||/^(?:auth|jwt)$/i.test(key)?undefined:value,2);
+    name='puls-sicherung-'+today()+'.json';type='application/json';
+  }else{
+    const base=downloadText;downloadText=(filename,text,mime)=>{name=filename;content=text;type=mime};
+    try{csvExport(r.csvOptions.kind)}finally{downloadText=base}
+  }
+    return {content,name,type};
+  });
+  return chunkNative(r,content,scope,{name,type});
+}
+if(completionFeature||extrasFeature){
+  window.pulsNativeQuery=function(request){
+    if(!ready||pageHidden||helloOwnerPending!==false||!profileReady()||applying||rollingBack||activityPreparing||accountPreparing||saveDepth||
+      !nativeFields(request,['requestId','kind','collection','cursor','limit','date','month','metric','range','mode','offset','filter','exerciseId','id','format','csvOptions','itemIndex'])||
+      typeof request.requestId!=='string'||!request.requestId.trim()||request.requestId.length>100)return false;
+    const r=copy(request);queryContext();let answer;
+    try{
+      if(r.kind==='completion'&&completionFeature&&nativeFields(r,['requestId','kind','collection','id','cursor'])&&nativeId(r.id)&&
+        (r.collection===undefined||['workout','run'].includes(r.collection))){
+        const history=applied(),index=history.findLastIndex(x=>x.userId===userId()&&x.result?.completion?.id===r.id&&(!r.collection||x.result.completion.kind===r.collection)),
+          c=index<0?null:history[index].result.completion,dismissed=history.slice(index+1).some(x=>x.userId===userId()&&x.result?.dismissedId===r.id);
+        answer=c?chunkNative(r,c,'completion:'+c.kind+':'+r.id,{id:r.id,dismissed}):nativeError(r.kind,'gone','Kein gespeicherter Abschluss; niemals XP erneut berechnen');
+      }
+      if(extrasFeature){
+        if(r.kind==='page')answer=nativePage(r);
+        if(r.kind==='pageItem'&&Number.isInteger(r.itemIndex)&&r.itemIndex>=0){
+          const keys=Object.hasOwn(nativeCollections,r.collection)?nativeCollections[r.collection]:null;
+          if(keys&&nativeFields(r,['requestId','kind','collection','cursor','itemIndex',...keys])&&keys.every(k=>Object.hasOwn(r,k))){
+            const baseScope=JSON.stringify([r.collection,...keys.map(k=>r[k])]),rows=nativeRows(r,baseScope),scope=baseScope+':item:'+r.itemIndex;
+            if(rows?.code)answer=nativeError(r.kind,rows.code,rows.message);
+            else if(rows){const row=rows[r.itemIndex];answer=row?chunkNative(r,row,scope):nativeError(r.kind,'gone','Zeile fehlt')}
+          }
+        }
+        if(r.kind==='indexChart'&&nativeFields(r,['requestId','kind','cursor']))answer=chunkNative(r,nativeCached('indexChart',nativeIndex),'indexChart');
+        if(r.kind==='export')answer=nativeExport(r);
+        if(r.kind==='share'&&nativeFields(r,['requestId','kind','collection','id','cursor'])&&['workout','run'].includes(r.collection)&&nativeId(r.id)){
+          const w=r.collection==='workout'?state.workouts.find(x=>x.id===r.id&&x.finished):(state.runs||[]).find(x=>x.id===r.id);
+          if(!w)answer=nativeError(r.kind,'gone','Eintrag fehlt');
+          else if(r.collection==='workout')answer=chunkNative(r,{title:'PULS',text:workoutShareText(r.id)},'share:workout:'+r.id);
+          // There is no Web run share formatter. Supply its existing detail data/labels for the native share sheet,
+          // explicitly no invented "Web share text" and no second pace/calorie computation.
+          else {const data=activityAdapter()?.query({requestId:r.requestId,kind:'run',id:r.id})?.result;
+            answer=data?chunkNative(r,{title:'PULS',text:null,data},'share:run:'+r.id):nativeError(r.kind,'unavailable','Aktivitätsprovider fehlt')}
+        }
+      }
+    }catch{return false}
+    return !!answer&&post({type:'nativeResult',requestId:r.requestId,seq,userId:userId(),ownerPending:false,flags:flags(),cloud:cloud(),language:state.language==='en'?'en':'de',...answer});
+  };
+  window.addEventListener('pagehide',resetNativeCursors);
 }
 function loaded(){
   if(ready)return;
   // design-system.js replaces home/render AFTER this script; wrap only the final chain on load.
   const baseRender=render;render=function(...args){const result=baseRender.apply(this,args);reportNavigation();reportChrome();queueProjection();return result};
+  if(completionFeature){
+    // Wrap the final Web definitions after every app script has loaded. Suppress before any completion paints,
+    // including nested render() inside confirmWorkoutFinish and activityDoneShow. Outside a native finish op,
+    // explicit historical Web reviews keep their existing path.
+    if(typeof workoutSummary==='function'){const base=workoutSummary;workoutSummary=function(...args){if(nativeCompleting&&!rollingBack){clearCompletion();return}return base.apply(this,args)}}
+    if(typeof activityDoneShow==='function'){const base=activityDoneShow;activityDoneShow=function(...args){if(nativeCompleting&&!rollingBack){clearCompletion();return}return base.apply(this,args)}}
+    if(typeof renderWorkoutSession==='function'){const base=renderWorkoutSession;renderWorkoutSession=function(...args){if(nativeCompleting&&!rollingBack)clearCompletion();return base.apply(this,args)}}
+  }
   const baseGo=go;go=function(...args){const previous=reportedPage,result=baseGo.apply(this,args);reportNavigation(openingWeb&&previous===page);return result};
   const baseDate=setDate;setDate=function(...args){const result=baseDate.apply(this,args);projection('date','overview');return result};
   const baseModal=openModal;openModal=function(...args){const result=baseModal.apply(this,args);reportChrome();return result};

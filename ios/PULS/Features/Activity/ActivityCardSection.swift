@@ -216,6 +216,8 @@ struct ActivityDetailView: View {
     @State private var confirmsDelete = false
     @State private var editing: StoredActivityDetail?
     @State private var openedEditor = false
+    @State private var asksRouteName = false
+    @State private var routeName = ""
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -263,6 +265,13 @@ struct ActivityDetailView: View {
         } message: {
             Text(text("Die Aktivität wird endgültig entfernt.", "The activity will be removed permanently."))
         }
+        .alert(text("Als Route sichern", "Save as route"), isPresented: $asksRouteName) {
+            TextField(text("Name der Route", "Route name"), text: $routeName)
+            Button(text("Abbrechen", "Cancel"), role: .cancel) {}
+            Button(text("Sichern", "Save")) { coordinator.extras?.saveRoute(runId: runId, name: routeName) }
+        } message: {
+            Text(text("Leer lassen für den Standardnamen.", "Leave empty for the default name."))
+        }
     }
 
     private func load() async {
@@ -292,6 +301,13 @@ struct ActivityDetailView: View {
     private func content(_ detail: StoredActivityDetail, text: ActivityText) -> some View {
         let entry = detail.entry
         return List {
+            if coordinator.notice != nil {
+                Section {
+                    ActivityNoticeBanner(coordinator: coordinator, text: text)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+            }
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(whenLine(detail, text: text)).font(.subheadline).foregroundStyle(.secondary)
@@ -321,18 +337,42 @@ struct ActivityDetailView: View {
                     Button(text("Aktivität löschen", "Delete activity"), role: .destructive) { confirmsDelete = true }
                         .disabled(coordinator.isBusy("delete:" + entry.id))
                 }
-                Button {
-                    coordinator.openWeb(detail.navigation ?? ActivityNavigation(action: "runDetail", id: entry.id))
-                } label: {
-                    Label(detail.route != nil ? text("Als Route sichern oder teilen in PULS", "Save as route or share in PULS")
-                                              : text("In PULS öffnen", "Open in PULS"),
-                          systemImage: "arrow.up.forward.app")
+                if detail.route != nil, canSaveRoute {
+                    Button {
+                        routeName = ""
+                        asksRouteName = true
+                    } label: {
+                        Label(text("Als Route sichern", "Save as route"), systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                    }
+                }
+                if let extras = coordinator.extras, extras.offers(.share) {
+                    NativeShareButton(coordinator: extras, collection: "run", id: entry.id, title: text("Teilen", "Share"))
+                }
+                if !nativeActionsComplete(detail) {
+                    Button {
+                        coordinator.openWeb(detail.navigation ?? ActivityNavigation(action: "runDetail", id: entry.id))
+                    } label: {
+                        Label(detail.route != nil ? text("Als Route sichern oder teilen in PULS", "Save as route or share in PULS")
+                                                  : text("In PULS öffnen", "Open in PULS"),
+                              systemImage: "arrow.up.forward.app")
+                    }
                 }
             } footer: {
                 Text("* " + text("Kalorien sind eine Schätzung.", "Calories are an estimate."))
             }
         }
         .listStyle(.insetGrouped)
+    }
+
+    /// N1: `route.fromRun` gemeldet und schreibbar (§15.5).
+    private var canSaveRoute: Bool {
+        coordinator.extras != nil && coordinator.store.supportsOp(ExtrasOps.routeFromRun) && coordinator.canWrite
+    }
+
+    /// Teilen und (bei Strecke) „Als Route sichern“ gehen nativ: dann braucht es den Web-Ausweg nicht mehr.
+    private func nativeActionsComplete(_ detail: StoredActivityDetail) -> Bool {
+        guard coordinator.extras?.offers(.share) == true else { return false }
+        return detail.route == nil || canSaveRoute
     }
 
     private func whenLine(_ detail: StoredActivityDetail, text: ActivityText) -> String {

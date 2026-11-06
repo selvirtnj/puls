@@ -737,8 +737,7 @@ public struct NutritionProductDetail: Equatable, Sendable {
         var result: [NutritionPortion] = []
         for item in (expect?["portions"]?.arrayValue ?? []).reversed() {
             guard let name = item["name"]?.stringValue, !name.isEmpty, seen.insert(name).inserted else { continue }
-            result.insert(NutritionPortion(name: name, amount: item["amount"]?.doubleValue,
-                                           unit: item["unit"]?.stringValue == "ml" ? "ml" : "g",
+            result.insert(NutritionPortion(name: name, amount: item["amount"]?.doubleValue, unit: item["unit"]?.stringValue,
                                            source: item["source"]?.stringValue ?? ""), at: 0)
         }
         return result
@@ -755,10 +754,14 @@ public struct NutritionProductDetail: Equatable, Sendable {
 public struct NutritionPortion: Equatable, Sendable, Identifiable {
     public var name: String
     public var amount: Double?
-    public var unit: String
+    /// Gespeicherte Einheit, unverändert. Sie kann von der Produktbasis abweichen (dann filtert das Web sie aus).
+    public var unit: String?
     public var source: String
 
     public var id: String { name }
+
+    /// Nur eine Menge in der Produktbasis gilt: 30 ml sind ohne Dichte keine 30 g.
+    public func matches(base: String) -> Bool { unit == base }
 }
 
 public struct NutritionEntryDetail: Equatable, Sendable {

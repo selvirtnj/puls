@@ -6,6 +6,8 @@ import PULSCore
 enum NutritionRoute: Hashable {
     case product(ProductRef)
     case custom
+    /// N1: alle Rezepte (Query `page`).
+    case allRecipes
 }
 
 enum NutritionSearchScope: String, CaseIterable, Hashable {
@@ -47,6 +49,8 @@ struct NutritionSheetView: View {
                 NutritionLabelFlow(coordinator: coordinator)
             case .custom:
                 NutritionCustomSheet(coordinator: coordinator)
+            case .allEntries(let date):
+                NutritionAllEntriesSheet(coordinator: coordinator, date: date)
             }
         }
         .environment(coordinator.store)
@@ -110,6 +114,8 @@ struct NutritionSearchSheet: View {
                     NutritionProductView(coordinator: coordinator, ref: ref) { dismiss() }
                 case .custom:
                     NutritionProductEditor(coordinator: coordinator, mode: .custom) { dismiss() }
+                case .allRecipes:
+                    NutritionAllRecipesView(coordinator: coordinator)
                 }
             }
         }
@@ -281,7 +287,13 @@ struct NutritionSearchSheet: View {
                 }
             }
             if omitted > 0 {
-                Button(text("Weitere \(omitted) im Web", "\(omitted) more in the web view")) { coordinator.openWebAdd() }
+                if coordinator.offersLists {
+                    NavigationLink(value: NutritionRoute.allRecipes) {
+                        Text(text("Alle Rezepte", "All recipes"))
+                    }
+                } else {
+                    Button(text("Weitere \(omitted) im Web", "\(omitted) more in the web view")) { coordinator.openWebAdd() }
+                }
             }
         } footer: {
             Text(text("Rezepte anlegen, bearbeiten und importieren im Web-Dialog.",
