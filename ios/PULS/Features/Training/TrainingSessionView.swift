@@ -155,12 +155,6 @@ struct TrainingSessionView: View {
                     Button(role: .destructive) { showsDiscard = true } label: {
                         Label(text("Training verwerfen", "Discard workout"), systemImage: "trash")
                     }
-                    Button {
-                        commitAll()
-                        coordinator.fallBackToWeb(workoutId: workoutId)
-                    } label: {
-                        Label(text("In der Web-Ansicht öffnen", "Open in web view"), systemImage: "safari")
-                    }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .frame(minWidth: 44, minHeight: 44)

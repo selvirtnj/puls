@@ -28,6 +28,8 @@ struct ActivitySummaryForm: Equatable {
 struct ActivityDetailRequest: Identifiable, Equatable {
     let id: String
     let title: String
+    /// Aus dem Kalender „Bearbeiten“: Formular nach dem Laden gleich öffnen.
+    var startsEditing = false
 }
 
 /// M6: native Aktivitäten (docs/native/NATIVE-BRIDGE-PROTOCOL.md §11).

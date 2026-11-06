@@ -3,8 +3,9 @@ import PULSCore
 
 // Native Übersicht (M3). Liest ausschließlich `ProfileStore.currentProjection` (Web-Projektion `overview`).
 // Keine eigenen Plan-, Summen-, Trend- oder Chartformeln: Werte, Reste und Prozent kommen fertig aus dem Web.
-// Alle Knöpfe führen über `pulsNativeNavigate` in bestehende Web-Abläufe; nur das Gewicht öffnet den nativen
-// Körperbereich aus M2. Seitentitel und Datumsleiste liegen im gemeinsamen Kopf (`ShellHeader`).
+// Knöpfe laufen über `OverviewActions`; die Hülle wählt den nativen Ablauf (Essen, Training, Aktivität, Gewicht,
+// Körperbereich, Fortschritt) und fällt nur ohne ihn auf `pulsNativeNavigate` zurück. Seitentitel und
+// Datumsleiste liegen im gemeinsamen Kopf (`ShellHeader`).
 
 struct OverviewHost: View {
     let store: ProfileStore
@@ -45,8 +46,8 @@ struct OverviewView: View {
             FoodSection(overview: overview, text: text, perform: actions.perform)
             NutrientSection(overview: overview, text: text)
             TrainingSection(overview: overview, text: text, perform: actions.perform)
-            BodySection(overview: overview, text: text, perform: actions.perform, openBody: actions.openBody)
-            ProgressSection(overview: overview, text: text, perform: actions.perform)
+            BodySection(overview: overview, text: text, openBody: actions.openBody, addWeight: actions.addWeight)
+            ProgressSection(overview: overview, text: text, openProgress: actions.openProgress)
         }
         .listStyle(.insetGrouped)
         .contentMargins(.top, 8, for: .scrollContent)
@@ -171,6 +172,29 @@ private struct EnergySection: View {
 
     var body: some View {
         Section {
+            // Wie `nutritionSlides`: Seite 1 Energie & Makros, Seite 2 Mikronährstoffe (Wischen).
+            if overview.micros.isEmpty {
+                energyAndMacros
+            } else {
+                NutrientPager(text: text) {
+                    energyAndMacros
+                } second: {
+                    MicroGrid(title: text("Mikronährstoffe & Ballaststoffe", "Micronutrients & fiber"),
+                              cells: overview.micros.map { MicroCellModel(micro: $0, text: text) })
+                }
+            }
+        }
+
+        // Eigener Abschnitt: der Knopf liegt zwischen den Karten und bricht deren Ecken nicht.
+        if let addFood = overview.actions["addFood"] {
+            Section {
+                OverviewAddFoodButton(title: text("Essen eintragen", "Log food")) { perform(addFood) }
+            }
+        }
+    }
+
+    private var energyAndMacros: some View {
+        VStack(alignment: .leading, spacing: 12) {
             if let energy = overview.energy {
                 let layout = dynamicTypeSize.isAccessibilitySize
                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
@@ -203,20 +227,8 @@ private struct EnergySection: View {
                     text: text
                 )
             }
-
-            if let addFood = overview.actions["addFood"] {
-                Button {
-                    perform(addFood)
-                } label: {
-                    Text(text("Essen eintragen", "Log food"))
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 36)
-                }
-                .buttonStyle(.borderedProminent)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 4, trailing: 0))
-            }
         }
+        .padding(.vertical, 4)
     }
 
     /// Wie `dsEnergyFacts.big`: Überschuss mit „+“, sonst Rest bzw. gegessen ohne Ziel.
@@ -236,6 +248,32 @@ private struct EnergySection: View {
             }
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+/// Großer Hauptknopf „Essen eintragen“/„Essen hinzufügen“ als eigener, randloser Abschnitt (Übersicht und Essen-Tab).
+struct OverviewAddFoodButton: View {
+    let title: String
+    var systemImage = "plus"
+    let action: () -> Void
+
+    init(title: String, systemImage: String = "plus", action: @escaping () -> Void) {
+        self.title = title
+        self.systemImage = systemImage
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .buttonBorderShape(.roundedRectangle(radius: 12))
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
     }
 }
 
@@ -350,55 +388,22 @@ private struct FoodSection: View {
     }
 }
 
-// MARK: - Wasser und Mikronährstoffe (nur Anzeige)
+// MARK: - Wasser (nur Anzeige; Mikronährstoffe liegen auf Seite 2 der Energiekarte)
 
 private struct NutrientSection: View {
     let overview: OverviewProjection
     let text: OverviewText
-    @State private var showsMicros = false
 
     var body: some View {
-        if overview.water != nil || !overview.micros.isEmpty {
+        if let water = overview.water {
             Section {
-                if let water = overview.water {
-                    OverviewRow(
-                        title: text("Wasser", "Water"),
-                        detail: waterDetail(water),
-                        value: waterValue(water),
-                        systemImage: "drop"
-                    )
-                }
-                if !overview.micros.isEmpty {
-                    DisclosureGroup(isExpanded: $showsMicros) {
-                        ForEach(overview.micros) { micro in
-                            OverviewRow(
-                                title: text.nutrientLabel(micro),
-                                detail: text.knowledgeNote(micro.knowledge).flatMap { note in
-                                    micro.knowledge == .unknown ? nil : note
-                                },
-                                value: microValue(micro)
-                            )
-                        }
-                    } label: {
-                        Text(text("Mikronährstoffe & Ballaststoffe", "Micronutrients & fiber"))
-                    }
-                }
-            } header: {
-                Text(text("Nährwerte", "Nutrients"))
+                OverviewRow(
+                    title: text("Wasser", "Water"),
+                    detail: waterDetail(water),
+                    value: waterValue(water),
+                    systemImage: "drop"
+                )
             }
-        }
-    }
-
-    /// Unbekannt bleibt „unbekannt“, ein bekannter Nullwert bleibt „0“.
-    private func microValue(_ micro: MicroValue) -> String {
-        let unit = micro.unit.map { " " + $0 } ?? ""
-        switch micro.knowledge {
-        case .noEntries: return "–"
-        case .unknown: return text("unbekannt", "unknown")
-        default:
-            let value = micro.value.map { text.number($0) } ?? "–"
-            if let target = micro.target { return "\(value) / \(text.number(target))\(unit)" }
-            return value + unit
         }
     }
 
@@ -520,8 +525,9 @@ private struct RunRow: View {
 private struct BodySection: View {
     let overview: OverviewProjection
     let text: OverviewText
-    let perform: (NavigationTarget) -> Void
     let openBody: () -> Void
+    /// Natives Gewichtsblatt (M2); die Hülle fällt nur ohne nativen Körperbereich auf das Web zurück.
+    let addWeight: (NavigationTarget) -> Void
 
     var body: some View {
         let weight = overview.weight
@@ -542,7 +548,7 @@ private struct BodySection: View {
                     .monospacedDigit()
             }
             if let addWeight = overview.actions["addWeight"] {
-                OverviewRow(title: text("Gewicht erfassen", "Log weight"), isAction: true, action: { perform(addWeight) })
+                OverviewRow(title: text("Gewicht erfassen", "Log weight"), isAction: true, action: { self.addWeight(addWeight) })
             }
         } header: {
             Text(text("Körper", "Body"))
@@ -564,7 +570,8 @@ private struct BodySection: View {
 private struct ProgressSection: View {
     let overview: OverviewProjection
     let text: OverviewText
-    let perform: (NavigationTarget) -> Void
+    /// Nativer Fortschritt im Trainings-Tab (M5); ohne ihn das Web-Ziel `target`.
+    let openProgress: (NavigationTarget) -> Void
 
     var body: some View {
         if let progress = overview.progress, let target = progress.navigation {
@@ -573,8 +580,8 @@ private struct ProgressSection: View {
                     title: text("Verlauf ansehen", "View progress"),
                     detail: detail(progress),
                     systemImage: "chart.xyaxis.line",
-                    accessibilityHint: text("Öffnet den Verlauf in PULS", "Opens progress in PULS"),
-                    action: { perform(target) }
+                    accessibilityHint: text("Öffnet den Verlauf", "Opens progress"),
+                    action: { openProgress(target) }
                 )
             } header: {
                 Text(text("Verlauf", "Progress"))

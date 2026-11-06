@@ -86,6 +86,42 @@ final class NativeRouter {
         host.present(controller, animated: true)
     }
 
+    /// „Gewicht erfassen“ (Übersicht, Plus-Menü): natives Gewichtsblatt direkt, ohne den Körperbereich davor.
+    /// `day` = in PULS gewählter Tag (ISO), höchstens heute. `false` = nativ gerade nicht möglich (Körperbereich nicht
+    /// angeboten, nur lesbar, kein Profil oder etwas anderes ist offen); dann wählt der Aufrufer den Web-Ablauf.
+    func openWeightEditor(day: String?) -> Bool {
+        guard !isPresenting, !store.ownerPending, store.webInfo?.screens.contains(Self.bodyScreen) == true,
+              store.hasDocument else { return false }
+        if let controller = presented, controller.presentingViewController != nil { return false }
+        guard let host, host.viewIfLoaded?.window != nil, host.presentedViewController == nil, !host.isBeingDismissed else {
+            return false
+        }
+        let text = BodyText(document: store.document)
+        guard BodyAccess.of(store, text: text).canEdit else { return false }
+        let today = WeightDay.string(from: Date())
+        let initialDate = day.flatMap { $0 <= today ? WeightDay.date(from: $0) : nil } ?? Date()
+        let request = WeightEditorRequest(
+            original: nil,
+            userId: store.userId,
+            seen: WeightEntry.entries(in: store.document),
+            initialDate: initialDate,
+            initialText: ""
+        )
+        let view = QuickWeightEditor(request: request, onClose: { [weak self] in self?.dismiss() })
+            .environment(store)
+        let controller = UIHostingController(rootView: view)
+        controller.overrideUserInterfaceStyle = NativeAppearance.style(for: NativeAppearance.scheme(store))
+            ?? host.view.window?.overrideUserInterfaceStyle ?? .unspecified
+        controller.modalPresentationStyle = .pageSheet
+        if let sheet = controller.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
+        presented = controller
+        host.present(controller, animated: true)
+        return true
+    }
+
     /// Schließt den nativen Bereich; `completion` läuft danach (auch wenn nichts offen war).
     func dismiss(completion: (() -> Void)? = nil) {
         guard let controller = presented, controller.presentingViewController != nil else {

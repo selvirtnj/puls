@@ -187,7 +187,8 @@ struct ActivitySheets: ViewModifier {
             .sheet(item: detailBinding) { request in
                 if let coordinator {
                     NavigationStack {
-                        ActivityDetailView(coordinator: coordinator, runId: request.id, title: request.title)
+                        ActivityDetailView(coordinator: coordinator, runId: request.id, title: request.title,
+                                           startsEditing: request.startsEditing)
                     }
                     .environment(\.locale, coordinator.text.locale)
                 }
@@ -209,9 +210,12 @@ struct ActivityDetailView: View {
     let coordinator: ActivityCoordinator
     let runId: String
     let title: String
+    /// Bearbeiten-Formular nach dem ersten Laden öffnen (einmalig, nur wenn schreibbar).
+    var startsEditing = false
     @State private var phase: LoadPhase<StoredActivityDetail> = .loading
     @State private var confirmsDelete = false
     @State private var editing: StoredActivityDetail?
+    @State private var openedEditor = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -265,7 +269,15 @@ struct ActivityDetailView: View {
         let result = await coordinator.fetch { ActivityQueryRequest.detail(.run, id: runId, requestId: $0) }
         switch result {
         case .loaded(let message):
-            if case .run(let detail)? = message.result { phase = .loaded(detail) } else { phase = .failed }
+            if case .run(let detail)? = message.result {
+                phase = .loaded(detail)
+                if startsEditing, !openedEditor, coordinator.canWrite {
+                    openedEditor = true
+                    editing = detail
+                }
+            } else {
+                phase = .failed
+            }
         case .gone: phase = .gone
         case .failed: if phase.value == nil { phase = .failed }
         case .loading: break

@@ -42,19 +42,16 @@ struct NutritionDiaryView: View {
         let text = coordinator.text
         List {
             NutritionStatusSection(coordinator: coordinator, text: text)
-            NutritionEnergySection(projection: projection, overview: sameDayOverview, text: text)
+            NutritionEnergySection(coordinator: coordinator, projection: projection, overview: sameDayOverview, text: text)
             NutritionAddSection(coordinator: coordinator, projection: projection, text: text)
             NutritionWaterSection(coordinator: coordinator, projection: projection, text: text)
             NutritionEntriesSection(coordinator: coordinator, projection: projection, text: text)
             NutritionDayCompleteSection(coordinator: coordinator, text: text)
-            NutritionMicroSection(coordinator: coordinator, projection: projection, text: text)
             NutritionConflictSection(coordinator: coordinator, text: text)
             Section {
                 Button(text("Vollständiges Tagebuch im Web", "Full diary in the web view")) { coordinator.openWebDiary() }
-                // Plan-Ziele (`goals.set`) bleiben im bestehenden Web-Planformular (Profil/Plan/Baseline/Kalibrierung).
-                Button(text("Kalorien- und Makroziele", "Calorie and macro goals")) {
-                    coordinator.openWeb(NavigationTarget(page: "account", section: "plan", web: true))
-                }
+                // Plan-Ziele: nativer Plan im Konto-Tab; ohne natives Konto die Web-Planseite.
+                Button(text("Kalorien- und Makroziele", "Calorie and macro goals")) { coordinator.openGoals() }
             } footer: {
                 Text(text("Basiswerte sind Richtwerte pro 100 g. Marke, Zubereitung und Produkt können abweichen.",
                           "Base values are guide values per 100 g. Brand, preparation and product may differ."))
@@ -132,6 +129,7 @@ private struct NutritionStatusSection: View {
 // MARK: - Energie und Makros
 
 private struct NutritionEnergySection: View {
+    let coordinator: NutritionCoordinator
     let projection: NutritionProjection
     let overview: OverviewProjection?
     let text: OverviewText
@@ -140,6 +138,30 @@ private struct NutritionEnergySection: View {
 
     var body: some View {
         Section {
+            // Wie `nutritionSlides`: Seite 1 Energie & Makros, Seite 2 Mikronährstoffe (Wischen).
+            if projection.micros.isEmpty {
+                energyAndMacros
+            } else {
+                NutrientPager(text: text) {
+                    energyAndMacros
+                } second: {
+                    MicroGrid(title: text("Mikronährstoffe & Ballaststoffe", "Micronutrients & fiber"),
+                              cells: projection.micros.map { MicroCellModel(micro: $0, text: text) },
+                              goalsTitle: text("Ziele", "Goals"),
+                              goalsEnabled: coordinator.canWrite,
+                              onGoals: { coordinator.present(.microGoals) })
+                }
+            }
+        } footer: {
+            if !projection.micros.isEmpty {
+                Text(text("Zur Seite wischen für Mikronährstoffe. Ziele: eigene Werte vor Referenzwerten. Unbekannte Werte zählen nicht als 0.",
+                          "Swipe for micronutrients. Goals: your own values before reference values. Unknown values do not count as 0."))
+            }
+        }
+    }
+
+    private var energyAndMacros: some View {
+        VStack(alignment: .leading, spacing: 12) {
             if let energy = overview?.energy {
                 let layout = dynamicTypeSize.isAccessibilitySize
                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
@@ -169,6 +191,7 @@ private struct NutritionEnergySection: View {
                 macroRow(key)
             }
         }
+        .padding(.vertical, 4)
     }
 
     private var eatenLine: String {
@@ -240,19 +263,16 @@ private struct NutritionAddSection: View {
     let text: OverviewText
 
     var body: some View {
+        // Hauptknopf als eigener, randloser Abschnitt direkt unter der Energiekarte (wie „Essen eintragen“ in der
+        // Übersicht); die weiteren Wege bilden darunter eine eigene Karte.
         Section {
-            Button {
+            OverviewAddFoodButton(title: text("Essen hinzufügen", "Add food")) {
                 coordinator.present(.search)
-            } label: {
-                Label(text("Essen hinzufügen", "Add food"), systemImage: "magnifyingglass")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 36)
             }
-            .buttonStyle(.borderedProminent)
             .disabled(!coordinator.canWrite || !coordinator.supportsSearch)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+        }
 
+        Section {
             entry(text("Barcode scannen", "Scan barcode"), symbol: "barcode.viewfinder", native: coordinator.nativeBarcode) {
                 coordinator.present(.barcode)
             }
@@ -334,31 +354,41 @@ private struct NutritionWaterSection: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(text("Wasser", "Water"))
+                    Text(NutritionFormat.waterValue(projection.water, text: text))
+                        .font(.subheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
                     if let detail = NutritionFormat.waterDetail(projection.water, text: text) {
                         Text(detail).font(.footnote).foregroundStyle(.secondary)
                     }
                 }
+                .accessibilityElement(children: .combine)
                 Spacer(minLength: 8)
-                Text(NutritionFormat.waterValue(projection.water, text: text))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityElement(children: .combine)
-
-            Button {
-                coordinator.addWater()
-            } label: {
-                HStack {
-                    Label(text("250 ml Wasser", "250 ml water"), systemImage: "plus")
-                    Spacer()
-                    if coordinator.pendingWaterCount > 0 {
-                        ProgressView()
-                            .accessibilityLabel(text("Wird gespeichert", "Saving"))
-                    }
+                // Kompakter Knopf direkt in der Wasserzeile (wie das Web-Glas „+250 ml“).
+                if coordinator.pendingWaterCount > 0 {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel(text("Wird gespeichert", "Saving"))
                 }
-                .frame(minHeight: 36)
+                Button {
+                    coordinator.addWater()
+                } label: {
+                    // Sichtbar klein, die Tippfläche bleibt 44 pt hoch (liegt im Label, sonst zählt nur die Kapsel).
+                    Text("+250 ml")
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize()
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.15), in: Capsule())
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .disabled(!coordinator.canWrite)
+                .accessibilityLabel(text("250 ml Wasser hinzufügen", "Add 250 ml of water"))
             }
-            .disabled(!coordinator.canWrite)
 
             NutritionLinkRow(title: text("Wasserziel", "Water goal"), symbol: "target",
                              detail: projection.settings.waterGoal.flatMap { $0 > 0 ? text.number($0) + " ml" : nil }
@@ -596,44 +626,7 @@ private struct NutritionDayCompleteSection: View {
     }
 }
 
-// MARK: - Mikronährstoffe
-
-private struct NutritionMicroSection: View {
-    let coordinator: NutritionCoordinator
-    let projection: NutritionProjection
-    let text: OverviewText
-    @State private var expanded = false
-
-    var body: some View {
-        if !projection.micros.isEmpty {
-            Section {
-                DisclosureGroup(isExpanded: $expanded) {
-                    ForEach(projection.micros) { micro in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(NutritionFormat.microLabel(micro, text: text))
-                                let note = micro.knowledge == .unknown ? nil : text.knowledgeNote(micro.knowledge)
-                                if let note { Text(note).font(.footnote).foregroundStyle(.secondary) }
-                            }
-                            Spacer(minLength: 8)
-                            Text(NutritionFormat.microValue(micro, text: text))
-                                .monospacedDigit()
-                                .foregroundStyle(.secondary)
-                        }
-                        .accessibilityElement(children: .combine)
-                    }
-                    Button(text("Ziele anpassen", "Adjust goals")) { coordinator.present(.microGoals) }
-                        .disabled(!coordinator.canWrite)
-                } label: {
-                    Text(text("Mikronährstoffe & Ballaststoffe", "Micronutrients & fiber"))
-                }
-            } footer: {
-                Text(text("Ziele: eigene Werte vor Referenzwerten. Unbekannte Werte zählen nicht als 0.",
-                          "Goals: your own values before reference values. Unknown values do not count as 0."))
-            }
-        }
-    }
-}
+// Mikronährstoffe: Seite 2 der Energiekarte (`NutrientPager`, `MicroGrid`), Ziele über deren Knopf „Ziele“.
 
 // MARK: - Konflikte
 

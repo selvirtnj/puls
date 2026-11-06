@@ -298,15 +298,17 @@ struct RunDetailScreen: View {
         }
         Section {
             Button {
-                coordinator.openWeb(detail.navigation ?? ProgressNavigation(action: "runDetail", id: entry.entryId))
+                coordinator.openRun(id: entry.entryId, title: title, edit: false,
+                                    fallback: detail.navigation ?? ProgressNavigation(action: "runDetail", id: entry.entryId))
             } label: {
-                Label(detail.hasRoute ? text("Karte und Details in PULS", "Map and details in PULS")
-                                      : text("Details in PULS", "Details in PULS"), systemImage: detail.hasRoute ? "map" : "list.bullet")
+                Label(detail.hasRoute ? text("Karte und Details", "Map and details")
+                                      : text("Details", "Details"), systemImage: detail.hasRoute ? "map" : "list.bullet")
             }
             Button {
-                coordinator.openWeb(action: "editRun", id: entry.entryId)
+                coordinator.openRun(id: entry.entryId, title: title, edit: true,
+                                    fallback: ProgressNavigation(action: "editRun", id: entry.entryId))
             } label: {
-                Label(text("Bearbeiten in PULS", "Edit in PULS"), systemImage: "pencil")
+                Label(text("Bearbeiten", "Edit"), systemImage: "pencil")
             }
         }
     }

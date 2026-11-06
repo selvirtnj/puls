@@ -87,6 +87,10 @@ struct OverviewActions {
     var setDate: (String) -> Void
     var openBody: () -> Void
     var showWebHome: () -> Void
+    /// „Gewicht erfassen“: natives Gewichtsblatt (M2), sonst das übergebene Web-Ziel.
+    var addWeight: (NavigationTarget) -> Void
+    /// „Verlauf ansehen“: nativer Fortschritt (M5), sonst das übergebene Web-Ziel.
+    var openProgress: (NavigationTarget) -> Void
 }
 
 @MainActor
@@ -150,6 +154,14 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     var nutrition: NutritionCoordinator?
     /// M8: natives Konto im Konto-Tab. Vor `install` setzen.
     var account: AccountCoordinator?
+    /// M2: natives Gewichtsblatt direkt öffnen (Tag ISO oder `nil`); `false` = nativ nicht möglich.
+    var openWeightEditor: ((String?) -> Bool)?
+    /// Erststart: einmal, sobald die native Hülle darstellbar ist (sichtbarer Tab mit erster Projektion) oder
+    /// feststeht, dass dieses Dokument im Web-Modus bleibt. Der Host blendet dann seinen Startbildschirm aus.
+    var onReady: (() -> Void)?
+    private var reportedReady = false
+    /// Natives Plus-Menü, solange es offen ist.
+    private weak var quickAddController: UIViewController?
     /// „Konto“ ist ausgewählt, zeigt aber die Web-Seite (Web-Ausweg, `navigate{web:true}`), bis der Tab neu gewählt wird.
     private var accountShowsWeb = false
     private var accountExitUntil = Date.distantPast
@@ -183,7 +195,9 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             perform: { [weak self] target in self?.perform(target) },
             setDate: { [weak self] day in self?.setDate(day) },
             openBody: { [weak self] in self?.openBodyScreen() },
-            showWebHome: { [weak self] in self?.showWebHome() }
+            showWebHome: { [weak self] in self?.showWebHome() },
+            addWeight: { [weak self] fallback in self?.addWeight(fallback: fallback) },
+            openProgress: { [weak self] fallback in self?.openProgress(fallback: fallback) }
         )
         let header = UIHostingController(rootView: ShellHeaderHost(store: store, state: state, actions: actions))
         header.sizingOptions = .intrinsicContentSize
@@ -407,6 +421,34 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         }
         // Liest `webOffersOverview` innerhalb der Beobachtung.
         updateVisibility()
+        checkReady()
+    }
+
+    /// Startbildschirm darf weg: native Leiste sichtbar und der sichtbare native Tab hat seine erste Projektion
+    /// (sonst zeigt er nur „wird geladen“), oder das Dokument hat sich gemeldet und bleibt im Web-Modus
+    /// (Anmeldung, ungeklärte Zuordnung, alter Web-Stand, abgelehnte Übernahme). Höchstzeit regelt der Host.
+    private func checkReady() {
+        guard !reportedReady, let onReady else { return }
+        let ready: Bool
+        if isActive {
+            if barsHiddenForSession || state.isBlocked {
+                ready = true
+            } else if showsNativeOverview {
+                ready = store.currentProjection != nil
+            } else if showsNativeNutrition {
+                ready = nutrition?.projection != nil
+            } else if showsNativeTraining || showsNativeAccount {
+                ready = true
+            } else {
+                // Web-Seite im Tab (z. B. Konto ohne nativen Bereich): sie ist mit dem Hello bereits gezeichnet.
+                ready = store.documentHello != nil
+            }
+        } else {
+            ready = store.documentHello != nil && (!store.webOffersNativeTabs || chromeRejected)
+        }
+        guard ready else { return }
+        reportedReady = true
+        onReady()
     }
 
     private func setActive(_ active: Bool, hideBars: Bool) {
@@ -443,6 +485,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             self.chromeSent = nil
             self.setActive(false, hideBars: false)
             self.updateVisibility()
+            self.checkReady()
         }
     }
 
@@ -724,15 +767,25 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         itemsKey = key
         let text = OverviewText(language: language, locale: nil)
         tabBar.items = tabs.enumerated().map { index, tab in
-            let item = UITabBarItem(
-                title: tab.label(text),
-                image: UIImage(systemName: tab.symbol),
-                selectedImage: UIImage(systemName: tab.selectedSymbol)
-            )
-            item.tag = index
+            let item: UITabBarItem
             if tab == .add {
+                // Gerätetest ipa-42: Plus ist eine Aktion, kein Tab. Eigenes, immer gleich aussehendes Symbol (Akzentkreis)
+                // statt Auswahlzustand; die Auswahl bleibt beim aktuellen Tab (`syncSelection` im Delegate, noch vor
+                // dem nächsten Zeichnen), daher wird nie ein anderer Tab markiert.
+                let symbol = UIImage(systemName: "plus.circle.fill",
+                                     withConfiguration: UIImage.SymbolConfiguration(scale: .large))?
+                    .withTintColor(.systemBlue, renderingMode: .alwaysOriginal)
+                item = UITabBarItem(title: tab.label(text), image: symbol, selectedImage: symbol)
                 item.accessibilityHint = text("Öffnet das Menü zum Hinzufügen", "Opens the add menu")
+                item.accessibilityTraits = .button
+            } else {
+                item = UITabBarItem(
+                    title: tab.label(text),
+                    image: UIImage(systemName: tab.symbol),
+                    selectedImage: UIImage(systemName: tab.selectedSymbol)
+                )
             }
+            item.tag = index
             return item
         }
         syncSelection()
@@ -754,9 +807,9 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         let tab = state.tabs[item.tag]
         switch tab {
         case .add:
-            // Plus ist kein Seitentab: Auswahl bleibt, das Web-Menü öffnet sich über der aktuellen Seite.
+            // Plus ist kein Seitentab: Auswahl bleibt sofort beim aktuellen Tab, das native Menü öffnet sich darüber.
             syncSelection()
-            if let quickAdd = NavigationTarget(action: "quickAdd") { perform(quickAdd) }
+            presentQuickAdd()
         case .home:
             // Bewusste Wahl der Übersicht: wieder nativ, das Web geht im Hintergrund ebenfalls auf „home“.
             if let target = NavigationTarget(page: "home") { perform(target) }
@@ -764,6 +817,184 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             if let page = tab.page, let target = NavigationTarget(page: page) { perform(target) }
         }
         UISelectionFeedbackGenerator().selectionChanged()
+    }
+
+    // MARK: Plus (Schnell hinzufügen)
+
+    private var currentText: OverviewText {
+        let overview = store.currentProjection?.overview
+        return OverviewText(language: overview?.language ?? state.fallbackLanguage, locale: overview?.locale)
+    }
+
+    /// Natives Plus-Menü. Kann es nicht gezeigt werden (anderes Blatt offen), bleibt das bisherige Web-Menü als Ausweg.
+    func presentQuickAdd() {
+        guard !state.isBlocked else { return }
+        if let open = quickAddController, open.presentingViewController != nil, !open.isBeingDismissed { return }
+        guard let host, host.viewIfLoaded?.window != nil, host.presentedViewController == nil, !host.isBeingDismissed else {
+            if let quickAdd = NavigationTarget(action: "quickAdd") { perform(quickAdd) }
+            return
+        }
+        let sheet = QuickAddSheet(
+            text: currentText,
+            entries: quickAddEntries(),
+            onSelect: { [weak self] item in self?.finishQuickAdd(item) },
+            onClose: { [weak self] in self?.finishQuickAdd(nil) }
+        )
+        let controller = UIHostingController(rootView: sheet)
+        controller.overrideUserInterfaceStyle = style
+        controller.modalPresentationStyle = .pageSheet
+        if let presentation = controller.sheetPresentationController {
+            // Neun Einträge passen bei Standardschrift ohne Scrollen; größere Schrift scrollt bzw. nutzt „groß“.
+            let fitted = UISheetPresentationController.Detent.custom(identifier: .init("pulsQuickAdd")) { context in
+                min(660, context.maximumDetentValue)
+            }
+            presentation.detents = [fitted, .large()]
+            presentation.prefersGrabberVisible = true
+        }
+        quickAddController = controller
+        host.present(controller, animated: true)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
+    /// Jeder Eintrag nativ, wenn der passende Ablauf gemeldet ist; sonst mit Web-Markierung.
+    private func quickAddEntries() -> [QuickAddEntry] {
+        let foodNative = nutritionSearchAvailable
+        let canWriteFood = nutrition?.canWrite ?? true
+        return QuickAddItem.allCases.map { item in
+            switch item {
+            case .food, .recipe:
+                return QuickAddEntry(item: item, opensWeb: !foodNative, enabled: !foodNative || canWriteFood)
+            case .barcode:
+                return QuickAddEntry(item: item, opensWeb: !(foodNative && nutrition?.nativeBarcode == true),
+                                     enabled: !foodNative || canWriteFood)
+            case .label:
+                return QuickAddEntry(item: item, opensWeb: !(foodNative && nutrition?.nativeLabel == true),
+                                     enabled: !foodNative || canWriteFood)
+            case .water:
+                // Ohne native Ernährung gibt es keinen Web-Einzelaufruf für Wasser: dann der Essen-Tab (Wasserzeile).
+                return QuickAddEntry(item: item, opensWeb: nutrition?.isOffered != true,
+                                     enabled: nutrition?.isOffered != true || canWriteFood)
+            case .weight:
+                return QuickAddEntry(item: item, opensWeb: !nativeBodyAvailable)
+            case .workout:
+                return QuickAddEntry(item: item, opensWeb: !(training?.isAvailable == true))
+            case .activity:
+                return QuickAddEntry(item: item, opensWeb: !(activity?.isOffered == true))
+            case .measurements:
+                return QuickAddEntry(item: item, opensWeb: !canShowNativeAccount)
+            }
+        }
+    }
+
+    private var nutritionSearchAvailable: Bool {
+        guard let nutrition else { return false }
+        return nutrition.isOffered && nutrition.supportsSearch && nutrition.supportsProduct
+    }
+
+    private var nativeBodyAvailable: Bool {
+        openWeightEditor != nil && !store.ownerPending && store.webInfo?.screens.contains(NativeRouter.bodyScreen) == true
+    }
+
+    /// Erst das Menü schließen, dann den Ablauf starten (Blätter/Vollbild brauchen einen freien Präsentierer).
+    private func finishQuickAdd(_ item: QuickAddItem?) {
+        guard let controller = quickAddController, controller.presentingViewController != nil else {
+            quickAddController = nil
+            if let item { runQuickAdd(item) }
+            return
+        }
+        controller.dismiss(animated: true) { [weak self] in
+            guard let self else { return }
+            self.quickAddController = nil
+            if let item { self.runQuickAdd(item) }
+        }
+    }
+
+    private func runQuickAdd(_ item: QuickAddItem) {
+        guard !state.isBlocked else { return }
+        switch item {
+        case .food:
+            openNutritionSheet(.search, scope: nil)
+        case .recipe:
+            openNutritionSheet(.search, scope: .recipes)
+        case .barcode:
+            openNutritionSheet(nutrition?.nativeBarcode == true ? .barcode : nil, scope: nil)
+        case .label:
+            openNutritionSheet(nutrition?.nativeLabel == true ? .label : nil, scope: nil)
+        case .water:
+            addWaterQuick()
+        case .weight:
+            addWeight(fallback: NavigationTarget(action: "addWeight"))
+        case .workout:
+            // Wie `quickAddWorkout`: laufendes Training fortsetzen, sonst Trainings-Tab (Routinen, freies Training).
+            if let training, let active = training.training?.active,
+               training.handleOverviewAction("resumeWorkout", id: active.id) {
+                return
+            }
+            selectWorkoutTab()
+        case .activity:
+            if let activity, activity.isOffered {
+                activity.openStart()
+            } else if let target = ActivityNavigation(action: "activity") {
+                openActivityWeb(target)
+            }
+        case .measurements:
+            if let account, canShowNativeAccount {
+                account.openFromWeb(section: AccountRoute.body.rawValue)
+            } else if let target = NavigationTarget(page: "account", section: NativeRouter.bodyScreen, web: true) {
+                perform(target)
+            }
+        }
+    }
+
+    /// Essen-Tab nativ wählen und dasselbe Blatt wie dort öffnen; `nil` bzw. ohne native Suche: Web-Essensdialog.
+    private func openNutritionSheet(_ sheet: NutritionSheet?, scope: NutritionSearchScope?) {
+        guard let nutrition, nutritionSearchAvailable else {
+            if let target = NavigationTarget(action: "addFood") { perform(target) }
+            return
+        }
+        selectFoodTab()
+        guard let sheet else {
+            // Wie derselbe Eintrag im Essen-Tab, solange der native Ablauf fehlt.
+            nutrition.openWebAdd()
+            return
+        }
+        if let scope { nutrition.searchScopeRequest = scope }
+        nutrition.present(sheet)
+    }
+
+    /// „Wasser +250 ml“ für den gewählten Tag. Ohne native Ernährung bzw. bei Fehler: Essen-Tab mit Wasserzeile/Hinweis.
+    private func addWaterQuick() {
+        guard let nutrition, nutrition.isOffered,
+              let day = store.currentProjection?.overview.date ?? nutrition.projection?.date else {
+            selectFoodTab()
+            return
+        }
+        if nutrition.addWater(on: day) {
+            let text = currentText
+            UIAccessibility.post(notification: .announcement,
+                                 argument: text("250 ml Wasser hinzugefügt", "250 ml of water added"))
+        } else {
+            selectFoodTab()
+        }
+    }
+
+    /// „Gewicht erfassen“: natives Blatt (M2) für den gewählten Tag, sonst der Web-Ablauf `fallback`.
+    private func addWeight(fallback: NavigationTarget?) {
+        guard !state.isBlocked else { return }
+        if openWeightEditor?(store.currentProjection?.overview.date) == true { return }
+        if let fallback { perform(fallback) } else { openBodyScreen() }
+    }
+
+    /// „Verlauf ansehen“: nativer Fortschritt im Trainings-Tab (M5), sonst das Web-Ziel `fallback`.
+    private func openProgress(fallback: NavigationTarget) {
+        guard !state.isBlocked else { return }
+        if let progress, progress.offersProgress, training != nil {
+            progress.path = []
+            progress.segment = .progress
+            selectWorkoutTab()
+            if showsNativeTraining { return }
+        }
+        perform(fallback)
     }
 
     // MARK: Web → Native

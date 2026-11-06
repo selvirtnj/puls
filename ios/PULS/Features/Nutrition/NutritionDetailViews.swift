@@ -102,8 +102,10 @@ struct NutritionProductView: View {
                 let start = detail.defaultAmount.flatMap { $0 > 0 ? $0 : nil } ?? 100
                 amountText = NutritionInput.text(start, locale: coordinator.text.locale)
             }
-            if case .recipeId(let id) = detail.product.ref, recipe == nil, coordinator.supportsRecipe {
-                recipe = await coordinator.recipeDetail(id).value
+            // Bei jedem Stand neu: das Rohrezept ist die Erwartung für Kopieren und Löschen.
+            if case .recipeId(let id) = detail.product.ref, coordinator.supportsRecipe,
+               let fresh = await coordinator.recipeDetail(id).value, !Task.isCancelled {
+                recipe = fresh
             }
         }
     }
@@ -203,6 +205,15 @@ struct NutritionProductView: View {
                         .foregroundStyle(.secondary)
                     Button(text("Im Web-Dialog öffnen", "Open in the web dialog")) { coordinator.openWebAdd() }
                 }
+            }
+
+            if detail.canManage {
+                NutritionPortionsSection(coordinator: coordinator, detail: detail, text: text)
+                NutritionExtrasSection(coordinator: coordinator, detail: detail, text: text)
+            }
+
+            if let recipe {
+                NutritionRecipeActionsSection(coordinator: coordinator, recipe: recipe, text: text) { dismiss() }
             }
         }
     }

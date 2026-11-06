@@ -620,4 +620,70 @@ public enum NutritionCommands {
             "product": detail.product.ref.json, "favorite": .bool(favorite), "expect": expect,
         ])
     }
+
+    // MARK: P2 Portionen, Produktzusätze, Rezepte (§12.5)
+
+    /// Roh-Args von Produkt-Ops höchstens 24 Ki, `recipe.copy` höchstens 48 Ki (das Web prüft dieselbe Grenze).
+    private static func fits(_ args: JSONValue, limit: Int) -> Bool {
+        AccountOps.serializedLength(args) <= limit
+    }
+
+    /// `portion.save`: gewogene/belegte Menge in der Basiseinheit des Produkts; gleiche Bezeichnung ersetzt das Web.
+    public static func savePortion(detail: NutritionProductDetail, name: String, amount: Double) -> Command? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard detail.canManage, let expect = detail.expect, (1...80).contains(trimmed.utf16.count),
+              amount.isFinite, amount >= 0.1, amount <= 10_000 else { return nil }
+        let args: JSONValue = [
+            "product": detail.product.ref.json, "name": .string(trimmed), "amount": .number(amount), "expect": expect,
+        ]
+        return fits(args, limit: 24 * 1024) ? Command(op: NutritionOps.portionSave, args: args) : nil
+    }
+
+    /// `portion.delete`: nur diese Bezeichnung; übrige Produktfelder und Tagebucheinträge bleiben.
+    public static func deletePortion(detail: NutritionProductDetail, name: String) -> Command? {
+        guard detail.canManage, let expect = detail.expect, !name.isEmpty else { return nil }
+        let args: JSONValue = ["product": detail.product.ref.json, "name": .string(name), "expect": expect]
+        return fits(args, limit: 24 * 1024) ? Command(op: NutritionOps.portionDelete, args: args) : nil
+    }
+
+    /// Änderung eines Produktzusatzes: `keep` sendet das Feld nicht, `remove` sendet `null`.
+    public enum ExtraChange: Equatable, Sendable {
+        case keep
+        case remove
+        case set(Double)
+
+        var json: JSONValue? {
+            switch self {
+            case .keep: return nil
+            case .remove: return JSONValue.null
+            case .set(let value): return JSONValue.number(value)
+            }
+        }
+    }
+
+    /// `product.extras.set`: Dichte 0,01–20 g/ml, Wasseranteil 0–100 nur bei ml-Produkten, mindestens ein Feld.
+    public static func extras(detail: NutritionProductDetail, density: ExtraChange = .keep, water: ExtraChange = .keep) -> Command? {
+        guard detail.canManage, let expect = detail.expect, density != .keep || water != .keep else { return nil }
+        if case .set(let value) = density { guard value.isFinite, value >= 0.01, value <= 20 else { return nil } }
+        if case .set(let value) = water { guard value.isFinite, value >= 0, value <= 100 else { return nil } }
+        if water != .keep { guard detail.base == "ml" else { return nil } }
+        var args: JSONValue = ["product": detail.product.ref.json, "expect": expect]
+        if let value = density.json { args["density"] = value }
+        if let value = water.json { args["water"] = value }
+        return fits(args, limit: 24 * 1024) ? Command(op: NutritionOps.productExtrasSet, args: args) : nil
+    }
+
+    /// `recipe.copy`: neue stabile ID, `expect` = Rohrezept der `recipe`-Query. Den Standardnamen setzt das Web.
+    public static func copyRecipe(_ recipe: NutritionRecipeDetail, newId: String) -> Command? {
+        guard let sourceId = recipe.recipe["id"]?.stringValue, NutritionOps.isValidNewID(sourceId),
+              NutritionOps.isValidNewID(newId), newId != sourceId else { return nil }
+        let args: JSONValue = ["id": .string(newId), "sourceId": .string(sourceId), "expect": recipe.recipe]
+        return fits(args, limit: 48 * 1024) ? Command(op: NutritionOps.recipeCopy, args: args) : nil
+    }
+
+    /// `recipe.delete`: die native Bestätigung gilt als Bestätigung des Web-Dialogs; Tagebucheinträge bleiben.
+    public static func deleteRecipe(_ recipe: NutritionRecipeDetail) -> Command? {
+        guard let id = recipe.recipe["id"]?.stringValue, NutritionOps.isValidNewID(id) else { return nil }
+        return Command(op: NutritionOps.recipeDelete, args: ["id": .string(id), "expect": recipe.recipe])
+    }
 }

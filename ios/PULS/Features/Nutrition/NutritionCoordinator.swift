@@ -71,6 +71,8 @@ final class NutritionCoordinator {
     @ObservationIgnored var onOpenWeb: ((NavigationTarget) -> Void)?
     /// Shell: Essen-Tab wählen (z. B. „Essen eintragen“ aus der Übersicht).
     @ObservationIgnored var onSelectFoodTab: (() -> Void)?
+    /// Shell: nativen Plan im Konto-Tab öffnen; `false` = nativ gerade nicht möglich.
+    @ObservationIgnored var onOpenGoals: (() -> Bool)?
 
     @ObservationIgnored private var queryCounter = 0
     @ObservationIgnored private var handledAckSerial = 0
@@ -270,6 +272,22 @@ final class NutritionCoordinator {
         if perform(command) { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
     }
 
+    /// Schnell hinzufügen „Wasser“ (Plus): derselbe `water.add` für einen ausdrücklich genannten Tag, auch wenn der
+    /// Essen-Tab (und damit die Projektion `nutrition`) gerade nicht sichtbar ist. `false` = nicht eingereiht
+    /// (Hinweis steht dann in `notice`).
+    @discardableResult
+    func addWater(on date: String) -> Bool {
+        guard isOffered else { return false }
+        guard canWrite else {
+            notice = TrainingNotice(text: describe(ProfileStoreError.readOnly))
+            return false
+        }
+        guard let command = NutritionCommands.water(id: NutritionOps.makeID(), date: date) else { return false }
+        let ok = perform(command)
+        if ok { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+        return ok
+    }
+
     func setDayComplete(_ done: Bool) {
         guard let date = projection?.date, !isDayCompletePending,
               let command = NutritionCommands.completeDay(date: date, done: done) else { return }
@@ -323,6 +341,62 @@ final class NutritionCoordinator {
     func setFavorite(_ detail: NutritionProductDetail, favorite: Bool) {
         guard let command = NutritionCommands.favorite(detail: detail, favorite: favorite) else { return }
         perform(command)
+    }
+
+    // MARK: P2 Portionen, Produktzusätze, Rezepte
+
+    /// Das aktuelle Dokument meldet diese Op (P2-Ops sind einzeln angekündigt, §12.5).
+    func supportsOp(_ op: String) -> Bool {
+        store.documentHello?.ops.contains(op) == true
+    }
+
+    /// Eine Produktänderung ist unterwegs: ihre Erwartung wäre für eine weitere Änderung schon veraltet.
+    func isManaging(_ ref: ProductRef) -> Bool {
+        [NutritionOps.portionSave, NutritionOps.portionDelete, NutritionOps.productExtrasSet].contains { op in
+            store.hasUnconfirmedNutrition(op) { ProductRef(json: $0["product"]) == ref }
+        }
+    }
+
+    func isRecipeChangePending(id: String?) -> Bool {
+        store.hasUnconfirmedNutrition(NutritionOps.recipeCopy) { $0["sourceId"]?.stringValue == id }
+            || store.hasUnconfirmedNutrition(NutritionOps.recipeDelete) { $0["id"]?.stringValue == id }
+    }
+
+    @discardableResult
+    func savePortion(_ detail: NutritionProductDetail, name: String, amount: Double) -> Bool {
+        performManaged(NutritionCommands.savePortion(detail: detail, name: name, amount: amount))
+    }
+
+    @discardableResult
+    func deletePortion(_ detail: NutritionProductDetail, name: String) -> Bool {
+        performManaged(NutritionCommands.deletePortion(detail: detail, name: name))
+    }
+
+    @discardableResult
+    func setExtras(_ detail: NutritionProductDetail, density: NutritionCommands.ExtraChange,
+                   water: NutritionCommands.ExtraChange) -> Bool {
+        performManaged(NutritionCommands.extras(detail: detail, density: density, water: water))
+    }
+
+    @discardableResult
+    func copyRecipe(_ recipe: NutritionRecipeDetail) -> Bool {
+        performManaged(NutritionCommands.copyRecipe(recipe, newId: NutritionOps.makeID()))
+    }
+
+    @discardableResult
+    func deleteRecipe(_ recipe: NutritionRecipeDetail) -> Bool {
+        performManaged(NutritionCommands.deleteRecipe(recipe))
+    }
+
+    /// `nil` = das Web würde `invalid` antworten (Grenzen oder Größe); Hinweis statt stiller Nichtwirkung.
+    private func performManaged(_ command: Command?) -> Bool {
+        guard let command else {
+            notice = TrainingNotice(text: text("Das lässt sich hier nicht ändern.", "This cannot be changed here."))
+            return false
+        }
+        let ok = perform(command)
+        if ok { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+        return ok
     }
 
     /// Wischen zum Löschen: vollständigen Eintrag holen (Erwartung und Undo-Snapshot), dann `food.delete`.
@@ -432,6 +506,13 @@ final class NutritionCoordinator {
         openWeb(projection?.navigation ?? NavigationTarget(page: "food", web: true))
     }
 
+    /// Kalorien- und Makroziele: nativer Plan im Konto-Tab, ohne natives Konto die Web-Planseite.
+    func openGoals() {
+        sheet = nil
+        if onOpenGoals?() == true { return }
+        openWeb(NavigationTarget(page: "account", section: "plan", web: true))
+    }
+
     /// Web-Essensdialog mit Suche/Barcode/Foto/Rezepten/Eigenen Werten (P2-Abläufe bis zur nativen Freigabe).
     func openWebAdd() {
         openWeb(NavigationTarget(action: "addFood"))
@@ -482,6 +563,11 @@ final class NutritionCoordinator {
         case NutritionOps.microGoalsSet: return text("Mikronährstoffziele", "Micronutrient goals")
         case NutritionOps.waterGoalSet: return text("Wasserziel", "Water goal")
         case NutritionOps.productFavorite: return text("Favorit", "Favourite")
+        case NutritionOps.portionSave: return text("Portion speichern", "Save portion")
+        case NutritionOps.portionDelete: return text("Portion löschen", "Delete portion")
+        case NutritionOps.productExtrasSet: return text("Produktzusätze", "Product details")
+        case NutritionOps.recipeCopy: return text("Rezept kopieren", "Copy recipe")
+        case NutritionOps.recipeDelete: return text("Rezept löschen", "Delete recipe")
         default: return entry.command.op
         }
     }

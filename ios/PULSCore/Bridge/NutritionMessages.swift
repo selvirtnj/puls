@@ -726,6 +726,39 @@ public struct NutritionProductDetail: Equatable, Sendable {
         if case .barcode = product.ref { return false }
         return true
     }
+
+    /// Portionen und Zusätze sind nur für `lokaleRef` möglich (§12.5): gleiche Bedingung wie der Favorit.
+    public var canManage: Bool { canFavorite }
+
+    /// Gespeicherte Portionen des Rohprodukts. Die Bezeichnung ist der Schlüssel (das Web ersetzt gleichnamige), daher
+    /// je Name nur der letzte Eintrag. Quellportionen auf Abruf stehen nur in `units`, nicht im Rohprodukt.
+    public var portions: [NutritionPortion] {
+        var seen = Set<String>()
+        var result: [NutritionPortion] = []
+        for item in (expect?["portions"]?.arrayValue ?? []).reversed() {
+            guard let name = item["name"]?.stringValue, !name.isEmpty, seen.insert(name).inserted else { continue }
+            result.insert(NutritionPortion(name: name, amount: item["amount"]?.doubleValue,
+                                           unit: item["unit"]?.stringValue == "ml" ? "ml" : "g",
+                                           source: item["source"]?.stringValue ?? ""), at: 0)
+        }
+        return result
+    }
+
+    /// Gespeicherte Dichte in g/ml aus dem Rohprodukt; fehlt sie, gibt es keine (nie erfinden).
+    public var storedDensity: Double? { expect?["density"]?.doubleValue }
+
+    /// Gespeicherter Wasseranteil in ml je 100 ml aus dem Rohprodukt.
+    public var storedWater: Double? { expect?["nutrients"]?["water"]?.doubleValue }
+}
+
+/// Eine im Rohprodukt gespeicherte Portion (`portions`).
+public struct NutritionPortion: Equatable, Sendable, Identifiable {
+    public var name: String
+    public var amount: Double?
+    public var unit: String
+    public var source: String
+
+    public var id: String { name }
 }
 
 public struct NutritionEntryDetail: Equatable, Sendable {

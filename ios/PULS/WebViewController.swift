@@ -105,6 +105,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                 }
             }
             shell.openBody = { [weak router] in router?.open(NativeRouter.bodyScreen) }
+            shell.openWeightEditor = { [weak router] day in router?.openWeightEditor(day: day) ?? false }
+            shell.onReady = { [weak self] in self?.hideSplash() }
             shell.account = account
             account.onOpenWeb = { [weak shell] exit in shell?.openAccountWeb(exit) }
             account.onSelectAccountTab = { [weak shell] in shell?.selectAccountTab() }
@@ -121,6 +123,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             progressCoordinator = progress
             shell.progress = progress
             progress.onOpenWeb = { [weak shell] target in shell?.openProgressWeb(target) }
+            progress.onOpenRun = { [weak activity] id, title, edit in
+                guard let activity, activity.isOffered else { return false }
+                activity.detail = ActivityDetailRequest(id: id, title: title, startsEditing: edit)
+                return true
+            }
             training.onSelectWorkoutTab = { [weak shell] in shell?.selectWorkoutTab() }
             training.onShowWebWorkout = { [weak shell] in shell?.showWebWorkout() }
             training.styleProvider = { [weak shell] in
@@ -138,6 +145,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             shell.nutrition = nutrition
             nutrition.onOpenWeb = { [weak shell] target in shell?.openNutritionWeb(target) }
             nutrition.onSelectFoodTab = { [weak shell] in shell?.selectFoodTab() }
+            nutrition.onOpenGoals = { [weak shell, weak account] in
+                guard let account, let shell, shell.canShowNativeAccount else { return false }
+                account.openFromWeb(section: AccountRoute.plan.rawValue)
+                return true
+            }
             tabShell = shell
         }
         webView.navigationDelegate = self
@@ -160,8 +172,91 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Startbildschirm zuerst (die Hülle kann beim Einbauen schon „bereit“ melden), danach wieder ganz nach vorn.
+        showSplash()
         tabShell?.install(in: self, webView: webView)
+        if let splash { view.bringSubviewToFront(splash) }
         webView.load(URLRequest(url: Self.home))
+    }
+
+    // MARK: Startbildschirm
+
+    /// Gerätetest ipa-42: Der System-Startbildschirm verschwand, bevor Hülle und erste Projektion bereit waren (schwarze bzw.
+    /// halbfertige Ansicht). Dieser Überzug sieht aus wie der Startbildschirm (`LaunchBackground`) plus PULS-Wortmarke und
+    /// bleibt, bis `RootTabShell.onReady` meldet (bzw. ohne Hülle die Seite geladen ist), höchstens 4 s. Danach blendet er
+    /// weich aus; er fängt nie dauerhaft Eingaben ab.
+    private var splash: UIView?
+    private static let splashMaxSeconds: TimeInterval = 4
+
+    private func showSplash() {
+        let overlay = UIView()
+        overlay.backgroundColor = Self.background
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+        overlay.isAccessibilityElement = true
+        overlay.accessibilityLabel = "PULS"
+        overlay.accessibilityValue = Locale.preferredLanguages.first?.hasPrefix("de") == false ? "Loading" : "Wird geladen"
+        overlay.accessibilityTraits = .updatesFrequently
+
+        let symbol = UIImageView(image: UIImage(systemName: "waveform.path.ecg",
+                                                withConfiguration: UIImage.SymbolConfiguration(pointSize: 40, weight: .semibold)))
+        // Akzent Apple-Blau dunkel (docs/DESIGN-SYSTEM.md), passend zum dunklen Startgrund.
+        symbol.tintColor = UIColor(red: 0x0A / 255, green: 0x84 / 255, blue: 0xFF / 255, alpha: 1)
+        symbol.contentMode = .scaleAspectFit
+
+        let title = UILabel()
+        title.text = "PULS"
+        title.textColor = .white
+        let base = UIFont.systemFont(ofSize: 36, weight: .heavy)
+        title.font = base.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: 36) } ?? base
+
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.color = UIColor(white: 1, alpha: 0.6)
+        spinner.hidesWhenStopped = true
+
+        let stack = UIStackView(arrangedSubviews: [symbol, title, spinner])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 12
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.alpha = 0
+        overlay.addSubview(stack)
+        view.addSubview(overlay)
+        NSLayoutConstraint.activate([
+            overlay.topAnchor.constraint(equalTo: view.topAnchor),
+            overlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            overlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            stack.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: overlay.centerYAnchor),
+        ])
+        splash = overlay
+        setNeedsStatusBarAppearanceUpdate()
+        // Wortmarke sanft einblenden (der System-Startbildschirm zeigt nur die Hintergrundfarbe).
+        UIView.animate(withDuration: 0.25) { stack.alpha = 1 }
+        // Dauert es länger, zeigt ein Ladekreis, dass PULS arbeitet.
+        Task { @MainActor [weak self, weak spinner] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard self?.splash != nil else { return }
+            spinner?.startAnimating()
+        }
+        // Kein toter Startbildschirm: spätestens nach 4 s ausblenden, egal was die WebView meldet.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(Self.splashMaxSeconds))
+            self?.hideSplash()
+        }
+    }
+
+    private func hideSplash() {
+        guard let overlay = splash else { return }
+        splash = nil
+        overlay.isUserInteractionEnabled = false
+        setNeedsStatusBarAppearanceUpdate()
+        UIView.animate(withDuration: 0.35, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
+            overlay.alpha = 0
+        } completion: { _ in
+            overlay.removeFromSuperview()
+        }
+        UIAccessibility.post(notification: .screenChanged, argument: nil)
     }
 
     override func viewDidLayoutSubviews() {
@@ -171,6 +266,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
+        // Startbildschirm ist immer dunkel.
+        if splash != nil { return .lightContent }
         // Das Fenster folgt dem Web-Wunsch (bzw. dem iPhone bei „System“); `.default` passt sich daran an.
         guard let tabShell else { return .lightContent }
         switch tabShell.style {
@@ -389,6 +486,14 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         if (error as NSError).code != NSURLErrorCancelled { showOffline() }
+    }
+
+    /// Ohne native Hülle (keine Zustandsbrücke) bzw. für die Offline-Seite: Startbildschirm nach dem Laden ausblenden.
+    /// Mit Hülle entscheidet `RootTabShell.onReady` (Hello und erste Projektion), höchstens 4 s.
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard splash != nil else { return }
+        let isApp = webView.url.map { $0.host == Self.appHost && $0.path.hasPrefix(Self.appPath) } ?? false
+        if tabShell == nil || !isApp { hideSplash() }
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {

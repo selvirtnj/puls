@@ -218,6 +218,55 @@ final class NutritionTests: XCTestCase {
         XCTAssertNil(NutritionCommands.add(entryId: "x", detail: off, amount: 1, unit: anyGram, date: "2026-10-28"))
     }
 
+    func testPortionCommandsKeepRawExpect() throws {
+        let detail = try productDetail()
+        XCTAssertTrue(detail.canManage)
+        XCTAssertEqual(detail.portions.map(\.name), ["Weighed serving"])
+        XCTAssertEqual(detail.portions.first?.amount, 30)
+        let save = try XCTUnwrap(NutritionCommands.savePortion(detail: detail, name: "  Scoop ", amount: 25))
+        XCTAssertEqual(save.op, NutritionOps.portionSave)
+        XCTAssertEqual(save.args["name"], "Scoop")
+        XCTAssertEqual(save.args["amount"], 25)
+        XCTAssertEqual(save.args["product"], detail.product.ref.json)
+        XCTAssertEqual(save.args["expect"], detail.expect)
+        XCTAssertNil(NutritionCommands.savePortion(detail: detail, name: "   ", amount: 25))
+        XCTAssertNil(NutritionCommands.savePortion(detail: detail, name: "Scoop", amount: 0.05))
+        XCTAssertNil(NutritionCommands.savePortion(detail: detail, name: "Scoop", amount: 10_001))
+        let delete = try XCTUnwrap(NutritionCommands.deletePortion(detail: detail, name: "Weighed serving"))
+        XCTAssertEqual(delete.op, NutritionOps.portionDelete)
+        XCTAssertEqual(delete.args["name"], "Weighed serving")
+        XCTAssertEqual(delete.args["expect"], detail.expect)
+    }
+
+    func testExtrasCommandSendsOnlyChangedFields() throws {
+        let detail = try productDetail()
+        XCTAssertEqual(detail.storedDensity, 1.2)
+        XCTAssertEqual(detail.storedWater, 40)
+        let remove = try XCTUnwrap(NutritionCommands.extras(detail: detail, density: .remove))
+        XCTAssertEqual(remove.op, NutritionOps.productExtrasSet)
+        XCTAssertEqual(remove.args["density"], .null)
+        XCTAssertNil(remove.args["water"])
+        XCTAssertEqual(try XCTUnwrap(NutritionCommands.extras(detail: detail, density: .set(1.05))).args["density"], 1.05)
+        XCTAssertNil(NutritionCommands.extras(detail: detail), "mindestens ein Feld")
+        XCTAssertNil(NutritionCommands.extras(detail: detail, density: .set(25)))
+        XCTAssertNil(NutritionCommands.extras(detail: detail, water: .set(50)), "Wasseranteil nur bei ml-Produkten")
+    }
+
+    func testRecipeCopyAndDeleteUseRawRecipe() throws {
+        guard case .recipe(let recipe)? = try result("nutrition-result-recipe").result else { return XCTFail("recipe") }
+        let copy = try XCTUnwrap(NutritionCommands.copyRecipe(recipe, newId: "recipe-copy"))
+        XCTAssertEqual(copy.op, NutritionOps.recipeCopy)
+        XCTAssertEqual(copy.args["id"], "recipe-copy")
+        XCTAssertEqual(copy.args["sourceId"], "recipe")
+        XCTAssertEqual(copy.args["expect"], recipe.recipe)
+        XCTAssertNil(NutritionCommands.copyRecipe(recipe, newId: "recipe"), "Kopie braucht eine neue ID")
+        XCTAssertNil(NutritionCommands.copyRecipe(recipe, newId: "bad id"))
+        let delete = try XCTUnwrap(NutritionCommands.deleteRecipe(recipe))
+        XCTAssertEqual(delete.op, NutritionOps.recipeDelete)
+        XCTAssertEqual(delete.args["id"], "recipe")
+        XCTAssertEqual(delete.args["expect"], recipe.recipe)
+    }
+
     func testProductSaveReviewAndLabelMatchFixtures() throws {
         let review = try ApplyCommand(json: Fixtures.value("apply-nutrition-product-save"))
         let off = try productDetail("nutrition-p2-result-off-product")

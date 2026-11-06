@@ -64,6 +64,8 @@ struct WorkoutTabView: View {
         }
         .environment(\.locale, text.locale)
         .tint(.blue)
+        // Am ganzen Tab: das Aktivitätsdetail öffnet sich auch aus Kalender und Fortschritt.
+        .modifier(ActivitySheets(coordinator: activity))
     }
 
     private var segmentBinding: Binding<WorkoutSegment> {
@@ -73,7 +75,8 @@ struct WorkoutTabView: View {
     @ViewBuilder
     private func trainingContent(text: ProgressText) -> some View {
         if training.isAvailable {
-            TrainingHomeView(coordinator: training, showsWebHistoryLink: !progress.offersAny, activity: activity)
+            TrainingHomeView(coordinator: training, showsWebHistoryLink: !progress.offersAny, activity: activity,
+                             hostsActivitySheets: false)
         } else {
             // Nur Kalender/Fortschritt nativ (Web ohne `nativeTraining`): Training bleibt im Web erreichbar.
             ContentUnavailableView {

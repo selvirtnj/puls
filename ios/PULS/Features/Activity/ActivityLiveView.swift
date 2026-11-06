@@ -16,15 +16,25 @@ struct ActivityLiveView: View {
 
     private var typeInfo: ActivityTypeInfo? { projection.type(active.type) }
     private var kind: ActivityLiveKind { ActivityLiveKind(type: active.type, gps: active.gps, category: typeInfo?.category) }
+    /// Schlüssel der GPS-Aufzeichnung wie `String(run.startedAt)` in js/running.js.
+    private var runKey: String {
+        active.startedAt.rounded() == active.startedAt ? String(Int64(active.startedAt)) : String(active.startedAt)
+    }
 
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
                 header
                 ScrollView {
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
-                        let elapsed = active.elapsed(at: context.date)
-                        liveContent(elapsed: elapsed, now: context.date)
+                    VStack(spacing: 16) {
+                        // Außerhalb der Sekunden-Uhr: die Karte wird nicht jede Sekunde neu ausgewertet.
+                        if active.gps, active.recordingDevice {
+                            ActivityLiveMap(runKey: runKey, text: text)
+                        }
+                        TimelineView(.periodic(from: .now, by: 1)) { context in
+                            let elapsed = active.elapsed(at: context.date)
+                            liveContent(elapsed: elapsed, now: context.date)
+                        }
                     }
                     .padding(16)
                 }

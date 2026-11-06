@@ -9,6 +9,8 @@ struct WeightEditorSheet: View {
     let text: BodyText
     /// Liefert eine Fehlermeldung oder `nil` bei Erfolg.
     let onSave: (_ date: Date, _ kg: Double) -> String?
+    /// Schließen, wenn das Blatt von UIKit präsentiert wird (Schnell hinzufügen); sonst `dismiss` der SwiftUI-Umgebung.
+    let onDismiss: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     // Einmalige Startwerte aus `request`; danach gehört die Eingabe dem Sheet.
@@ -18,12 +20,22 @@ struct WeightEditorSheet: View {
     @FocusState private var kgFocused: Bool
 
     init(request: WeightEditorRequest, text: BodyText,
-         onSave: @escaping (_ date: Date, _ kg: Double) -> String?) {
+         onSave: @escaping (_ date: Date, _ kg: Double) -> String?,
+         onDismiss: (() -> Void)? = nil) {
         self.request = request
         self.text = text
         self.onSave = onSave
+        self.onDismiss = onDismiss
         _date = State(initialValue: request.initialDate)
         _kgText = State(initialValue: request.initialText)
+    }
+
+    private func close() {
+        if let onDismiss {
+            onDismiss()
+        } else {
+            dismiss()
+        }
     }
 
     private var parsed: Double? { WeightMath.parseKg(kgText) }
@@ -91,7 +103,7 @@ struct WeightEditorSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(text("Abbrechen", "Cancel")) { dismiss() }
+                    Button(text("Abbrechen", "Cancel")) { close() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(text("Sichern", "Save"), action: save)
@@ -113,7 +125,7 @@ struct WeightEditorSheet: View {
         if let error = onSave(date, kg) {
             saveError = error
         } else {
-            dismiss()
+            close()
         }
     }
 }

@@ -63,6 +63,8 @@ final class ProgressCoordinator {
 
     /// Shell: Web-Ausweg ausführen (WebView zeigen, native Leiste/Detail entsprechend). Vor `install` gesetzt.
     @ObservationIgnored var onOpenWeb: ((ProgressNavigation) -> Void)?
+    /// Shell: gespeicherte Aktivität nativ zeigen (ID, Titel, gleich bearbeiten); `false` = nativ gerade nicht möglich.
+    @ObservationIgnored var onOpenRun: ((String, String, Bool) -> Bool)?
 
     @ObservationIgnored private var queryCounter = 0
     @ObservationIgnored private var handledAckSerial = 0
@@ -158,6 +160,12 @@ final class ProgressCoordinator {
 
     func openWeb(action: String, id: String? = nil) {
         openWeb(ProgressNavigation(action: action, id: id))
+    }
+
+    /// Karte, Details und Bearbeiten einer Aktivität: natives Detail der Aktivitäten, ohne sie das Web-Ziel `fallback`.
+    func openRun(id: String, title: String, edit: Bool, fallback: ProgressNavigation?) {
+        if onOpenRun?(id, title, edit) == true { return }
+        openWeb(fallback)
     }
 
     // MARK: Einstellungen (Ops)

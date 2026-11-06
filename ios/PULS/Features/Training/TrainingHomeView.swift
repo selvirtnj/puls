@@ -27,6 +27,8 @@ struct TrainingHomeView: View {
     var showsWebHistoryLink = true
     /// M6: Aktivitäten wie die Web-Karte unter den Routinen (nur mit nativer Aktivitätsoberfläche).
     var activity: ActivityCoordinator? = nil
+    /// `false`, wenn der umgebende Tab die Aktivitäts-Sheets selbst trägt (sonst fehlten sie im Kalender).
+    var hostsActivitySheets = true
     @State private var editor: EditorRequest?
     @State private var showsEmptyStart = false
     @State private var emptyName = ""
@@ -45,7 +47,7 @@ struct TrainingHomeView: View {
         .background(Color(.systemGroupedBackground))
         .environment(\.locale, text.locale)
         .tint(.blue)
-        .modifier(ActivitySheets(coordinator: activity))
+        .modifier(ActivitySheets(coordinator: hostsActivitySheets ? activity : nil))
         .sheet(item: $editor) { request in
             RoutineEditorView(coordinator: coordinator, draft: request.draft, isNew: request.isNew)
         }
