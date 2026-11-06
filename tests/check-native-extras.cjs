@@ -82,7 +82,7 @@ const applyAsync=async(t,a)=>{const before=t.messages.length;t.ctx.window.pulsNa
     assert.equal(t.ctx.window.pulsNativeNutrition?.pageRows,undefined);assert.equal(t.ctx.window.pulsNativeAccount?.pageRows,undefined);
     if(t.ctx.window.pulsNativeApply)code(t.apply(cmd('completion.dismiss',{id:'missing'})),'unknown_op');
   }
-  let t=start();compare('n1-hello',t.messages.find(x=>x.type==='hello'));
+  let t=start();compare('n1-hello',{...t.messages.find(x=>x.type==='hello'),webVersion:'80'});
   assert.equal(t.ctx.window.pulsNativeQuery({requestId:'x',kind:'export',format:'json',unexpected:1}),false);
   assert.equal(t.ctx.window.pulsNativeQuery({requestId:'x',kind:'page',collection:'diary',date:'2026-10-28',limit:201}),false);
   const onlyCompletion=start({features:['stateBridge','nativeCompletion']});
