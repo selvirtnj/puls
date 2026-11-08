@@ -1,0 +1,205 @@
+/* PULS v87 · Lebensmittel hinzufügen als Vollseite (der #modal-Dialog mit Klasse .fpage). Tokens aus design-system.css. */
+html body dialog#modal.fpage[open] {
+  position: fixed !important; inset: 0 !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+  width: 100% !important; max-width: none !important; height: 100% !important; max-height: none !important;
+  margin: 0 !important; padding: 0 !important; border-radius: 0 !important; transform: none;
+  display: flex !important; flex-direction: column; overflow: hidden !important; background: var(--ds-bg) !important;
+}
+:root[data-scheme=dark] body dialog#modal.fpage { --ds-surface: #1C1C1E; --ds-field: #2C2C2E; --ds-fill: #3A3A3C; }
+:root[data-scheme=light] body dialog#modal.fpage { --ds-surface: #FBFBFD; --ds-field: #E9E9EE; }
+html body dialog#modal.fpage::backdrop { background: var(--ds-bg) !important; }
+#modal.fpage .modalhead { display: none !important; }
+#modal.fpage #mb { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 0 !important; padding: 0 !important; overflow: hidden; }
+#modal.fpage #mb > .foodtabs, #modal.fpage #mb > label[hidden] { display: none !important; }
+#modal.fpage #foodbody { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; margin: 0 !important; padding: calc(env(safe-area-inset-top) + 6px) 16px calc(28px + env(safe-area-inset-bottom)) !important; }
+#modal.fpage #foodbody:has(> .fpsearch), #modal.fpage #foodbody:has(> .ffbarcode.fpscanner) { display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; }
+#modal.fpage svg { flex-shrink: 0; }
+
+/* Kopf und Leisten */
+.fpbar { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; margin: 0 -8px 12px; }
+.fpbar h3 { margin: 0 !important; overflow: hidden; font-size: 17px !important; font-weight: 600 !important; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.fpsearch { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.fphead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px 44px; align-items: center; gap: 2px; padding: calc(env(safe-area-inset-top) + 6px) 8px 6px; }
+body dialog.ffsheet.fpage .fphead .ffsearchbar { margin: 0 !important; }
+.fpfilterbtn { position: relative; }
+.fpdot { position: absolute; top: 9px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--ds-orange); }
+.fpdot[hidden] { display: none; }
+.fppickbanner { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: calc(env(safe-area-inset-top) + 6px) 16px 0; font-size: 15px; font-weight: 600; color: var(--ds-label); }
+.fppickbanner + .fphead { padding-top: 4px; }
+.fppickbanner .textbtn { min-height: 44px; }
+
+/* Reiter mit gleitendem Strich */
+.fptabs { position: relative; display: flex; flex: none; overflow-x: auto; scrollbar-width: none; padding: 0 8px; border-bottom: .5px solid var(--ds-separator); }
+.fptabs::-webkit-scrollbar { display: none; }
+.fptab { flex: none; min-height: 44px; padding: 0 12px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--ds-label-2) !important; font-size: 15px !important; font-weight: 500 !important; white-space: nowrap; }
+.fptab[aria-selected=true] { color: var(--ds-label) !important; font-weight: 600 !important; }
+.fpindicator { position: absolute; left: 0; bottom: 0; width: 0; height: 2px; border-radius: 1px; background: var(--ds-accent); pointer-events: none; }
+.fptrack { flex: 1; min-height: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+.fptrack::-webkit-scrollbar { display: none; }
+.fppane { flex: 0 0 100%; width: 100%; min-width: 0; box-sizing: border-box; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; padding: 10px 16px calc(28px + env(safe-area-inset-bottom)); scroll-snap-align: start; scroll-snap-stop: always; }
+.fppane #ff-shortcuts { display: none !important; }
+.fppane #ff-online.fpoffhidden { display: none !important; }
+.fpempty { margin: 18px 2px; font-size: 15px; line-height: 20px; color: var(--ds-label-2); }
+
+/* Schnellzugriffe in „Alle“ */
+.fpquick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
+.fpquick[hidden] { display: none; }
+.fpquick button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 64px; padding: 8px 4px !important; border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; color: var(--ds-label) !important; font-size: 13px !important; font-weight: 500 !important; }
+.fpquick svg { width: 22px; height: 22px; color: var(--ds-accent-text); }
+
+/* Ergebniszeilen: Name, Menge · kcal, Quelle rechts, Plus */
+.fprows, .fppane #results { display: flex; flex-direction: column; border-radius: 12px; background: var(--ds-surface); overflow: hidden; }
+.fppane #results:empty { display: none; }
+.fprow { display: flex; align-items: stretch; min-height: 56px; background: var(--ds-surface); }
+.fprow + .fprow { border-top: .5px solid var(--ds-separator); }
+.fprow.ffhidden { display: none !important; }
+.fprowmain { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px 4px 8px 16px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--ds-label) !important; text-align: left; }
+.fprowtext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fprowtext strong { overflow: hidden; font-size: 15px; font-weight: 500; line-height: 20px; color: var(--ds-label); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.fprowtext small { overflow: hidden; font-size: 13px; line-height: 18px; color: var(--ds-label-2); white-space: nowrap; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.fpstar { color: var(--ds-orange-text); }
+.fprowsrc { flex-shrink: 0; max-width: 92px; overflow: hidden; font-size: 12px; color: var(--ds-label-2); text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.fprowadd { flex: none; display: grid; place-items: center; width: 48px; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--ds-accent-text) !important; }
+.fprowadd svg { width: 20px; height: 20px; }
+.fprowmain:active, .fprowadd:active { background: var(--ds-fill) !important; opacity: 1 !important; }
+.fppane .ffmorebtn { margin: 8px 0 0; }
+.fppane .ffonline { margin-top: 16px; }
+.fppane .ffonline #food-online-results { border-radius: 12px; overflow: hidden; background: var(--ds-surface); }
+.fpactions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin: 0 0 12px; }
+.fpactions.fpsingle { grid-template-columns: 1fr; }
+.fpactions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; margin: 0 !important; border-radius: 8px !important; font-size: 15px !important; }
+.fpactions .btn svg { width: 18px; height: 18px; }
+
+/* Filterblatt (innerhalb der Seite) */
+.fpsheetwrap { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; justify-content: flex-end; }
+.fpscrim { position: absolute; inset: 0; border: 0 !important; border-radius: 0 !important; background: var(--ds-scrim) !important; }
+.fpsheet { position: relative; max-height: 86%; overflow-y: auto; padding: 8px 16px calc(20px + env(safe-area-inset-bottom)); border-radius: 12px 12px 0 0; background: var(--ds-sheet); }
+.fpsheethead { display: flex; align-items: center; justify-content: space-between; min-height: 52px; }
+.fpsheethead h3 { margin: 0 !important; font-size: 17px !important; font-weight: 600 !important; }
+.fpsheethead .textbtn { min-height: 44px; font-size: 17px !important; font-weight: 600 !important; }
+.fpsheet h4 { margin: 14px 0 6px; font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: .02em; color: var(--ds-label-2); }
+.fpoptions { margin: 0; }
+.fpoption { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0 16px !important; border: 0 !important; border-radius: 0 !important; background: var(--ds-surface) !important; color: var(--ds-label) !important; font-size: 17px !important; text-align: left; }
+.fpoption + .fpoption { border-top: .5px solid var(--ds-separator) !important; }
+.fpoption svg { width: 20px; height: 20px; color: var(--ds-accent-text); visibility: hidden; }
+.fpoption[aria-checked=true] svg { visibility: visible; }
+.fpreset { min-height: 44px; margin-top: 8px; }
+
+/* Detailseite */
+#modal.fpage .ffdetailhead { position: sticky; top: calc(-6px - env(safe-area-inset-top)); z-index: 3; margin: -6px -16px 12px !important; padding: calc(env(safe-area-inset-top) + 6px) 8px 6px; background: var(--ds-bg); }
+#modal.fpage .ffdetailtitle { text-align: center; }
+#modal.fpage .ffdetailtitle h3 { font-size: 17px !important; font-weight: 600 !important; letter-spacing: normal !important; }
+.fpfields { margin: 0 0 12px; }
+.fpfield { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; margin: 0 !important; padding: 4px 8px 4px 16px; background: var(--ds-surface); color: var(--ds-label) !important; font-size: 17px !important; font-weight: 400 !important; }
+.fpfield + .fpfield { border-top: .5px solid var(--ds-separator); }
+.fpfield > span { flex-shrink: 0; }
+.fpamountslot { min-width: 0; flex: 0 1 220px; }
+body dialog.ffsheet.fpage .fpamountslot .ffamount { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; margin: 0; }
+body dialog.ffsheet.fpage .fpamountslot .ffamount input { min-height: 40px; text-align: right; }
+.fpunitslot { min-width: 0; flex: 0 1 220px; }
+body dialog.ffsheet.fpage .fpunitslot select { width: 100%; min-height: 40px; margin: 0; text-align: right; text-align-last: right; border: 0 !important; background-color: transparent !important; color: var(--ds-accent-text) !important; font-size: 17px !important; }
+.fplabel { margin: 4px 2px 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .02em; color: var(--ds-label-2); }
+.fpunitnote { margin: 0 2px 8px; font-size: 13px; color: var(--ds-label-2); }
+.fpunitnote .textbtn { min-height: 32px; padding: 0 !important; font-size: 13px !important; }
+#modal.fpage #foodpreview.ffpreview { display: none !important; }
+.fpinfo { display: grid; gap: 12px; margin: 8px 0 12px; }
+.fpsource { margin: 0; font-size: 13px; text-align: center; color: var(--ds-label-2); }
+.fpsection { padding: 12px 16px; border-radius: 12px; background: var(--ds-surface); }
+.fpsection:empty { display: none; }
+.fpsection h4 { margin: 0 0 10px; font-size: 17px; font-weight: 600; color: var(--ds-label); }
+.fpenergy { display: flex; align-items: center; gap: 16px; }
+.fpring { position: relative; width: 112px; height: 112px; flex: none; }
+body dialog#modal.fpage .fpring svg { width: 100% !important; height: 100% !important; }
+body dialog#modal.fpage .fpquick svg, body dialog#modal.fpage .fpscanbar svg { width: 24px; height: 24px; }
+.fppane #results .ffmorebtn { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; width: 100%; margin: 0 !important; border: 0 !important; border-top: .5px solid var(--ds-separator) !important; border-radius: 0 !important; background: var(--ds-surface) !important; color: var(--ds-accent-text) !important; }
+.fparctrack { fill: none; stroke: var(--ds-fill); stroke-width: 9; }
+.fparc { fill: none; stroke-width: 9; stroke-linecap: butt; }
+.fparc.fpp { stroke: var(--fd-p); } .fparc.fpc { stroke: var(--fd-c); } .fparc.fpf { stroke: var(--fd-f); }
+.fpringval { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.fpringval strong, .fpkcalonly strong { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ds-label); }
+.fpringval small, .fpkcalonly small { font-size: 12px; color: var(--ds-label-2); }
+.fpkcalonly { display: flex; align-items: baseline; gap: 4px; }
+.fplegend { flex: 1; min-width: 0; display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fplegend li { display: grid; grid-template-columns: 10px minmax(0, 1fr); column-gap: 8px; align-items: center; font-size: 15px; }
+.fplegend li i { width: 10px; height: 10px; border-radius: 50%; }
+.fplegend li.fpp i { background: var(--fd-p); } .fplegend li.fpc i { background: var(--fd-c); } .fplegend li.fpf i { background: var(--fd-f); }
+.fplegend li strong { grid-column: 2; font-size: 13px; font-weight: 500; color: var(--ds-label-2); font-variant-numeric: tabular-nums; }
+.fpstack { display: flex; }
+.fpstack i { flex: none; border-radius: 4px 0 0 4px !important; }
+.fpstack b { display: block; height: 100%; width: var(--w, 0%); background: var(--ds-accent); opacity: .4; }
+.fdbar.fdp .fpstack b { background: var(--fd-p); } .fdbar.fdc .fpstack b { background: var(--fd-c); } .fdbar.fdf .fpstack b { background: var(--fd-f); }
+.fdbar.fdover .fpstack b { background: var(--ds-orange) !important; }
+#modal.fpage .ffform .ffsubmit { position: sticky; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 2; min-height: 50px; border-radius: 12px !important; }
+#modal.fpage .ffchips.ffportionchips { margin-bottom: 8px; }
+.fpmorebtn svg { width: 22px; height: 22px; }
+
+/* Produkt prüfen / eigene Werte: Einheit vorausgewählt */
+.fpunitline { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 2px 0 0; font-size: 15px; color: var(--ds-label); }
+.fpunitline .textbtn { min-height: 44px; font-size: 15px !important; }
+
+/* Scanner im Vollbild (Web) */
+#modal.fpage .ffbarcode.fpscanner { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #000000; color: #FFFFFF; padding: 0 0 calc(12px + env(safe-area-inset-bottom)); overflow-y: auto; }
+.fpscanhead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; padding: calc(env(safe-area-inset-top) + 6px) 8px 6px; }
+.fpscanhead h3 { margin: 0 !important; font-size: 17px !important; font-weight: 600 !important; text-align: center; color: #FFFFFF !important; }
+.fpscanhead .fdicon { color: #FFFFFF !important; }
+body dialog.ffsheet.fpage .fpscanner .ffcamera { position: relative; flex: 1; min-height: 320px; margin: 0; border-radius: 0; background: #000000; }
+.fpscanner .ffcamera[hidden] { display: none !important; }
+body dialog.ffsheet.fpage .fpscanner .ffscanframe { border-color: #FFFFFF; }
+.fpscanline { position: absolute; left: 22%; right: 22%; top: 50%; height: 2px; border-radius: 1px; background: var(--ds-accent); pointer-events: none; }
+.fpscanhint { position: absolute; left: 16px; right: 16px; top: 16px; margin: 0; font-size: 15px; text-align: center; color: #FFFFFF; }
+.fpscanner .ffcamstop { display: none !important; }
+.fpscanner #ff-camera-start { margin: 24px 16px 0 !important; width: calc(100% - 32px) !important; }
+.fpscanbar { display: flex; justify-content: space-around; gap: 8px; padding: 12px 16px 4px; }
+.fpscanbar button { position: static !important; display: flex !important; flex-direction: column; align-items: center; gap: 4px; min-width: 88px; min-height: 56px; padding: 6px 8px !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: #FFFFFF !important; font-size: 13px !important; font-weight: 500 !important; }
+.fpscanbar button[hidden] { display: none !important; }
+.fpscanbar button::before { content: none !important; }
+.fpscanbar button svg { width: 24px; height: 24px; }
+.fpscanbar #ff-torch[aria-pressed=true] { color: var(--ds-orange) !important; }
+.fpscanner .ffbarcodeform { display: none !important; margin: 8px 16px 0; }
+.fpscanner.fptyping .ffbarcodeform { display: grid !important; }
+.fpscanner .ffstatus, .fpscanner .ffprivacy { margin-left: 16px !important; margin-right: 16px !important; color: #D1D1D6 !important; }
+.fpscanner .ffprivacy a { color: #409CFF !important; }
+
+/* Kombis */
+.fpview { display: block; }
+.fpitems { margin: 0 0 12px; }
+.fpitem, .fppick { display: flex; align-items: center; gap: 10px; min-height: 56px; margin: 0 !important; padding: 6px 8px 6px 16px; background: var(--ds-surface); }
+.fpitem + .fpitem, .fppick + .fppick { border-top: .5px solid var(--ds-separator); }
+.fpitemname { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fpitemname strong { overflow: hidden; font-size: 15px; font-weight: 500; color: var(--ds-label); text-overflow: ellipsis; white-space: nowrap; }
+.fpitemname small { font-size: 12px; color: var(--ds-label-2); font-variant-numeric: tabular-nums; }
+.fpitemamount { flex: 0 0 96px; }
+.fppick input[type=checkbox] { width: 22px; height: 22px; margin: 0; accent-color: var(--ds-accent); }
+.fpmealtotal { margin: 4px 2px 12px; font-size: 13px; color: var(--ds-label-2); font-variant-numeric: tabular-nums; }
+
+/* Feedback beim Tippen */
+.fprowmain, .fprowadd, .fptab, .fpquick button, .fpoption, .fpscanbar button { transition: transform 120ms cubic-bezier(.2, 0, 0, 1), background-color 120ms !important; }
+.fpquick button:active, .fpscanbar button:active { transform: scale(.97); opacity: 1 !important; }
+
+/* ---------- Bewegung ---------- */
+@keyframes fpPushIn { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes fpPushOut { from { transform: none; } to { transform: translateX(100%); } }
+@keyframes fpViewIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes fpSheetUp { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes fpSheetDown { from { transform: none; } to { transform: translateY(100%); } }
+@keyframes fpFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fpScan { 0% { transform: translateY(-70px); } 50% { transform: translateY(70px); } 100% { transform: translateY(-70px); } }
+@keyframes fpRingIn { from { stroke-dasharray: 0 100; } }
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.reduce-motion) body dialog#modal.fpage.sheetarriving[open] { animation: fpPushIn 320ms cubic-bezier(.2, .8, .2, 1) both !important; }
+  html:not(.reduce-motion) body dialog#modal.fpage.sheetclosing[open] { animation: fpPushOut 240ms cubic-bezier(.2, 0, 0, 1) both !important; opacity: 1 !important; }
+  html:not(.reduce-motion) #modal.fpage #foodbody > .ffdetail, html:not(.reduce-motion) #modal.fpage #foodbody > .fpview, html:not(.reduce-motion) #modal.fpage #foodbody > .ffreview { animation: fpViewIn 200ms cubic-bezier(.2, 0, 0, 1) both !important; }
+  html:not(.reduce-motion) .fpindicator { transition: transform 200ms cubic-bezier(.2, .8, .2, 1), width 200ms cubic-bezier(.2, .8, .2, 1) !important; }
+  html:not(.reduce-motion) .fpsheetwrap .fpscrim { animation: fpFade 200ms ease-out both !important; }
+  html:not(.reduce-motion) .fpsheetwrap .fpsheet { animation: fpSheetUp 320ms cubic-bezier(.2, .8, .2, 1) both !important; }
+  html:not(.reduce-motion) .fpsheetwrap.fpclosing .fpsheet { animation: fpSheetDown 180ms ease-in both !important; }
+  html:not(.reduce-motion) .fpsheetwrap.fpclosing .fpscrim { animation: fpFade 180ms ease-in reverse both !important; }
+  html:not(.reduce-motion) .fpscanline { animation: fpScan 2.4s ease-in-out infinite !important; }
+  html:not(.reduce-motion) .fpenergy.fpfirst .fpring .fparc { animation: fpRingIn 320ms cubic-bezier(.2, .8, .2, 1) both !important; }
+  html:not(.reduce-motion) .fpquick button:active { transform: scale(.97); }
+}
+@media (max-width: 370px) {
+  .fpquick button { font-size: 12px !important; }
+  .fpamountslot, .fpunitslot { flex-basis: 180px; }
+  .fpring { width: 96px; height: 96px; }
+}
