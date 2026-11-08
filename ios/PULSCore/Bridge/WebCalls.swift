@@ -250,6 +250,12 @@ public enum WebCall {
         "(typeof window.pulsNativeSetInterest==='function')?window.pulsNativeSetInterest(\(interest.json.serializedString()))!==false:false"
     }
 
+    /// Hybrid (§16) `window.pulsNativeWebFallback(token)`: Native kann das Fenster nicht zeigen, das Web führt den
+    /// ursprünglichen Einstieg selbst aus. `true`, wenn das Web ihn ausgeführt hat.
+    public static func webFallback(token: Int) -> String {
+        "(typeof window.pulsNativeWebFallback==='function')?window.pulsNativeWebFallback(\(token))===true:false"
+    }
+
     /// `nil` für keinen streng gültigen Kalendertag (`YYYY-MM-DD`, existierendes Datum).
     /// Ergebnis des Ausdrucks: `true`, wenn das Web den Tag übernommen hat, sonst `false`.
     public static func setDate(_ day: String) -> String? {

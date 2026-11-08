@@ -30,7 +30,7 @@ struct WorkoutTabView: View {
 
     var body: some View {
         let text = progress.text
-        NavigationStack(path: $progress.path) {
+        NavigationStack(path: mainPath) {
             VStack(spacing: 0) {
                 if progress.offersAny {
                     Picker(text("Bereich", "Section"), selection: segmentBinding) {
@@ -66,10 +66,57 @@ struct WorkoutTabView: View {
         .tint(.blue)
         // Am ganzen Tab: das Aktivitätsdetail öffnet sich auch aus Kalender und Fortschritt.
         .modifier(ActivitySheets(coordinator: activity))
+        // Hybrid: Der Tab liegt verdeckt hinter der Web-Seite; Unterseiten erscheinen als Fenster darüber.
+        .sheet(item: $progress.window, onDismiss: { progress.path = [] }) { window in
+            windowContent(window)
+                .environment(\.locale, text.locale)
+                .tint(.blue)
+        }
     }
 
     private var segmentBinding: Binding<WorkoutSegment> {
         Binding(get: { progress.effectiveSegment }, set: { progress.segment = $0 })
+    }
+
+    /// Im Hybrid gehört `progress.path` dem Fenster; der verdeckte Tab darf dieselben Seiten nicht zusätzlich schieben.
+    private var mainPath: Binding<[ProgressRoute]> {
+        progress.windowsOverWeb ? .constant([]) : $progress.path
+    }
+
+    @ViewBuilder
+    private func windowContent(_ window: ProgressWindow) -> some View {
+        let text = progress.text
+        switch window {
+        case .route(let route):
+            NavigationStack(path: $progress.path) {
+                destination(route)
+                    .background(Color(.systemGroupedBackground))
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button(text("Schließen", "Close")) { progress.closeWindow() }
+                        }
+                    }
+                    .navigationDestination(for: ProgressRoute.self) { next in
+                        destination(next)
+                            .background(Color(.systemGroupedBackground))
+                    }
+            }
+        case .weeklyGoals:
+            if let goals = progress.projection?.weeklyGoals {
+                WeeklyGoalSheet(coordinator: progress, goals: goals)
+            } else {
+                // Die Projektion `progress` wird erst mit dem Fenster angefordert.
+                NavigationStack {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button(text("Schließen", "Close")) { progress.closeWindow() }
+                            }
+                        }
+                }
+            }
+        }
     }
 
     @ViewBuilder

@@ -127,7 +127,7 @@ private struct RecentActivityRow: View {
     }
 }
 
-private struct ActivityConflictRow: View {
+struct ActivityConflictRow: View {
     let coordinator: ActivityCoordinator
     let entry: OutboxEntry
     let text: ActivityText

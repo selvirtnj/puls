@@ -76,6 +76,14 @@ struct TrainingHomeView: View {
             coordinator.requestsEmptyStart = false
             openEmptyStart(text: text)
         }
+        .onChange(of: coordinator.routineEditorRequest, initial: true) { _, request in
+            guard let request else { return }
+            coordinator.routineEditorRequest = nil
+            switch request {
+            case .create: createRoutine(text: text)
+            case .edit(let id): edit(id, text: text)
+            }
+        }
     }
 
     private func content(_ training: TrainingProjection, text: TrainingText) -> some View {

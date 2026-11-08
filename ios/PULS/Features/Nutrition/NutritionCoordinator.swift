@@ -62,6 +62,8 @@ final class NutritionCoordinator {
     var sheet: NutritionSheet?
     /// Startbereich der Suche beim nächsten Öffnen (z. B. „Meine Rezepte“); die Suche übernimmt und leert ihn.
     var searchScopeRequest: NutritionSearchScope?
+    /// Hybrid: Menge des Web-Vorschlags für das nächste Produktblatt; einmal gelesen.
+    var suggestedAmount: Double?
     var notice: TrainingNotice?
     /// Neueste zuletzt; das Banner zeigt das letzte Löschen.
     var undoStack: [NutritionUndo] = []

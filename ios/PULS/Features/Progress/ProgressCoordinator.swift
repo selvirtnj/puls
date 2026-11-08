@@ -18,6 +18,14 @@ enum ProgressRoute: Hashable {
     case indexChart
 }
 
+/// Hybrid: Fenster über der Web-Seite statt einer Unterseite im (dann nicht sichtbaren) Trainings-Tab.
+enum ProgressWindow: Hashable, Identifiable {
+    case route(ProgressRoute)
+    case weeklyGoals
+
+    var id: Self { self }
+}
+
 /// Ladezustand einer Query-Ansicht.
 enum LoadPhase<Value: Equatable>: Equatable {
     case loading
@@ -50,6 +58,10 @@ final class ProgressCoordinator {
     var segment: WorkoutSegment = .training
     /// Pfad des NavigationStacks im Trainings-Tab (Workout-Rückblick, Aktivität, Übungsverlauf).
     var path: [ProgressRoute] = []
+    /// Hybrid: offenes Fenster; `path` gehört dann zu dessen NavigationStack.
+    var window: ProgressWindow?
+    /// Hybrid aktiv (Shell): Unterseiten laufen im Fenster, nicht im Stack des Trainings-Tabs.
+    var windowsOverWeb = false
     var notice: TrainingNotice?
     /// Angezeigter Kalendermonat (`YYYY-MM`); `nil` = Monat von heute.
     var calendarMonth: String?
@@ -112,7 +124,7 @@ final class ProgressCoordinator {
     }
 
     /// Kalender oder Fortschritt ist gewählt (für `pulsNativeSetInterest`).
-    var needsProgressProjection: Bool { effectiveSegment != .training || !path.isEmpty }
+    var needsProgressProjection: Bool { effectiveSegment != .training || !path.isEmpty || window != nil }
 
     /// Heutiger Web-Tag (Projektion), sonst Gerätetag.
     var today: String { projection?.today ?? WeightDay.string(from: Date()) }
@@ -157,10 +169,25 @@ final class ProgressCoordinator {
         path.append(route)
     }
 
+    /// Hybrid: Fenster über der Web-Seite öffnen.
+    func openWindow(_ window: ProgressWindow) {
+        path = []
+        self.window = window
+    }
+
+    func closeWindow() {
+        window = nil
+        path = []
+    }
+
     /// Web-Ausweg (§10.5): eigene Detailansicht vorher schließen, dann die gemeinsame WebView zeigen.
     func openWeb(_ target: ProgressNavigation?) {
         guard let target else { return }
-        if !path.isEmpty { path.removeLast() }
+        if window != nil {
+            closeWindow()
+        } else if !path.isEmpty {
+            path.removeLast()
+        }
         onOpenWeb?(target)
     }
 
@@ -193,6 +220,20 @@ final class ProgressCoordinator {
 
     /// Karte, Details und Bearbeiten einer Aktivität: natives Detail der Aktivitäten, ohne sie das Web-Ziel `fallback`.
     func openRun(id: String, title: String, edit: Bool, fallback: ProgressNavigation?) {
+        // Aus einem Hybrid-Fenster: das Aktivitätsdetail ist selbst ein Blatt am Trainings-Tab, kann also nicht gleichzeitig offen sein.
+        if window != nil {
+            if !edit {
+                show(.run(id: id, name: title))
+                return
+            }
+            closeWindow()
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .milliseconds(450))
+                guard let self else { return }
+                if self.onOpenRun?(id, title, edit) != true { self.openWeb(fallback) }
+            }
+            return
+        }
         if onOpenRun?(id, title, edit) == true { return }
         openWeb(fallback)
     }
@@ -275,6 +316,7 @@ final class ProgressCoordinator {
         defer { seenGeneration = generation }
         guard let seen = seenGeneration, seen != generation else { return }
         path = []
+        window = nil
         calendarDay = nil
         notice = nil
     }

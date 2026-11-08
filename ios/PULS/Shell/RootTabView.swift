@@ -95,6 +95,13 @@ struct OverviewActions {
 
 @MainActor
 final class RootTabShell: NSObject, UITabBarDelegate {
+    /// **Der eine Schalter** für den Hybrid-Modus (Protokoll §16): Übersicht, Training und Essen zeigen die Web-Seite mit
+    /// Web-Kopf und Datum unter der nativen Leiste; Einstiege dort öffnen native Fenster. Konto und Plus bleiben nativ.
+    /// `false` = bisherige native Hauptansichten (die App meldet dann auch `nativeWebPages` nicht mehr ans Web).
+    static let webPagesMode = true
+    /// `openNative{screen:'window'}` des Hybrid-Modus.
+    static let windowScreen = "window"
+
     private let store: ProfileStore
     private let bridge: StateBridge
     private let state = ShellState()
@@ -116,6 +123,17 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     private var headerHeightConstraint: NSLayoutConstraint?
     private var activeConstraints: [NSLayoutConstraint] = []
     private var inactiveConstraints: [NSLayoutConstraint] = []
+    /// Hybrid: WebView vom oberen Rand (Web-Kopf mit eigener Safe Area) bis zur Leiste.
+    private var webPageConstraints: [NSLayoutConstraint] = []
+    /// Hybrid: Hinweise, „Rückgängig“ und Konflikte nativer Fenster direkt über der Leiste.
+    private var overlayHost: UIHostingController<WebPagesOverlay>?
+    private var overlayHeightConstraint: NSLayoutConstraint?
+    /// Hybrid in diesem Dokument angewandt (Leiste aktiv, Web meldet `nativeWebPages`, Schalter an).
+    private var webPages = false
+    private var stackedWebPages: Bool?
+    /// Hybrid: natives Konto beim Verlassen kurz stehen lassen, bis die Web-Seite gewechselt hat (kein Aufblitzen der Web-Kontoseite).
+    private var accountHold = false
+    private var accountHoldToken = 0
 
     /// „Übersicht“ ist ausgewählt, zeigt aber die Web-Seite (nach einer Aktion mit Web-Modal/Session,
     /// nach `navigate{web:true}` oder per Ausweichknopf), bis die native Übersicht bewusst wieder gewählt wird.
@@ -159,6 +177,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     /// Erststart: einmal, sobald die native Hülle darstellbar ist (sichtbarer Tab mit erster Projektion) oder
     /// feststeht, dass dieses Dokument im Web-Modus bleibt. Der Host blendet dann seinen Startbildschirm aus.
     var onReady: (() -> Void)?
+    /// Nach jeder Neuordnung der Ebenen (Hybrid ↔ bisher): der Host holt seinen Startbildschirm wieder nach vorn.
+    var onStackChange: (() -> Void)?
     private var reportedReady = false
     /// Natives Plus-Menü, solange es offen ist.
     private weak var quickAddController: UIViewController?
@@ -241,6 +261,18 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             accountView = nil
         }
 
+        let overlayView: UIView?
+        if Self.webPagesMode {
+            let hosting = UIHostingController(rootView: WebPagesOverlay(store: store, nutrition: nutrition, training: training,
+                                                                         progress: progress, activity: activity))
+            hosting.sizingOptions = .intrinsicContentSize
+            hosting.view.backgroundColor = .clear
+            overlayHost = hosting
+            overlayView = hosting.view
+        } else {
+            overlayView = nil
+        }
+
         statusFill.backgroundColor = .systemGroupedBackground
         header.view.backgroundColor = .systemGroupedBackground
         overview.view.backgroundColor = .systemGroupedBackground
@@ -257,8 +289,9 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         if let trainingHost { host.addChild(trainingHost) }
         if let nutritionHost { host.addChild(nutritionHost) }
         if let accountHost { host.addChild(accountHost) }
+        if let overlayHost { host.addChild(overlayHost) }
         webView.translatesAutoresizingMaskIntoConstraints = false
-        for view in ([statusFill, header.view, overview.view, trainingView, nutritionView, accountView, tabBar] as [UIView?]).compactMap({ $0 }) {
+        for view in ([statusFill, header.view, overview.view, trainingView, nutritionView, accountView, overlayView, tabBar] as [UIView?]).compactMap({ $0 }) {
             view.translatesAutoresizingMaskIntoConstraints = false
             view.isHidden = true
             root.addSubview(view)
@@ -277,6 +310,18 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         trainingHost?.didMove(toParent: host)
         nutritionHost?.didMove(toParent: host)
         accountHost?.didMove(toParent: host)
+        overlayHost?.didMove(toParent: host)
+        if let overlayView {
+            let height = overlayView.heightAnchor.constraint(equalToConstant: 0)
+            height.priority = .required
+            overlayHeightConstraint = height
+            NSLayoutConstraint.activate([
+                height,
+                overlayView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                overlayView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                overlayView.bottomAnchor.constraint(equalTo: tabBar.topAnchor),
+            ])
+        }
         if let accountView {
             NSLayoutConstraint.activate([
                 accountView.topAnchor.constraint(equalTo: header.view.bottomAnchor),
@@ -335,6 +380,10 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             webView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
             webView.bottomAnchor.constraint(equalTo: tabBar.topAnchor),
         ]
+        webPageConstraints = [
+            webView.topAnchor.constraint(equalTo: root.topAnchor),
+            webView.bottomAnchor.constraint(equalTo: tabBar.topAnchor),
+        ]
         NSLayoutConstraint.activate(inactiveConstraints)
         observeStore()
     }
@@ -344,6 +393,14 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     func layoutHeader() {
         guard let header = headerHost, let constraint = headerHeightConstraint, let root = host?.viewIfLoaded,
               root.bounds.width > 0 else { return }
+        // Hybrid-Overlay: natürliche Höhe bei voller Breite (mehrzeilige Hinweise), ohne Inhalt 0 pt.
+        if let overlay = overlayHost, let overlayHeight = overlayHeightConstraint {
+            let size = overlay.sizeThatFits(in: CGSize(width: root.bounds.width, height: root.bounds.height / 2))
+            if size.height.isFinite, size.height >= 0 {
+                let height = min(ceil(size.height), root.bounds.height / 2)
+                if abs(overlayHeight.constant - height) > 0.5 { overlayHeight.constant = height }
+            }
+        }
         let fitting = header.sizeThatFits(in: CGSize(width: root.bounds.width, height: UIView.layoutFittingExpandedSize.height))
         // Nie mehr als ein Drittel des Bildschirms; ungültige Messung → alte Höhe behalten.
         guard fitting.height.isFinite, fitting.height > 0 else { return }
@@ -414,8 +471,10 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         // Auch ohne native Leiste: Fenster (und damit WebView/Statusleiste) folgen dem Web-Wunsch.
         updateScheme(projection)
         applyWindowStyle()
-        if active != isActive || hideBars != barsHiddenForSession {
-            setActive(active, hideBars: hideBars)
+        // Hybrid nur mit Schalter, aktiver Leiste und Web-Zusage in diesem Dokument (alter Web-Stand: bisheriges Verhalten).
+        let webPages = active && Self.webPagesMode && store.webOffersWebPages
+        if active != isActive || hideBars != barsHiddenForSession || webPages != self.webPages {
+            setActive(active, hideBars: hideBars, webPages: webPages)
         } else if reconfirm, isActive, !barsHiddenForSession {
             sendChrome(true)
         }
@@ -451,19 +510,23 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         onReady()
     }
 
-    private func setActive(_ active: Bool, hideBars: Bool) {
+    private func setActive(_ active: Bool, hideBars: Bool, webPages: Bool = false) {
         let wasActive = isActive
         isActive = active
         barsHiddenForSession = hideBars
+        self.webPages = webPages && active
+        progress?.windowsOverWeb = self.webPages
+        if !self.webPages { progress?.window = nil }
         if active, !wasActive, let page = store.currentWebPage, let tab = RootTab(rawValue: page), tab != .add {
             state.selected = tab
         }
         let barsVisible = active && !hideBars
-        NSLayoutConstraint.deactivate(barsVisible ? inactiveConstraints : activeConstraints)
-        NSLayoutConstraint.activate(barsVisible ? activeConstraints : inactiveConstraints)
-        for view in [statusFill, headerHost?.view, tabBar] as [UIView?] {
-            view?.isHidden = !barsVisible
-        }
+        let target = !barsVisible ? inactiveConstraints : self.webPages ? webPageConstraints : activeConstraints
+        NSLayoutConstraint.deactivate(inactiveConstraints + activeConstraints + webPageConstraints)
+        NSLayoutConstraint.activate(target)
+        tabBar.isHidden = !barsVisible
+        applyStacking()
+        updateChromeViews()
         host?.view.layoutIfNeeded()
         // Sichtbar → `true`; versteckt (auch für eine Session/Aktivität) → `false`. Während `session`/`run` hält
         // das Web seine Leiste dann selbst ausgeblendet; danach bestätigt Native erneut mit `true`.
@@ -489,17 +552,158 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         }
     }
 
+    // MARK: Hybrid (Protokoll §16)
+
+    /// Ebenen: im Hybrid liegen Trainings- und Essen-Host **hinter** der deckenden WebView („Hinterbühne“). Sie bleiben
+    /// eingeblendet, damit ihre Blätter (Session-Start, Routineneditor, Suche, Detail …) ohne doppelte Koordinatorlogik
+    /// präsentiert werden können. Konto, Kopf, Overlay und Leiste liegen darüber.
+    private func applyStacking() {
+        guard stackedWebPages != webPages, let root = host?.viewIfLoaded, let webView else { return }
+        stackedWebPages = webPages
+        let order: [UIView?] = webPages
+            ? [overviewHost?.view, trainingHost?.view, nutritionHost?.view, webView, statusFill, headerHost?.view,
+               accountHost?.view, overlayHost?.view, tabBar]
+            : [webView, statusFill, headerHost?.view, overviewHost?.view, trainingHost?.view, nutritionHost?.view,
+               accountHost?.view, overlayHost?.view, tabBar]
+        for case let view? in order { root.bringSubviewToFront(view) }
+        onStackChange?()
+    }
+
+    /// Statusfläche und nativer Seitenkopf: bisher auf allen Tabs, im Hybrid nur über dem nativen Konto.
+    private func updateChromeViews() {
+        let barsVisible = isActive && !barsHiddenForSession
+        let header = barsVisible && (!webPages || showsNativeAccount || accountHold)
+        statusFill.isHidden = !header
+        headerHost?.view.isHidden = !header
+        overlayHost?.view.isHidden = !(webPages && barsVisible && !showsNativeAccount && !accountHold)
+    }
+
+    /// `openNative{screen:'window'}`: natives Fenster über der Web-Seite. Kann Native es nicht zeigen, führt das Web
+    /// den ursprünglichen Einstieg selbst aus (`pulsNativeWebFallback(token)`) – nie ein toter Knopf.
+    func openWindow(_ open: OpenNativeMessage) {
+        _ = store.consumeScreenRequest()
+        // Ein Blatt ist schon offen (Doppeltipp): nichts doppelt zeigen und keinen Web-Dialog darunter öffnen.
+        if let host, host.presentedViewController != nil, isActive { return }
+        if webPages, isActive, !barsHiddenForSession, !state.isBlocked, showWindow(open) {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            return
+        }
+        if let token = open.token { bridge.webFallback(token: token) }
+    }
+
+    private func showWindow(_ open: OpenNativeMessage) -> Bool {
+        switch open.window {
+        case "food":
+            guard let nutrition, nutritionSearchAvailable, nutrition.canWrite else { return false }
+            switch open.tab ?? "search" {
+            case "search":
+                nutrition.present(.search)
+            case "recipes":
+                nutrition.searchScopeRequest = .recipes
+                nutrition.present(.search)
+            case "barcode":
+                guard nutrition.nativeBarcode else { return false }
+                nutrition.present(.barcode)
+            case "photo":
+                guard nutrition.nativeLabel else { return false }
+                nutrition.present(.label)
+            case "custom":
+                guard nutrition.nativeProductSave else { return false }
+                nutrition.present(.custom)
+            default:
+                return false
+            }
+            return true
+        case "foodEntry":
+            guard let nutrition, let id = open.id else { return false }
+            return nutrition.handleOverviewAction("editFood", id: id)
+        case "foodProduct":
+            guard let nutrition, nutritionSearchAvailable, nutrition.canWrite, let id = open.id else { return false }
+            nutrition.suggestedAmount = open.amount
+            nutrition.present(.product(.id(id)))
+            return true
+        case "waterGoal":
+            guard let nutrition, nutrition.isOffered, nutrition.canWrite else { return false }
+            nutrition.present(.waterGoal)
+            return true
+        case "weight":
+            return openWeightEditor?(open.date ?? store.currentProjection?.overview.date) == true
+        case "startWorkout":
+            guard let training, progress != nil || trainingHost != nil else { return false }
+            progress?.segment = .training
+            return training.requestEmptyStart()
+        case "startRoutine":
+            guard let training, let id = open.id else { return false }
+            return training.handleOverviewAction("startRoutine", id: id)
+        case "routine":
+            guard let training else { return false }
+            progress?.segment = .training
+            return training.openRoutineEditor(id: open.id)
+        case "workoutReview":
+            guard let progress, progress.offersAny, let id = open.id else { return false }
+            progress.openWindow(.route(.workout(id: id, name: open.title ?? "")))
+            return true
+        case "exerciseHistory":
+            guard let progress, progress.offersAny, let id = open.id else { return false }
+            progress.openWindow(.route(.exercise(id: id, name: open.title ?? "")))
+            return true
+        case "indexChart":
+            guard let progress, progress.offersProgress, progress.offersIndexChart else { return false }
+            progress.openWindow(.route(.indexChart))
+            return true
+        case "weeklyGoals":
+            guard let progress, progress.offersProgress, progress.canWrite else { return false }
+            progress.openWindow(.weeklyGoals)
+            return true
+        case "runDetail":
+            guard let activity, activity.isOffered, let id = open.id else { return false }
+            activity.detail = ActivityDetailRequest(id: id, title: open.title ?? "")
+            return true
+        case "routes":
+            guard let activity, activity.isOffered else { return false }
+            activity.showsRoutes = true
+            return true
+        case "date":
+            return presentDatePicker(day: open.date ?? store.currentProjection?.overview.date)
+        default:
+            return false
+        }
+    }
+
+    /// Datumswahl wie der native Kopf, als Blatt über der Web-Seite.
+    private func presentDatePicker(day: String?) -> Bool {
+        guard let host, host.viewIfLoaded?.window != nil, host.presentedViewController == nil else { return false }
+        let initial = day.flatMap { WeightDay.date(from: $0) } ?? Date()
+        let sheet = DayPickerSheet(initial: initial, text: currentText, onPick: { [weak self] day in
+            self?.host?.dismiss(animated: true)
+            self?.setDate(day)
+        }, onClose: { [weak self] in
+            self?.host?.dismiss(animated: true)
+        })
+        let controller = UIHostingController(rootView: sheet)
+        controller.overrideUserInterfaceStyle = style
+        controller.modalPresentationStyle = .pageSheet
+        controller.sheetPresentationController?.detents = [.medium(), .large()]
+        host.present(controller, animated: true)
+        return true
+    }
+
+    /// Essen-Seite zeigen (Hybrid: Web-Seite, sonst wie bisher der Tab).
+    private func showFoodPage() {
+        if let target = NavigationTarget(page: "food") { perform(target) }
+    }
+
     // MARK: Sichtbarkeit
 
     private var showsNativeOverview: Bool {
         // Ein offener Web-Ablauf (`chrome.blocking`) wird nie von der nativen Übersicht überdeckt.
-        isActive && !barsHiddenForSession && !state.isBlocked && state.selected == .home && !homeShowsWeb
+        !webPages && isActive && !barsHiddenForSession && !state.isBlocked && state.selected == .home && !homeShowsWeb
             && store.webOffersOverview
     }
 
     /// M4: nativer Trainings-Tab; nie über einem offenen Web-Ablauf oder der Web-Abschlussansicht.
     private var showsNativeTraining: Bool {
-        guard let training, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .workout,
+        guard !webPages, let training, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .workout,
               !workoutShowsWeb, !workoutFlowHidden else { return false }
         // M5: auch ohne Trainings-Projektion, wenn Kalender/Fortschritt nativ angeboten werden.
         // M6: nach dem Speichern einer Aktivität zeigt das Web seinen Endscreen; bis dahin nicht überdecken.
@@ -558,7 +762,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
 
     /// M7: nativer Essen-Tab; nie über einem offenen Web-Ablauf.
     private var showsNativeNutrition: Bool {
-        guard let nutrition, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .food,
+        guard !webPages, let nutrition, isActive, !barsHiddenForSession, !state.isBlocked, state.selected == .food,
               !foodShowsWeb, !foodFlowHidden else { return false }
         return nutrition.isOffered
     }
@@ -605,6 +809,8 @@ final class RootTabShell: NSObject, UITabBarDelegate {
 
     /// M7: Essen-Tab wählen (z. B. „Essen eintragen“ aus der Übersicht), nativ.
     func selectFoodTab() {
+        // Hybrid: Fenster öffnen sich über der aktuellen Web-Seite; danach steht man wieder genau dort.
+        if webPages { return }
         if let target = NavigationTarget(page: "food") { perform(target) }
     }
 
@@ -717,11 +923,16 @@ final class RootTabShell: NSObject, UITabBarDelegate {
                 names.insert(TrainingProjectionMessage.trainingName)
             }
         }
-        if workoutVisible, !sessionOpen, progress?.needsProgressProjection == true {
+        // Hybrid: Web-Einstiege (Training starten/fortsetzen) brauchen die Trainings-Projektion auf jeder Seite.
+        if webPages, training != nil { names.insert(TrainingProjectionMessage.trainingName) }
+        if workoutVisible || webPages, !sessionOpen, progress?.needsProgressProjection == true {
             names.insert(ProgressProjectionMessage.progressName)
         }
-        // M7: Ernährung nur, solange der native Essen-Tab sichtbar ist (bei Verlassen widerrufen).
-        if showsNativeNutrition { names.insert(NutritionProjectionMessage.nutritionName) }
+        // M7: Ernährung nur, solange der native Essen-Tab sichtbar ist (bei Verlassen widerrufen); im Hybrid, solange
+        // ein Essen-Fenster offen ist.
+        if showsNativeNutrition || (webPages && nutrition?.sheet != nil) {
+            names.insert(NutritionProjectionMessage.nutritionName)
+        }
         // M8: Konto nur, solange der native Konto-Tab sichtbar ist (bei Verlassen widerrufen).
         if showsNativeAccount { names.insert(AccountProjectionMessage.accountName) }
         bridge.setInterest(ProjectionInterest(names.intersection(offered)), hello: store.helloCount)
@@ -731,8 +942,11 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         let showOverview = showsNativeOverview
         let showTraining = showsNativeTraining
         let showNutrition = showsNativeNutrition
-        let showAccount = showsNativeAccount
-        nutritionHost?.view.isHidden = !showNutrition
+        let showAccount = showsNativeAccount || accountHold
+        // Hybrid: Hinterbühne (siehe `applyStacking`) – sichtbar für Blätter, aber nicht für VoiceOver.
+        let backstage = webPages
+        nutritionHost?.view.isHidden = !(showNutrition || backstage)
+        nutritionHost?.view.accessibilityElementsHidden = backstage && !showNutrition
         accountHost?.view.isHidden = !showAccount
         // Seitenkopf: Unterseite des nativen Kontos bzw. der Web-Kontoseite.
         let nativeSection = showAccount ? account?.visibleSection : nil
@@ -741,9 +955,11 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         overviewHost?.view.isHidden = !showOverview
         // M5: Rückkehr aus einem Web-Ablauf/anderen Tab: sichtbare Monate/Details neu laden (Web könnte geändert haben).
         if showTraining, trainingHost?.view.isHidden == true { progress?.refreshToken += 1 }
-        trainingHost?.view.isHidden = !showTraining
+        trainingHost?.view.isHidden = !(showTraining || backstage)
+        trainingHost?.view.accessibilityElementsHidden = backstage && !showTraining
         // Verdeckte Web-Inhalte nicht für VoiceOver erreichbar lassen; die WebView selbst bleibt sichtbar.
         webView?.accessibilityElementsHidden = showOverview || showTraining || showNutrition || showAccount
+        updateChromeViews()
         syncSelection()
         reportInterest()
     }
@@ -966,7 +1182,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     private func addWaterQuick() {
         guard let nutrition, nutrition.isOffered,
               let day = store.currentProjection?.overview.date ?? nutrition.projection?.date else {
-            selectFoodTab()
+            showFoodPage()
             return
         }
         if nutrition.addWater(on: day) {
@@ -974,7 +1190,7 @@ final class RootTabShell: NSObject, UITabBarDelegate {
             UIAccessibility.post(notification: .announcement,
                                  argument: text("250 ml Wasser hinzugefügt", "250 ml of water added"))
         } else {
-            selectFoodTab()
+            showFoodPage()
         }
     }
 
@@ -1042,6 +1258,13 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         // Rückkehr nur vormerken, wenn die Aktion aus der sichtbaren nativen Übersicht startet
         // (nicht aus der Web-Übersicht nach „Verlauf ansehen“ o. Ä.).
         let startedFromNativeOverview = showsNativeOverview
+        // Hybrid: Konto verlassen → natives Konto bleibt stehen, bis das Web die neue Seite gezeichnet hat.
+        var holdToken: Int?
+        if webPages, showsNativeAccount, case .page(let page, _, _) = target, page != RootTab.account.rawValue {
+            accountHold = true
+            accountHoldToken += 1
+            holdToken = accountHoldToken
+        }
         switch target {
         case .page(let page, _, let web):
             restoreOverviewAfterFlow = false
@@ -1066,7 +1289,17 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         }
         updateVisibility()
         bridge.navigate(target) { [weak self] accepted in
-            guard let self, !accepted else { return }
+            guard let self else { return }
+            if let holdToken {
+                Task { @MainActor [weak self] in
+                    // Ein Frame für das Zeichnen der neuen Web-Seite.
+                    try? await Task.sleep(for: .milliseconds(40))
+                    guard let self, self.accountHoldToken == holdToken else { return }
+                    self.accountHold = false
+                    self.updateVisibility()
+                }
+            }
+            guard !accepted else { return }
             // Nur zurücksetzen, wenn inzwischen kein Web-`navigate` die Auswahl bestimmt hat.
             if self.state.selected == (RootTab(rawValue: target.pageName ?? "") ?? previousTab) {
                 self.state.selected = previousTab
@@ -1124,9 +1357,10 @@ final class RootTabShell: NSObject, UITabBarDelegate {
 
     private func applyStyle(_ newStyle: UIUserInterfaceStyle) {
         for view in [statusFill, tabBar, headerHost?.view, overviewHost?.view, trainingHost?.view, nutritionHost?.view,
-                     accountHost?.view] as [UIView?] {
+                     accountHost?.view, overlayHost?.view] as [UIView?] {
             view?.overrideUserInterfaceStyle = newStyle
         }
+        overlayHost?.overrideUserInterfaceStyle = newStyle
         headerHost?.overrideUserInterfaceStyle = newStyle
         overviewHost?.overrideUserInterfaceStyle = newStyle
         trainingHost?.overrideUserInterfaceStyle = newStyle
@@ -1255,12 +1489,15 @@ private struct DayPickerSheet: View {
     @State private var selection: Date
     let text: OverviewText
     let onPick: (String) -> Void
+    /// Hybrid: von UIKit präsentiert; dann schließt der Präsentierer (nicht `dismiss` der SwiftUI-Umgebung).
+    let onClose: (() -> Void)?
 
-    init(initial: Date, text: OverviewText, onPick: @escaping (String) -> Void) {
+    init(initial: Date, text: OverviewText, onPick: @escaping (String) -> Void, onClose: (() -> Void)? = nil) {
         // Einmaliger Startwert der Auswahl.
         _selection = State(initialValue: initial)
         self.text = text
         self.onPick = onPick
+        self.onClose = onClose
     }
 
     var body: some View {
@@ -1273,7 +1510,9 @@ private struct DayPickerSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button(text("Abbrechen", "Cancel")) { dismiss() }
+                        Button(text("Abbrechen", "Cancel")) {
+                            if let onClose { onClose() } else { dismiss() }
+                        }
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button(text("Fertig", "Done")) { onPick(WeightDay.string(from: selection)) }

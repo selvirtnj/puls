@@ -658,7 +658,7 @@ private struct RunningSection: View {
 
 // MARK: - Konflikte
 
-private struct ProgressConflictSection: View {
+struct ProgressConflictSection: View {
     let coordinator: ProgressCoordinator
     let text: ProgressText
 

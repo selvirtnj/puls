@@ -99,7 +99,8 @@ struct NutritionProductView: View {
                 unitKey = detail.defaultUnit?.key
             }
             if amountText.isEmpty {
-                let start = detail.defaultAmount.flatMap { $0 > 0 ? $0 : nil } ?? 100
+                let start = coordinator.suggestedAmount ?? detail.defaultAmount.flatMap { $0 > 0 ? $0 : nil } ?? 100
+                coordinator.suggestedAmount = nil
                 amountText = NutritionInput.text(start, locale: coordinator.text.locale)
             }
             // Bei jedem Stand neu: das Rohrezept ist die Erwartung für Kopieren und Löschen.

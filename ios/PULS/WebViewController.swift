@@ -77,7 +77,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // Projektion 'account' nur nach pulsNativeSetInterest. Anmeldung/Abmeldung/Konflikt/Import/Reset/Löschen/Export bleiben Web.
         // 'nativeCompletion'/'nativeExtras' (N1): native Abschlüsse, Seiten, Indexchart, Export, Teilen. Ein Web-Stand ohne N1
         // ignoriert beide; Native nutzt sie erst, wenn das Hello sie meldet.
-        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress','nativeActivity','nativeNutrition','nativeAccount','nativeCompletion','nativeExtras'"
+        // 'nativeWebPages' (Hybrid, Protokoll §16): Web-Hauptseiten unter der nativen Leiste, Einstiege öffnen native Fenster.
+        // Der einzige Schalter steht in `RootTabShell.webPagesMode`; ohne ihn gilt wieder die native Hauptansicht.
+        let webPagesFeature = RootTabShell.webPagesMode ? ",'\(ProfileStore.nativeWebPagesFeature)'" : ""
+        let stateFeature = stateBridge == nil ? "" : ",'stateBridge','nativeBody','nativeTabs','nativeOverview','nativeTraining','nativeProgress','nativeActivity','nativeNutrition','nativeAccount','nativeCompletion','nativeExtras'\(webPagesFeature)"
         config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'\(stateFeature)];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -93,7 +96,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             accountCoordinator = account
             let shell = RootTabShell(store: store, bridge: stateBridge)
             stateBridge.onOpenNative = { [weak router, weak training, weak activity, weak account, weak shell] open in
-                if open.screen == TrainingCoordinator.screen {
+                if open.screen == RootTabShell.windowScreen {
+                    // Hybrid: natives Fenster über der Web-Seite oder Rückfall auf den Web-Einstieg.
+                    shell?.openWindow(open)
+                } else if open.screen == TrainingCoordinator.screen {
                     training?.openFromWeb(workoutId: open.workoutId)
                 } else if open.screen == ActivityCoordinator.screen {
                     activity?.openFromWeb(startedAt: open.startedAt, routeId: open.routeId)
@@ -111,6 +117,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             shell.openBody = { [weak router] in router?.open(NativeRouter.bodyScreen) }
             shell.openWeightEditor = { [weak router] day in router?.openWeightEditor(day: day) ?? false }
             shell.onReady = { [weak self] in self?.hideSplash() }
+            shell.onStackChange = { [weak self] in
+                guard let self, let splash = self.splash else { return }
+                self.view.bringSubviewToFront(splash)
+            }
             shell.account = account
             account.onOpenWeb = { [weak shell] exit in shell?.openAccountWeb(exit) }
             account.onSelectAccountTab = { [weak shell] in shell?.selectAccountTab() }

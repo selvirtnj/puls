@@ -79,6 +79,17 @@ final class BridgeMessagesTests: XCTestCase {
         XCTAssertEqual(try decode("navigate"), .navigate(NavigateMessage(page: "account")))
     }
 
+    /// Hybrid §16: Fensterwunsch mit Rückfall-Token; unerwartete Werte werden nachsichtig verworfen.
+    func testOpenNativeWindowFixture() throws {
+        XCTAssertEqual(try decode("open-native-window"),
+                       .openNative(OpenNativeMessage(screen: "window", window: "foodProduct", token: 3, id: "base8", amount: 150)))
+        let lenient = #"{"type":"openNative","protocol":1,"screen":"window","window":"","token":1.5,"amount":-2,"date":7,"tab":"barcode"}"#
+        guard case .openNative(let open)? = try InboundMessage.decode(JSONValue.parse(lenient)) else { return XCTFail("openNative erwartet") }
+        XCTAssertEqual(open, OpenNativeMessage(screen: "window", tab: "barcode"))
+        XCTAssertEqual(WebCall.webFallback(token: 3),
+                       "(typeof window.pulsNativeWebFallback==='function')?window.pulsNativeWebFallback(3)===true:false")
+    }
+
     func testMessageWithoutTypeIsIgnored() throws {
         XCTAssertNil(try decode("invalid-message-no-type"))
     }
@@ -131,7 +142,7 @@ final class BridgeMessagesTests: XCTestCase {
     }
 
     func testInboundMessagesRoundTripThroughJSON() throws {
-        for name in ["hello", "snapshot", "ack-ok", "ack-error", "open-native", "navigate", "projection",
+        for name in ["hello", "snapshot", "ack-ok", "ack-error", "open-native", "open-native-window", "navigate", "projection",
                      "training-projection", "ack-training-start"] {
             let message = try XCTUnwrap(decode(name), name)
             XCTAssertEqual(try InboundMessage.decode(message.json), message, name)

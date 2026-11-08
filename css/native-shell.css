@@ -1,16 +1,20 @@
-/* Native owns the tab bar, page title and diary date controls only in this negotiated mode. */
+/* Native owns the tab bar in this negotiated mode. Without puls-native-webpages it also owns page title and diary date. */
 html.puls-native-tabs body > aside,
 html.puls-native-tabs body #nav,
 html.puls-native-tabs body main > header,
-html.puls-native-tabs body main .titleline,
-html.puls-native-tabs body main .datebar {
+html.puls-native-tabs:not(.puls-native-webpages) body main .titleline,
+html.puls-native-tabs:not(.puls-native-webpages) body main .datebar {
   display: none !important;
 }
 html.puls-native-tabs body main {
   margin-left: 0 !important;
-  padding-top: 12px !important;
   padding-bottom: 16px !important;
 }
+html.puls-native-tabs:not(.puls-native-webpages) body main { padding-top: 12px !important; }
+/* Hybrid: the WebView reaches up under the status bar and ends above the native bar. */
+html.puls-native-tabs.puls-native-webpages body main { padding-top: max(12px, env(safe-area-inset-top)) !important; }
+/* The native index-chart row is rendered hidden; only the confirmed hybrid shows it. */
+html.puls-native-tabs.puls-native-webpages body .dsnativeindexwrap[hidden] { display: block !important; margin-top: 8px; }
 html.puls-native-tabs body.hasworkoutdock main { padding-bottom: 88px !important; }
 html.puls-native-tabs body #ds-connectivity { bottom: 8px !important; }
 /* The WebView ends above the native bar; it owns no bottom safe area or Web tab-bar reserve. */

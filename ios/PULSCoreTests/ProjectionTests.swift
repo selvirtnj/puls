@@ -197,6 +197,21 @@ final class ProjectionTests: XCTestCase {
         store.receive(.hello(HelloMessage(webVersion: "74", features: ["nativeTabs"])))
         XCTAssertTrue(store.webOffersNativeTabs)
         XCTAssertFalse(store.webOffersOverview, "Tabs ohne angekündigte Projektion: Übersicht bleibt Web")
+        XCTAssertFalse(store.webOffersWebPages, "ohne nativeWebPages im Hello: bisherige native Hauptansichten")
+    }
+
+    /// Hybrid §16: nur mit `nativeTabs` **und** `nativeWebPages` im Hello desselben Dokuments, nie bei ungeklärter Zuordnung.
+    @MainActor
+    func testWebPagesNeedsTabsAndFeatureInHello() throws {
+        let store = try makeStore()
+        store.receive(.hello(HelloMessage(webVersion: "80", features: [ProfileStore.nativeWebPagesFeature])))
+        XCTAssertFalse(store.webOffersWebPages, "ohne nativeTabs keine Web-Seiten-Variante")
+        store.receive(.hello(HelloMessage(webVersion: "80", features: ["nativeTabs", ProfileStore.nativeWebPagesFeature])))
+        XCTAssertTrue(store.webOffersWebPages)
+        store.receive(.hello(HelloMessage(webVersion: "80", ownerPending: true, features: ["nativeTabs", ProfileStore.nativeWebPagesFeature])))
+        XCTAssertFalse(store.webOffersWebPages)
+        store.webDocumentDidChange()
+        XCTAssertFalse(store.webOffersWebPages)
     }
 
     @MainActor

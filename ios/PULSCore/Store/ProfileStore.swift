@@ -714,6 +714,12 @@ public final class ProfileStore {
         return hello.features.contains(Self.nativeTabsFeature)
     }
 
+    /// Hybrid (§16): dieses Dokument zeigt seine Hauptseiten unter der nativen Leiste und leitet Einstiege an native Fenster.
+    /// Das Web meldet es nur, wenn die App `nativeWebPages` injiziert hat; ein alter Web-Stand meldet es nie.
+    public var webOffersWebPages: Bool {
+        webOffersNativeTabs && documentHello?.features.contains(Self.nativeWebPagesFeature) == true
+    }
+
     /// Zusätzlich kündigt das Web die Übersichts-Projektion an.
     public var webOffersOverview: Bool {
         webOffersNativeTabs && documentHello?.projections.contains(ProjectionMessage.overviewName) == true
@@ -731,6 +737,7 @@ public final class ProfileStore {
     /// die Projektion). Das Web meldet in `hello.features` nur `nativeTabs`.
     public static let nativeTabsFeature = "nativeTabs"
     public static let nativeOverviewFeature = "nativeOverview"
+    public static let nativeWebPagesFeature = "nativeWebPages"
 
     /// Neues Web-Dokument (Navigation übernommen, Neuladen, Offline-Seite): Dokument-Hello, Projektion und deren
     /// Sequenzprüfung verwerfen. Spiegel, Outbox und `webInfo` bleiben unverändert (M1/M2-Regeln).

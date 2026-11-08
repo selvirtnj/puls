@@ -26,6 +26,9 @@ const nutritionAdapter=()=>nutritionFeature&&typeof window.pulsNativeNutrition?.
 const accountFeature=feature('nativeAccount');
 const accountAdapter=()=>accountFeature&&typeof window.pulsNativeAccount?.build==='function'?window.pulsNativeAccount:null;
 const completionFeature=feature('nativeCompletion'),extrasFeature=feature('nativeExtras');
+// Hybrid: Web main pages keep their own title/date under the native bar; entries with a native screen open it above the page.
+const webPagesFeature=feature('nativeWebPages');
+let nativeNavigating=0,windowToken=0,windowFallback=null;
 let nativeCompleting=false;
 let accountPreparing=false;
 const currentAccountSection=()=>page==='account'&&typeof accountSection==='string'&&accountSection?accountSection:null;
@@ -44,7 +47,7 @@ function hello(force=false){
   if(post({type:'hello',webVersion,ops:['weight.upsert','weight.delete',...[training,progress,activity,nutrition,account].flatMap(x=>x?Object.keys(x.ops):[]),...(completionFeature?['completion.dismiss']:[])],
     screens:['body',...(training?['training']:[]),...(progress?['calendar','progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[]),...(account?['account']:[])],
     projections:['overview',...(training?['training']:[]),...(progress?['progress']:[]),...(activity?['activity']:[]),...(nutrition?['nutrition']:[]),...(account?['account']:[])],
-    features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[]),...(activity?['nativeActivity']:[]),...(nutrition?['nativeNutrition']:[]),...(account?['nativeAccount']:[]),...(completionFeature?['nativeCompletion']:[]),...(extrasFeature?['nativeExtras']:[])],
+    features:['nativeTabs',...(training?['nativeTraining']:[]),...(progress?['nativeProgress']:[]),...(activity?['nativeActivity']:[]),...(nutrition?['nativeNutrition']:[]),...(account?['nativeAccount']:[]),...(completionFeature?['nativeCompletion']:[]),...(extrasFeature?['nativeExtras']:[]),...(webPagesFeature?['nativeWebPages']:[])],
     ...(completionFeature||extrasFeature?{extras:{queries:[...(completionFeature?['completion']:[]),...(extrasFeature?['page','pageItem','indexChart','export','share']:[])],ops:completionFeature?['completion.dismiss']:[]}}:{}),
     ...(nutrition?{nutrition:{stage:nutrition.stage,queries:nutrition.queries}}:{}),
     ...(account?{account:{queries:account.queries,webActions:account.actions}}:{}),ownerPending})){
@@ -74,8 +77,9 @@ function chromeState(){
 function syncNativeChrome(current=chromeState()){
   const fullscreen=current.reason==='session'||current.reason==='run';
   if(!fullscreen)chromeSessionHold=false;
-  document.documentElement.classList.toggle('puls-native-tabs',!pageHidden&&ready&&helloOwnerPending===false&&profileReady()&&
-    feature('nativeTabs')&&(chromeRequested||chromeSessionHold&&fullscreen));
+  const active=!pageHidden&&ready&&helloOwnerPending===false&&profileReady()&&feature('nativeTabs')&&(chromeRequested||chromeSessionHold&&fullscreen);
+  document.documentElement.classList.toggle('puls-native-tabs',active);
+  if(webPagesFeature)document.documentElement.classList.toggle('puls-native-webpages',active);
 }
 function reportChrome(){
   // A training op briefly opens Web sheets (finish, superset); report only the final state after the op.
@@ -110,7 +114,9 @@ if(typeof openAccountSection==='function'){
     return base.call(this,key,...args);
   };
 }
-window.pulsNativeNavigate=function(target){
+// Whatever Native requests here is a Web flow on purpose: page entries must not bounce it back into a native window.
+window.pulsNativeNavigate=function(target){nativeNavigating++;try{return navigateNative(target)}finally{nativeNavigating--}};
+function navigateNative(target){
   if(!target||typeof target!=='object'||Array.isArray(target))return false;
   const current=chromeState();reportChrome();
   const closingQuickAdd=target.action==='quickAdd'&&current.reason==='modal'&&document.body.classList.contains('quickaddopen');
@@ -142,7 +148,7 @@ window.pulsNativeNavigate=function(target){
     !accountSections.some(entry=>entry.key===target.section)||typeof openAccountSection!=='function'))return false;
   const previous=openingWeb;openingWeb=target.web===true;
   try{go(target.page);if(target.section!==undefined)openAccountSection(target.section);return true}finally{openingWeb=previous;reportChrome()}
-};
+}
 window.pulsNativeSetDate=function(day){reportChrome();if(!ready||!profileReady()||chromeState().blocking||!validDay(day))return false;setDate(day);return true};
 function overviewInputs(){
   // References/counts and explicit view settings are cheap. In-place profile mutations invalidate via save/queue.
@@ -757,6 +763,69 @@ if(completionFeature||extrasFeature||nutritionFeature){
   };
   window.addEventListener('pagehide',resetNativeCursors);
 }
+// Hybrid windows (protocol §16). Only with the feature, the confirmed native bar and no open Web flow. Every entry keeps its
+// exact Web flow: Native answers pulsNativeWebFallback(token) when it cannot present, and the original call runs here.
+const windowsActive=()=>webPagesFeature&&chromeRequested&&ready&&!pageHidden&&helloOwnerPending===false&&profileReady()&&
+  !openingWeb&&!nativeNavigating&&!applying&&!rollingBack&&!saveDepth&&!trainingApplying&&!chromeState().blocking;
+function openWindow(name,details,fallback){
+  if(!windowsActive())return false;
+  const token=++windowToken;
+  if(!post({type:'openNative',screen:'window',window:name,token,...details}))return false;
+  windowFallback={token,run:fallback};return true;
+}
+function runWebFlow(run){const previous=openingWeb;openingWeb=true;try{return run()}finally{openingWeb=previous;reportChrome()}}
+if(webPagesFeature){
+  window.pulsNativeWebFallback=function(token){
+    if(!windowFallback||windowFallback.token!==token||!ready||pageHidden||!profileReady()||chromeState().blocking)return false;
+    const {run}=windowFallback;windowFallback=null;runWebFlow(run);return true;
+  };
+  window.pulsNativeOpenIndexChart=function(){return openWindow('indexChart',{},()=>{})};
+}
+function installWindows(){
+  const entry=(base,name,details)=>function(...args){
+    const self=this,info=details(...args);
+    if(info&&openWindow(name,info,()=>base.apply(self,args)))return;
+    // Not sent (unknown target, failed delivery): the original runs as one Web flow, so nested entries such as
+    // useFoodSuggestion -> foodForm stay synchronous Web dialogs instead of being deferred into a window.
+    return windowsActive()?runWebFlow(()=>base.apply(self,args)):base.apply(this,args);
+  };
+  const exists=(list,id)=>Array.isArray(list)?list.find(x=>x.id===id):undefined;
+  if(typeof weightForm==='function')weightForm=entry(weightForm,'weight',()=>({date}));
+  if(typeof pickDiaryDate==='function')pickDiaryDate=entry(pickDiaryDate,'date',()=>({date}));
+  if(typeof editDiaryFood==='function')editDiaryFood=entry(editDiaryFood,'foodEntry',id=>exists(state.foods,id)?{id}:null);
+  if(typeof waterGoalForm==='function')waterGoalForm=entry(waterGoalForm,'waterGoal',()=>({}));
+  if(typeof useFoodSuggestion==='function')useFoodSuggestion=entry(useFoodSuggestion,'foodProduct',(id,amount)=>({id,amount}));
+  if(typeof startWorkout==='function')startWorkout=entry(startWorkout,'startWorkout',()=>({}));
+  if(typeof startRoutine==='function')startRoutine=entry(startRoutine,'startRoutine',id=>exists(state.routines,id)?{id}:null);
+  if(typeof routineForm==='function')routineForm=entry(routineForm,'routine',id=>exists(state.routines,id)?{id}:{});
+  if(typeof reviewWorkout==='function')reviewWorkout=entry(reviewWorkout,'workoutReview',id=>{const w=exists(state.workouts,id);return w?{id,title:w.name||''}:null});
+  if(typeof runDetail==='function')runDetail=entry(runDetail,'runDetail',id=>{const r=exists(state.runs,id);return r?{id,title:r.name||''}:null});
+  if(typeof performanceHistory==='function')performanceHistory=entry(performanceHistory,'exerciseHistory',id=>{const b=exists(state.exerciseBook,id);return b?{id,title:b.name||''}:null});
+  if(typeof runRoutesSheet==='function')runRoutesSheet=entry(runRoutesSheet,'routes',()=>({}));
+  if(typeof runGoalForm==='function')runGoalForm=entry(runGoalForm,'weeklyGoals',()=>({}));
+  if(typeof foodForm==='function'){
+    // Page buttons run foodForm();foodTab('barcode') in one handler: decide after it returned, with the tab it asked for.
+    const base=foodForm,baseTab=typeof foodTab==='function'?foodTab:null;let intent=null;
+    foodForm=function(...args){
+      if(!windowsActive())return base.apply(this,args);
+      if(intent)return;
+      intent={tab:'search'};
+      void Promise.resolve().then(()=>{
+        const {tab}=intent,web=()=>{base.apply(null,args);if(baseTab)baseTab(tab)};intent=null;
+        if(!openWindow('food',{tab},web))runWebFlow(web);
+      });
+    };
+    if(baseTab)foodTab=function(tab,...args){if(intent){intent.tab=tab;return}return baseTab.call(this,tab,...args)};
+  }
+  // The overview chart stays interactive inline; this row opens the combined native index chart. CSS shows it only in hybrid mode.
+  if(extrasFeature&&typeof home==='function'&&typeof dsRow==='function'&&typeof dsGroup==='function'&&typeof dsText==='function'){
+    const base=home;
+    home=function(...args){
+      const html=base.apply(this,args),row=`<div class="dsnativeindexwrap" hidden>${dsGroup('',dsRow({label:dsText('Gesamtverlauf öffnen','Open full progress'),action:'pulsNativeOpenIndexChart()',chevron:true,cls:'dsaction'}))}</div>`;
+      return html.endsWith('</div>')?html.slice(0,-6)+row+'</div>':html+row;
+    };
+  }
+}
 function loaded(){
   if(ready)return;
   // design-system.js replaces home/render AFTER this script; wrap only the final chain on load.
@@ -812,6 +881,7 @@ function loaded(){
   }
   // Native shows its own rest-end alert while it owns training; the Web still clears the rest and plays its sound.
   if(trainingFeature&&typeof showRestPopup==='function'){const base=showRestPopup;showRestPopup=function(...args){if(trainingConfirmed&&trainingReady())return;return base.apply(this,args)}}
+  if(webPagesFeature)installWindows();
   if(typeof MutationObserver==='function'&&document.body)new MutationObserver(reportChrome).observe(document.body,
     {subtree:true,childList:true,attributes:true,attributeFilter:['open','hidden','class']});
   ready=true;hello();reportNavigation();reportChrome();pending='load';flush();

@@ -10,6 +10,12 @@ struct TrainingNotice: Equatable, Identifiable {
     var isWarning = true
 }
 
+/// Hybrid: gewünschter Routineneditor (neu oder eine bestehende Routine).
+enum RoutineEditorRequest: Equatable {
+    case create
+    case edit(String)
+}
+
 /// M4: native Routinen und Kraftsession (docs/native/NATIVE-BRIDGE-PROTOCOL.md §9).
 ///
 /// - Bestätigt `pulsNativeSetTraining(true)` erst, wenn eine gültige `training`-Projektion desselben Nutzers da ist
@@ -39,6 +45,8 @@ final class TrainingCoordinator {
     var notice: TrainingNotice?
     /// Freies Training aus der Übersicht/dem Plus-Menü angefordert: Namensabfrage im Trainings-Tab zeigen.
     var requestsEmptyStart = false
+    /// Hybrid: Routineneditor aus einem Web-Einstieg; `TrainingHomeView` holt die Anfrage ab.
+    var routineEditorRequest: RoutineEditorRequest?
 
     /// Wählt den nativen Trainings-Tab (Shell).
     @ObservationIgnored var onSelectWorkoutTab: (() -> Void)?
@@ -327,6 +335,30 @@ final class TrainingCoordinator {
         default:
             return false
         }
+    }
+
+    /// Hybrid: „Freies Training“ über der Web-Seite, ohne den Tab zu wechseln. `false` = Web-Ablauf bleibt zuständig.
+    func requestEmptyStart() -> Bool {
+        guard canWrite else { return false }
+        if let active = training?.active {
+            presentSession(workoutId: active.id)
+        } else {
+            requestsEmptyStart = true
+        }
+        return true
+    }
+
+    /// Hybrid: Routineneditor über der Web-Seite; `id == nil` legt eine neue Routine an. Eine nativ nicht lesbare Routine
+    /// bleibt beim Web-Editor (`false`).
+    func openRoutineEditor(id: String?) -> Bool {
+        guard canWrite else { return false }
+        if let id {
+            guard let raw = store.rawRoutine(id: id), RoutineDraft(raw: raw, makeID: { UUID().uuidString }) != nil else { return false }
+            routineEditorRequest = .edit(id)
+        } else {
+            routineEditorRequest = .create
+        }
+        return true
     }
 
     // MARK: Session zeigen

@@ -497,13 +497,31 @@ public struct OpenNativeMessage: Equatable, Sendable {
     public var routeId: String?
     /// M8: `screen:"account"` nennt die Web-Kontounterseite (`plan`, `body`, `adaptive`, `design`, `sounds`, `manage`).
     public var section: String?
+    /// Hybrid (§16): `screen:"window"` nennt das native Fenster über der Web-Seite; `token` gehört zum Web-Rückfall
+    /// (`pulsNativeWebFallback`). Alle folgenden Felder nachsichtig: Unbekanntes führt zum Web-Rückfall, nie zu einem toten Knopf.
+    public var window: String?
+    public var token: Int?
+    public var id: String?
+    public var title: String?
+    public var tab: String?
+    public var amount: Double?
+    public var date: String?
 
-    public init(screen: String, workoutId: String? = nil, startedAt: Double? = nil, routeId: String? = nil, section: String? = nil) {
+    public init(screen: String, workoutId: String? = nil, startedAt: Double? = nil, routeId: String? = nil, section: String? = nil,
+                window: String? = nil, token: Int? = nil, id: String? = nil, title: String? = nil, tab: String? = nil,
+                amount: Double? = nil, date: String? = nil) {
         self.screen = screen
         self.workoutId = workoutId
         self.startedAt = startedAt
         self.routeId = routeId
         self.section = section
+        self.window = window
+        self.token = token
+        self.id = id
+        self.title = title
+        self.tab = tab
+        self.amount = amount
+        self.date = date
     }
 
     public init(json: JSONValue) throws {
@@ -513,12 +531,34 @@ public struct OpenNativeMessage: Equatable, Sendable {
         if let value = fields["startedAt"]?.doubleValue, value.isFinite { startedAt = value } else { startedAt = nil }
         if let value = fields["routeId"]?.stringValue, !value.isEmpty { routeId = value } else { routeId = nil }
         if let value = fields["section"]?.stringValue, !value.isEmpty { section = value } else { section = nil }
+        let text: (String) -> String? = { key in
+            guard let value = fields[key]?.stringValue, !value.isEmpty else { return nil }
+            return value
+        }
+        window = text("window")
+        id = text("id")
+        title = text("title")
+        tab = text("tab")
+        date = text("date")
+        if let value = fields["token"]?.doubleValue, value.isFinite, value >= 1, value == value.rounded(), value <= 9_007_199_254_740_991 {
+            token = Int(value)
+        } else {
+            token = nil
+        }
+        if let value = fields["amount"]?.doubleValue, value.isFinite, value > 0 { amount = value } else { amount = nil }
     }
 
     public var json: JSONValue {
         var object: [String: JSONValue] = [
             "type": .string("openNative"), "protocol": .number(Double(BridgeProtocol.version)), "screen": .string(screen),
         ]
+        if let window { object["window"] = .string(window) }
+        if let token { object["token"] = .number(Double(token)) }
+        if let id { object["id"] = .string(id) }
+        if let title { object["title"] = .string(title) }
+        if let tab { object["tab"] = .string(tab) }
+        if let amount { object["amount"] = .number(amount) }
+        if let date { object["date"] = .string(date) }
         if let workoutId { object["workoutId"] = .string(workoutId) }
         if let startedAt { object["startedAt"] = .number(startedAt) }
         if let routeId { object["routeId"] = .string(routeId) }

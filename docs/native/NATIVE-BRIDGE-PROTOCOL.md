@@ -878,3 +878,45 @@ Seit N1-Review werden auch kurze Backslash-Escapes und `\uXXXX`-Sequenzen nicht 
 Noch durch Koordinator: unabhängiges Review, Swift `nativeResult`-/Chunkdecoder und Features/Outbox/Completion-UI integrieren, echte iPhone-/Neustart-/Offline-/Datei-/Share-Abnahme und relevante Korrekturen nachprüfen. VM ist kein Swift-/Layout-/GPS-Geräte-/Live-Auth-/Live-RLS-Nachweis. main/Web v80, Phase-A-Besitz und Produktionsbackend bleiben unberührt; keine N1-Versionserhöhung oder Veröffentlichung in diesem Auftrag.
 
 **Nachprüfung N1 P2-1/P2-2/P3-1/P3-2:** Testfälle für einmaligen Builder-/Exportaufruf über vollständige Seiten-/Chunkläufe und frische Werte nach Save, echte Session-/Abschluss-Renderketten und spätere Web-Abschlüsse im selben Dokument, Pflicht-Workoutsharing ohne überspringenden if-Zweig, außerhalb von try/catch beobachtete Preview-Speicherzugriffe, gemischte Datums-/Tie-Sortierungen, vollständige Web-Metrik-/Verlaufstagewerte, historischer Körperprofilkontext, Surrogat-/Escape-Grenzen, Dismiss-/User-Isolation, exakte auth/jwt-Keys, 200-Routenlimit/Busy, downloadText-Rücknahme auch nach Ausnahme und 64-Cursorgrenze. Optionaler gezielter Mutationstest über `PULS_N1_MUTATION` in der Testsuite verändert ausschließlich im Speicher geladene JS-Quellen, niemals Produktionsdateien. Keine neuen Fixture-Dateien und keine Swift-Änderung in diesem Auftrag.
+
+## 16. Hybrid — Web-Hauptseiten unter nativer Leiste (`nativeWebPages`, weiter Phase A)
+
+Produktentscheidung (08.11.2026): Selvir bevorzugt das Web-Design der Hauptseiten. Übersicht, Training und Essen zeigen deshalb die Web-Seite mit Web-Kopf, Titelzeile und Datumsleiste in der einen WebView; die native UITabBar inklusive Plus (`QuickAddSheet`) und der native Konto-Tab bleiben. Alles, was von diesen Seiten aus eine native Ansicht hat, öffnet diese als Fenster (Sheet/Vollbild) über der Web-Seite. Datenbesitz, Ops, Projektionen und Sync bleiben unverändert.
+
+### 16.1 Aushandlung
+
+- Native injiziert `'nativeWebPages'` in `window.pulsNativeFeatures` nur, wenn `RootTabShell.webPagesMode` an ist (**der eine Schalter**; `false` = bisherige native Hauptansichten, die nativen Views bleiben erhalten).
+- Das Web meldet `nativeWebPages` zusätzlich in `hello.features`. Native nutzt den Modus nur mit `nativeTabs` **und** `nativeWebPages` im Hello desselben Dokuments (`ProfileStore.webOffersWebPages`). Ein alter Web-Stand meldet es nie → bisheriges Verhalten. Ohne Feature (Browser, alte IPA) installiert das Web keinen einzigen zusätzlichen Wrapper und kein neues Global.
+- Sobald das Web `puls-native-tabs` setzt (nach `pulsNativeSetChrome(true)`), setzt es mit Feature zusätzlich `puls-native-webpages`. CSS blendet dann nur Web-Leiste/Seitenleiste aus; Titelzeile und Datumsleiste bleiben sichtbar, `main` bekommt oben die Safe Area (`env(safe-area-inset-top)`), unten endet die WebView an der nativen Leiste.
+- Native: WebView von `root.top` bis `tabBar.top` auf allen Tabs; nativer Kopf/Statusfläche nur über dem nativen Konto. `chrome.blocking`, `hidesNativeBars` (Vollbild-Web-Session), Startbildschirm (`checkReady`: Web-Seite ist mit dem Hello gezeichnet) und Hell/Dunkel gelten unverändert. Tabwechsel ist ein Web-Seitenwechsel über `pulsNativeNavigate({page})`; `.pageslide` ist im Design ohnehin ohne Bewegung, es gibt keine doppelte Animation. Beim Verlassen des nativen Kontos bleibt dieses ~40 ms nach der Web-Antwort stehen (kein Aufblitzen der alten Web-Seite).
+- Trainings- und Essen-Host liegen im Modus eingeblendet **hinter** der deckenden WebView (für VoiceOver verborgen). So präsentieren ihre bestehenden Sheets/Alerts ohne doppelte Koordinatorlogik. `reportInterest` meldet im Modus immer `training`, `progress` solange ein Fortschrittsfenster offen ist und `nutrition` solange ein Essen-Sheet offen ist.
+
+### 16.2 Fenster: `openNative{screen:'window'}`
+
+Web → Native: `{type:'openNative',screen:'window',window,token,id?,title?,tab?,amount?,date?}`. `token` ist je Dokument fortlaufend. Gesendet wird nur, wenn: Feature, Native-Leiste bestätigt, Dokument bereit und zugeordnet, kein `chrome.blocking`, kein laufender Native-Befehl/Rollback/Speichern und kein von Native angeforderter Web-Ablauf (`pulsNativeNavigate`, `web:true`, Rückfall) aktiv ist. Sonst und bei Zustellfehler läuft sofort der unveränderte Web-Ablauf. Unbekannte IDs (Eintrag/Routine/Workout/Lauf/Übung fehlt) bleiben ebenfalls Web.
+
+Native → Web: `window.pulsNativeWebFallback(token)` (`WebCall.webFallback`), wenn Native das Fenster nicht zeigen kann (Ablauf nicht gemeldet, nur lesbar, Präsentierer belegt). Das Web führt dann genau den ursprünglichen Aufruf aus – nur für das **letzte** Token, nur einmal, nicht während `chrome.blocking`. M2-Regel bleibt: auf jedes `openNative` zeigt Native etwas oder fällt zurück; kein toter Knopf. Ein Doppeltipp, während bereits ein Blatt offen ist, wird still ignoriert.
+
+| `window` | Web-Einstieg | Natives Fenster |
+|---|---|---|
+| `food` (+`tab` search/barcode/photo/recipes/custom) | `foodForm()` + gleich danach `foodTab(x)` im selben Handler | Suche, Barcode, Etikett, Rezepte (Suchbereich), Eigene Werte |
+| `foodEntry` (`id`) | `editDiaryFood(id)` | Mengenblatt des Eintrags |
+| `foodProduct` (`id`, `amount`) | `useFoodSuggestion(id,amount)` | Produktblatt, Menge vorbelegt |
+| `waterGoal` | `waterGoalForm()` | Wasserziel |
+| `weight` (`date`) | `weightForm()` | M2-Gewichtsblatt für den Tag |
+| `startWorkout` | `startWorkout()` | „Freies Training“ bzw. laufende Session |
+| `startRoutine` (`id`) | `startRoutine(id)` | native Kraftsession |
+| `routine` (`id?`) | `routineForm(id?)` | Routineneditor (neu/bearbeiten) |
+| `workoutReview` (`id`,`title`) | `reviewWorkout(id)` (auch `actOpen`) | Workout-Rückblick |
+| `exerciseHistory` (`id`,`title`) | `performanceHistory(id)` | Übungsverlauf |
+| `runDetail` (`id`,`title`) | `runDetail(id)` (auch `actOpen`) | Aktivitätsdetail |
+| `routes` | `runRoutesSheet()` | Routenliste |
+| `weeklyGoals` | `runGoalForm()` | Wochenziele |
+| `date` (`date`) | `pickDiaryDate()` | Datumswahl (setzt den Tag per `pulsNativeSetDate`) |
+| `indexChart` | Zeile „Gesamtverlauf öffnen“ unter dem Übersichtsdiagramm (nur mit `nativeExtras`, sonst versteckt) | Indexchart; Rückfall ist ein No-op, das Diagramm steht inline |
+
+Weiter wie bisher nativ über bestehende Wege: `openWorkoutSession` (Dock, Fortsetzen) → `screen:'training'`, `openRunView`/`runSelectRoute` → `screen:'activity'`, Körperbereich/Konto-Unterseiten → `screen:'account'`/`'body'`. Hinweise, „Rückgängig“ und geparkte Konflikte nativer Fenster zeigt im Modus eine schmale native Leiste über der Tab-Leiste (`WebPagesOverlay`), weil die nativen Tabs verdeckt sind. Nach dem Schließen eines Fensters steht man auf derselben Web-Seite; jede Op endet im Web mit `render()`, die Seite zeigt also den aktuellen Stand.
+
+### 16.3 Tests
+
+`tests/check-native-state.cjs` (Abschnitt „nativeWebPages hybrid“): ohne Feature und vor bestätigter Leiste unverändert Web, Klasse und Hello-Feature, alle Fenster mit Feldern, eindeutige Tokens, Rückfall nur letztes Token/einmal, `foodForm`+`foodTab`-Paarung, keine Schleife unter `pulsNativeNavigate`, `chrome.blocking` und Zustellfehler bleiben Web, Indexchart-Zeile nur mit `nativeExtras`. Fixture `open-native-window.json` gemeinsam mit `BridgeMessagesTests`. Swift-Kompilierung, Layout, Sheet-Präsentation von der Hinterbühne und VoiceOver prüft nur CI bzw. das Gerät.

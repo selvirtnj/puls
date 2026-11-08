@@ -566,7 +566,7 @@ struct NutritionEntryRow: View {
     }
 }
 
-private struct NutritionUndoBar: View {
+struct NutritionUndoBar: View {
     let coordinator: NutritionCoordinator
     let item: NutritionUndo
     let text: OverviewText
@@ -631,7 +631,7 @@ private struct NutritionDayCompleteSection: View {
 
 // MARK: - Konflikte
 
-private struct NutritionConflictSection: View {
+struct NutritionConflictSection: View {
     let coordinator: NutritionCoordinator
     let text: OverviewText
 

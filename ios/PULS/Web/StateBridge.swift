@@ -82,6 +82,11 @@ final class StateBridge: NSObject, WKScriptMessageHandler {
         evaluate(WebCall.navigate(target)) { result in completion?((result as? Bool) == true) }
     }
 
+    /// Hybrid: den ursprünglichen Web-Einstieg ausführen lassen, weil Native das Fenster nicht zeigen kann.
+    func webFallback(token: Int) {
+        evaluate(WebCall.webFallback(token: token), completion: nil)
+    }
+
     /// `window.pulsNativeSetChrome(visible)`: das Web blendet seine Tab-Leiste erst nach `true` aus.
     func setChrome(_ visible: Bool, completion: (@MainActor (Bool) -> Void)? = nil) {
         evaluate(WebCall.setChrome(visible)) { result in completion?((result as? Bool) == true) }
