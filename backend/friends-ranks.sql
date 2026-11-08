@@ -3,8 +3,11 @@
 -- their updates retain previously published XP. No profile payloads are read.
 begin;
 alter table public.puls_friend_profiles
- add column if not exists xp integer not null default 0
+ add column if not exists xp integer
  constraint puls_friend_profiles_xp_check check (xp between 0 and 10000000);
+-- Also repair a previously installed v87 column without rewriting known XP.
+alter table public.puls_friend_profiles alter column xp drop not null;
+alter table public.puls_friend_profiles alter column xp drop default;
 alter table public.puls_friend_profiles enable row level security;
 -- Retain the owner policy and RPC-only access from friends.sql.
 revoke all on public.puls_friend_profiles from public,anon,authenticated;
@@ -35,7 +38,7 @@ begin
  for attempt in 1..5 loop
   begin
    insert into public.puls_friend_profiles(user_id,friend_code,display_name,streak,last_training,streak_broken,source_revision,xp)
-    values (own_id,upper(substr(replace(pg_catalog.gen_random_uuid()::text,'-',''),1,12)),btrim(p_display_name),p_streak,p_last_training,p_streak_broken,p_source_revision,coalesce(p_xp,0))
+    values (own_id,upper(substr(replace(pg_catalog.gen_random_uuid()::text,'-',''),1,12)),btrim(p_display_name),p_streak,p_last_training,p_streak_broken,p_source_revision,p_xp)
    on conflict (user_id) do update set display_name=excluded.display_name,streak=excluded.streak,
     xp=coalesce(p_xp,public.puls_friend_profiles.xp),last_training=excluded.last_training,streak_broken=excluded.streak_broken,source_revision=excluded.source_revision,updated_at=now()
     where public.puls_friend_profiles.source_revision<=excluded.source_revision;

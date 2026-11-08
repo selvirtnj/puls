@@ -215,7 +215,10 @@ async function main(){
  assert.match(sql,/profile_revision is distinct from p_source_revision/);assert.match(sql,/source_revision<=p_source_revision/);assert.match(sql,/where user_id=own_id for share/);
  assert(!/alter table public\.puls_profiles|create or replace function public\.puls_save_profile/i.test(sql));
  const ranksSql=fs.readFileSync('backend/friends-ranks.sql','utf8');
- assert.match(ranksSql,/begin;[^]*commit;/);assert.match(ranksSql,/add column if not exists xp integer not null default 0/);
+ assert.match(ranksSql,/begin;[^]*commit;/);assert.match(ranksSql,/add column if not exists xp integer\s+constraint/);
+ assert.match(ranksSql,/alter column xp drop not null/);assert.match(ranksSql,/alter column xp drop default/);
+ assert(!/add column if not exists xp integer (?:not null|default)|coalesce\(p_xp,0\)/.test(ranksSql),'unknown XP remains NULL on new/legacy enrollment');
+ assert.match(ranksSql,/p_streak_broken,p_source_revision,p_xp\)/,'insert uses nullable XP unchanged');
  assert.match(ranksSql,/check \(xp between 0 and 10000000\)/);assert.match(ranksSql,/p_xp not between 0 and 10000000/);
  assert.match(ranksSql,/drop function if exists public\.puls_friends_publish\(text,integer,date,boolean,bigint,boolean\)/);
  assert.match(ranksSql,/p_enable boolean default false,p_xp integer default null/);
