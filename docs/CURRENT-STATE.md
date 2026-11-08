@@ -2,6 +2,8 @@
 
 ### Version 86, Freundesliste + KI-Essensfoto + Taschenlampe (08.11.2026)
 
+- **Live eingerichtet (08.11.2026, mit Selvir im Dashboard):** `backend/food-photo.sql` und `backend/friends.sql` im Projekt `qqqwzvqsvngvfhpgelpm` ausgeführt (Success). Edge Function `food-photo` aus Commit `bbba1e5` deployt, Secret `GEMINI_API_KEY` von Selvir gesetzt. „Verify JWT with legacy secret“ ist AUS, weil das Projekt Nutzer-JWTs mit ES256 signiert; die Funktion prüft das Token selbst über `/auth/v1/user` (ohne Token: `401 {"error":"auth"}` geprüft). Offen: echter Test mit angemeldetem Konto (Gemini-Antwort) und Freundesliste mit zwei Konten.
+
 - Veröffentlicht: Freundesliste (Branch `agent/backend-freunde` gemergt, Claude-Review mit Nachprüfung freigegeben) und KI-Foto/Taschenlampe (Codex angefangen, Claude `puls-backend` fertiggestellt wegen Codex-Limit, Gemini-Review freigegeben). Beide Serverteile sind noch NICHT live: Selvir muss `backend/friends.sql` und `backend/food-photo.sql` im Supabase-SQL-Editor ausführen, Gemini-Schlüssel als Secret setzen und die Edge Function `food-photo` anlegen (Schritte in `BACKEND-HANDOFF.md`). Bis dahin bleibt „Freunde“ ausgeblendet, das KI-Foto meldet „noch nicht eingerichtet“. Neue IPA nötig für die Taschenlampe.
 
 ### Version 85, türkische und Balkan-Gerichte (08.11.2026)
