@@ -124,6 +124,7 @@ async function checkWorker(){
   return {listeners,staticName:vm.runInContext('CACHE',ctx),catalogName:vm.runInContext('CATALOG_CACHE',ctx)};
  }
  let current=worker();
+ assert.equal(current.catalogName,'puls-catalog-v2','Regional catalogue update uses a fresh cache');
  async function lifecycle(type){let work;current.listeners[type]({waitUntil:p=>work=p});await work}
  async function preload(){let work;current.listeners.message({data:{type:'puls:cache-catalogue'},waitUntil:p=>work=p});await work}
  const responseFor=async(path,mode='cors')=>{let response;current.listeners.fetch({request:{method:'GET',url:new URL(path,base).href,mode},respondWith:p=>response=p,waitUntil(){}});return response&&await response};
@@ -140,7 +141,7 @@ async function checkWorker(){
  assert(!stores.has(oldStatic));assert.strictEqual(stores.get(current.catalogName),catalogue,'App update preserves the exact catalogue cache');
  requests=[];await preload();assert.equal(requests.length,0,'App update causes no catalogue re-download');
  online=false;
- const manifest=await responseFor('catalog/manifest.json?v=14');assert.equal((await manifest.json()).count,18200);
+ const manifest=await responseFor('catalog/manifest.json?v=14');assert.equal((await manifest.json()).count,JSON.parse(read('catalog/manifest.json')).count);
  for(let file of catalogueFiles){const response=await responseFor('catalog/'+file+'?v=32');assert(response.ok);assert(await response.json())}
  for(let match of read('index.html').matchAll(/(?:src|href)="([^"?#]+\.(?:js|css))(?:\?[^\"]*)?"/g))assert((await responseFor(match[1]+'?offline-check=1')).ok,'Every startup script/style is cached: '+match[1]);
  for(let path of ['https://fixture.supabase.co/auth/v1/token','photos/private.jpg','api/profile'])assert.equal(await responseFor(path),undefined);

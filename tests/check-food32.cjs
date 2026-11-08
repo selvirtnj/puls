@@ -1,5 +1,6 @@
 /* Extend the real app regression harness with nutrition edge cases. */
 const fs32=require('fs'),vm32=require('vm');
+require('./check-regional-foods.cjs');
 const existing32=fs32.readFileSync('tests/check-premium.cjs','utf8');
 const extra32=String.raw`
 run(fs.readFileSync('js/food-search.js','utf8'));run(fs.readFileSync('js/catalog-search.js','utf8'));run(fs.readFileSync('js/food-upgrade.js','utf8'));
@@ -24,6 +25,13 @@ assert.equal(run('parseFoodLine("200 g Skyr").amount'),200);
 assert.equal(run('foodPortions({unit:"ml",portions:[{name:"EL",amount:10,unit:"g"}]}).length'),0);
 run('state.custom.push({id:"favorite32",name:"Food",kcal:10,p:1,c:1,f:0,favorite:true,portions:[{name:"Stück",amount:30,unit:"g"}]})');
 assert(run('validData(JSON.parse(JSON.stringify(state)))'));run('state.custom.at(-1).portions[0].amount=-1');assert(!run('validData(state)'));run('state.custom.at(-1).portions[0].amount=30');
+for(const row of JSON.parse(fs.readFileSync('catalog/foods-36.json','utf8')).filter(r=>r[0].startsWith('PULS_'))){
+ const food={id:row[0],name:row[1],kcal:row[3],p:row[4],c:row[5],f:row[6],source:row[7],unit:'g',nutrients:row[8]};
+ food.catalogKey=food.source+':'+food.id;
+ food.portions=JSON.parse(fs.readFileSync('catalog/portions.json','utf8'))[food.catalogKey]||[];
+ run('state.custom.push('+JSON.stringify(food)+')');
+}
+assert(run('validData(JSON.parse(JSON.stringify(state)))'),'Regional foods and portions survive backup validation');
 console.log('PASS: OCR columns, missing values, German labels, EU macro plausibility, safe duplicates, source portions, counted text and synchronized favorite validation');
 `;
 vm32.runInNewContext('(function(require){'+existing32+'\n'+extra32+'\n})(require)',{require,console},{filename:'food32-harness.cjs'});
