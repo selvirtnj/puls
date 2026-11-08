@@ -8,7 +8,7 @@ const dayOK=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value);
 const nameOK=value=>typeof value==='string'&&[...value].length>=1&&[...value].length<=40;
 const owner=()=>cloudConfigured&&!firstRunPreview&&navigator.onLine!==false?cloudSession?.user?.id||null:null;
 let currentOwner=null,snapshot=null,lastPublished='',lastAttempt=0,loading=false,acting=false,message='',timer=null;
-let backendAvailable=null,refreshTimer=null; // Capability result lasts only for this page session.
+let backendAvailable=null,refreshTimer=null,rankPublishAvailable=null; // Capability result lasts only for this page session.
 const controllers=new Set();
 function context(){
  const next=owner();
@@ -21,6 +21,8 @@ function context(){
  return next;
 }
 async function rpc(name,body,expected=currentOwner){
+ // Retry only the optional XP argument, retaining the owner/revision boundaries.
+ if(name==='publish'&&rankPublishAvailable===false&&body&&Object.hasOwn(body,'p_xp')){body={...body};delete body.p_xp}
  if(!expected||context()!==expected)throw Error('context');
  await cloudFreshSession();
  if(context()!==expected)throw Error('context');
@@ -37,12 +39,16 @@ async function rpc(name,body,expected=currentOwner){
   if(context()!==expected)throw Error('context');
   if(!response.ok){
    let detail;try{detail=await response.json()}catch{}
+   if(name==='publish'&&body&&Object.hasOwn(body,'p_xp')&&(response.status===404||detail?.code==='PGRST202')){
+    rankPublishAvailable=false;const legacy={...body};delete legacy.p_xp;return await rpc(name,legacy,expected);
+   }
    if(response.status===404&&(detail?.code==='PGRST202'||detail?.code==='42883')){backendAvailable=false;throw Error('setup')}
    throw Error(response.status===401?'auth':'network');
   }
   const result=await response.json();
   if(context()!==expected)throw Error('context');
   backendAvailable=true;
+  if(name==='publish'&&body&&Object.hasOwn(body,'p_xp'))rankPublishAvailable=true;
   return result;
  }finally{clearTimeout(timeout);controllers.delete(controller)}
 }
@@ -63,20 +69,37 @@ function summary(name){
  const last=days.at(-1)||null,serial=value=>{const [y,m,d]=value.split('-').map(Number);return Date.UTC(y,m-1,d)/86400000};
  let count=0;
  if(last&&serial(today())-serial(last)<4){count=1;for(let i=days.length-2;i>=0;i--){if(serial(days[i+1])-serial(days[i])>=4)break;count++}}
- return {p_display_name:name,p_streak:Math.min(100000,count),p_last_training:last,p_streak_broken:!!last&&count===0,p_source_revision:cloudRevision};
+ // totalWorkoutXP uses runList(), which adds runs=[] on legacy profiles.
+ // Evaluate its existing wrapper chain against a shallow read view in that case,
+ // and restore the authoritative state synchronously even if calculation throws.
+ let xp=null;
+ if(typeof totalWorkoutXP==='function'){
+  const original=state;
+  try{if(!Array.isArray(state.runs))state={...state,runs:[]};const total=totalWorkoutXP();
+   if(typeof total==='number'&&Number.isFinite(total))xp=Math.min(10000000,Math.max(0,Math.round(total)));
+  }finally{state=original}
+ }
+ return {...(xp===null?{}:{p_xp:xp}),p_display_name:name,p_streak:Math.min(100000,count),p_last_training:last,p_streak_broken:!!last&&count===0,p_source_revision:cloudRevision};
 }
 function cleanSnapshot(value){
  if(!value||typeof value!=='object')throw Error('network');
  const person=p=>p&&codeOK(p.code)&&nameOK(p.name),stamp=v=>typeof v==='string'&&Number.isFinite(Date.parse(v));
  const rows=(key,valid)=>Array.isArray(value[key])?value[key].filter(valid):[];
+ // null is deliberately distinct from 0: the UI must show Rang unbekannt.
+ const ranked=p=>({...p,xp:Number.isInteger(p.xp)&&p.xp>=0&&p.xp<=10000000?p.xp:null});
  // One malformed foreign row must not disable requests or the rest of the inbox.
- return {self:person(value.self)?value.self:null,
+ return {self:person(value.self)?ranked(value.self):null,
   friends:rows('friends',p=>person(p)&&Number.isInteger(p.streak)&&p.streak>=0&&p.streak<=100000&&
    (p.last_training===null||dayOK(p.last_training))&&typeof p.broken==='boolean'&&stamp(p.updated_at)&&
-   (p.last_nudge==null||stamp(p.last_nudge))),
+   (p.last_nudge==null||stamp(p.last_nudge))).map(ranked),
   incoming:rows('incoming',person),outgoing:rows('outgoing',p=>p&&codeOK(p.code)).map(p=>({code:p.code})),
   nudges:rows('nudges',p=>person(p)&&typeof p.id==='string'&&/^[a-f0-9-]{36}$/i.test(p.id)&&stamp(p.sent_at))};
 }
+// Read-only data access for friends-board.js. No raw server or Auth state escapes.
+// Missing/invalid XP stays null; the board labels it "Rang unbekannt".
+window.pulsFriendsData87=Object.freeze({getSnapshot(){
+ return context()&&snapshot?JSON.parse(JSON.stringify(snapshot)):null;
+}});
 function waitingMessage(){return cloudBusy||cloudApplying?text('Profilsync läuft. Bitte kurz warten.','Profile sync is running. Please wait.'):
  cloudRevision<=0?text('Bitte zuerst dein Cloud-Profil laden oder die lokalen Daten ins Konto übernehmen.','First load your cloud profile or transfer your local data to this account.'):
  text('Freunde werden geladen.','Loading friends.')}

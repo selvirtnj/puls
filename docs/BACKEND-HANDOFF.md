@@ -1,5 +1,15 @@
 # PULS — Backend-Übergabe
 
+## Freunde-Ränge v87 — lokal vorbereitet, 09.11.2026
+
+`backend/friends-ranks.sql` baut auf `backend/friends.sql` auf und wurde hier **nicht ausgeführt**. Zunächst in einer separaten Testumgebung mit der bestehenden Freunde-Migration prüfen, anschließend nach Review durch Selvir/Koordinator als vollständige Transaktion im Supabase-SQL-Editor einspielen. Wiederholtes Einspielen erhält Zeilen, Kennungen und XP. Nicht anschließend die ältere `friends.sql` erneut einspielen: sie würde die alte Publish-Signatur als zusätzlichen Overload anlegen.
+
+Die Migration ergänzt `puls_friend_profiles.xp` (Integer 0–10.000.000, Standard 0), ersetzt die sechsteilige Publish-Signatur durch genau eine siebenteilige mit optionalem `p_xp DEFAULT NULL` und erweitert `snapshot` um XP für `self` und angenommene Freunde. Alte Clients ohne XP-Argument funktionieren weiter und behalten vorhandene XP bei Updates. Alle bisherigen Revisionsprüfungen, Owner-Grenzen, Opt-in-, RLS- und RPC-Rechte bleiben erhalten; keine Payload-/Auth-/Profilrechte werden ergänzt. `action`, `nudge`, `read` und `disable` bleiben unverändert. Level/Rang werden im Client aus XP abgeleitet. XP sind weiterhin Eigenmeldungen, kein serverseitig verifiziertes Leistungsergebnis.
+
+Der neue Client wiederholt eine durch 404/PGRST202 abgelehnte XP-Publikation einmal ohne `p_xp` und merkt sich das fehlende Argument bis zum Neuladen. Ohne gültige XP liefert die Datenschicht `xp:null`; die Ranglisten-UI muss dafür „Rang unbekannt“ anzeigen. `window.pulsFriendsData87.getSnapshot()` liefert eine unabhängige Kopie des bereinigten aktuellen Snapshots oder `null` bei fehlenden Daten/Kontowechsel. Nach SQL-Einbau die App neu laden (Schema-Cache-Neuladen wird außerdem per `NOTIFY pgrst` angefordert).
+
+Vor Live-Einbau mit separaten Testkonten A/B/C prüfen: neue und alte Publish-Argumente, `NULL` erhält XP, Grenzwerte/ungültige Werte, veraltete Revisionen, fremde Zeilen und anonyme/direkte Tabellenzugriffe abgewiesen, XP ausschließlich für `self` und angenommene Freunde, kein XP in offenen Anfragen, erneutes Einspielen ohne Verlust. Lokal: `tests/check-friends.cjs` prüft Mocks und SQL-Quellverträge; `tests/check-v87-data.cjs` prüft die XP-/Rangschwellen. Keine PostgreSQL-Ausführung und kein Live-RLS-Nachweis. Integration, unabhängiges Claude-/Gemini-Review, `CURRENT-STATE.md` und gemeinsame Release-Versionierung liegen beim Koordinator.
+
 ## Freunde — lokal vorbereitet, 08.11.2026 (Basis v84)
 
 `backend/friends.sql` ist eine manuell einzuspielende, transaktionale und wiederholt ausführbare Migration. **Hier nicht live ausgeführt.** Bestehende `puls_profiles`, Auth-Konfiguration, Profilsync/RPCs und Revisionen werden nicht verändert. Keine Kostenpflicht, kein APNs-Dienst.

@@ -17,6 +17,7 @@ function fixture({preview=false,online=true,reply=async name=>name==='snapshot'?
   cloudDirty:false,cloudConflict:false,cloudUploadBlocked:false,stateLoadCorrupt:false,cloudRejectedRevision:null,cloudBaseline:JSON.stringify(state),
   cloudFreshSession:()=>refreshSession(),today:()=>'2026-11-08',
   completedWorkouts:()=>ctx.state.workouts.filter(w=>w.finished&&w.date<=ctx.today()),loggedSets:w=>w.sets||[],
+  totalWorkoutXP(){ctx.state.runs??=[];return 825}, // Same legacy lazy default as the real XP chain.
   // The feature must not call the mutating streak helper, save, validData, or storage.
   dailyWorkoutStreak(){throw Error('Shared streak helper mutates legacy profiles')},
   save(){throw Error('No profile writes allowed')},validData(){throw Error('No schema changes allowed')},
@@ -54,6 +55,8 @@ async function main(){
  const f=fixture(),before=JSON.stringify(f.ctx.state);await f.api.refresh(true);await f.api.refresh(true);
  const published=f.requests.find(r=>r.name==='publish');assert(published);assert.equal(published.body.p_last_training,null);
  assert.equal(published.body.p_streak,0);assert.equal(published.body.p_streak_broken,false);assert(!('p_enable' in published.body));
+ assert.equal(published.body.p_xp,825);
+ assert.equal(f.ctx.pulsFriendsData87.getSnapshot().self.xp,null);
  assert.equal(JSON.stringify(f.ctx.state),before);assert.equal(f.ctx.cloudRevision,3);assert.equal(f.ctx.cloudDirty,false);
  // Snapshot refreshes are throttled; unchanged summaries do not write repeatedly.
  const count=f.requests.length;await f.api.refresh();assert.equal(f.requests.length,count);
@@ -150,6 +153,42 @@ async function main(){
  const flaky=fixture({reply:async()=>({http:503,detail:{}})});await flaky.api.refresh(true);
  assert(!flaky.menu.children.length);const flakyCalls=flaky.requests.length;await flaky.api.refresh(true);
  assert(flaky.requests.length>flakyCalls,'network errors are retried, not cached');
+ // v87 rank publication, soft fallback and the isolated board snapshot.
+ for(const failure of [{http:404,detail:{}},{http:400,detail:{code:'PGRST202'}}]){
+  const legacy=fixture({reply:async(name,body)=>name==='snapshot'?enrolled():Object.hasOwn(body,'p_xp')?failure:true});
+  const original=legacy.ctx.state,before=JSON.stringify(original);
+  await legacy.api.refresh(true);await legacy.api.refresh(true);
+  let pubs=legacy.requests.filter(r=>r.name==='publish');assert.equal(pubs.length,2);
+  assert.equal(pubs[0].body.p_xp,825);assert(!Object.hasOwn(pubs[1].body,'p_xp'));
+  assert.equal(pubs[1].body.p_source_revision,3);assert.equal(legacy.ctx.state,original);assert.equal(JSON.stringify(original),before);
+  legacy.ctx.cloudRevision=4;await legacy.api.refresh(true);pubs=legacy.requests.filter(r=>r.name==='publish');
+  assert.equal(pubs.length,3);assert(!Object.hasOwn(pubs.at(-1).body,'p_xp'),'remember unsupported argument for this session');
+  assert.equal(legacy.ctx.pulsFriendsData87.getSnapshot().self.xp,null);
+  assert(legacy.nodes.has('puls-friends-link'),'rank fallback must not hide working friends');
+ }
+ for(const total of [-3,25.7,10000001,NaN,Infinity]){
+  const rank=fixture();rank.ctx.totalWorkoutXP=()=>total;await rank.api.refresh(true);await rank.api.refresh(true);
+  const body=rank.requests.find(r=>r.name==='publish').body;
+  if(Number.isFinite(total))assert.equal(body.p_xp,Math.min(10000000,Math.max(0,Math.round(total))));
+  else assert(!Object.hasOwn(body,'p_xp'),'invalid local XP must never invent rank zero');
+ }
+ const friend={code:'FEDCBA654321',name:'Rank Fixture',streak:1,last_training:'2026-11-07',broken:false,updated_at:'2026-11-07'};
+ for(const xp of [0,825,10000000,undefined,null,-1,10000001,1.5,'825',NaN]){
+  const rank=fixture({reply:async name=>name==='snapshot'?{...enrolled(),self:{...enrolled().self,xp},friends:[{...friend,xp}]}:true});
+  await rank.api.refresh(true);const view=rank.ctx.pulsFriendsData87.getSnapshot();
+  const expected=Number.isInteger(xp)&&xp>=0&&xp<=10000000?xp:null;
+  assert.equal(view.self.xp,expected);assert.equal(view.friends[0].xp,expected);
+  view.friends[0].name='Changed by board';assert.equal(rank.ctx.pulsFriendsData87.getSnapshot().friends[0].name,'Rank Fixture');
+  rank.ctx.cloudSession={user:{id:'fixture-other'}};assert.equal(rank.ctx.pulsFriendsData87.getSnapshot(),null,'board cannot retain another owner data');
+ }
+ const fallbackRace=fixture({reply:async(name,body)=>{
+  if(name==='snapshot')return enrolled();
+  fallbackRace.ctx.cloudSession={user:{id:'fixture-other'},access_token:'fixture-other-token'};
+  return {http:404,detail:{code:'PGRST202'}};
+ }});
+ await fallbackRace.api.refresh(true);await fallbackRace.api.refresh(true);
+ assert.equal(fallbackRace.requests.filter(r=>r.name==='publish').length,1,'no old-owner retry after account switch');
+ assert.equal(fallbackRace.ctx.pulsFriendsData87.getSnapshot(),null);
  // Source contracts supplement mocks; they do NOT execute PostgreSQL or prove live RLS.
  const sql=fs.readFileSync('backend/friends.sql','utf8');
  assert.equal((sql.match(/enable row level security/g)||[]).length,5);
@@ -175,7 +214,24 @@ async function main(){
  assert.match(sql,/pg_advisory_xact_lock/);assert.match(sql,/interval '12 hours'/);assert.match(sql,/if not coalesce\(p_enable,false\)/);
  assert.match(sql,/profile_revision is distinct from p_source_revision/);assert.match(sql,/source_revision<=p_source_revision/);assert.match(sql,/where user_id=own_id for share/);
  assert(!/alter table public\.puls_profiles|create or replace function public\.puls_save_profile/i.test(sql));
+ const ranksSql=fs.readFileSync('backend/friends-ranks.sql','utf8');
+ assert.match(ranksSql,/begin;[^]*commit;/);assert.match(ranksSql,/add column if not exists xp integer not null default 0/);
+ assert.match(ranksSql,/check \(xp between 0 and 10000000\)/);assert.match(ranksSql,/p_xp not between 0 and 10000000/);
+ assert.match(ranksSql,/drop function if exists public\.puls_friends_publish\(text,integer,date,boolean,bigint,boolean\)/);
+ assert.match(ranksSql,/p_enable boolean default false,p_xp integer default null/);
+ assert.match(ranksSql,/xp=coalesce\(p_xp,xp\)/);assert.match(ranksSql,/xp=coalesce\(p_xp,public\.puls_friend_profiles\.xp\)/);
+ assert.match(ranksSql,/profile_revision is distinct from p_source_revision/);assert.match(ranksSql,/source_revision<=p_source_revision/);
+ assert.match(ranksSql,/where user_id=own_id for share/);
+ assert.match(ranksSql,/'self',result/);assert.match(ranksSql,/'name',p\.display_name,'xp',p\.xp\) into result/);
+ assert.match(ranksSql,/'friends'[^]*?'xp',p\.xp[^]*?f\.status='accepted'/);
+ assert(!/'incoming'[^]*?'outgoing'/.exec(ranksSql)[0].includes("'xp'"),'pending requests cannot see XP');
+ assert.match(ranksSql,/enable row level security/);assert.match(ranksSql,/revoke all on public\.puls_friend_profiles from public,anon,authenticated/);
+ for(const [body,name] of ranksSql.matchAll(/create or replace function public\.(\w+)\([^]*?end \$\$;/g)){
+  assert.match(body,/security definer set search_path=''/,name);assert.match(body,/own_id uuid := auth.uid\(\)/,name);
+ }
+ assert.match(ranksSql,/revoke all on function[^]*?from public,anon;/);assert.match(ranksSql,/grant execute on function[^]*?to authenticated;/);
+ assert(!/alter table public\.puls_profiles|create or replace function public\.puls_save_profile/i.test(ranksSql));
  for(const file of ['index.html','sw.js'])for(const asset of ['js/friends.js','css/friends.css'])assert(fs.readFileSync(file,'utf8').includes(asset));
- console.log('PASS: friends opt-in, pure legacy summaries, rest-day boundary, conflicts/offline, owner races, inbox, escaping and SQL source contracts (no live RLS).');
+ console.log('PASS: friends opt-in, pure legacy summaries, rest-day boundary, conflicts/offline, owner races, XP/fallback, isolated snapshots and SQL source contracts (no live RLS).');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});
