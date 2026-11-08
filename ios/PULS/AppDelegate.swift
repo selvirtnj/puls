@@ -17,8 +17,13 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
         return true
     }
 
-    // In der offenen App meldet die Web-App das Pausenende selbst (Hinweis, Ton, Vibration).
+    // Nur neue Erinnerungen im Vordergrund zeigen. Pause und Lauf-km behalten ihr bisheriges Verhalten.
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([])
+        let id = notification.request.identifier
+        if id.hasPrefix("puls-reminder-training-") || id.hasPrefix("puls-reminder-weight-") {
+            completionHandler([.banner, .sound])
+        } else {
+            completionHandler([])
+        }
     }
 }

@@ -1,3 +1,5 @@
+> **Archiviert seit 08.11.2026:** SwiftUI-Umstellung gestoppt; Tag `native-swiftui-archiv`. Diese Aufgaben nicht weiter ausführen. Aktiver Weg: WebView-Hülle und native Extras über `pulsNative`; siehe [README](README.md).
+
 # PULS — Agentenaufgaben native Umstellung
 
 Regeln: Branch `native-ios`. Exklusiver Dateibesitz pro Paket; fremde Dateien nur lesen. Kein Commit/Push durch Agenten — nur der Koordinator. Vertrag: [NATIVE-BRIDGE-PROTOCOL.md](NATIVE-BRIDGE-PROTOCOL.md), Fixtures `tests/fixtures/native-bridge/` (nur Koordinator, sofern das Paket sie nicht ausdrücklich freigibt; Änderungsbedarf sonst unter `RÜCKFRAGEN:` melden). Review immer über Kreuz.

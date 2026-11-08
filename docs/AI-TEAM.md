@@ -6,7 +6,7 @@ Wenn Selvir stattdessen direkt in Codex arbeitet, gilt dieselbe Aufteilung; Code
 
 ## Grundregeln
 
-- **Web-App plus native Umstellung.** Die Web-App (`index.html`, `js/`, `css/`) bleibt live und bis Phase B Datenbesitzer. Seit 26.10.2026 läuft die schrittweise native SwiftUI-Umstellung in `ios/` auf Branch `native-ios`; Plan, Vertrag und Aufgaben in `docs/native/`. Codex übernimmt dort einen großen Teil der Umsetzung, Prüfung immer über Kreuz.
+- **Web-App plus WebView-Hülle (08.11.2026).** Die SwiftUI-Umstellung ist gestoppt, archiviert unter Tag `native-swiftui-archiv`; nicht löschen oder fortsetzen. Die Hülle von `main` (Basis `ios-build-9`) lädt die Live-Web-App; Web bleibt Daten-, Auth- und Sync-Besitzer. Neue native Extras (Barcode, Health schreiben nach Opt-in, lokale Erinnerungen) gehören in die bestehende Hülle/`pulsNative`-Brücke. `docs/native/` bewahrt ausschließlich den historischen Umstellungsstand.
 - **Wer schreibt, prüft nicht selbst.** Jede größere Änderung sieht mindestens eine andere KI.
 - **Höchstens zwei schreibende Agenten gleichzeitig**, nur in getrennten Dateien oder Worktrees.
 - **Nur der Koordinator** integriert, committet und veröffentlicht. Ein Push auf `main` geht sofort live.

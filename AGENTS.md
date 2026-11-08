@@ -29,7 +29,7 @@ Rollen stehen in `.codex/agents/*.toml`. Falls ein Client diese Rollen nicht aut
 
 Claude Code, Codex und Gemini (Antigravity CLI) arbeiten als ein Team. Wer welche Aufgabe übernimmt, welches Modell und welchen Denkaufwand, steht in `docs/AI-TEAM.md`; der Koordinator wählt danach selbst. Ein Auftrag von Claude Code an Codex oder Gemini (über `scripts/codex-bridge.ps1` bzw. `scripts/gemini-bridge.ps1`) ist ein Koordinator-Auftrag: ausführen, Rückfragen unter `RÜCKFRAGEN:` stellen, nicht committen oder veröffentlichen.
 
-**Web-App und native Umstellung:** Seit 26.10.2026 beauftragt Selvir die schrittweise native SwiftUI-Umstellung in `ios/` (Plan und Vertrag: `docs/native/`, Arbeitsbranch `native-ios`). Die Web-App bleibt parallel live und ist bis Phase B alleiniger Besitzer von Daten, Auth und Sync. Native Arbeit nur nach `docs/native/AGENT_TASKS.md`; sonstige `ios/`-Befunde berichten.
+**Web-App und iOS-Hülle (Entscheidung 08.11.2026):** Die SwiftUI-Umstellung ist gestoppt und unter Tag `native-swiftui-archiv` archiviert; nicht löschen oder weiter ausbauen. Die iOS-App ist wieder die WebView-Hülle von `main` (Basis `ios-build-9`) und lädt die Live-Web-App. Daten, Auth und Sync bleiben vollständig im Web. Neue native Extras gehören in die bestehende `pulsNative`-Brücke der Hülle. Die Aufgaben in `docs/native/` sind historisch und kein aktiver Arbeitsauftrag.
 
 Für einfache Änderungen keinen Agentenverbund starten. Größere Implementierungen anschließend unabhängig prüfen lassen. Der zuständige Entwickler behebt Befunde, der Prüfer prüft relevante Korrekturen erneut. Höchstens zwei schreibende Agenten parallel und nur bei klar getrennten Dateien/Arbeitskopien. Nebenagenten dürfen nicht selbst veröffentlichen, keine fremden Chats anschreiben und keine Live-Backend-Änderungen vornehmen.
 
@@ -50,7 +50,7 @@ Für einfache Änderungen keinen Agentenverbund starten. Größere Implementieru
 - Workout-IDs, Übungs-IDs, gespeicherte Nährwert-Snapshots und historische Messungen erhalten.
 - Keine fehlenden Nährwerte, Trainingszeiten oder Messpunkte erfinden. Gramm und Milliliter nur mit ausdrücklicher Dichte ineinander umrechnen.
 - Die entfernten Features aus `docs/PROJECT-CONTEXT.md` nicht ungefragt wieder einführen.
-- Seit 24.10.2026 gibt es eine native iOS-Hülle in `ios/` (lädt die Live-Web-App, Sideload per AltStore, siehe `docs/IOS-APP.md`). Die Web-App bleibt die eine Codebasis; App-Funktionen gehören weiter in die Web-Dateien. Ausnahme: Pausen-Mitteilung und Live-Aktivität/Dynamic Island laufen nativ über `native-bridge.js` → `ios/`; GPS für Läufe nativ über `running.js` → `ios/PULS/RunTracker.swift`. Health-Sync und Home-Bildschirm-Widgets sind nicht der aktive Auftrag.
+- Die native iOS-Hülle in `ios/` lädt die Live-Web-App (AltStore, siehe `docs/IOS-APP.md`). Native Brücken ergänzen Pausen-Mitteilung/Live-Aktivität, Haptik und Lauf-GPS. Seit 08.11.2026 zusätzlich beauftragt: nativer Barcode-Scanner, ausschließlich schreibender Apple-Health-Export mit Opt-in und lokale Trainings-/Wiege-Erinnerungen. Bestehende Funktionen erhalten; keine SwiftUI-Zustandsbrücke aktivieren. Home-Bildschirm-Widgets nicht neu ausbauen.
 
 ## Backend und Datenschutz
 

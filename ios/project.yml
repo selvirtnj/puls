@@ -21,10 +21,23 @@ targets:
     dependencies:
       - target: PULSWidgets
     scheme: {}
+    entitlements:
+      path: PULS/PULS.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+    # AltStore reads requested capabilities from the binary signature, not the source .entitlements file.
+    # Keep the existing certificate-free CI build; attach only an ad-hoc signature before IPA packaging.
+    postBuildScripts:
+      - name: AltStore capability metadata
+        path: scripts/prepare-altstore.sh
+        inputFiles:
+          - $(SRCROOT)/PULS/PULS.entitlements
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.selvirtnj.puls
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     info:
       path: PULS/Info.plist
       properties:
@@ -51,6 +64,8 @@ targets:
         NSCameraUsageDescription: PULS nutzt die Kamera zum Scannen von Barcodes und für Fotos.
         NSMicrophoneUsageDescription: PULS nutzt das Mikrofon für die Spracheingabe.
         NSPhotoLibraryUsageDescription: PULS nutzt Fotos, wenn du ein Bild hinzufügst.
+        NSHealthUpdateUsageDescription: PULS schreibt auf deinen Wunsch Gewicht und abgeschlossene Trainings in Apple Health.
+        NSHealthShareUsageDescription: PULS liest keine Gesundheitsdaten. Die Verbindung wird nur zum Schreiben deiner Einträge verwendet.
         # GPS für Läufe (RunTracker.swift), auch bei gesperrtem iPhone; nur während eines GPS-Laufs aktiv.
         NSLocationWhenInUseUsageDescription: PULS misst während eines Laufs mit GPS Distanz, Pace und Strecke.
         UIBackgroundModes:

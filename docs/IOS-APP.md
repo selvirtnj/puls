@@ -2,6 +2,24 @@
 
 PULS gibt es zusätzlich als echte iOS-App für iPhone und iPad. Die App ist eine native Hülle (Swift, `WKWebView`) um die veröffentlichte Web-App `https://selvirtnj.github.io/puls/`. Dadurch kommen alle Web-Updates automatisch in der App an; eine neue `.ipa` ist nur nötig, wenn sich etwas in `ios/` ändert.
 
+**Entscheidung 08.11.2026:** Die SwiftUI-Umstellung ist gestoppt und unter Tag `native-swiftui-archiv` archiviert. Nicht löschen oder fortsetzen. Basis der aktiven Hülle ist wieder `main`/`ios-build-9`, die geladene Web-App steht derzeit bei v83. Neue native Funktionen werden in dieser Hülle ergänzt. Die folgenden Extras sind lokal vorbereitet, noch nicht kompiliert oder veröffentlicht.
+
+## Neue Hüllen-Extras (lokal vorbereitet)
+
+- **Barcode:** `BarcodeScanner.swift` nutzt VisionKit DataScanner, auf nicht unterstützten Geräten bzw. bei Startfehler AVFoundation. Nur EAN/UPC/GTIN, Prüfziffernprüfung vor Übernahme; Kamera bleibt lokal. `js/native-extras.js` umschließt die letzte Web-Scannerdefinition und übergibt an denselben `lookupBarcode`-Pfad (gespeicherte Produkte/Open Food Facts/Wertekontrolle). Alte Hüllen und Safari behalten ihren Scanner. Abbrechen, Timeout und Antworten aus alten Seitenleben werden abgefangen.
+- **Health:** Konto → Darstellung → iPhone-Funktionen. Nur Gewicht und abgeschlossene Trainings/Aktivitäten schreiben; keine Schritte oder sonstigen Health-Daten lesen. Berechtigungsdialog erst beim Einschalten. Auch vorhandene Einträge werden exportiert, jedoch keine Trainings ohne belegte Start-/End-/Dauerwerte und keine alten Läufe ohne erfasste Pause. Gewichte haben Tagesauflösung und erscheinen am lokalen Tagesbeginn in Health; keine genaue Messuhrzeit wird behauptet. Kein Export von Kalorienschätzungen. Stabile, pro PULS-Owner getrennte Sync-Identifier und Sync-Versionen ersetzen bei Änderungen das eigene Health-Objekt; ein lokaler Hash-Merkzettel vermeidet unveränderte Wiederholungen. Gewicht nutzt den Tag als logische Identität, weil die Web-App bei einer Tageskorrektur eine neue Messungs-ID erzeugt. Web-IDs bleiben unverändert. In PULS gelöschte Einträge werden nicht aus Health entfernt. Erneutes Einschalten löscht keine Health-Daten. Bei tatsächlichem Konto-/Lokalwechsel ist erneut einzuschalten; Reload desselben Owners erhält die Gerätefreigabe. Revisionskonflikte, Recovery-Sperre und laufende Cloud-Arbeit sperren den Export.
+- **Erinnerungen:** Trainings- und Wiege-Erinnerung mit lokaler Uhrzeit und Wochentagen. Systemberechtigung erst beim expliziten Aktivieren; Ausschalten funktioniert ohne neue Anfrage. Maximal 14 wiederkehrende Kalender-Mitteilungen mit eigenen IDs; `puls-rest`, km-Mitteilungen und Live-Aktivitäten bleiben getrennt. Pläne bleiben auf demselben Gerät über App-Neustarts bestehen. Bei Ownerwechsel werden ausschließlich diese Erinnerungen entfernt. Anzeige liest den tatsächlichen Geräteplan. Cloud-Sync/Import aktiviert keine Mitteilungen automatisch; auf einem anderen Gerät ausdrücklich speichern.
+- **Profilverträglichkeit:** optionale `state.nativeExtras` mit `healthEnabled` und Erinnerungswünschen wird in `validData()` geprüft. Alte Sicherungen bleiben gültig. Die Profilwerte ersetzen keine Geräteberechtigung. Auth, Supabase, Revisions-/Konfliktverfahren, Workout-/Übungs-IDs und vorhandene Nährwert-Snapshots werden nicht geändert.
+- **Feature-Grenzen:** nur `barcodeScanner`, `localReminders` und bei erfolgreicher Verfügbarkeitsprüfung `healthWrite`. Kein `pulsState`-Handler, `stateBridge`, `nativeWebPages`, `nativeTabs` oder SwiftUI-Fenster. Die Web-Erweiterungen aus v74–v83 bleiben deshalb inaktiv und erhalten.
+
+### HealthKit, kostenloses Konto und AltStore
+
+Die [aktuelle Apple-Capability-Tabelle](https://developer.apple.com/help/account/reference/supported-capabilities-ios/) führt HealthKit auch für kostenlose „Apple Developer“-Konten auf (HealthKit-Zeile: alle drei Spalten freigegeben, geprüft 08.11.2026). Ein bezahltes Konto ist damit keine pauschale Voraussetzung. Die konkrete AltStore-Signierung bleibt zu testen: [AltStore](https://github.com/altstoreio/AltStore/blob/develop/AltStore/Operations/FetchProvisioningProfilesOperation.swift) ermittelt Fähigkeiten aus den [Binär-Entitlements](https://github.com/rileytestut/AltSign/blob/master/AltSign/Model/ALTApplication.mm), nicht aus einer lose beigelegten `.entitlements`-Datei.
+
+`project.yml` ergänzt HealthKit-Entitlement und die beiden Health-Zwecktexte. Der `postBuildScripts`-Schritt `ios/scripts/prepare-altstore.sh` signiert beim bestehenden zertifikatsfreien iPhone-CI-Build zunächst die eingebettete Erweiterung, dann die Haupt-App **ad hoc** mit dem HealthKit-Entitlement und prüft dessen Vorhandensein. Das ist keine Apple-Identität und kein gültiges Installationsprofil; AltStore ersetzt diese Signatur. Der Workflow muss dafür nicht geändert werden. Tatsächlicher macOS-Build und `codesign` sind noch offen.
+
+Beim App-Start wird nur das HealthKit-Flag des eingebetteten Geräteprofils geprüft, anschließend ein HealthKit-API-Preflight ohne Berechtigungsdialog. Profilinhalte/Healthwerte werden nicht protokolliert. Fehlende oder entfernte Capability, fehlendes HealthKit oder Preflight-Fehler bedeuten: kein `healthWrite`, Hülle lädt weiter. Nach spätestens drei Sekunden lädt die Web-App auch ohne Antwort des Preflights. Geräteprobe mit der neu signierten IPA bleibt erforderlich; eine Quellprüfung beweist keine AltStore-Kompatibilität.
+
 ## Installieren
 
 Voraussetzung: AltServer läuft auf dem Windows-PC, AltStore ist auf dem Gerät, beide im selben WLAN.
@@ -35,8 +53,8 @@ Das Xcode-Projekt wird mit XcodeGen aus `ios/project.yml` erzeugt und nicht eing
 
 ## Grenzen
 
-- Nicht im App Store, unsigniert; Signatur übernimmt AltStore mit Selvirs Apple-ID.
+- Nicht im App Store; der Build erhält nur eine Ad-hoc-Signatur als Capability-Metadatum. Die installierbare Signatur und das Profil übernimmt AltStore mit Selvirs Apple-ID.
 - Web-Speech-Spracheingabe hängt von der iOS-Version im WebView ab.
-- Kein HealthKit und keine Home-Bildschirm-Widgets. Dynamic Island gibt es nur auf iPhones ab 14 Pro; das iPad bekommt nur die Mitteilung.
+- Health-Export ist optional und wird bei fehlender Geräte-/Signierunterstützung nicht angeboten. Keine neuen Home-Bildschirm-Widgets. Dynamic Island gibt es nur auf unterstützten iPhones; iPad-Verhalten auf echtem Gerät prüfen.
 - Die Live-Aktivität kann iOS nur beim Pausenstart in der offenen App anlegen. Verlängerungen und das Ende werden gemeldet, sobald die Web-App wieder läuft.
 - Das Build-Ergebnis ist ohne echtes Gerät nur kompiliert, nicht auf iPad/iPhone getestet.

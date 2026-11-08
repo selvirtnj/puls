@@ -1,4 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+require('./check-shell-extras.cjs');
 
 // Run the actual bridge with synthetic workouts and event hooks, without a real account.
 function bridgeFixture(workouts=[],overrides={}){

@@ -1,3 +1,5 @@
+> **Archiviert seit 08.11.2026:** SwiftUI-Umstellung gestoppt; Tag `native-swiftui-archiv`. Aktiver Weg: WebView-Hülle, siehe [README](README.md). Der folgende Plan bleibt historisch erhalten.
+
 # PULS — Plan der nativen iOS-Umstellung
 
 Stand 26.10.2026. Grundlage: zwei unabhängige Analysen (Claude-Planagent, Codex), Ergebnisse stimmen im Kern überein.

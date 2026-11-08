@@ -16,6 +16,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var locateManager: CLLocationManager?
     private var locatePending = false
     private var locateTimeout: DispatchWorkItem?
+    private let healthExporter = HealthExporter()
+    private let reminderScheduler = ReminderScheduler()
+    private var barcodeScanner: BarcodeScanner?
+    private var barcodeScanID: String?
+    private var extrasOwner = ""
 
     override func loadView() {
         let config = WKWebViewConfiguration()
@@ -27,7 +32,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // Gegenstück: native-bridge.js (window.webkit.messageHandlers.pulsNative).
         config.userContentController.add(self, name: "pulsNative")
         // Kennzeichen für native-bridge.js: diese App-Version zeigt die Workout-Zeit in der Live-Aktivität.
-        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        config.userContentController.addUserScript(WKUserScript(source: "window.pulsNativeFeatures=['workoutTimer','haptics','runGps','runActivity','runActivityEndState','runLocate','barcodeScanner','localReminders'];", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
@@ -43,7 +48,19 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        webView.load(URLRequest(url: Self.home))
+        // Never hold the shell hostage to an unavailable Health service. No authorization prompt here.
+        var loaded = false
+        let load: (Bool) -> Void = { [weak self] healthAvailable in
+            guard let self = self, !loaded else { return }
+            loaded = true
+            if healthAvailable {
+                self.webView.configuration.userContentController.addUserScript(WKUserScript(
+                    source: "window.pulsNativeFeatures.push('healthWrite');", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+            }
+            self.webView.load(URLRequest(url: Self.home))
+        }
+        healthExporter.checkAvailability(load)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { load(false) }
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
@@ -82,6 +99,45 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
               let body = message.body as? [String: Any],
               let type = body["type"] as? String else { return }
         switch type {
+        case "barcodeScan":
+            guard let requestID = body["requestId"] as? String, let scanID = body["scanId"] as? String else { return }
+            guard barcodeScanner == nil else { sendExtras(requestID, ["status": "unavailable"]); return }
+            let scanner = BarcodeScanner()
+            barcodeScanner = scanner; barcodeScanID = scanID
+            scanner.start(from: self) { [weak self, weak scanner] status, code in
+                guard let self = self else { return }
+                if self.barcodeScanner === scanner { self.barcodeScanner = nil; self.barcodeScanID = nil }
+                var result: [String: Any] = ["status": status]
+                if let code = code { result["code"] = code }
+                self.sendExtras(requestID, result)
+            }
+        case "barcodeCancel":
+            if body["scanId"] as? String == barcodeScanID { barcodeScanner?.cancel() }
+        case "extrasContext":
+            guard let requestID = body["requestId"] as? String, let owner = body["owner"] as? String,
+                  !owner.isEmpty, owner.count <= 150 else { return }
+            extrasOwner = owner
+            healthExporter.setContext(owner)
+            reminderScheduler.setContext(owner)
+            sendExtras(requestID, ["healthEnabled": healthExporter.enabled(owner), "reminders": reminderScheduler.settings])
+        case "healthEnable":
+            guard let requestID = body["requestId"] as? String, let owner = body["owner"] as? String,
+                  owner == extrasOwner, let enabled = body["enabled"] as? Bool else { return }
+            healthExporter.setEnabled(enabled, owner: owner) { [weak self] enabled in
+                self?.sendExtras(requestID, ["healthEnabled": enabled])
+            }
+        case "healthSync":
+            guard let requestID = body["requestId"] as? String, let owner = body["owner"] as? String,
+                  owner == extrasOwner, let rows = body["samples"] as? [[String: Any]] else { return }
+            healthExporter.sync(rows, owner: owner) { [weak self] status in
+                self?.sendExtras(requestID, ["ok": status != "unavailable", "status": status])
+            }
+        case "remindersSet":
+            guard let requestID = body["requestId"] as? String, let owner = body["owner"] as? String,
+                  owner == extrasOwner, let preferences = body["reminders"] as? [String: Any] else { return }
+            reminderScheduler.set(preferences, owner: owner) { [weak self] success in
+                self?.sendExtras(requestID, ["ok": success, "status": success ? "saved" : "denied"])
+            }
         case "restStart":
             guard let endsAt = body["endsAt"] as? Double else { return }
             let startsAt = body["startsAt"] as? Double ?? Date().timeIntervalSince1970 * 1000
@@ -124,6 +180,16 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         default:
             break
         }
+    }
+
+    private func sendExtras(_ requestID: String, _ body: [String: Any]) {
+        guard let url = webView.url, url.scheme == "https", url.host == Self.appHost,
+              url.path.hasPrefix(Self.appPath) else { return }
+        var payload = body
+        payload["requestId"] = requestID
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.pulsNativeExtrasReceive&&window.pulsNativeExtrasReceive(\(json))", completionHandler: nil)
     }
 
     /// GPS-Punkte an running.js (window.pulsRunGpsReceive) zurückgeben.
