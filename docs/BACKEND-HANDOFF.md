@@ -30,6 +30,24 @@ Für die Löschung muss die signierte `session_id` zu einer höchstens fünf Min
 - Vor Nutzung durch mehr Freunde: reale Isolation zwischen zwei ausdrücklich eingerichteten Testkonten, SMTP/Auth-Mailversand, Redirects, Limits, Offline-Anmeldung, Konflikte und Backup-Wiederherstellung prüfen.
 - E-Mail-Bestätigung nicht als bequemen Workaround abschalten. Keine neuen Berechtigungen oder SQL-Änderungen ohne Prüfung des konkreten Nutzerauftrags und geltender Freigaben.
 
+## KI-Essensfoto (Supabase Edge Function + Gemini), vorbereitet 08.11.2026
+
+Quelltext: `supabase/functions/food-photo/index.ts`, Limit-Migration `backend/food-photo.sql`, Client `js/food-photo.js`. Noch nicht live eingerichtet.
+
+Ablauf: Client (nur angemeldet, online) verkleinert das Foto auf ≤ 1024 px JPEG und sendet es mit optionaler Beschreibung (≤ 1200 Zeichen) und Nutzer-JWT an `/functions/v1/food-photo`. Die Funktion prüft Origin (`https://selvirtnj.github.io`, lokale Vorschau `127.0.0.1:4173`/`localhost:4173`), JWT über `/auth/v1/user`, Größe/JPEG-Format, dann das Limit per RPC `puls_food_photo_allow()` (nutzt nur `auth.uid()`; 3 pro Minute, 20 pro Tag). Danach Gemini `generateContent` mit `responseJsonSchema`; die Antwort wird geprüft und nur die bekannten Felder weitergegeben. Keine Speicherung oder Protokollierung von Foto, Text, Token oder Google-Fehlern. Schlüssel nur als Secret auf dem Server.
+
+Modell: Standard `gemini-3.8-flash` (laut https://aistudio.google.com/docs/models am 08.11.2026 neuestes Flash-Modell, Gratis-Tarif laut https://aistudio.google.com/docs/pricing; dort: Gratis-Eingaben können zur Produktverbesserung genutzt werden). Überschreibbar mit Secret `GEMINI_MODEL`, z. B. `gemini-3.5-flash-lite` (ebenfalls gratis) bei Limitproblemen.
+
+Einrichtung durch Selvir (einmalig, in dieser Reihenfolge):
+
+1. **Gemini-Schlüssel:** https://aistudio.google.com → „Get API key“ → „Create API key“ (Gratis-Projekt, keine Abrechnung aktivieren). Schlüssel nirgends ins Repository oder in den Chat kopieren.
+2. **SQL:** Supabase-Dashboard → SQL Editor → Inhalt von `backend/food-photo.sql` einfügen → Run. Legt nur `puls_food_photo_quota` und die Funktion `puls_food_photo_allow()` an; `puls_profiles` bleibt unverändert.
+3. **Secret:** Dashboard → Edge Functions → Secrets (bzw. Project Settings → Edge Functions) → `GEMINI_API_KEY` = Schlüssel aus Schritt 1. Optional `GEMINI_MODEL`. `SUPABASE_URL`/`SUPABASE_ANON_KEY` stellt Supabase selbst bereit.
+4. **Funktion:** Dashboard → Edge Functions → „Deploy a new function“ → „Via Editor“ → Name genau `food-photo` → Inhalt von `supabase/functions/food-photo/index.ts` einfügen → Deploy. „Verify JWT“ eingeschaltet lassen. (Alternativ CLI: `supabase functions deploy food-photo`.)
+5. **Probe:** In der App angemeldet Essen → Foto → „Foto schätzen (KI)“. Meldung „noch nicht eingerichtet“ = Funktion/Secret fehlt; „Limit erreicht“ = Tageslimit oder Gemini-Gratislimit.
+
+Grenzen: Mock-Tests ersetzen keinen echten Lauf von Edge Function, RPC/RLS oder Gemini. Falls „Verify JWT“ mit neuen JWT-Signaturschlüsseln Anfragen ablehnt, kann es ausgeschaltet werden; die Funktion prüft das Token zusätzlich selbst über Supabase Auth. Das Gratis-Kontingent von Google kann sich ändern. Schätzungen sind ungenau, besonders Öl und Portionsgröße.
+
 ## Sichere lokale Prüfung
 
 ```sh

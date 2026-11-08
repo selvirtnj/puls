@@ -5,6 +5,13 @@
 - 53 neue Katalogeinträge (`PULS_tr_*`/Balkan) mit 51 Portionsangaben in `catalog/foods-36.json`/`portions.json`, als Rezept- bzw. Etikett-Richtwerte mit Quelle gekennzeichnet, keine Mikronährstoffe erfunden. Gebratene Sucuk mangels Quelle ausgelassen. `CATALOG_CACHE` → `puls-catalog-v2`. Test `tests/check-regional-foods.cjs`.
 - In Arbeit: Freundesliste + Stups (Worktree `agent/backend-freunde`), danach KI-Foto (Gemini über Supabase-Funktion) und Taschenlampe im nativen Scanner. Liftoff hat keinen Export; kein Import geplant.
 
+### KI-Essensfoto und Taschenlampe, lokal vorbereitet (08.11.2026, ohne Version)
+
+- Web: `js/food-photo.js` (nach `food-flow.js`) ergänzt im Foto-Tab „Foto schätzen (KI)“: Foto (≤ 1024 px JPEG, ohne EXIF) + optionale Beschreibung → Supabase Edge Function `food-photo` → Google Gemini `gemini-3.8-flash` (Gratis-Tarif) → editierbares Kontrollformular, Speichern erst nach Häkchen. Eintrag über die normale `addFood`-Kette mit `source:'KI-Schätzung · Google Gemini'` und `aiEstimate:true`, nur kcal/Makros. Foto und Text werden nicht gespeichert. Nur mit Konto und online.
+- Server (noch nicht live): `supabase/functions/food-photo/index.ts`, Limit-Tabelle `backend/food-photo.sql` (3/Minute, 20/Tag pro Konto). Einrichtung siehe `docs/BACKEND-HANDOFF.md` → „KI-Essensfoto“. Ohne Einrichtung zeigt die App „noch nicht eingerichtet“.
+- iOS: Taschenlampen-Knopf im nativen Scanner (DataScanner und AVFoundation-Fallback), aus beim Schließen. Web-Scanner hatte bereits einen Blitz-Knopf (`ff-torch`, nur wenn `torch` gemeldet). Swift-Build nur in CI, Gerätetest offen.
+- Test: `tests/check-food-photo.cjs` (in `scripts/check.cjs`), nur Mocks; kein echter Gemini-, SQL/RLS- oder Edge-Function-Lauf.
+
 ### Version 84, WebView-Hülle statt SwiftUI mit drei nativen Extras (08.11.2026)
 
 - Veröffentlicht als v84 auf `main`. Review (Claude `puls-reviewer`) mit Nachprüfung: Health überspringt `autoFinished`/`timeApprox`-Workouts, Script-Sandbox aus, Erinnerungs-Banner bei offener App, Health-Abgleich nur bei geänderten Daten. Offen: CI-Swift-Build, AltStore-Installation mit HealthKit, Gerätetest von Scanner/Health/Erinnerungen und 390 × 844 der neuen Einstellungen (nur in der Hülle sichtbar).

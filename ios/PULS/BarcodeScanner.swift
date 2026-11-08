@@ -11,6 +11,9 @@ final class BarcodeScanner: NSObject, DataScannerViewControllerDelegate, AVCaptu
     private var capture: AVCaptureSession?
     private let captureQueue = DispatchQueue(label: "puls.barcode.camera")
     private var timeout: DispatchWorkItem?
+    private var torchDevice: AVCaptureDevice?
+    private var torchButton: UIBarButtonItem?
+    private var torchOn = false
 
     func start(from presenter: UIViewController, completion: @escaping (String, String?) -> Void) {
         self.presenter = presenter
@@ -51,6 +54,10 @@ final class BarcodeScanner: NSObject, DataScannerViewControllerDelegate, AVCaptu
         controller.navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancelPressed))
         let navigation = UINavigationController(rootViewController: controller)
         self.navigation = navigation
+        // The AVFoundation fallback configures the torch with its real capture device in startCamera.
+        if dataScanner != nil {
+            configureTorch(controller, device: AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back))
+        }
         navigation.presentationController?.delegate = self
         presenter.present(navigation, animated: true) { [weak self] in
             guard let self = self, self.completion != nil else { return }
@@ -69,6 +76,7 @@ final class BarcodeScanner: NSObject, DataScannerViewControllerDelegate, AVCaptu
         guard completion != nil, let navigation = navigation else { return }
         dataScanner?.stopScanning()
         dataScanner = nil
+        turnTorchOff()
         let controller = BarcodeCameraViewController()
         controller.title = "Barcode scannen"
         controller.navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancelPressed))
@@ -89,7 +97,62 @@ final class BarcodeScanner: NSObject, DataScannerViewControllerDelegate, AVCaptu
         guard !output.metadataObjectTypes.isEmpty else { finish("unavailable"); return }
         capture = session
         controller.attach(session)
+        configureTorch(controller, device: device)
         captureQueue.async { session.startRunning() }
+    }
+
+    private func configureTorch(_ controller: UIViewController, device: AVCaptureDevice?) {
+        guard let device = device, device.hasTorch, device.isTorchModeSupported(.on) else {
+            navigation?.setToolbarHidden(true, animated: false)
+            return
+        }
+        torchDevice = device
+        let button = UIBarButtonItem(image: UIImage(systemName: "flashlight.off.fill"), style: .plain,
+                                     target: self, action: #selector(toggleTorch))
+        button.accessibilityLabel = "Taschenlampe einschalten"
+        button.accessibilityValue = "Aus"
+        torchButton = button
+        torchOn = false
+        controller.toolbarItems = [UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil), button,
+                                   UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)]
+        navigation?.setToolbarHidden(false, animated: false)
+    }
+
+    @objc private func toggleTorch() {
+        guard completion != nil, let device = torchDevice else { return }
+        let enabled = !torchOn
+        torchButton?.isEnabled = false
+        captureQueue.async { [weak self] in
+            var active = false
+            do {
+                try device.lockForConfiguration()
+                defer { device.unlockForConfiguration() }
+                if enabled { try device.setTorchModeOn(level: AVCaptureDevice.maxAvailableTorchLevel) }
+                else { device.torchMode = .off }
+                active = device.torchMode == .on
+            } catch { active = device.torchMode == .on }
+            DispatchQueue.main.async {
+                guard let self = self, self.completion != nil, self.torchDevice === device else { return }
+                self.torchOn = active
+                self.torchButton?.image = UIImage(systemName: active ? "flashlight.on.fill" : "flashlight.off.fill")
+                self.torchButton?.accessibilityLabel = active ? "Taschenlampe ausschalten" : "Taschenlampe einschalten"
+                self.torchButton?.accessibilityValue = active ? "Ein" : "Aus"
+                self.torchButton?.isEnabled = true
+            }
+        }
+    }
+
+    private func turnTorchOff() {
+        let device = torchDevice
+        torchDevice = nil; torchButton = nil; torchOn = false
+        captureQueue.async {
+            guard let device = device, device.hasTorch else { return }
+            do {
+                try device.lockForConfiguration()
+                defer { device.unlockForConfiguration() }
+                device.torchMode = .off
+            } catch { /* Stopping the capture below also releases the camera. */ }
+        }
     }
 
     @objc private func cancelPressed() { cancel() }
@@ -127,6 +190,7 @@ final class BarcodeScanner: NSObject, DataScannerViewControllerDelegate, AVCaptu
         guard let callback = completion else { return }
         completion = nil
         timeout?.cancel(); timeout = nil
+        turnTorchOff()
         dataScanner?.stopScanning(); dataScanner = nil
         if let session = capture { captureQueue.async { session.stopRunning() } }
         capture = nil
