@@ -1,0 +1,115 @@
+/* PULS Bewegung (v87). Feste Zeiten und Kurven als Tokens; Klassen sind generisch und werden von js/motion.js
+   (window.pulsMotion) gesetzt oder direkt im Markup verwendet. Übersicht siehe Kopf von js/motion.js und
+   docs/DESIGN-SYSTEM.md (Abschnitt Bewegung). Reduzierte Bewegung: <html class="reduce-motion"> schaltet alles ab,
+   nur Einblenden über die Opazität bis 120 ms bleibt. Keine Schatten, Verläufe, Glanz oder Endlos-Effekte außer der Scanlinie. */
+:root {
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-count: 700ms;
+  --motion-stagger: 40ms;
+  --ease-spring: cubic-bezier(.2, .8, .2, 1);
+  --ease-out: cubic-bezier(.2, 0, 0, 1);
+  --ease-in: cubic-bezier(.4, 0, 1, 1);
+}
+
+/* ---------- Knopfdruck: leichtes Eindrücken (eigene scale-Eigenschaft, verträgt vorhandene transforms) ---------- */
+:where(button, .btn, [role="button"], summary, .dsrow):where(:not(:disabled):not([data-motion-tap="off"])) {
+  transition: scale var(--motion-fast) var(--ease-out), opacity var(--motion-fast) linear !important;
+}
+:where(button, .btn, [role="button"], summary, .dsrow):where(:active:not(:disabled):not([data-motion-tap="off"])) { scale: .97; }
+
+/* ---------- Tabwechsel: neuer Inhalt hebt sich sanft herein ---------- */
+@keyframes motionPageIn { from { opacity: 0; transform: translateY(8px); } }
+#content.motion-page-in > * { animation: motionPageIn var(--motion-base) var(--ease-out) both !important; }
+#content.motion-page-in > :nth-child(2) { animation-delay: calc(var(--motion-stagger) * 1) !important; }
+#content.motion-page-in > :nth-child(3) { animation-delay: calc(var(--motion-stagger) * 2) !important; }
+#content.motion-page-in > :nth-child(4) { animation-delay: calc(var(--motion-stagger) * 3) !important; }
+#content.motion-page-in > :nth-child(n+5) { animation-delay: calc(var(--motion-stagger) * 4) !important; }
+
+/* ---------- Listeneinträge ---------- */
+@keyframes motionEnter { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+.motion-enter, [data-motion~="enter"].motion-play { animation: motionEnter var(--motion-base) var(--ease-spring) both !important; animation-delay: calc(var(--motion-i, 0) * var(--motion-stagger)) !important; }
+.motion-leaving { overflow: hidden; pointer-events: none; }
+
+/* ---------- Seiten-Push (Vollseiten wie Add Food und Detail) ---------- */
+@keyframes motionPushIn { from { transform: translateX(100%); } }
+@keyframes motionPushOut { to { transform: translateX(100%); } }
+.motion-push-in { animation: motionPushIn var(--motion-slow) var(--ease-spring) both !important; }
+.motion-push-out { animation: motionPushOut var(--motion-base) var(--ease-in) both !important; pointer-events: none; }
+
+/* ---------- Balken wachsen, Glas füllt sich, Ring füllt sich ---------- */
+@keyframes motionGrowX { from { transform: scaleX(0); } }
+@keyframes motionGrowY { from { transform: scaleY(0); } }
+@keyframes motionRing { from { stroke-dasharray: 0 100; } }
+[data-motion~="bar"].motion-play, .dsmeter > i.motion-play { transform-origin: left center; animation: motionGrowX var(--motion-count) var(--ease-spring) both !important; }
+[data-motion~="fill"].motion-play { transform-origin: center bottom; animation: motionGrowY var(--motion-count) var(--ease-spring) both !important; }
+/* Ring: Kreis mit pathLength="100" und stroke-dasharray="<wert> 100". */
+[data-motion~="ring"].motion-play .motion-ring-value, .motion-ring-value[data-motion~="ring"].motion-play { animation: motionRing var(--motion-count) var(--ease-spring) both !important; }
+
+/* ---------- Podium steigt auf (Stufen mit --motion-i: 0, 1, 2) ---------- */
+@keyframes motionRise { from { opacity: 0; transform: translateY(24px); } }
+[data-motion~="rise"].motion-play { animation: motionRise var(--motion-slow) var(--ease-spring) both !important; animation-delay: calc(var(--motion-i, 0) * 80ms) !important; }
+
+/* ---------- Häkchen zeichnet sich (Pfade mit pathLength="1", z. B. pulsMotion.checkSvg()) ---------- */
+@keyframes motionDraw { from { stroke-dashoffset: 1; } }
+.motion-check path, [data-motion~="check"] path { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.motion-check.motion-play path, [data-motion~="check"].motion-play path { animation: motionDraw var(--motion-slow) var(--ease-out) both !important; animation-delay: 60ms !important; }
+.motion-check { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Erfolgs-Moment und Rang-Enthüllung ---------- */
+@keyframes motionPop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes motionReveal { 0% { opacity: 0; transform: scale(.6); } 70% { opacity: 1; transform: scale(1.04); } 100% { transform: scale(1); } }
+.motion-success, [data-motion~="pop"].motion-play { animation: motionPop var(--motion-slow) var(--ease-spring) both !important; }
+.motion-reveal { animation: motionReveal 520ms var(--ease-spring) both !important; }
+
+/* ---------- Tab-Indikator gleitet (Container mit data-motion-indicator, Element .motion-indicator) ---------- */
+[data-motion-indicator] { position: relative; }
+.motion-indicator {
+  position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none;
+  width: var(--mi-w, 0); height: var(--mi-h, 0); transform: translate(var(--mi-x, 0), var(--mi-y, 0));
+  border-radius: 8px; background: var(--ds-fill, rgba(120, 120, 128, .2));
+  transition: transform var(--motion-base) var(--ease-spring), width var(--motion-base) var(--ease-spring), height var(--motion-base) var(--ease-spring) !important;
+}
+[data-motion-indicator] > :not(.motion-indicator) { position: relative; z-index: 1; }
+
+/* ---------- Deck: wischbare Folien mit Einrasten ---------- */
+.motion-deck { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scroll-behavior: smooth; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.motion-deck::-webkit-scrollbar { display: none; }
+.motion-deck > * { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; }
+
+/* ---------- Scanlinie (Barcode-Ansicht) ---------- */
+@keyframes motionScan { from { transform: translateY(0); } to { transform: translateY(var(--scan-travel, 180px)); } }
+.motion-scanline { position: absolute; left: 8%; right: 8%; top: 0; height: 2px; border-radius: 1px; background: var(--ds-accent, #34c759); opacity: .9; animation: motionScan 1.6s ease-in-out infinite alternate !important; pointer-events: none; }
+
+/* ---------- Reduzierte Bewegung ---------- */
+@keyframes motionFade { from { opacity: 0; } }
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+  animation-duration: 1ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important;
+  transition-duration: 0s !important; transition-delay: 0s !important; scroll-behavior: auto !important;
+}
+html.reduce-motion :where(button, .btn, [role="button"], summary, .dsrow):active { scale: none !important; }
+html.reduce-motion #content.motion-page-in > *,
+html.reduce-motion .motion-enter,
+html.reduce-motion [data-motion~="enter"].motion-play,
+html.reduce-motion .motion-reveal,
+html.reduce-motion [data-motion~="rise"].motion-play { animation: motionFade var(--motion-fast) linear both !important; }
+html.reduce-motion [data-motion].motion-play:not([data-motion~="enter"]):not([data-motion~="rise"]),
+html.reduce-motion .dsmeter > i.motion-play,
+html.reduce-motion .motion-ring-value,
+html.reduce-motion .motion-check path,
+html.reduce-motion .motion-success,
+html.reduce-motion .motion-push-in,
+html.reduce-motion .motion-push-out { animation: none !important; }
+html.reduce-motion .motion-scanline { animation: none !important; top: 50%; }
+html.reduce-motion .motion-deck { scroll-behavior: auto !important; }
+/* Vorhandene Bewegungen mit höherer Spezifität (design-system.css) ebenfalls abschalten. */
+html.reduce-motion body dialog#modal.sheetarriving[open],
+html.reduce-motion body dialog#modal.sheetclosing[open],
+html.reduce-motion body .dsring.dsringanimate .dsringvalue,
+html.reduce-motion body .puls-splash.splashout { animation: none !important; transition: none !important; }
+html.reduce-motion body #nav button.centraladd .ico svg { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  :where(button, .btn, [role="button"], summary, .dsrow):active { scale: none !important; }
+  .motion-scanline { animation: none !important; top: 50%; }
+}
