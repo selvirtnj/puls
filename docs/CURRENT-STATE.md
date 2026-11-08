@@ -1,5 +1,9 @@
 # PULS — aktueller Stand und Übergabe
 
+### Version 86, Freundesliste + KI-Essensfoto + Taschenlampe (08.11.2026)
+
+- Veröffentlicht: Freundesliste (Branch `agent/backend-freunde` gemergt, Claude-Review mit Nachprüfung freigegeben) und KI-Foto/Taschenlampe (Codex angefangen, Claude `puls-backend` fertiggestellt wegen Codex-Limit, Gemini-Review freigegeben). Beide Serverteile sind noch NICHT live: Selvir muss `backend/friends.sql` und `backend/food-photo.sql` im Supabase-SQL-Editor ausführen, Gemini-Schlüssel als Secret setzen und die Edge Function `food-photo` anlegen (Schritte in `BACKEND-HANDOFF.md`). Bis dahin bleibt „Freunde“ ausgeblendet, das KI-Foto meldet „noch nicht eingerichtet“. Neue IPA nötig für die Taschenlampe.
+
 ### Version 85, türkische und Balkan-Gerichte (08.11.2026)
 
 - 53 neue Katalogeinträge (`PULS_tr_*`/Balkan) mit 51 Portionsangaben in `catalog/foods-36.json`/`portions.json`, als Rezept- bzw. Etikett-Richtwerte mit Quelle gekennzeichnet, keine Mikronährstoffe erfunden. Gebratene Sucuk mangels Quelle ausgelassen. `CATALOG_CACHE` → `puls-catalog-v2`. Test `tests/check-regional-foods.cjs`.
@@ -11,6 +15,15 @@
 - Server (noch nicht live): `supabase/functions/food-photo/index.ts`, Limit-Tabelle `backend/food-photo.sql` (3/Minute, 20/Tag pro Konto). Einrichtung siehe `docs/BACKEND-HANDOFF.md` → „KI-Essensfoto“. Ohne Einrichtung zeigt die App „noch nicht eingerichtet“.
 - iOS: Taschenlampen-Knopf im nativen Scanner (DataScanner und AVFoundation-Fallback), aus beim Schließen. Web-Scanner hatte bereits einen Blitz-Knopf (`ff-torch`, nur wenn `torch` gemeldet). Swift-Build nur in CI, Gerätetest offen.
 - Test: `tests/check-food-photo.cjs` (in `scripts/check.cjs`), nur Mocks; kein echter Gemini-, SQL/RLS- oder Edge-Function-Lauf.
+
+### Freunde mit Trainingsserie und Stups — lokal vorbereitet, 08.11.2026
+
+- Koordinator-Auftrag auf `agent/backend-freunde`, Basis `306f6a6` (v84): eigene Freundescodes, Anfragen/Annahme/Ablehnung/Entfernen, nur unter angenommenen Freunden geteilte Trainingsserie/letztes Datum, „Stop slacking off“ nach Serienabbruch und empfangene Hinweise beim Öffnen/Fokus. Konto → Freunde, nur angemeldet/online; ausdrücklich aktivieren/deaktivieren. Neue `backend/friends.sql`, `js/friends.js`, `css/friends.css`, Asseteinträge in `index.html`/`sw.js`.
+- Keine bestehenden Profil-/Auth-/Sync-Funktionen oder persistierten Profilfelder geändert. Kennzahlen erst nach abgeschlossenem revisionsgeprüftem Profilsync; Konflikte/Offline/Recovery/abgelehnte Revisionen sperren Veröffentlichung. Quellenrevision verhindert serverseitig veraltete Mehrgeräte-Updates; nur eigene Profilrevision wird dazu gelesen/kurz gesperrt. Zufällige Codes, RLS und ausschließlich RPC-Zugriff; serverseitiges 12-h-Limit mit Paar-Transaktionslock. Details und Dashboard-Schritte: `BACKEND-HANDOFF.md`.
+- Keine native Hintergrundabfrage/Tokenübernahme: keine iOS-Änderung, kein APNs, Hinweis erst bei offener/fokussierter App. Blockieren optional nicht umgesetzt. Soziale Daten sind separat und nicht im Profilbackup enthalten. Deaktivieren löscht Beziehungen/Stupse; Kontolöschung kaskadiert.
+- Gesamtsuite `node scripts/check.cjs`, `tests/check-friends.cjs` und `git diff --check` bestanden. Mocktests für Opt-in, unveränderte alte Profile ohne `runs`, Tagesgrenzen/Läufe, Konflikt-/Revisionssperren, Offline/Vorschau, Konto-/Antwort-Races, Deaktivierung und Escaping. Unabhängiges Codex-Review samt Korrektur-Nachprüfung erledigt; KI-übergreifendes Review beim Claude-Koordinator. SQL noch nicht in PostgreSQL ausgeführt, kein Live-RLS-Nachweis. Browserhost/native Pipe nicht verfügbar: 390 × 844, Hell/Dunkel und iPhone-Interaktionen offen.
+- Claude-Review (9 Befunde) behoben: Namenslänge in Zeichen wie der Server, fehlerhafte Fremdzeilen nur gefiltert; ausgehende Anfragen ohne Empfängernamen; Anfragelimit und 7-Tage-Ablehnungssperre überleben Deaktivieren; Serverdatum `Europe/Berlin` (+1 Tag Toleranz); Veröffentlichung sperrt nach Sync-Dirty-Flag statt Byte-Vergleich; Prüfung höchstens minütlich ohne Zustandsserialisierung; erklärende Warte-/Fehlertexte; Menüpunkt erst nach erfolgreicher RPC, bei fehlender Migration pro Sitzung ausgeblendet. Tests in `tests/check-friends.cjs` ergänzt (Mocks/Quellverträge, kein PostgreSQL).
+- Kein Commit/Push/Live-Backend-Eingriff und gemäß Auftrag keine Versionsänderung. Koordinator prüft integrierten Diff unabhängig, richtet Migration erst nach Test ein und versioniert vor Veröffentlichung.
 
 ### Version 84, WebView-Hülle statt SwiftUI mit drei nativen Extras (08.11.2026)
 
