@@ -414,7 +414,7 @@ function latest(test,reason){const snapshot=test.snapshots().at(-1);assert.equal
   assert.deepEqual(clone(late.run('lateCalls')),['date','render','go','render'],'wrap final definitions after later scripts');
   assert.equal(late.messages.filter(x=>x.type==='navigate').at(-1).page,'food');assert.equal(project(late).overview.date,'2026-10-27');
   for(const rule of fs.readFileSync('css/native-shell.css','utf8').replace(/\/\*[\s\S]*?\*\//g,'').split('}').filter(x=>x.trim())){
-    for(const selector of rule.split('{')[0].split(','))assert(selector.trim().startsWith('html.puls-native-tabs '),'every chrome rule is nativeTabs scoped');
+    for(const selector of rule.split('{')[0].split(','))assert(/^html\.puls-native-tabs[\s.:]/.test(selector.trim()),'every chrome rule is nativeTabs scoped');
   }
   console.log('PASS: projection fixture, actual Web totals/rounding/planning, unknown versus zero, no-write dates, UI routing, nativeTabs gates, ownership/preview isolation and bounded payloads');
 
@@ -538,4 +538,91 @@ function latest(test,reason){const snapshot=test.snapshots().at(-1);assert.equal
   const chromeOnly=started({now:input.now,features:['stateBridge','nativeTabs']});
   chromeOnly.ctx.window.pulsNativeNavigate({page:'account',section:'plan',web:true});assert.equal(chrome(chromeOnly).accountSection,'plan');assert.equal(projections(chromeOnly).length,0);
   console.log('PASS: same-document/bfcache hello re-handshake, unchanged owner gates/sequences/cost, live accountSection in chrome/projection without rebuilding overview/chart');
+
+  {// Hybrid (§16 nativeWebPages): Web main pages under the native bar, entries open native windows with exact Web fallback.
+  const entryNames=['weightForm','pickDiaryDate','editDiaryFood','waterGoalForm','useFoodSuggestion','startWorkout','startRoutine','routineForm','reviewWorkout','runDetail','performanceHistory','runRoutesSheet','runGoalForm','foodForm','foodTab'];
+  const hybrid=(features,options={})=>{
+    const h=app({features,...options});
+    h.run('var webCalls=[];'+entryNames.map(name=>name+'=function(...args){webCalls.push(['+JSON.stringify(name)+',...args])}').join(';'));
+    if(options.setup)h.run(options.setup);
+    h.run("state.routines=[{id:'r1',name:'Push',exercises:[]}];state.workouts=[{id:'w1',name:'Push',date:today(),exercises:[]}];state.runs=[{id:'run1',name:'Morgenlauf'}];state.exerciseBook=[{id:'e1',name:'Bankdrücken'}];state.foods=[{id:'f1',date:date,name:'Apfel',grams:100,unit:'g'}]");
+    h.start();return h;
+  };
+  const windows=h=>h.messages.filter(x=>x.type==='openNative'&&x.screen==='window');
+  const webCalls=h=>clone(h.run('webCalls'));
+  const flush=()=>new Promise(resolve=>setImmediate(resolve));
+  const tabs=['stateBridge','nativeTabs'],withPages=[...tabs,'nativeWebPages'];
+  // Without the feature (browser, older IPA): no new global, no class, every entry stays the untouched Web flow.
+  for(const features of [['stateBridge'],tabs]){
+    const plain=hybrid(features);plain.ctx.window.pulsNativeSetChrome?.(true);
+    assert.equal(plain.ctx.window.pulsNativeWebFallback,undefined);assert.equal(plain.ctx.window.pulsNativeOpenIndexChart,undefined);
+    assert.equal(plain.ctx.document.documentElement.classList.contains('puls-native-webpages'),false);
+    assert.equal(plain.messages.find(x=>x.type==='hello').features.includes('nativeWebPages'),false);
+    plain.run("weightForm();foodForm();foodTab('barcode');startRoutine('r1');reviewWorkout('w1')");await flush();
+    assert.equal(windows(plain).length,0);assert.deepEqual(webCalls(plain),[['weightForm'],['foodForm'],['foodTab','barcode'],['startRoutine','r1'],['reviewWorkout','w1']]);
+  }
+  let h=hybrid(withPages);
+  assert.equal(h.messages.find(x=>x.type==='hello').features.includes('nativeWebPages'),true);
+  // Before Native confirms its bar: still the Web flow, no class.
+  h.run('weightForm()');assert.equal(windows(h).length,0);assert.deepEqual(webCalls(h),[['weightForm']]);
+  assert.equal(h.ctx.window.pulsNativeSetChrome(true),true);
+  const html=h.ctx.document.documentElement.classList;
+  assert.equal(html.contains('puls-native-tabs'),true);assert.equal(html.contains('puls-native-webpages'),true);
+  h.run("webCalls=[];weightForm();editDiaryFood('f1');useFoodSuggestion('base8',150);waterGoalForm();startWorkout();startRoutine('r1');routineForm('r1');routineForm();reviewWorkout('w1');runDetail('run1');performanceHistory('e1');runRoutesSheet();runGoalForm();pickDiaryDate()");
+  assert.deepEqual(webCalls(h),[],'confirmed hybrid entries do not open Web dialogs');
+  const day=h.run('date');
+  assert.deepEqual(windows(h).map(({protocol,type,screen,token,...rest})=>rest),[
+    {window:'weight',date:day},{window:'foodEntry',id:'f1'},{window:'foodProduct',id:'base8',amount:150},{window:'waterGoal'},
+    {window:'startWorkout'},{window:'startRoutine',id:'r1'},{window:'routine',id:'r1'},{window:'routine'},
+    {window:'workoutReview',id:'w1',title:'Push'},{window:'runDetail',id:'run1',title:'Morgenlauf'},{window:'exerciseHistory',id:'e1',title:'Bankdrücken'},
+    {window:'routes'},{window:'weeklyGoals'},{window:'date',date:day}]);
+  assert.deepEqual(windows(h)[2],fixture('open-native-window'),'shared fixture with BridgeMessagesTests');
+  const tokens=windows(h).map(x=>x.token);assert.equal(new Set(tokens).size,tokens.length);assert.ok(tokens.every(Number.isInteger));
+  // Unknown targets keep their Web flow (nothing invented natively).
+  h.run("webCalls=[];editDiaryFood('missing');startRoutine('missing');reviewWorkout('missing');runDetail('missing');performanceHistory('missing')");
+  assert.deepEqual(webCalls(h).map(x=>x[0]),['editDiaryFood','startRoutine','reviewWorkout','runDetail','performanceHistory']);
+  // Fallback: only the latest token, once, runs exactly the original call.
+  const fallback=h.ctx.window.pulsNativeWebFallback;
+  h.run("webCalls=[]");assert.equal(fallback(tokens[0]),false);assert.equal(fallback(999),false);
+  h.run("reviewWorkout('w1')");const last=windows(h).at(-1).token;
+  assert.equal(fallback(last),true);assert.deepEqual(webCalls(h),[['reviewWorkout','w1']]);assert.equal(fallback(last),false);
+  // foodForm()+foodTab(x) in one handler become one window with that tab; the fallback replays both.
+  h.run("webCalls=[];foodForm();foodTab('barcode')");assert.deepEqual(webCalls(h),[]);await flush();
+  let food=windows(h).at(-1);assert.equal(food.window,'food');assert.equal(food.tab,'barcode');
+  assert.equal(fallback(food.token),true);assert.deepEqual(webCalls(h),[['foodForm'],['foodTab','barcode']]);
+  h.run("webCalls=[];foodForm()");await flush();assert.equal(windows(h).at(-1).tab,'search');
+  h.run("foodTab('photo')");assert.deepEqual(webCalls(h),[['foodTab','photo']],'a later tab switch is not captured');
+  // Native-requested Web flows (pulsNativeNavigate, incl. addFood) never bounce back into a window.
+  const count=windows(h).length;h.run('webCalls=[]');
+  assert.equal(h.ctx.window.pulsNativeNavigate({action:'addFood'}),true);assert.equal(h.ctx.window.pulsNativeNavigate({action:'addWeight'}),true);
+  await flush();assert.equal(windows(h).length,count);assert.deepEqual(webCalls(h),[['foodForm'],['foodTab','search'],['weightForm']]);
+  // An open Web modal (chrome.blocking) keeps entries inside the Web flow.
+  h.run("webCalls=[];modal.open=true;weightForm();foodForm();modal.open=false");await flush();
+  assert.equal(windows(h).length,count);assert.deepEqual(webCalls(h),[['weightForm'],['foodForm']]);
+  // A failed delivery stays in the Web flow.
+  h.ctx.window.webkit.messageHandlers.pulsState.postMessage=()=>{throw Error('handler unavailable')};
+  h.run("webCalls=[];startWorkout();foodForm();foodTab('recipes')");await flush();
+  assert.deepEqual(webCalls(h),[['startWorkout'],['foodForm'],['foodTab','recipes']]);
+  // Real nesting (insights.js useFoodSuggestion -> foodForm; selectFood; grams): a failed delivery keeps the whole
+  // original synchronous in the Web dialog, so product and amount are not lost.
+  const realSuggestion=fs.readFileSync('js/insights.js','utf8').match(/function useFoodSuggestion\([^)]*\)\{[^\n]*?previewFood\(\)\}/)[0];
+  h=hybrid(withPages,{setup:realSuggestion+";selectFood=function(id){webCalls.push(['selectFood',id,!!foodDialogOpen])};previewFood=function(){webCalls.push(['preview',$('grams').value])};var foodDialogOpen=false;foodForm=function(){foodDialogOpen=true;webCalls.push(['foodForm'])}"});
+  h.ctx.window.pulsNativeSetChrome(true);h.ctx.window.webkit.messageHandlers.pulsState.postMessage=()=>{throw Error('handler unavailable')};
+  h.run("webCalls=[];useFoodSuggestion('base8',150)");await flush();
+  assert.deepEqual(webCalls(h),[['foodForm'],['selectFood','base8',true],['preview',150]]);
+  // The same original through the token fallback stays synchronous, too.
+  h=hybrid(withPages,{setup:realSuggestion+";selectFood=function(id){webCalls.push(['selectFood',id,!!foodDialogOpen])};previewFood=function(){webCalls.push(['preview',$('grams').value])};var foodDialogOpen=false;foodForm=function(){foodDialogOpen=true;webCalls.push(['foodForm'])}"});
+  h.ctx.window.pulsNativeSetChrome(true);h.run("webCalls=[];useFoodSuggestion('base8',150)");
+  assert.deepEqual(webCalls(h),[]);assert.equal(h.ctx.window.pulsNativeWebFallback(windows(h).at(-1).token),true);await flush();
+  assert.deepEqual(webCalls(h),[['foodForm'],['selectFood','base8',true],['preview',150]]);assert.equal(windows(h).length,1);  // Withdrawn bar: Web flow again, class removed.
+  h=hybrid(withPages);h.ctx.window.pulsNativeSetChrome(true);assert.equal(h.ctx.window.pulsNativeSetChrome(false),true);
+  assert.equal(h.ctx.document.documentElement.classList.contains('puls-native-webpages'),false);
+  h.run("webCalls=[];weightForm()");assert.equal(windows(h).length,0);assert.deepEqual(webCalls(h),[['weightForm']]);
+  // Overview row for the native index chart only with N1 extras; its fallback is a no-op (chart stays inline).
+  h=hybrid([...withPages,'nativeExtras']);h.ctx.window.pulsNativeSetChrome(true);
+  assert.match(h.run('home()'),/dsnativeindexwrap[\s\S]*pulsNativeOpenIndexChart\(\)/);
+  assert.equal(h.ctx.window.pulsNativeOpenIndexChart(),true);assert.equal(windows(h).at(-1).window,'indexChart');
+  assert.equal(fallback===h.ctx.window.pulsNativeWebFallback,false);assert.equal(h.ctx.window.pulsNativeWebFallback(windows(h).at(-1).token),true);
+  assert.doesNotMatch(hybrid(tabs).run('home()'),/dsnativeindexwrap/);
+  console.log('PASS: nativeWebPages hybrid: feature/chrome gates, native windows per entry, token fallback, foodForm+foodTab pairing, no loop under pulsNativeNavigate, blocking and delivery failure stay Web');}
 })().catch(error=>{console.error(error);process.exitCode=1});

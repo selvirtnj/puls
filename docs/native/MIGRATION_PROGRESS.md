@@ -65,6 +65,12 @@
 - Rezept-Editor mit Web-Vorschau, Rezept-Import, Routenplaner mit MapKit: Commits `2ec5e62`, `4ce6462`, `6b3290c`. Codex-Review 1×P1, 3×P2, 1×P3 behoben und nachgeprüft; Claude-Review der Query 2×P3 behoben. CI #49 grün, Testversion `PULS-ipa-49`: https://github.com/selvirtnj/puls/actions/runs/42209851779
 - Offen: Gerätetest; alte Workouts bearbeiten nur analysiert (§15.8); Anmeldung/Abmeldung/Konflikte/Import/Recovery/Reset/Kontolöschung sind Phase B.
 
+## Hybrid-Modus Web-Hauptseiten (08.11.2026, ungeprüft auf Gerät)
+
+- Übersicht, Training und Essen zeigen wieder die Web-Seiten (Web-Kopf, Datum) unter der nativen Tab-Leiste; Plus und Konto bleiben nativ. Einstiege mit nativem Gegenstück öffnen native Fenster über der Seite (Protokoll §16), sonst bleibt der Web-Ablauf.
+- Ein Schalter: `RootTabShell.webPagesMode`. Ohne Feature (Browser, alte IPA, alter Web-Stand) unverändertes Verhalten. Native Hauptansichten bleiben im Code.
+- Offen: CI-Build/Swift-Tests, Gerätetest (Safe Area oben, Leistenabschluss, Blätter von der Hinterbühne, Hell/Dunkel, VoiceOver), Review.
+
 ## Stand gesamt
 
 Nativ: Tab-Leiste/Kopf, Übersicht, Körper & Gewicht, Training (Routinen, Editor, Session), Kalender, Fortschritt, Aktivitäten, Ernährung, Konto/Profil. Weiter Web (bewusst): Anmeldung/Abmeldung/Sync-Konflikt/Import/Export/Recovery/Reset/Kontolöschung, Routenplaner, Teilen, Bearbeiten alter Einträge, Rezept-Editor/Import-UI. Datenbesitzer ist weiter das Web (Phase A).
