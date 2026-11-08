@@ -291,7 +291,11 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         if let accountHost { host.addChild(accountHost) }
         if let overlayHost { host.addChild(overlayHost) }
         webView.translatesAutoresizingMaskIntoConstraints = false
-        for view in ([statusFill, header.view, overview.view, trainingView, nutritionView, accountView, overlayView, tabBar] as [UIView?]).compactMap({ $0 }) {
+        var installed: [UIView] = [statusFill, header.view, overview.view]
+        let optionalViews: [UIView?] = [trainingView, nutritionView, accountView, overlayView]
+        installed += optionalViews.compactMap { $0 }
+        installed.append(tabBar)
+        for view in installed {
             view.translatesAutoresizingMaskIntoConstraints = false
             view.isHidden = true
             root.addSubview(view)
@@ -560,11 +564,22 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     private func applyStacking() {
         guard stackedWebPages != webPages, let root = host?.viewIfLoaded, let webView else { return }
         stackedWebPages = webPages
-        let order: [UIView?] = webPages
-            ? [overviewHost?.view, trainingHost?.view, nutritionHost?.view, webView, statusFill, headerHost?.view,
-               accountHost?.view, overlayHost?.view, tabBar]
-            : [webView, statusFill, headerHost?.view, overviewHost?.view, trainingHost?.view, nutritionHost?.view,
-               accountHost?.view, overlayHost?.view, tabBar]
+        // Explizit getypte Teile statt eines großen Ternär-Literals (Typprüfzeit des Compilers).
+        let web: UIView = webView
+        let status: UIView = statusFill
+        let bar: UIView = tabBar
+        let overview: UIView? = overviewHost?.view
+        let training: UIView? = trainingHost?.view
+        let nutrition: UIView? = nutritionHost?.view
+        let header: UIView? = headerHost?.view
+        let account: UIView? = accountHost?.view
+        let overlay: UIView? = overlayHost?.view
+        var order: [UIView?] = []
+        if webPages {
+            order = [overview, training, nutrition, web, status, header, account, overlay, bar]
+        } else {
+            order = [web, status, header, overview, training, nutrition, account, overlay, bar]
+        }
         for case let view? in order { root.bringSubviewToFront(view) }
         onStackChange?()
     }
@@ -575,7 +590,9 @@ final class RootTabShell: NSObject, UITabBarDelegate {
         let header = barsVisible && (!webPages || showsNativeAccount || accountHold)
         statusFill.isHidden = !header
         headerHost?.view.isHidden = !header
-        overlayHost?.view.isHidden = !(webPages && barsVisible && !showsNativeAccount && !accountHold)
+        let accountOnTop: Bool = showsNativeAccount || accountHold
+        let overlayVisible: Bool = webPages && barsVisible && !accountOnTop
+        overlayHost?.view.isHidden = !overlayVisible
     }
 
     /// `openNative{screen:'window'}`: natives Fenster über der Web-Seite. Kann Native es nicht zeigen, führt das Web
@@ -1356,9 +1373,12 @@ final class RootTabShell: NSObject, UITabBarDelegate {
     }
 
     private func applyStyle(_ newStyle: UIUserInterfaceStyle) {
-        for view in [statusFill, tabBar, headerHost?.view, overviewHost?.view, trainingHost?.view, nutritionHost?.view,
-                     accountHost?.view, overlayHost?.view] as [UIView?] {
-            view?.overrideUserInterfaceStyle = newStyle
+        statusFill.overrideUserInterfaceStyle = newStyle
+        tabBar.overrideUserInterfaceStyle = newStyle
+        let hosted: [UIView?] = [headerHost?.view, overviewHost?.view, trainingHost?.view, nutritionHost?.view,
+                                 accountHost?.view, overlayHost?.view]
+        for case let view? in hosted {
+            view.overrideUserInterfaceStyle = newStyle
         }
         overlayHost?.overrideUserInterfaceStyle = newStyle
         headerHost?.overrideUserInterfaceStyle = newStyle

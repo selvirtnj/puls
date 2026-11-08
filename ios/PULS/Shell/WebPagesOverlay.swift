@@ -32,26 +32,19 @@ struct WebPagesOverlay: View {
     }
 
     private var conflictCount: Int {
-        (nutrition?.conflicts.count ?? 0) + (training == nil ? 0 : store.trainingConflicts.count)
-            + (progress?.conflicts.count ?? 0) + (activity?.conflicts.count ?? 0)
+        var count: Int = 0
+        if let nutrition { count += nutrition.conflicts.count }
+        if training != nil { count += store.trainingConflicts.count }
+        if let progress { count += progress.conflicts.count }
+        if let activity { count += activity.conflicts.count }
+        return count
     }
 
     var body: some View {
         let text = text
         VStack(spacing: 8) {
             if conflictCount > 0 {
-                Button {
-                    showsConflicts = true
-                } label: {
-                    Label(text("Änderungen nicht übernommen", "Changes not applied"), systemImage: "exclamationmark.triangle")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .contentShape(Rectangle())
-                }
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal, 16)
-                .accessibilityHint(text("Zeigt, was entschieden werden muss", "Shows what needs a decision"))
+                conflictButton(text: text)
             }
             if let shown {
                 noticeBar(shown, text: text)
@@ -69,6 +62,23 @@ struct WebPagesOverlay: View {
                 .environment(\.locale, text.locale)
                 .tint(.blue)
         }
+    }
+
+    private func conflictButton(text: OverviewText) -> some View {
+        let title: String = text("Änderungen nicht übernommen", "Changes not applied")
+        let hint: String = text("Zeigt, was entschieden werden muss", "Shows what needs a decision")
+        return Button {
+            showsConflicts = true
+        } label: {
+            Label(title, systemImage: "exclamationmark.triangle")
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .padding(.horizontal, 16)
+                .contentShape(Rectangle())
+        }
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 16)
+        .accessibilityHint(hint)
     }
 
     private func noticeBar(_ shown: Shown, text: OverviewText) -> some View {
