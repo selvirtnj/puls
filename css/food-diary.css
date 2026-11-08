@@ -1,0 +1,163 @@
+﻿/* PULS v87 · Essen-Tab (Tagebuch). Nur Tokens aus design-system.css; keine Schatten, Verläufe oder Pillen. */
+:root, :root[data-scheme=light] {
+  --fd-p: #248A9D;   /* Systemtürkis, abgedunkelt für 3:1 auf Hell */
+  --fd-c: #5856D6;   /* Systemindigo */
+  --fd-f: #AF52DE;   /* Systemlila */
+  --fd-water: var(--ds-accent);
+}
+:root[data-scheme=dark] {
+  --fd-p: #40C8E0;
+  --fd-c: #5E5CE6;
+  --fd-f: #BF5AF2;
+}
+
+/* Die globale Datumsleiste wird auf der Essen-Seite durch die eigene Kopfzeile ersetzt. */
+body.fdpage .titleline .datebar, body.fdpage .titleline .dsbacktoday { display: none !important; }
+
+.fdroot { display: grid; gap: 16px; padding-bottom: 8px; }
+.fdroot h2 { margin: 0 !important; font-size: 17px !important; line-height: 22px !important; font-weight: 600 !important; color: var(--ds-label) !important; }
+.fdroot small { color: var(--ds-label-2); }
+.fdnote { margin: 8px 0 0 !important; font-size: 13px !important; line-height: 18px !important; color: var(--ds-label-2) !important; }
+.fdempty { margin: 8px 0 !important; font-size: 15px; color: var(--ds-label-2); }
+
+/* Einheitliche Symbolknöpfe, 44 × 44 Tippfläche */
+.fdicon { display: grid; place-items: center; width: 44px; height: 44px; min-width: 44px; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-accent-text) !important; }
+.fdicon svg { width: 22px; height: 22px; }
+
+/* ---------- Kopf ---------- */
+.fdhead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; margin-top: -4px; }
+.fddate { display: flex; align-items: center; justify-content: center; min-width: 0; }
+.fddaylabel { min-height: 44px; min-width: 0; padding: 0 10px !important; border: 0 !important; background: transparent !important; color: var(--ds-label) !important; font-size: 17px !important; font-weight: 600 !important; }
+.fddaylabel span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fdcheck { color: var(--ds-label-2) !important; }
+.fdcheck.fddone { color: var(--ds-green-text) !important; }
+.fdcheck.fddone svg { border-radius: 50%; background: color-mix(in srgb, var(--ds-green) 18%, transparent); }
+
+/* ---------- Karten ---------- */
+.fddeck, .fdcard { border-radius: 12px; background: var(--ds-surface); }
+.fdcard { padding: 14px 16px 16px; }
+.fdcardhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.fdcardhead > div:first-child { min-width: 0; }
+.fdcardhead small { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.fdcardactions { display: flex; margin: -10px -10px 0 0; }
+.fdcardhead .textbtn { min-height: 44px; margin: -10px -6px 0 0; padding: 0 6px !important; font-size: 15px !important; }
+
+/* ---------- Deck ---------- */
+.fddeck { overflow: hidden; }
+.fdtrack { display: flex; align-items: stretch; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.fdtrack::-webkit-scrollbar { display: none; }
+.fdslide { flex: 0 0 100%; width: 100%; min-width: 0; box-sizing: border-box; padding: 14px 16px 4px; scroll-snap-align: start; scroll-snap-stop: always; }
+.fdslidehead { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; margin-bottom: 8px; }
+.fdslidehead small { font-size: 13px; }
+.fdslidehead .textbtn { min-height: 44px; margin: -6px -6px -6px 0; font-size: 15px !important; }
+.fdswitch { display: inline-grid; grid-auto-flow: column; gap: 2px; padding: 2px; border-radius: 8px; background: var(--ds-fill); }
+.fdswitch button { min-height: 32px; padding: 0 10px !important; border: 0 !important; border-radius: 7px !important; background: transparent !important; color: var(--ds-label) !important; font-size: 13px !important; font-weight: 500 !important; }
+.fdswitch button[aria-pressed=true] { background: var(--ds-selected) !important; font-weight: 600 !important; }
+.fddecknav { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 4px 2px; }
+.fdarrow { color: var(--ds-label-2) !important; }
+.fdarrow svg { width: 18px; height: 18px; }
+.fddots { display: flex; align-items: center; }
+.fddot { width: 22px; height: 44px; padding: 0 !important; border: 0 !important; background: transparent !important; position: relative; }
+.fddot::after { content: ''; position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: var(--ds-fill); }
+.fddot[aria-current=true]::after { background: var(--ds-label); }
+
+/* Balken */
+.fdbar { margin: 0 0 10px; }
+.fdbarline { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 5px; font-size: 15px; line-height: 20px; }
+.fdbarline span { color: var(--ds-label); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fdbarline strong { flex-shrink: 0; font-size: 13px; font-weight: 500; color: var(--ds-label-2); font-variant-numeric: tabular-nums; }
+.fdmeter { height: 8px; border-radius: 4px; background: var(--ds-fill); overflow: hidden; }
+.fdmeter i { display: block; height: 100%; width: var(--w, 0%); border-radius: 4px; background: var(--ds-accent); transform-origin: left center; }
+.fdbar.fdp .fdmeter i { background: var(--fd-p); }
+.fdbar.fdc .fdmeter i { background: var(--fd-c); }
+.fdbar.fdf .fdmeter i { background: var(--fd-f); }
+.fdbar.fdover .fdmeter i { background: var(--ds-orange) !important; }
+.fdbar.fdover .fdbarline strong { color: var(--ds-orange-text); }
+
+/* Energie-Ringe */
+.fdrings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; }
+.fdringcell { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.fdringcell > span { font-size: 13px; font-weight: 600; color: var(--ds-label); }
+.fdringcell > small { font-size: 12px; line-height: 16px; }
+.fdringwrap { position: relative; width: 88px; max-width: 100%; aspect-ratio: 1; }
+.fdringwrap .dsring { width: 100%; height: 100%; }
+.fdringval { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.fdringval strong { font-size: 17px; font-weight: 600; line-height: 1.1; color: var(--ds-label); font-variant-numeric: tabular-nums; }
+.fdringval small { font-size: 11px; }
+.fdmissing { justify-content: center; min-height: 112px; }
+.fdmissing .textbtn { min-height: 44px; font-size: 15px !important; }
+
+/* Mikronährstoffe */
+.fdmicros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+.fdmicro .fdbarline { font-size: 13px; line-height: 18px; margin-bottom: 4px; }
+.fdmicro .fdmeter { height: 6px; }
+.fdmicro .fdmeter i { background: var(--ds-green); }
+.fdmicro.fdunknown .fdbarline strong { color: var(--ds-label-3); font-weight: 400; }
+
+/* ---------- Wasser ---------- */
+.fdglasses { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin: 0 -2px 12px; }
+.fdglass { position: relative; display: grid; place-items: center; min-height: 52px; padding: 2px !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-label-3) !important; }
+.fdglass svg { width: 28px; height: 38px; overflow: visible; }
+.fdglassline { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.fdglasswater { fill: var(--fd-water); opacity: .9; transform-box: fill-box; transform-origin: center bottom; transform: scaleY(var(--level, 0)); }
+.fdglass.fdfull { color: var(--fd-water) !important; }
+.fdglass.fdnext { color: var(--ds-accent-text) !important; }
+.fdglassplus { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.fdglassplus svg { width: 14px; height: 14px; }
+.fdtotalwater { margin: 0; }
+.fdtotalwater .fdbarline span { font-size: 13px; color: var(--ds-label-2); }
+
+/* ---------- Tagebuch ---------- */
+.fddiary { padding-bottom: 6px; }
+.fdentries { margin: 0 -16px; border-top: .5px solid var(--ds-separator); }
+.fdentry { background: var(--ds-surface) !important; }
+.fdentry + .fdentry { border-top: .5px solid var(--ds-separator); }
+.fdentry .swipedelete { display: flex !important; flex-direction: column; gap: 2px; background: var(--ds-red-fill) !important; color: #FFFFFF !important; font-size: 12px !important; }
+.fdentry .swipedelete svg { width: 20px; height: 20px; }
+.fdentryrow { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px; padding: 8px 16px !important; border: 0 !important; border-radius: 0 !important; background: var(--ds-surface) !important; color: var(--ds-label) !important; text-align: left; }
+.fdentrytext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fdentrytext strong { overflow: hidden; font-size: 15px; font-weight: 500; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-label); }
+.fdentrytext small { font-size: 13px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.fdentrykcal { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fdentrykcal small { font-size: 11px; font-weight: 400; }
+.fdemptystate { display: grid; justify-items: start; gap: 10px; }
+.fdemptystate p { margin: 0; font-size: 15px; color: var(--ds-label-2); }
+.fdemptystate .btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.fdemptystate .btn svg { width: 18px; height: 18px; }
+.fddonenote { display: flex; align-items: center; gap: 6px; padding: 6px 0 4px; color: var(--ds-green-text) !important; }
+.fddonenote svg { width: 16px; height: 16px; }
+.fdextras { display: grid; gap: 16px; }
+
+/* ---------- Rückgängig-Hinweis ---------- */
+#fd-undo { position: fixed; left: 16px; right: 16px; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 2147483000; display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 520px; margin: 0 auto; padding: 4px 6px 4px 16px; border-radius: 12px; background: var(--ds-label); color: var(--ds-bg); font-size: 15px; }
+#fd-undo span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#fd-undo button { min-height: 44px; padding: 0 12px !important; border: 0 !important; background: transparent !important; color: var(--ds-bg) !important; font-size: 15px; font-weight: 600; }
+dialog[open] ~ #fd-undo { bottom: calc(16px + env(safe-area-inset-bottom)); }
+
+/* Feedback beim Tippen */
+.fdicon, .fdglass, .fddaylabel, .fdswitch button, .fdentryrow { transition: transform 120ms cubic-bezier(.2, 0, 0, 1) !important; }
+.fdicon:active, .fdglass:active, .fdentryrow:active { transform: scale(.97); opacity: 1 !important; }
+.fdentryrow:active { background: var(--ds-fill) !important; }
+
+/* ---------- Bewegung (aus bei reduzierter Bewegung) ---------- */
+@keyframes fdGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fdRise { from { transform: scaleY(0); } }
+@keyframes fdIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes fdPop { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes fdUndoIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.reduce-motion) .fdroot.fdenter .fdmeter i { animation: fdGrow 320ms cubic-bezier(.2, .8, .2, 1) both !important; }
+  html:not(.reduce-motion) .fdroot.fdenter > * { animation: fdIn 200ms cubic-bezier(.2, 0, 0, 1) both !important; }
+  html:not(.reduce-motion) .fdroot.fdenter > *:nth-child(2) { animation-delay: 30ms !important; }
+  html:not(.reduce-motion) .fdroot.fdenter > *:nth-child(3) { animation-delay: 60ms !important; }
+  html:not(.reduce-motion) .fdroot.fdenter > *:nth-child(4) { animation-delay: 90ms !important; }
+  html:not(.reduce-motion) .fdglass.fdfill .fdglasswater { animation: fdRise 320ms cubic-bezier(.2, .8, .2, 1) both !important; }
+  html:not(.reduce-motion) .fdentry.fdnew { animation: fdIn 200ms cubic-bezier(.2, 0, 0, 1) both !important; }
+  html:not(.reduce-motion) .fdcheck.fddone.fdjust svg { animation: fdPop 320ms cubic-bezier(.2, .8, .2, 1) !important; }
+  html:not(.reduce-motion) #fd-undo.fdundoin { animation: fdUndoIn 200ms cubic-bezier(.2, 0, 0, 1) both !important; }
+}
+
+@media (max-width: 370px) {
+  .fdglasses { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .fdringwrap { width: 76px; }
+}
