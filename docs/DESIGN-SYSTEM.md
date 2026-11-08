@@ -11,7 +11,13 @@ Verbindliche Entscheidung von Selvir. Grundlage: Apple Human Interface Guideline
 - Schrift: System-Schrift (`-apple-system, BlinkMacSystemFont, system-ui, sans-serif`), kein Webfont. Typo-Stufen nach iOS (Large Title 34, Title 28/22/20, Headline 17 semibold, Body 17, Callout 16, Subhead 15, Footnote 13, Caption 12). Zahlen mit `font-variant-numeric: tabular-nums`.
 - Radien: Buttons und Eingabefelder 8px, Karten und gruppierte Listen 12px. Nichts darüber.
 - Icons: Phosphor (Regular), als Inline-SVG lokal im Code, ohne CDN. Jedes rein grafische Bedienelement hat ein `aria-label`.
-- Bewegung: nur Sheet hochgleiten (iOS-artig), einmaliges kurzes Füllen von Fortschrittsringen und das Ausblenden des Startbildschirms (mind. 1,2 s sichtbar, 250 ms Fade). `prefers-reduced-motion` schaltet alles ab.
+- Bewegung (v87, Selvirs Wunsch „Animationen für alles“ ersetzt die frühere Beschränkung): kurze, ruhige Mikroanimationen, einmalig und ohne Endlosschleifen (Ausnahme Scanlinie). Umsetzung in `css/motion.css` und `js/motion.js` (`window.pulsMotion`); Details im Dateikopf von `js/motion.js`.
+  - Tokens: `--motion-fast` 120 ms, `--motion-base` 200 ms, `--motion-slow` 320 ms, `--motion-count` 700 ms, `--ease-spring` `cubic-bezier(.2,.8,.2,1)`, `--ease-out` `cubic-bezier(.2,0,0,1)`. Keine eigenen Zeiten oder Kurven in anderen Dateien.
+  - Bestand: Sheet gleitet hoch und hinaus, Fortschrittsring füllt sich einmal, Startbildschirm blendet aus (mind. 1,2 s sichtbar, 250 ms Fade).
+  - Automatisch: Knopfdruck `scale(.97)` (abschaltbar mit `data-motion-tap="off"`), Tabwechsel hebt neuen Inhalt 8 px herein, `.dsmeter`-Balken wachsen beim Öffnen einer Seite.
+  - Per Markup (`data-motion`): `bar` Balken wächst, `fill` Glas füllt sich, `ring` Ring füllt sich, `rise` Podium steigt auf (`--motion-i`), `enter` Eintrag blendet ein, `check` Häkchen zeichnet sich, `pop` Erfolgs-Puls; `data-count` zählt eine echte Zahl beim ersten Anzeigen hoch; `data-motion-indicator` lässt den Tab-Indikator gleiten. Je Seitenbesuch einmal, mit `data-motion-key` sitzungsweit einmal.
+  - Klassen und Helfer: `.motion-deck` (Deck-Snap), `.motion-push-in/-out` bzw. `pulsMotion.push/pop` (Seiten-Push für Add Food und Detail), `pulsMotion.flip/enter/remove` (Listeneintrag einfügen und entfernen), `pulsMotion.success`, `pulsMotion.reveal` (Rang-Enthüllung mit Glocken-Ton), `.motion-scanline`, `pulsMotion.checkSvg()`.
+  - Reduzierte Bewegung: `prefers-reduced-motion: reduce` oder `state.display.motion==='reduced'` setzt `<html class="reduce-motion">`; dann keine Bewegung, nur Einblenden über die Opazität bis 120 ms. Keine Scroll-getriggerten Animationen, keine Hover-Animationen.
 - Dezimalfelder sind `type=text inputmode=decimal`; Komma wird als Dezimaltrenner akzeptiert, gespeichert wird eine Zahl.
 - Tippflächen mindestens 44 × 44 px. Safe Areas beachten. Mindestens 390 × 844 prüfen.
 
