@@ -1,0 +1,14 @@
+/* Uses the existing light/dark system tokens. Compact rows, 44 px touch targets. */
+#puls-friends-panel { color:var(--ds-label); overflow-wrap:anywhere; }
+#puls-friends-panel .friends-code { display:grid; gap:8px; padding:12px 0; }
+#puls-friends-panel .friends-code strong { font:700 22px/1.4 ui-monospace,monospace; letter-spacing:.06em; }
+#puls-friends-panel .friends-list { list-style:none; padding:0; margin:0 0 20px; }
+#puls-friends-panel .friends-list li { padding:12px 0; border-bottom:1px solid var(--ds-separator); }
+#puls-friends-panel .friends-list p { margin:6px 0; }
+#puls-friends-panel .friends-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+#puls-friends-panel button { min-height:44px; max-width:100%; white-space:normal; }
+#puls-friends-panel > button { margin:4px 8px 4px 0; }
+#puls-friends-panel input { min-width:0; width:100%; min-height:44px; }
+#puls-friends-notice { position:fixed; z-index:40; left:max(12px,env(safe-area-inset-left)); right:max(12px,env(safe-area-inset-right)); bottom:calc(80px + env(safe-area-inset-bottom)); max-width:480px; margin:auto; display:flex; align-items:center; gap:12px; padding:12px 16px; border:1px solid var(--ds-separator); border-radius:12px; background:var(--ds-surface); color:var(--ds-label); font-size:14px; }
+#puls-friends-notice span { flex:1; min-width:0; overflow-wrap:anywhere; }
+#puls-friends-notice button { min-height:44px; flex-shrink:0; }
