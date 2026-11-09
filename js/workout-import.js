@@ -67,23 +67,37 @@ async function parse(text){
  let liftoff=headers.includes('set order')&&headers.includes('seconds')&&headers.includes('workout name'),unit=headers[cols.weight]==='weight kg'?'kg':headers[cols.weight]==='weight lbs'||liftoff?'lbs':'kg',groups=new Map(),omitted=false,skippedRows=0;
  for(let row of rows){
   if(row.length!==headers.length)fail();let get=k=>cols[k]<0?'':row[cols[k]].trim(),dt=localDate(get('date')),name=get('name'),exercise=get('exercise');if(exercise.length>200||name.length>200)fail();
-  if(!exercise){skippedRows++;continue}
   let groupKey=JSON.stringify([dt.stamp,name]),g=groups.get(groupKey),seconds=duration(get('duration'));
   if(cols.end>=0&&row[cols.end].trim()){let end=localDate(row[cols.end]);if(!dt.hasTime||!end.hasTime||end.time<dt.time)fail();seconds=(end.time-dt.time)/1000}
-  if(!g){g={...dt,name,seconds,rows:[]};groups.set(groupKey,g)}else if(g.seconds!==seconds)fail();
+  if(!g){g={...dt,name,seconds,rows:[],extraRows:[]};groups.set(groupKey,g)}else if(g.seconds!==seconds)fail();
+  if(!exercise){skippedRows++;g.extraRows.push(Object.fromEntries(headers.map((h,i)=>[h,row[i]])));continue}
   let orderValue=get('order'),weight=number(get('weight'),0,100000),reps=number(get('reps'),0,100000,true),order=/^[a-z]+$/i.test(orderValue)?'':number(orderValue,0,MAX_ROWS,true);
   // Zero reps denotes a timed/distance set in some exports. Leave reps unknown in PULS.
-  g.rows.push({exercise,weight,reps:reps===0?'':reps,order});
-  if(headers.some((h,i)=>['distance','distance km','distance meters','seconds','duration seconds','rpe','notes','exercise notes','workout notes','set type'].includes(h)&&row[i].trim()))omitted=true;
+  // Keep source-only fields verbatim, including units in their headers and multiline notes.
+  let csvFields=Object.fromEntries(headers.flatMap((h,i)=>{
+   const value=row[i].trim(),numeric=Number(value.replace(',','.'));
+   return !Object.values(cols).includes(i)&&value&&(!Number.isFinite(numeric)||numeric>0)?[[h,row[i]]]:[];
+  }));
+  g.rows.push({exercise,weight,reps:reps===0?'':reps,order,setOrder:orderValue,csvFields});
  }
  let sessions=[];for(let g of groups.values()){
+  if(!g.rows.length)continue;
   let canonical=g.rows.map(r=>JSON.stringify([key(r.exercise),r.order,r.weight,r.reps])).sort();
   g.id='wi_'+await digest(JSON.stringify([g.stamp,g.name,g.seconds??null,canonical]));sessions.push(g);
  }
- if(!sessions.length)fail();sessions.sort((a,b)=>a.stamp.localeCompare(b.stamp)||a.id.localeCompare(b.id));return {sessions,unit,omitted,skippedRows};
+ if(!sessions.length)fail();sessions.sort((a,b)=>a.stamp.localeCompare(b.stamp)||a.id.localeCompare(b.id));
+ let routineGroups=[];
+ for(let session of sessions){
+  let group=session.name?routineGroups.find(g=>g.name===session.name):null;
+  if(!group){group={name:session.name,sessions:[]};routineGroups.push(group)}
+  group.sessions.push(session.id);
+ }
+ for(let group of routineGroups)group.id='wi_r_'+await digest(group.name?'name:'+group.name:group.sessions[0]);
+ let familyIds={};for(let family of ['push','pull','legs','core','upper','full'])familyIds[family]='wi_r_'+await digest('family:'+family);
+ return {sessions,unit,omitted,skippedRows,routineGroups,familyIds};
 }
 function kg(value,unit){if(value==='')return '';let n=unit==='lbs'?value/2.20462262185:value,q=Math.round(n*4)/4;return Math.abs(n-q)<0.00001?q:Math.round(n*10)/10}
-function plan(parsed,unit,profile){
+function plan(parsed,unit,profile,includeRoutines=true){
  if(!['kg','lbs'].includes(unit))fail();let ids=new Set(profile.workouts.map(w=>w.id)),book=[...(profile.exerciseBook||[])],added=[],workouts=[],mapped=new Set(),fresh=new Set(),used=new Set(book.map(b=>b.id));
  let candidates=[...book,...exerciseCatalog],matches=new Map(),exactMatches=new Map(),localNames=new Map(),localExact=new Map(),created=new Map();
  for(let b of book){if(!localNames.has(exerciseKey(b.name)))localNames.set(exerciseKey(b.name),b);if(!localExact.has(key(b.name)))localExact.set(key(b.name),b)}
@@ -98,22 +112,85 @@ function plan(parsed,unit,profile){
   return source?(localNames.get(exerciseKey(source.name))||source):exactMatches.get(key(name))||matches.get(k);
  };
  for(let session of parsed.sessions){
-  if(ids.has(session.id))continue;ids.add(session.id);let exercises=[],byName=new Map();
+  if(!session.rows.length||ids.has(session.id))continue;ids.add(session.id);let exercises=[],byName=new Map();
   for(let row of session.rows){let k=exerciseKey(row.exercise),b=match(row.exercise);
    if(!b){let id='wi_ex_'+session.id.slice(3)+'_'+byName.size;b={id,name:row.exercise,target:0};created.set(k,b);fresh.add(k)}else if(!fresh.has(k))mapped.add(k);
    if(!used.has(b.id)){let entry={id:b.id,name:b.name,target:0};if(b.muscles)entry.muscles=[...b.muscles];if(b.equipment)entry.equipment=b.equipment;added.push(entry);used.add(b.id)}
    let e=byName.get(k);if(!e){e={id:session.id+'_e'+exercises.length,exerciseId:b.id,name:b.name,sets:[]};byName.set(k,e);exercises.push(e)}
-   e.sets.push({kg:kg(row.weight,unit),reps:row.reps,done:true,_order:row.order});
+   let set={kg:kg(row.weight,unit),reps:row.reps,done:true,_order:row.order,setOrder:row.setOrder};
+   if(Object.keys(row.csvFields).length)set.csvFields={...row.csvFields};
+   e.sets.push(set);
   }
   for(let e of exercises){if(e.sets.every(s=>s._order!==''))e.sets.sort((a,b)=>a._order-b._order);for(let s of e.sets)delete s._order}
   let w={id:session.id,date:session.day,name:session.name||'Liftoff-Import '+session.day,finished:true,importSource:'workout-csv',exercises};
+  if(session.extraRows?.length)w.csvRows=session.extraRows.map(row=>({...row}));
   if(session.hasTime)w.startedAt=session.time;
   if(session.seconds!==undefined){w.durationSeconds=session.seconds;if(session.hasTime)w.finishedAt=session.time+session.seconds*1000}workouts.push(w);
  }
- return {workouts,added,mapped:mapped.size,fresh:fresh.size,duplicates:parsed.sessions.length-workouts.length,sets:workouts.reduce((n,w)=>n+w.exercises.reduce((n,e)=>n+e.sets.length,0),0)};
+ let routines=[],allWorkouts=[...profile.workouts,...workouts],allBook=[...book,...added],routineNames=new Map(),groups=(parsed.routineGroups||[]).filter(g=>g.name).map(g=>({...g}));
+ for(let session of parsed.sessions.filter(s=>!s.name)){
+  let w=allWorkouts.find(w=>w.id===session.id),family=routineFamily(w?.exercises||[],allBook);
+  if(!w?.exercises.length)continue;
+  family??='custom:'+w.exercises.map(e=>e.exerciseId).sort().join('|');
+  let group=groups.find(g=>g.family===family);
+  if(!group){group={family,id:parsed.familyIds[family]||parsed.routineGroups.find(g=>g.sessions.includes(session.id)).id,name:'',sessions:[]};groups.push(group)}group.sessions.push(session.id);
+ }
+ for(let group of groups){
+  if(!group.name&&group.sessions.length<2)continue;
+  let history=group.sessions.map(id=>allWorkouts.find(w=>w.id===id)).filter(Boolean),last=history.at(-1);if(!last)continue;
+  let counts=new Map();for(let w of history)for(let id of new Set(w.exercises.map(e=>e.exerciseId)))counts.set(id,(counts.get(id)||0)+1);
+  let exercises=last.exercises.filter(e=>group.name||counts.get(e.exerciseId)>=Math.max(2,Math.ceil(history.length*.3)));
+  if(!exercises.length)continue;
+  // Average source position keeps the group's usual order, with last-session values.
+  const position=id=>{
+   const indices=history.flatMap(w=>{let i=w.exercises.findIndex(e=>e.exerciseId===id);return i<0?[]:[i]});
+   return indices.reduce((a,b)=>a+b,0)/indices.length;
+  };
+  exercises.sort((a,b)=>position(a.exerciseId)-position(b.exerciseId));
+  let name=group.name||routineName(group.family),count=(routineNames.get(name)||0)+1;routineNames.set(name,count);
+  if(!group.name&&count>1)name+=' '+count;
+  let existing=(profile.routines||[]).find(r=>r.id===group.id||group.name&&r.name===group.name),id=existing?.id||group.id;
+  if(existing||includeRoutines)for(let w of workouts)if(group.sessions.includes(w.id))w.routineId=id;
+  if(existing)continue;
+  routines.push({id,name,importWorkoutId:last.id,exercises:exercises.map(e=>{
+   let reps=e.sets.map(s=>s.reps).filter(n=>Number.isInteger(n)&&n>=1&&n<=100);
+   return {exerciseId:e.exerciseId,sets:Math.min(12,e.sets.length),min:reps.length?Math.min(...reps):1,max:reps.length?Math.max(...reps):100,restSeconds:profile.workoutSettings?.restSeconds??120};
+  })});
+ }
+ return {workouts,added,routines,mapped:mapped.size,fresh:fresh.size,duplicates:parsed.sessions.length-workouts.length,sets:workouts.reduce((n,w)=>n+w.exercises.reduce((n,e)=>n+e.sets.length,0),0)};
 }
+function routineFamily(exercises,book){
+ let totals={push:0,pull:0,legs:0,core:0};
+ for(let e of exercises){let b=book.find(b=>b.id===e.exerciseId),muscles=(b?.muscles||[]).join(' ').toLowerCase();
+  if(/quadriceps|hamstrings|glutes|calves|adductors|abductors/.test(muscles))totals.legs++;
+  else if(/chest|shoulders|triceps/.test(muscles))totals.push++;
+  else if(/back|lats|biceps|traps|forearms/.test(muscles))totals.pull++;
+  else if(/abdominals|abs|core/.test(muscles))totals.core++;
+ }
+ let [dominant,count]=Object.entries(totals).sort((a,b)=>b[1]-a[1])[0],total=Object.values(totals).reduce((a,b)=>a+b,0);
+ if(!total)return null;
+ if(count/total>=.6)return dominant;
+ return totals.legs/total<.25?'upper':'full';
+}
+function routineName(family){return {push:'Push',pull:'Pull',legs:tr('Beine','Legs'),core:tr('Rumpf','Core'),upper:tr('Oberkörper','Upper body'),full:tr('Ganzkörper','Full body')}[family]||tr('Training','Workout')}
+// Imported routines use their own latest session, through the existing prefill entry point.
+const basePrefill=prefillExerciseSets;
+prefillExerciseSets=function(w,e){
+ if(w.routineId?.startsWith('wi_r_')){
+  const routine=state.routines.find(r=>r.id===w.routineId);
+  let previous=state.workouts.filter(x=>x.finished&&(x.routineId===w.routineId||x.id===routine?.importWorkoutId)&&x.date<=w.date).sort((a,b)=>b.date.localeCompare(a.date)||(b.startedAt||0)-(a.startedAt||0))[0];
+  let values=previous?.exercises.find(x=>x.exerciseId===e.exerciseId)?.sets;
+  if(values){for(let [i,s] of e.sets.entries())if(values[i]&&s.kg===''&&s.reps===''&&!s.done){s.kg=values[i].kg;s.reps=values[i].reps}return}
+ }
+ return basePrefill(w,e);
+};
 const baseValid=validData;
-validData=function(s){return baseValid(s)&&s.workouts.every(w=>w.importSource===undefined||w.importSource==='workout-csv'&&/^wi_[a-f0-9]{64}$/.test(w.id))};
+validData=function(s){
+ const fieldsOK=value=>value===undefined||value&&typeof value==='object'&&!Array.isArray(value)&&Object.entries(value).every(([k,v])=>k.length<=200&&typeof v==='string'&&v.length<=MAX_BYTES);
+ return baseValid(s)&&(s.routines||[]).every(r=>r.importWorkoutId===undefined||typeof r.importWorkoutId==='string'&&/^wi_[a-f0-9]{64}$/.test(r.importWorkoutId))&&s.workouts.every(w=>
+  (w.importSource===undefined||w.importSource==='workout-csv'&&/^wi_[a-f0-9]{64}$/.test(w.id))&&
+  (w.csvRows===undefined||Array.isArray(w.csvRows)&&w.csvRows.every(fieldsOK))&&w.exercises.every(e=>e.sets.every(set=>(set.setOrder===undefined||typeof set.setOrder==='string'&&set.setOrder.length<=200)&&fieldsOK(set.csvFields))));
+};
 const baseAwards=workoutAwards;
 workoutAwards=function(...args){let awards=baseAwards.apply(this,args);for(let w of state.workouts)if(w.importSource==='workout-csv'&&awards[w.id])awards[w.id]={...awards[w.id],xp:0,wins:[],durationXp:0};return awards};
 // Only this new feature wraps account rendering; existing controls and handlers remain intact.
@@ -123,8 +200,8 @@ let pending=null,serial=0;
 const owner=()=>typeof cloudSession!=='undefined'?cloudSession?.user?.id||'local':'local';
 function current(p){return pending===p&&p.profile===state&&p.owner===owner()&&modal.open&&!!$('workout-import-preview')}
 window.workoutImportForm=function(){
- let p=pending={profile:state,owner:owner(),serial:++serial,parsed:null};
- openModal(tr('Workout-CSV importieren','Import workout CSV'),`<div data-no-translate><p class="note">${tr('Liftoff, Hevy oder Strong. Erst Vorschau, dann speichern. Bestehende Einträge bleiben erhalten.','Liftoff, Hevy or Strong. Preview before saving. Existing entries are preserved.')}</p><label>${tr('CSV-Datei','CSV file')}<input type="file" accept=".csv,text/csv" onchange="workoutImportFile(this.files[0])"></label><div id="workout-import-preview" aria-live="polite"></div></div>`);return p;
+ let p=pending={profile:state,owner:owner(),serial:++serial,parsed:null,routines:true};
+ openModal(tr('Workout-CSV importieren','Import workout CSV'),`<div data-no-translate><label>${tr('CSV-Datei','CSV file')}<input type="file" accept=".csv,text/csv" onchange="workoutImportFile(this.files[0])"></label><div id="workout-import-preview" aria-live="polite"></div></div>`);return p;
 };
 window.workoutImportFile=async function(file){
  let p=pending;if(!p||!file)return;let request=++serial;p.serial=request;p.parsed=null;
@@ -132,17 +209,18 @@ window.workoutImportFile=async function(file){
  try{if(file.size>MAX_BYTES)fail();let parsed=await parse(await file.text());if(!current(p)||request!==p.serial)return;p.parsed=parsed;p.unit=parsed.unit;preview()}
  catch(e){if(current(p)&&request===p.serial)$('workout-import-preview').textContent=e.message}
 };
-function preview(){let p=pending;if(!current(p)||!p.parsed)return;let result=plan(p.parsed,p.unit,state),days=p.parsed.sessions.map(s=>s.day).sort();
- $('workout-import-preview').innerHTML=`<div data-no-translate><label>${tr('Gewichte in der Datei','Weights in file')}<select onchange="workoutImportUnit(this.value)"><option value="lbs" ${p.unit==='lbs'?'selected':''}>lbs</option><option value="kg" ${p.unit==='kg'?'selected':''}>kg</option></select></label><p>${result.workouts.length} ${tr('neue Sessions','new sessions')} · ${result.sets} ${tr('Sätze','sets')}<br>${result.mapped} ${tr('zugeordnete','matched')} / ${result.fresh} ${tr('neue Übungen','new exercises')}<br>${esc(days[0])} – ${esc(days.at(-1))}<br>${result.duplicates} ${tr('bereits importiert','already imported')}</p><p class="note">${tr('Keine rückwirkenden XP oder PR-Feiern. Historische Werte zählen für Statistik und Vorbelegung.','No retroactive XP or PR celebrations. Historical values count towards statistics and prefills.')}</p>${p.parsed.skippedRows?`<p class="note">${p.parsed.skippedRows} ${tr('Zeilen ohne Übungsnamen werden übersprungen.','rows without exercise names will be skipped.')}</p>`:''}${p.parsed.omitted?`<p class="note">${tr('Distanz, Satzzeit, RPE, Notizen und Satztyp werden vom Kraftsatz-Modell nicht unterstützt und ausgelassen.','Distance, set duration, RPE, notes and set type are unsupported by the strength set model and omitted.')}</p>`:''}<p class="note">${tr('Gewichte werden in kg gespeichert: auf 0,1 kg gerundet, exakte 0,25-kg-Schritte bleiben erhalten.','Weights are stored in kg: rounded to 0.1 kg, preserving exact 0.25 kg increments.')}</p><button type="button" class="btn full" onclick="confirmWorkoutImport()" ${result.workouts.length?'':'disabled'}>${tr('Import bestätigen','Confirm import')}</button><button type="button" class="btn secondary full" onclick="modal.close()">${tr('Abbrechen','Cancel')}</button></div>`;
+function preview(){let p=pending;if(!current(p)||!p.parsed)return;let result=plan(p.parsed,p.unit,state,p.routines),days=p.parsed.sessions.map(s=>s.day).sort();
+ $('workout-import-preview').innerHTML=`<div data-no-translate><label>${tr('Gewichte in der Datei','Weights in file')}<select onchange="workoutImportUnit(this.value)"><option value="lbs" ${p.unit==='lbs'?'selected':''}>lbs</option><option value="kg" ${p.unit==='kg'?'selected':''}>kg</option></select></label><p>${result.workouts.length} ${tr('neue Sessions','new sessions')} · ${result.sets} ${tr('Sätze','sets')}<br>${result.mapped} ${tr('zugeordnete','matched')} / ${result.fresh} ${tr('neue Übungen','new exercises')}<br>${esc(days[0])} – ${esc(days.at(-1))}<br>${result.duplicates} ${tr('bereits importiert','already imported')}</p><label><input type="checkbox" ${p.routines?'checked':''} onchange="workoutImportRoutines(this.checked)"> ${tr('Routinen übernehmen','Import routines')}</label>${(p.routines?result.routines:[]).map(r=>`<div>${esc(r.name)} · ${r.exercises.length} ${tr('Übungen','exercises')}</div>`).join('')}${p.parsed.skippedRows?`<p>${p.parsed.skippedRows} ${tr('Zeilen ohne Übung','rows without exercise')}</p>`:''}<button type="button" class="btn full" onclick="confirmWorkoutImport()" ${result.workouts.length||p.routines&&result.routines.length?'':'disabled'}>${tr('Import bestätigen','Confirm import')}</button><button type="button" class="btn secondary full" onclick="modal.close()">${tr('Abbrechen','Cancel')}</button></div>`;
 }
 window.workoutImportUnit=function(unit){if(!pending||!['kg','lbs'].includes(unit))return;pending.unit=unit;preview()};
+window.workoutImportRoutines=function(value){if(pending){pending.routines=!!value;preview()}};
 window.confirmWorkoutImport=function(){
  let p=pending;if(!p?.parsed||!current(p)){toast(tr('Profil geändert. Bitte Datei erneut auswählen.','Profile changed. Please select the file again.'));return}
- try{let result=plan(p.parsed,p.unit,state);if(!result.workouts.length){preview();return}
-  let next={...state,exerciseBook:[...(state.exerciseBook||[]),...result.added],workouts:[...state.workouts,...result.workouts]};
+ try{let result=plan(p.parsed,p.unit,state,p.routines);if(!result.workouts.length&&(!p.routines||!result.routines.length)){preview();return}
+  let next={...state,exerciseBook:[...(state.exerciseBook||[]),...result.added],workouts:[...state.workouts,...result.workouts],routines:[...(state.routines||[]),...(p.routines?result.routines:[])]};
   if(!validData(next)||new TextEncoder().encode(JSON.stringify(next)).length>MAX_BYTES)fail();
   // Append to the latest profile only after explicit confirmation, with one ordinary save.
-  state.exerciseBook=next.exerciseBook;state.workouts=next.workouts;pending=null;save();modal.close();render();toast(tr('Workouts importiert','Workouts imported'));
+  state.exerciseBook=next.exerciseBook;state.workouts=next.workouts;state.routines=next.routines;pending=null;save();modal.close();render();toast(tr('Workouts importiert','Workouts imported'));
  }catch(e){toast(e.message)}
 };
 // Pure parsing/planning hooks also used by synthetic local regression tests.

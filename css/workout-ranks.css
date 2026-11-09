@@ -1,0 +1,9 @@
+.completion.workout-ranks{width:100%;max-width:560px;box-sizing:border-box;justify-content:flex-start;align-items:stretch;padding:calc(28px + env(safe-area-inset-top)) 20px calc(30px + env(safe-area-inset-bottom));text-align:left;gap:16px}
+.workout-ranks h1{font-size:28px;line-height:1.15;margin:12px 0 8px;letter-spacing:-.7px}
+.wr-list{width:100%}.wr-row{display:flex;align-items:center;gap:14px;padding:18px 0;border-bottom:1px solid var(--line)}
+.wr-emblem{flex:0 0 58px;display:grid;place-items:center;color:var(--muted)}.wr-emblem svg{display:block;max-width:100%}
+.wr-details{flex:1;min-width:0}.workout-ranks .wr-details h2{font-size:15px;line-height:1.3;overflow-wrap:anywhere;margin:0 0 5px}
+.wr-rank{font-size:13px;color:var(--ds-label)}.wr-details small{display:block;font-size:11px;line-height:1.4;letter-spacing:0;color:var(--muted);margin-top:7px}
+.wr-promotion{display:block;font-size:12px;color:var(--ds-accent-text);margin-top:4px}
+.wr-meter{height:7px;background:var(--line);overflow:hidden;border-radius:6px;margin-top:10px}.wr-meter i{height:100%;display:block;background:var(--ds-accent);border-radius:inherit}
+.workout-ranks .completioncontinue{position:sticky;bottom:env(safe-area-inset-bottom);margin-top:auto;min-height:48px}

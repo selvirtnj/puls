@@ -152,10 +152,26 @@ function exerciseRank(exId,s=current(),until=day()){
  return model?list.find(r=>r.key===canonical(lib?.name||ex.name)+'--'+model.kind)||rankAt(null):rankAt(null);
 }
 const overall=(s=current(),until=day())=>overallFrom(all(s,until));
+function workoutSource(workoutId,s,include){
+ const at=(s.workouts||[]).findIndex(w=>w.id===workoutId),workout=s.workouts?.[at];
+ if(!workout)return {...s,workouts:[]};
+ return {...s,workouts:s.workouts.filter((w,i)=>{
+  if(w.id===workoutId)return include;
+  if(w.date!==workout.date)return w.date<workout.date;
+  const time=w.startedAt??w.finishedAt,target=workout.startedAt??workout.finishedAt;
+  return numeric(time)&&numeric(target)&&time!==target?time<target:i<at;
+ })};
+}
+const progressToNext=rank=>rank?.rankIndex===null||!numeric(rank?.progress)?0:Math.max(0,Math.min(1,rank.progress));
+function workoutProgress(exId,workoutId,s=current()){
+ const workout=s.workouts?.find(w=>w.id===workoutId),until=workout?.date||day();
+ const before=exerciseRank(exId,workoutSource(workoutId,s,false),until),after=exerciseRank(exId,workoutSource(workoutId,s,true),until);
+ return {before,after,from:progressToNext(before),to:progressToNext(after),promoted:before.rankIndex!==null&&after.rankIndex>before.rankIndex};
+}
 function summary(s=current(),until=day()){
  const list=all(s,until),rank=overallFrom(list);
  return {strength_rank:rank.rankIndex,lift_ranks:list.map(r=>({key:r.key,name:r.exerciseName,rankIndex:r.rankIndex,ratio:Math.round(r.ratio*100)/100}))
   .filter(r=>/^[a-z0-9-]{1,180}$/.test(r.key)&&[...r.name].length<=120&&r.ratio>0&&r.ratio<=1000).slice(0,40)};
 }
-window.pulsStrength=Object.freeze({ranks,standards,classify,weightAt,rankAt,exerciseRank,all,overall,summary});
+window.pulsStrength=Object.freeze({ranks,standards,classify,weightAt,rankAt,exerciseRank,all,overall,summary,progressToNext,workoutProgress});
 })();

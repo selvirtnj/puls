@@ -12,12 +12,16 @@ ctx.csvFixture=fixture;
 (async()=>{
  const before=run('JSON.stringify(state)'),parsed=await run('importApi.parse(csvFixture)');ctx.parsedImport=parsed;
  assert.equal(run('JSON.stringify(state)'),before,'parse must not mutate profile');
- assert.equal(parsed.sessions.length,2);assert.equal(parsed.unit,'lbs');assert(parsed.omitted);
+ assert.equal(parsed.sessions.length,2);assert.equal(parsed.unit,'lbs');assert(!parsed.omitted);
  run('var importPlan=importApi.plan(parsedImport,"lbs",state)');
  assert.equal(run('importPlan.workouts.length'),2);assert.equal(run('importPlan.sets'),3);assert.equal(run('importPlan.mapped'),1);assert.equal(run('importPlan.fresh'),1);
  assert.equal(run('importPlan.workouts[0].exercises[0].exerciseId'),run('exerciseCatalog.find(x=>x.name==="Machine Lateral Raise").id'));
  assert.equal(run('importPlan.workouts[0].exercises[0].sets[0].kg'),65);assert.equal(run('importPlan.workouts[0].exercises[0].sets[1].kg'),65.25);
  assert.equal(run('importPlan.workouts[0].durationSeconds'),2393);assert.equal(run('importPlan.workouts[0].date'),'2026-06-11');assert.equal(run('importPlan.workouts[1].exercises[0].sets[0].kg'),'');
+ assert.equal(run('importPlan.workouts[0].exercises[0].sets[0].csvFields.rpe'),'8');
+ assert.equal(run('importPlan.workouts[0].exercises[0].sets[0].csvFields.notes'),'line 1\nline 2, "quoted"');
+ assert.equal(run('importPlan.workouts[0].exercises[0].sets[0].setOrder'),'1');
+ assert.equal(run('importPlan.routines.length'),1,'named workouts create a routine even once');
  assert.equal(run('importApi.kg(10.126,"kg")'),10.1);
  assert(run('accountManageBody().includes("workoutImportForm()")'));
  await run('window.workoutImportFile({size:1000,text:async()=>csvFixture})');
@@ -69,7 +73,49 @@ ctx.csvFixture=fixture;
  ctx.pluralCsv=header+'\n2026-06-11 10:00:00,00:10:00,Plural,Fixture Boxes Presses,1,50,10,,,,\n';ctx.pluralParsed=await run('importApi.parse(pluralCsv)');
  assert.equal(run('importApi.plan(pluralParsed,"kg",{workouts:[],exerciseBook:[{id:"plural-existing",name:"Fixture Box Press",target:0}]}).workouts[0].exercises[0].exerciseId'),'plural-existing');
  for(const name of ['Bench Press','Squat','Lat Pulldown']){ctx.ambiguousCsv=header+'\n2026-06-11 10:00:00,00:10:00,Ambiguous,'+name+',1,50,10,,,,\n';ctx.ambiguousParsed=await run('importApi.parse(ambiguousCsv)');assert.equal(run('importApi.plan(ambiguousParsed,"kg",initial()).fresh'),1,name+' must remain a custom exercise')}
- ctx.unnamedCsv=fixture+'2026-06-13 10:00:00,00:10:00,,,1,10,5,,,,\n';assert.equal((await run('importApi.parse(unnamedCsv)')).skippedRows,1);
+ ctx.unnamedCsv=fixture+'2026-06-13 10:00:00,00:10:00,,,1,10,5,,,,\n';ctx.unnamedParsed=await run('importApi.parse(unnamedCsv)');assert.equal(ctx.unnamedParsed.skippedRows,1);
+ assert.equal(ctx.unnamedParsed.sessions.length,2,'sessions without exercises are skipped');
+ assert.equal(run('importApi.plan(unnamedParsed,"kg",initial()).workouts.length'),2);
+ assert.equal(run('importApi.plan(unnamedParsed,"kg",{workouts:importApi.plan(unnamedParsed,"kg",initial()).workouts}).workouts.length'),0,'reimport also skips empty sessions');
+ ctx.zeroCsv=header+'\n2026-07-01 10:00:00,600,Zero,Chest Press,1,40,8,0,0, , \n2026-07-01 10:00:00,600,Zero,Chest Press,2,40,0,100,30,8,kept\n';
+ ctx.zeroParsed=await run('importApi.parse(zeroCsv)');
+ assert.equal(run('importApi.plan(zeroParsed,"kg",initial()).workouts[0].exercises[0].sets[0].csvFields'),undefined,'zero and blank extras take no persisted space');
+ assert.equal(run('importApi.plan(zeroParsed,"kg",initial()).workouts[0].exercises[0].sets[1].csvFields.seconds'),'30');
+ assert.equal(run('importApi.plan(zeroParsed,"kg",initial()).workouts[0].exercises[0].sets[1].csvFields.reps'),undefined);
+ // Repeated unnamed patterns, outliers, latest values, routine opt-out and restore dedup.
+ ctx.patternCsv=header+'\n'+[
+ '2026-07-01 10:00:00,600,,Chest Press,2,40,8,,,7,older',
+ '2026-07-01 10:00:00,600,,Chest Press,1,45,6,,,,',
+ '2026-07-01 10:00:00,600,,Machine Shoulder Press,1,20,10,,,,',
+ '2026-07-02 10:00:00,600,,Fixture Odd Movement,1,10,5,,,,',
+ '2026-07-03 10:00:00,600,,Chest Press,2,50,9,100,30,9,latest',
+ '2026-07-03 10:00:00,600,,Chest Press,1,55,7,,,,',
+ '2026-07-03 10:00:00,600,,Machine Shoulder Press,1,25,12,,,8,press'
+ ].join('\n')+'\n';
+ ctx.patternParsed=await run('importApi.parse(patternCsv)');run('var patternPlan=importApi.plan(patternParsed,"kg",initial())');
+ assert.equal(run('patternPlan.routines.length'),1);assert.equal(run('patternPlan.routines[0].name'),'Push');
+ assert.equal(run('patternPlan.routines[0].exercises[0].sets'),2);assert.equal(run('patternPlan.routines[0].exercises[0].min'),7);assert.equal(run('patternPlan.routines[0].exercises[0].max'),9);
+ assert.equal(run('patternPlan.workouts[2].exercises[0].sets[0].kg'),55,'source set order controls imported sets');
+ assert.equal(run('patternPlan.workouts[2].exercises[0].sets[1].csvFields.distance'),'100');assert.equal(run('patternPlan.workouts[2].exercises[0].sets[1].csvFields.seconds'),'30');
+ run('state=initial();migrate();window.workoutImportForm()');await run('window.workoutImportFile({size:1000,text:async()=>patternCsv})');
+ assert(el('workout-import-preview').innerHTML.includes('workoutImportRoutines(this.checked)'));
+ run('window.workoutImportUnit("kg");window.workoutImportRoutines(false);window.confirmWorkoutImport()');assert.equal(run('state.routines.length'),0);assert.equal(run('state.workouts.length'),3);
+ assert(run('state.workouts.every(w=>w.routineId===undefined)'),'routine opt-out leaves no dangling reference');
+ run('window.workoutImportForm()');await run('window.workoutImportFile({size:1000,text:async()=>patternCsv})');
+ const confirmDisabled=()=>/onclick="confirmWorkoutImport\(\)" disabled/.test(el('workout-import-preview').innerHTML);
+ assert(!confirmDisabled());run('window.workoutImportRoutines(false)');assert(confirmDisabled(),'routine-only reimport disables confirm after opt-out');
+ assert(!el('workout-import-preview').innerHTML.includes('Push ·'));
+ run('window.workoutImportRoutines(true)');assert(!confirmDisabled(),'opt-in enables routine-only import again');run('window.confirmWorkoutImport()');
+ assert.equal(run('state.routines.length'),1,'routines can be added after an earlier opt-out');assert.equal(run('state.workouts.length'),3);
+ assert(run('importApi.plan(patternParsed,"kg",{...initial(),routines:state.routines},false).workouts.every(w=>!w.routineId||state.routines.some(r=>r.id===w.routineId))'),'opt-out can reference an existing routine');
+ assert(run('importApi.plan(patternParsed,"kg",{...initial(),routines:state.routines},false).workouts.some(w=>w.routineId===state.routines[0].id)'));
+ run('state=JSON.parse(JSON.stringify(state));var patternRoutineId=state.routines[0].id;state.routines[0].name="Edited locally";window.workoutImportForm()');await run('window.workoutImportFile({size:1000,text:async()=>patternCsv})');run('window.confirmWorkoutImport()');
+ assert.equal(run('state.routines.length'),1);assert.equal(run('state.routines[0].name'),'Edited locally');assert.equal(run('state.routines[0].id'),run('patternRoutineId'));
+ run('for(let w of state.workouts)delete w.routineId;var competing=JSON.parse(JSON.stringify(state.workouts[2]));competing.id="unrelated-later";delete competing.importSource;competing.date="2026-07-04";competing.exercises[0].sets[0].kg=99;state.workouts.push(competing)');
+ run('date="2026-07-04";sessionWorkoutId=null;completionId=null;startRoutine(patternRoutineId)');
+ assert.equal(run('state.workouts.at(-1).exercises[0].sets[0].kg'),55);assert.equal(run('state.workouts.at(-1).exercises[0].sets[1].reps'),9);assert(!run('state.workouts.at(-1).exercises[0].sets[0].done'));assert(run('validData(state)'));
+ run('state.workouts[0].exercises[0].sets[0].csvFields={notes:42}');assert(!run('validData(state)'));run('delete state.workouts[0].exercises[0].sets[0].csvFields');
+ run('state=initial();migrate();state.language="en"');ctx.legCsv=ctx.patternCsv.replaceAll('Chest Press','Leg Extension').replaceAll('Machine Shoulder Press','Lying Leg Curl');ctx.legParsed=await run('importApi.parse(legCsv)');assert.equal(run('importApi.plan(legParsed,"kg",state).routines[0].name'),'Legs');
  ctx.dayOnlyCsv=header+'\n2026-06-11,,,Machine Lateral Raise,1,65,10,,,,\n';ctx.dayOnlyParsed=await run('importApi.parse(dayOnlyCsv)');
  assert(run('importApi.plan(dayOnlyParsed,"kg",initial()).workouts.every(w=>w.startedAt===undefined&&w.finishedAt===undefined&&w.durationSeconds===undefined)'));
  // Formatting and row ordering do not change stable session identities.
@@ -80,6 +126,7 @@ ctx.csvFixture=fixture;
  assert.equal(run('importApi.plan(parsedImport,"lbs",{workouts:[],exerciseBook:[existingBookEntry]}).workouts[0].exercises[0].exerciseId'),'existing-local-id');
  assert.equal(run('existingBookEntry.target'),100,'existing exercise settings stay unchanged');
  // New metadata rejects malformed marker, old profile remains accepted.
+ run('state.workouts=patternPlan.workouts;state.exerciseBook=patternPlan.added;state.routines=patternPlan.routines');
  run('state.workouts.at(-1).importSource="bad"');assert(!run('validData(state)'));run('delete state.workouts.at(-1).importSource');assert(run('validData(state)'));
  // Exercise the real save/cloud wrapper with a local mocked CAS conflict and pending offline profile.
  delete ctx.cloudSession;ctx.window.PULS_CLOUD={url:'https://unit-test.supabase.co',publicKey:'sb_publishable_abcdefghijklmnopqrstuvwxyz'};
