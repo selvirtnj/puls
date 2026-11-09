@@ -93,6 +93,13 @@ html body .qaratioinput input { width: 100% !important; min-width: 0; padding-ri
 .qaratio .note { margin: 0; color: var(--ds-label-2); font-size: 13px; line-height: 18px; font-variant-numeric: tabular-nums; }
 .qaratio .note.qaerror { color: var(--ds-red-text); }
 .qaratio .btn.full { margin-top: 4px; }
+/* v92: „Alles eintragen“ oben auf der Profilseite, Körper-Grün (fill trägt weiße Schrift mit mindestens 4.5:1). */
+html body .qadetail .qafullsetup {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 50px; margin: 0 0 16px;
+  border: 0; border-radius: 8px; background: var(--ds-cat-body-fill); color: #fff; font: 600 17px/22px var(--font);
+}
+html body .qadetail .qafullsetup svg { width: 20px; height: 20px; }
+html body .qadetail .qafullsetup:focus-visible { outline: 2px solid var(--ds-cat-body); outline-offset: 2px; }
 
 @media (max-width: 360px) {
   html body #modal .qatile { min-height: 72px !important; font-size: 12px !important; }

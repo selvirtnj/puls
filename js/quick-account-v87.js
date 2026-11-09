@@ -165,7 +165,25 @@ function qaProfileBody(){
     qaRow({label:qaT('Körpermaße & Biometrie','Body measurements & biometrics'),icon:'ruler',action:'measurementsForm()',chevron:true}),
     qaRow({label:qaT('Gewicht erfassen','Log weight'),icon:'scales',action:'weightForm()',chevron:true,cls:'dsaction'})
   ].join('');
-  return qaGroup('',rows,'qaprofile')+qaGroup(qaT('Körper & Entwicklung','Body & progress'),body);
+  let full=typeof settings==='function'?`<button type="button" class="btn full qafullsetup" onclick="qaFullSetup()"><span aria-hidden="true">${qaIcon('pencil-simple')}</span><span>${qaT('Alles eintragen','Fill in everything')}</span></button>`:'';
+  return full+qaGroup('',rows,'qaprofile')+qaGroup(qaT('Körper & Entwicklung','Body & progress'),body);
+}
+// v92: öffnet denselben Profil-&-Ziele-Bogen wie der Erststart (settings → profileForm), vorausgefüllt aus state.
+// Ohne setupPending: Schließen verwirft alle Eingaben, nur „Speichern“ übernimmt sie über die bestehende commitProfile-Kette.
+function qaFullSetup(){if(typeof settings==='function')settings()}
+// experience.js ersetzt das Geschlecht im Planer durch ein verstecktes Feld „male“ und blendet „special“ aus.
+// Gespeicherte Werte vorbelegen, damit Speichern im vollen Bogen sie nicht überschreibt; neue Profile bleiben beim bisherigen Standard.
+if(typeof profileForm==='function'){
+  const qaProfileFormBase=profileForm;
+  profileForm=function(...args){
+    let result=qaProfileFormBase.apply(this,args);
+    try{
+      let sex=document.getElementById('pr-sex'),saved=state.profile?.sex;
+      if(sex&&sex.type==='hidden'&&['male','female'].includes(saved))sex.value=saved;
+      let special=document.getElementById('pr-special');if(special&&special.hidden)special.checked=state.profile?.special===true;
+    }catch(error){console.error(error)}
+    return result;
+  };
 }
 
 /* Small sheets use the existing planner's inputs and complete commit chain.
