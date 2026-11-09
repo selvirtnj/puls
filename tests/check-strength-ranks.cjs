@@ -5,15 +5,15 @@ const api=ctx.pulsStrength,clone=x=>JSON.parse(JSON.stringify(x));
 const entry=(name,kg,reps=1,id=name)=>({exerciseId:id,name,sets:[{kg,reps,done:true}]});
 const sample=(exercises,bw=100)=>({profile:bw?{weight:bw}:undefined,workouts:[{id:'import-id',finished:true,importSource:'workout-csv',date:'2026-11-08',exercises}]});
 const rank=(name,kg,reps=1,bw=100)=>api.all(sample([entry(name,kg,reps)],bw))[0];
-// v93: 14 groups, 40 stages (scale 2), names in product order.
-assert.deepEqual(clone(api.ranks.map(r=>r.name)),['Gym Tourist','High Estrogen','Low Estrogen','Low Melanin','High Melanin','Pre-Workout Itcher','Creatine Bloater','Protein Farter','Test Booster Believer','BPC-157 Considerer','Blast & Cruiser','Batman Cycle','Superman Cycle','Tren Cougher']);
+// v94: 18 groups, 40 stages (scale 2), names in product order.
+assert.deepEqual(clone(api.ranks.map(r=>r.name)),['Gym Tourist','High Estrogen','Low Estrogen','Low Melanin','High Melanin','Pre-Workout Itcher','Creatine Bloater','Protein Farter','Test Booster Believer','BPC-157 Considerer','Blast & Cruiser','Batman Cycle','Superman Cycle','Tren Cougher','Insulin Gambler','HGH Gut','Open Class Monster','Mr. Olympia']);
 assert.equal(api.scale,2);assert.equal(api.maxRankIndex,39);assert.deepEqual([...api.ranks.at(-1).stages],[39]);
-assert.equal(new Set(api.ranks.map(r=>r.key)).size,14);assert.equal(api.ranks[10].key,'blast-cruiser');
+assert.equal(new Set(api.ranks.map(r=>r.key)).size,18);assert.equal(api.ranks[10].key,'blast-cruiser');
 for(const standard of Object.values(api.standards))for(const sex of ['male','female']){
- assert.equal(standard[sex].length,14);assert(standard[sex].every((n,i,a)=>i===0||n>a[i-1]));
+ assert.equal(standard[sex].length,18);assert(standard[sex].every((n,i,a)=>i===0||n>a[i-1]));
 }
-assert.equal(rank('Barbell Bench Press',200,1,70).index,13);
-assert(rank('Barbell Bench Press',200,1,200).index<13,'same weight at higher BW ranks lower');
+assert.equal(rank('Barbell Bench Press',200,1,70).index,17);
+assert(rank('Barbell Bench Press',200,1,200).index<17,'same weight at higher BW ranks lower');
 assert.equal(rank('Barbell Bench Press',100,6).e1rm,120);
 const maxima=sample([entry('Barbell Bench Press',100)]);maxima.weights=[{date:'2026-11-07',kg:50},{date:'2026-11-08',kg:100}];
 maxima.workouts.push({finished:true,date:'2026-11-07',exercises:[entry('Barbell Bench Press',90)]});
@@ -104,22 +104,26 @@ for(const source of [first,two]){
 multi.workouts[0].exercises.push(entry('Dumbbell Bench Press',30));assert.equal(api.overall(multi).score,overall.score,'only best per group counts');
 multi.workouts[0].exercises.push(entry('Barbell Deadlift',200),entry('Barbell Curl',50),entry('Triceps Pushdown',60));
 assert.equal(api.overall(multi).exercises.length,5);
-for(let i=0;i<40;i++){const r=api.rankAt(i);assert.equal(r.rankIndex,i);assert.equal(r.stage,i===39?1:i%3+1);assert.equal(r.index,Math.min(13,Math.floor(i/3)))}
-assert.equal(api.rankAt(39).nextAt,null);assert.equal(api.rankAt(39).name,'Tren Cougher');assert.equal(api.rankAt(38).nextName,'Tren Cougher');
-assert.equal(api.rankAt(99).rankIndex,39);assert.equal(api.rankAt(0).name,'Gym Tourist I');
-const edge=rank('Barbell Bench Press',40);assert.equal(edge.name,'Low Estrogen I');assert.equal(edge.progress,0);
-assert.equal(rank('Barbell Bench Press',40+25/3).name,'Low Estrogen II');
-assert.equal(rank('Barbell Bench Press',15).name,'Gym Tourist III','true beginners land below High Estrogen');
-assert.equal(rank('Barbell Bench Press',25).name,'High Estrogen I');
+assert.deepEqual(clone(api.ranks.flatMap(r=>r.stages)),Array.from({length:40},(_,i)=>i));
+assert.deepEqual(clone(api.ranks.map(r=>r.stages.length)),[3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,1]);
+for(const g of api.ranks)for(const [j,i] of g.stages.entries()){
+ const r=api.rankAt(i);assert.equal(r.rankIndex,i);assert.equal(r.stage,j+1);assert.equal(r.index,g.index);
+ assert.equal(r.name,g.name+(g.stages.length===1?'':' '+['I','II','III'][j]));
+ if(i<39)assert.equal(r.nextName,api.rankAt(i+1).name);
+}
+assert.equal(api.rankAt(39).nextAt,null);assert.equal(api.rankAt(39).name,'Mr. Olympia');
+assert.equal(api.rankAt(38).nextName,'Mr. Olympia');assert.equal(api.rankAt(99).rankIndex,39);
+assert.equal(api.rankAt(0).name,'Gym Tourist I');
+const edge=rank('Barbell Bench Press',api.standards.bench.male[2]*100);
+assert.equal(edge.name,'Low Estrogen I');assert.equal(edge.progress,0);
 // Legacy stage mapping (scale 1 -> 2): same strength boundary, monotonic, round-trip via toLegacy.
 assert.deepEqual(Array.from({length:25},(_,i)=>api.fromLegacy(i)),[0,2,4,6,7,8,9,10,11,12,14,16,18,20,22,24,26,28,30,32,34,36,37,38,39]);
 for(let i=0;i<=24;i++)assert.equal(api.toLegacy(api.fromLegacy(i)),i);
 for(let n=0;n<=39;n++){const i=api.toLegacy(n);assert(api.fromLegacy(i)<=n&&(i===24||api.fromLegacy(i+1)>n),'stage '+n)}
 for(const bad of [-1,25,26,1.5,null,'3'])assert.equal(api.fromLegacy(bad),null);
 for(const bad of [-1,40,2.5,null])assert.equal(api.toLegacy(bad),null);
-// Old-scale names keep their strength boundaries: old "Low Estrogen I" bench .4 -> new Low Estrogen I.
-assert.equal(api.rankAt(api.fromLegacy(3)).name,'Low Estrogen I');assert.equal(api.rankAt(api.fromLegacy(12)).name,'Creatine Bloater I');
-assert.equal(api.rankAt(api.fromLegacy(18)).name,'Blast & Cruiser I');assert.equal(api.rankAt(api.fromLegacy(24)).name,'Tren Cougher');
+// Legacy conversion retains the exact v93 numeric contract after the name redistribution.
+assert.equal(api.rankAt(api.fromLegacy(24)).name,'Mr. Olympia');
 const skip=sample([entry('Barbell Bench Press',300)]);skip.workouts[0].finished=false;assert.equal(api.all(skip).length,0);
 skip.workouts[0].finished=true;skip.workouts[0].exercises[0].sets[0].done=false;assert.equal(api.all(skip).length,0);
 const summary=api.summary(multi);assert.equal(summary.strength_rank,api.overall(multi).rankIndex);assert(summary.lift_ranks.every(r=>Math.abs(r.ratio*100-Math.round(r.ratio*100))<1e-9));
@@ -142,27 +146,32 @@ assert.match(sql,/drop function if exists public.puls_friends_publish\(text,inte
 for(const name of ['publish','snapshot'])assert.match(sql,new RegExp('function public.puls_friends_'+name+'[^]*?security definer set search_path=\'\''));
 assert(!sql.slice(sql.indexOf("'incoming'")).includes("'lift_ranks'"),'pending recipients never get lifts');
 assert(!/alter table public\.puls_profiles|puls_save_profile/.test(sql));
-// v90/v93: Audit-Beispiele (85 kg). Alte Namen bleiben grob erhalten, eingefügte Ränge teilen bestehende Intervalle.
-assert.equal(rank('Dumbbell Lateral Raise',12,12,85).name,'Protein Farter III');
-assert.equal(rank('Machine Lateral Raise',27,12,85).name,'Test Booster Believer III');
-assert.equal(rank('Dumbbell Flyes',14,12,85).name,'High Melanin III');
-assert.equal(rank('Barbell Bench Press',100,1,80).name,'Creatine Bloater III');
-// v93 expansion keeps the nine v90 anchors at the old group bounds.
-assert.deepEqual([...api.standards.bench.male],[0,.2,.4,.65,.9,1.025,1.15,1.275,1.4,1.525,1.65,1.775,1.9,2.2]);
-assert.deepEqual([...api.standards.squat.male],[0,.3,.6,.9,1.2,1.35,1.5,1.65,1.8,1.95,2.1,2.3,2.5,3]);
-assert.deepEqual([...api.standards.legextension.male],[0,.15,.3,.5,.7,.8,.9,1,1.1,1.2,1.3,1.425,1.55,1.8]);
-for(const [key,anchors] of [['bench',[0,.4,.65,.9,1.15,1.4,1.65,1.9,2.2]],['lateral',[0,.12,.2,.27,.33,.4,.5,.62,.75]],['deadlift',[0,.8,1.1,1.5,1.8,2.2,2.6,3,3.5]]]){
- const m=api.standards[key].male;assert.deepEqual([m[0],m[2],m[3],m[4],m[6],m[8],m[10],m[12],m[13]],anchors,key);
- assert.deepEqual([...api.standards[key].female],[...m].map(x=>+(x*(key==='deadlift'?.75:.65)).toFixed(4)),key+' female');
+// Synthetic cohorts, independent of private histories. Ratios are e1RM/BW.
+for(const [label,ratios,lo,hi] of [
+ ['beginner',[.3,.45,.3],0,6],['hobby',[1.2,1.55,.97],18,21],
+ ['advanced',[1.6,2.05,1.3],26,28],['elite',[2,2.6,1.65],34,36],
+ ['exceptional',[2.4,3.1,2],39,39]
+]){
+ const source=sample(['Barbell Bench Press','Barbell Squat','Barbell Row'].map((name,i)=>entry(name,ratios[i]*100)));
+ const saved=JSON.stringify(source),r=api.overall(source);
+ assert(r.rankIndex>=lo&&r.rankIndex<=hi,label+' stage '+r.rankIndex);
+ assert.equal(JSON.stringify(source),saved);
 }
-// The new scale only refines stages: every old-scale lift stays inside the mapped old stage.
-for(const [name,bw] of [['Barbell Bench Press',80],['Barbell Squat',90],['Barbell Deadlift',75],['Dumbbell Lateral Raise',85],['Overhead Press',70]]){
- for(let kg=5;kg<=320;kg+=2.5){
-  const r=rank(name,kg,1,bw);if(!r)continue;const old=api.toLegacy(r.rankIndex);
-  assert(api.fromLegacy(old)<=r.rankIndex&&(old===24||r.rankIndex<api.fromLegacy(old+1)),name+' '+kg);
- }
+for(const name of ['Machine Chest Press','Cable Chest Press','Smith Machine Bench Press','Leg Press','Machine Lateral Raise','Triceps Pushdown']){
+ const r=rank(name,1000);assert.equal(r.rankIndex,22,name);assert.equal(r.nextRatio,null);
+ const s=sample([entry(name,1000)]);assert.equal(api.overall(s).nextLift,null,'no unreachable kg target');
 }
-// SQL v2 source contracts (scale 2). Not executed: no PostgreSQL/RLS claim.
+assert.equal(api.classify({name:'Cable Hammer Curl'}).loadFactor,1);
+assert.equal(api.classify({name:'Rope Hammer Curl'}).loadFactor,1);
+assert.equal(api.classify({name:'Hammer Curl'}).loadFactor,2);
+assert.equal(rank('Barbell Bench Press',240).rankIndex,39,'free weights can reach the top');
+assert(rank('Barbell Bench Press',240).score>rank('Barbell Bench Press',160).score);
+// Threshold inversion and continuity at every group/stage boundary, both sexes.
+for(const sex of ['male','female'])for(const [i,g] of api.ranks.entries()){
+ if(i===0)continue; // Zero external load is unranked for barbell movements.
+ const s=sample([entry('Barbell Bench Press',api.standards.bench[sex][i]*100)]);s.profile.sex=sex;
+ assert.equal(api.all(s)[0].rankIndex,g.stages[0]);
+}
 const sql2=fs.readFileSync('backend/friends-strength-v2.sql','utf8');
 assert.match(sql2,/^begin;$/m);assert.match(sql2,/^commit;$/m);
 assert.equal((sql2.match(/create or replace function public\.puls_friends_publish\(/g)||[]).length,1);

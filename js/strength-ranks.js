@@ -1,25 +1,30 @@
 /* PULS strength model. Pure projections: no save, storage, Auth or profile mutation.
  * Ratio = best Epley e1RM / bodyweight on the workout day (1 rep uses actual load).
  * Product thresholds, not population percentiles; see docs/STRENGTH-RANKS.md.
- * Scale 2 (v93): index = group 0..13; rankIndex = stage 0..39; score = continuous stage 0..39.
+ * Scale 2 (v94): index = group 0..17; rankIndex = stage 0..39; score = continuous stage 0..39.
+ * v94: thresholds recalibrated on the same scale (more headroom, 18 groups on the same 40 stages).
  * Scale 1 (v88-v92, still sent by older friends/backups): group 0..8, stage 0..24; see fromLegacy/toLegacy.
  */
 (function(){
 'use strict';
 const names=['Gym Tourist','High Estrogen','Low Estrogen','Low Melanin','High Melanin','Pre-Workout Itcher','Creatine Bloater','Protein Farter',
- 'Test Booster Believer','BPC-157 Considerer','Blast & Cruiser','Batman Cycle','Superman Cycle','Tren Cougher'];
-const SCALE=2,TOP=names.length-1,MAX=TOP*3; // Tren Cougher: one final stage without I-III.
-const ranks=Object.freeze(names.map((name,index)=>Object.freeze({index,key:name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name,
- stages:Object.freeze(index===TOP?[MAX]:[index*3,index*3+1,index*3+2])})));
-// New group lower bounds expressed as continuous stages of the old 25-stage scale. Old groups
-// keep their anchors; Gym Tourist, Pre-Workout Itcher, Creatine Bloater, Test Booster Believer
-// and Blast & Cruiser each take one half of an existing group interval (Superman stays whole).
+ 'Test Booster Believer','BPC-157 Considerer','Blast & Cruiser','Batman Cycle','Superman Cycle','Tren Cougher','Insulin Gambler','HGH Gut','Open Class Monster','Mr. Olympia'];
+const SCALE=2,TOP=names.length-1,MAX=39;
+const STAGE_COUNTS=Object.freeze([3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,1]);
+let firstStage=0;
+const ranks=Object.freeze(names.map((name,index)=>{
+ const stages=Object.freeze(Array.from({length:STAGE_COUNTS[index]},(_,i)=>firstStage+i));firstStage+=stages.length;
+ return Object.freeze({index,key:name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name,stages});
+}));
+const groupFor=stage=>ranks.findLast(r=>stage>=r.stages[0]);
+// New group lower bounds expressed as continuous stages of the old 25-stage scale (v93 split:
+// Gym Tourist, Pre-Workout Itcher, Creatine Bloater, Test Booster Believer and Blast & Cruiser
+// each took one half of an old group interval). Index mapping only; v94 thresholds differ.
 const LEGACY_BOUNDS=Object.freeze([0,1.5,3,6,9,10.5,12,13.5,15,16.5,18,19.5,21,24]);
-const legacyRatio=(t,s)=>{if(s>=24)return t[8];const i=Math.floor(s/3);return t[i]+(t[i+1]-t[i])*(s-i*3)/3};
-// Old continuous stage 0..24 -> new continuous stage 0..39 (same strength boundary).
+// Old continuous stage 0..24 -> new continuous stage 0..39 (same position on the old scale).
 function fromLegacyScore(s){
  if(!(s>0))return 0;if(s>=24)return MAX;
- let k=0;while(k<TOP-1&&s>=LEGACY_BOUNDS[k+1])k++;
+ let k=0;while(k<LEGACY_BOUNDS.length-2&&s>=LEGACY_BOUNDS[k+1])k++;
  return k*3+3*(s-LEGACY_BOUNDS[k])/(LEGACY_BOUNDS[k+1]-LEGACY_BOUNDS[k]);
 }
 // Stage indices: old stage i covers new stages fromLegacy(i)..fromLegacy(i+1)-1.
@@ -28,30 +33,38 @@ function toLegacy(n){
  if(!Number.isInteger(n)||n<0||n>MAX)return null;
  let i=0;while(i<24&&fromLegacy(i+1)<=n)i++;return i;
 }
-// Old nine lower bounds per exercise (anchors, unchanged since v90); expanded to 14 below.
+// v94 calibration: six male levels per exercise (e1RM/BW), roughly following common public
+// strength-standard tables: beginner, novice, intermediate, advanced, elite, world class.
+// They sit on fixed stages 7/13/20/27/35/39: a multi-year intermediate lands mid-scale (~20),
+// advanced at 27, elite at 35, exceptional competition-level ratios at 39.
+const LEVEL_STAGES=Object.freeze([0,7,13,20,27,35,39]);
 const definitions={
- bench:['chest',[0,.4,.65,.9,1.15,1.4,1.65,1.9,2.2],.65],
- incline:['chest',[0,.35,.55,.75,1,1.2,1.4,1.65,1.9],.65],
- squat:['quads',[0,.6,.9,1.2,1.5,1.8,2.1,2.5,3],.75],
- deadlift:['posterior',[0,.8,1.1,1.5,1.8,2.2,2.6,3,3.5],.75],
- rdl:['posterior',[0,.6,.85,1.1,1.4,1.7,2,2.3,2.7],.75],
- overhead:['shoulders',[0,.25,.4,.55,.7,.85,1,1.15,1.35],.65],
- row:['back',[0,.35,.55,.75,1,1.2,1.4,1.65,1.9],.65],
- pullup:['back',[0,.65,.85,1,1.2,1.4,1.6,1.85,2.1],.75],
- pulldown:['back',[0,.4,.6,.8,1,1.2,1.4,1.65,1.9],.65],
- dip:['chest',[0,.65,.85,1,1.2,1.45,1.7,2,2.3],.7],
- legpress:['quads',[0,1,1.5,2,2.75,3.5,4.25,5,6],.75],
- // v90: Isolationen nachkalibriert, damit typische Mittelwerte (z. B. Seitheben 12 kg KH × 12
- // oder 27 kg Maschine × 12 bei 85 kg) im mittleren Bereich statt in den Spitzenrängen landen.
- curl:['biceps',[0,.2,.3,.42,.55,.68,.82,1,1.2],.6],
- triceps:['triceps',[0,.25,.38,.5,.65,.8,.95,1.12,1.35],.65],
- lateral:['shoulders',[0,.12,.2,.27,.33,.4,.5,.62,.75],.65],
- fly:['chest',[0,.22,.38,.55,.72,.9,1.1,1.32,1.55],.65],
- legcurl:['posterior',[0,.25,.4,.55,.7,.9,1.1,1.3,1.5],.75],
- legextension:['quads',[0,.3,.5,.7,.9,1.1,1.3,1.55,1.8],.75],
- hipthrust:['posterior',[0,.6,1,1.4,1.8,2.2,2.6,3,3.5],.8]
+ bench:['chest',[.6,.85,1.2,1.6,2,2.4],.65],
+ incline:['chest',[.5,.72,1,1.35,1.7,2.05],.65],
+ squat:['quads',[.8,1.15,1.55,2.05,2.6,3.1],.75],
+ deadlift:['posterior',[1,1.4,1.85,2.4,3,3.5],.75],
+ rdl:['posterior',[.8,1.15,1.55,2,2.5,2.9],.75],
+ overhead:['shoulders',[.4,.57,.78,1.03,1.3,1.55],.65],
+ row:['back',[.5,.7,.97,1.3,1.65,2],.65],
+ pullup:['back',[1,1.13,1.38,1.65,1.95,2.25],.75],
+ pulldown:['back',[.5,.7,.97,1.3,1.65,2],.65],
+ dip:['chest',[1,1.2,1.45,1.75,2.1,2.45],.7],
+ legpress:['quads',[1.1,1.7,2.5,3.5,4.6,5.6],.75],
+ curl:['biceps',[.25,.38,.55,.78,1,1.2],.6],
+ triceps:['triceps',[.2,.33,.5,.72,.95,1.15],.65],
+ lateral:['shoulders',[.12,.22,.36,.54,.75,.9],.65],
+ fly:['chest',[.35,.58,.9,1.3,1.75,2.1],.65],
+ legcurl:['posterior',[.35,.53,.77,1.07,1.43,1.75],.75],
+ legextension:['quads',[.38,.62,.93,1.3,1.73,2.1],.75],
+ hipthrust:['posterior',[.6,1.05,1.6,2.3,3.1,3.7],.8]
 };
-const expand=anchors=>LEGACY_BOUNDS.map(s=>+legacyRatio(anchors,s).toFixed(4));
+// Group lower bounds on the fixed 40-stage scale, interpolated between performance levels.
+const expand=levels=>{const points=[0,...levels];return ranks.map(g=>{
+ const s=g.stages[0];let j=0;while(j<LEVEL_STAGES.length-2&&s>LEVEL_STAGES[j+1])j++;
+ return +(points[j]+(points[j+1]-points[j])*(s-LEVEL_STAGES[j])/(LEVEL_STAGES[j+1]-LEVEL_STAGES[j])).toFixed(4);
+})};
+// Stack labels and lever arms are not standardized. Device-only scores stop at mid-scale.
+const DEVICE_LIMIT=22;
 const standards=Object.freeze(Object.fromEntries(Object.entries(definitions).map(([key,[group,anchors,factor]])=>{
  const male=expand(anchors);
  return [key,Object.freeze({group,male:Object.freeze(male),female:Object.freeze(male.map(x=>+(x*factor).toFixed(4)))})];
@@ -98,7 +111,8 @@ function classify(ex){
  else if(/incline.*(?:press|bench)|schragbank/.test(n))type='incline';
  else if(/bench.*press|chest.*press|bankdrucken|brustpress|brustdruck|floor press/.test(n))type='bench';
  if(!type||/kettlebell|resistance band|exercise ball|medicine ball/.test(equipment)||/goblet|single dumbbell|one dumbbell/.test(n))return null;
- const dumbbell=/dumbbell|kurzhantel|\bkh\b/.test(all)||/hammer curl/.test(n),single=/single arm|one arm|single leg|one leg|einarm|einbein/.test(n);
+ // v94: "Cable/Machine/Rope Hammer Curl" is a stack load, not a per-hand dumbbell load.
+ const dumbbell=/dumbbell|kurzhantel|\bkh\b/.test(all)||/hammer curl/.test(n)&&!/cable|kabel|machine|maschine|rope|seil/.test(all),single=/single arm|one arm|single leg|one leg|einarm|einbein/.test(n);
  const kind=/smith|multipresse/.test(all)?'smith':dumbbell?'dumbbell':/cable|kabel/.test(all)?'cable':/machine|maschine|leverage|plate loaded|iso lateral|hack squat|leg press|leg curl|leg extension|butterfly/.test(all)?'machine':'barbell';
  const bodyweight=type==='pullup'||type==='dip';
  if(/body only|bodyweight|body weight|eigengewicht/.test(all)&&!bodyweight)return null;
@@ -110,22 +124,30 @@ function classify(ex){
  if(['legpress','legcurl','legextension','pulldown','lateral','fly','triceps'].includes(type)&&kind==='machine')factor=1;
  if(type==='squat'&&/front/.test(n))factor*=.8;
  if(single&&kind!=='dumbbell')factor*=.5;
- return {type,group:standards[type].group,kind,factor,loadFactor:dumbbell?2:1,bodyweight};
+ const device=['machine','cable','smith'].includes(kind)||['pulldown','legpress','legcurl','legextension'].includes(type)||
+  /pushdown|push down|rope|seil|butterfly|pec deck|peck deck|cross ?over|hack squat/.test(all);
+ return {type,group:standards[type].group,kind,factor,loadFactor:dumbbell?2:1,bodyweight,device};
 }
 function rankAt(score,extra={}){
  const value=numeric(score)?Math.max(0,Math.min(MAX,score)):null;
  if(value===null)return {index:null,rankIndex:null,key:null,name:current().language==='en'?'Rank unknown':'Rang unbekannt',stage:null,score:null,ratio:null,nextRatio:null,nextAt:null,nextName:null,progress:0,...extra};
- const rankIndex=Math.min(MAX,Math.floor(value+1e-9)),index=Math.min(TOP,Math.floor(rankIndex/3)),stage=index===TOP?1:rankIndex%3+1,g=ranks[index];
+ const rankIndex=Math.min(MAX,Math.floor(value+1e-9)),g=groupFor(rankIndex),index=g.index,stage=rankIndex-g.stages[0]+1;
  const next=rankIndex===MAX?null:rankAtName(rankIndex+1);
- return {index,rankIndex,key:g.key,name:g.name+(index===TOP?'':' '+['I','II','III'][stage-1]),stage,score:value,ratio:null,nextRatio:null,
+ return {index,rankIndex,key:g.key,name:rankAtName(rankIndex),stage,score:value,ratio:null,nextRatio:null,
   nextAt:rankIndex===MAX?null:rankIndex+1,nextName:next,progress:rankIndex===MAX?1:Math.max(0,value-rankIndex),...extra};
 }
-function rankAtName(i){const g=ranks[Math.floor(i/3)];return g.name+(i===MAX?'':' '+['I','II','III'][i%3])}
+function rankAtName(i){const g=groupFor(i);return g.name+(g.stages.length===1?'':' '+['I','II','III'][i-g.stages[0]])}
 function scoreFor(ratio,thresholds){
  let i=0;while(i<TOP&&ratio>=thresholds[i+1]-1e-10)i++;
- return i===TOP?MAX:i*3+3*(ratio-thresholds[i])/(thresholds[i+1]-thresholds[i]);
+ if(i===TOP)return MAX;
+ const start=ranks[i].stages[0],width=ranks[i+1].stages[0]-start;
+ return start+width*(ratio-thresholds[i])/(thresholds[i+1]-thresholds[i]);
 }
-function ratioFor(score,t){if(score>=MAX)return t[TOP];const i=Math.floor(score/3);return t[i]+(t[i+1]-t[i])*(score-i*3)/3}
+function ratioFor(score,t){
+ if(score>=MAX)return t[TOP];
+ const i=groupFor(score).index,start=ranks[i].stages[0],width=ranks[i+1].stages[0]-start;
+ return t[i]+(t[i+1]-t[i])*(score-start)/width;
+}
 function evaluate(s=current(),until=day()){
  const byId=new Map(),byName=new Map();
  for(const e of catalog()){byId.set(e.id,e);byName.set(canonical(e.name),e)}
@@ -146,12 +168,12 @@ function evaluate(s=current(),until=day()){
     const kg=Number(set.kg),reps=Number(set.reps);
     if(!Number.isFinite(kg)||kg<0||!Number.isInteger(reps)||reps<1||reps>12)continue;
     const load=model.bodyweight?bw+kg:kg*model.loadFactor;if(!(load>0))continue;
-    const e1rm=load*(reps===1?1:1+reps/30),ratio=e1rm/bw,score=scoreFor(ratio,thresholds);
+    const e1rm=load*(reps===1?1:1+reps/30),ratio=e1rm/bw,score=Math.min(model.device?DEVICE_LIMIT:MAX,scoreFor(ratio,thresholds));
     const before=best.get(key);
     // Best estimated maximum, normalized with the weight on that workout day.
     if(before&&(before.e1rm>e1rm||before.e1rm===e1rm&&before.ratio>=ratio))continue;
-    const r=rankAt(score,{ratio,nextRatio:score>=MAX?null:ratioFor(Math.min(MAX,Math.floor(score+1e-9)+1),thresholds),
-     exerciseName:name,exerciseId:e.exerciseId,key,rankKey:ranks[Math.min(TOP,Math.floor(score/3))].key,group:model.group,
+    const r=rankAt(score,{ratio,limit:model.device?DEVICE_LIMIT:MAX,nextRatio:score>=(model.device?DEVICE_LIMIT:MAX)?null:ratioFor(Math.min(MAX,Math.floor(score+1e-9)+1),thresholds),
+     exerciseName:name,exerciseId:e.exerciseId,key,rankKey:groupFor(score).key,group:model.group,
      e1rm,bodyweight:bw,date:w.date,thresholds,loadFactor:model.loadFactor,reps,
      repFactor:reps===1?1:1+reps/30});
     best.set(key,r);
@@ -168,7 +190,7 @@ function overallFrom(all){
  const r=rankAt(score,{ratio,exercises:chosen,groups:chosen.length});
  if(r.nextAt!==null){
   const increase=(r.nextAt-score)*chosen.length;
-  r.nextLift=chosen.filter(x=>x.score+increase<=MAX+1e-9).map(x=>{
+  r.nextLift=chosen.filter(x=>x.nextRatio!==null&&x.score+increase<=x.limit+1e-9).map(x=>{
    const nextRatio=ratioFor(Math.min(MAX,x.score+increase),x.thresholds);
    return {exerciseName:x.exerciseName,key:x.key,kg:Math.max(0,(nextRatio-x.ratio)*x.bodyweight/x.loadFactor/x.repFactor),reps:x.reps,nextRatio};
   }).sort((a,b)=>a.kg-b.kg)[0]||null;

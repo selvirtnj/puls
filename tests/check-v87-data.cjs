@@ -97,7 +97,7 @@ assert.equal(water({weight:70,age:30},{weights:[{date:'2026-11-07',kg:80},{date:
 assert.equal(water({weight:70,age:30},{water:{mode:'manual'},waterGoal:900}).ml,900,'manual always wins, even outside auto clamp');
 assert.equal(water({weight:70,age:30},{water:{mode:'auto'},waterGoal:900}).ml,900);
 // Strength is independent of XP; old entry points retain independent user levels.
-const ranks=api.ranks;assert.equal(ranks.length,14);assert.equal(ranks[0].name,'Gym Tourist');assert.equal(ranks[1].name,'High Estrogen');assert.equal(ranks[13].name,'Tren Cougher');
+const ranks=api.ranks;assert.equal(ranks.length,18);assert.equal(ranks[0].name,'Gym Tourist');assert.equal(ranks[1].name,'High Estrogen');assert.equal(ranks[13].name,'Tren Cougher');
 for(const xp of [0,250,4000,5000,10000,60000,10000000]){
  assert.equal(api.rankForXp(xp).userLevel,c.xpProgress(xp).level);
  assert.equal(api.rankForXp(xp).index,api.rankForXp(0).index);
@@ -108,7 +108,7 @@ for(const display of [{lastRankSeen:39,rankScale:2},{rankScale:2}]){const probe=
 for(const bad of [{lastRankSeen:40},{lastRankSeen:-1},{lastRankSeen:3.5},{rankScale:1},{rankScale:'2'}]){const probe={...old(),display:clone(bad)};assert(validate(probe));assert.deepEqual(clone(probe.display),{})}
 // v93 one-time scale migration of the celebration mark (in memory, no save, idempotent).
 const bench=(kg,bw=80)=>({workouts:[{id:'stable-w',finished:true,date:'2025-01-02',exercises:[{exerciseId:'b',name:'Barbell Bench Press',sets:[{kg,reps:1,done:true}]}]}],weights:[{id:'stable-m',date:'2025-01-01',kg:bw}]});
-assert.equal(c.window.pulsStrength.overall(bench(100)).rankIndex,20,'fixture: 100 kg at 80 kg is Creatine Bloater III');
+assert.equal(c.window.pulsStrength.overall(bench(100)).rankIndex,20,'fixture: intermediate bench stays near mid-scale');
 const writesBefore=writes;
 for(const [display,source,expected] of [
  [{lastRankSeen:14},{},{lastRankSeen:22,rankScale:2}],            // old High Melanin III boundary, no current rank

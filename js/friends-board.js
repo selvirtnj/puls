@@ -11,11 +11,11 @@ const codeOK=value=>typeof value==='string'&&/^[A-F0-9]{12}$/.test(value);
 const dayOK=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value);
 const number=value=>new Intl.NumberFormat(en()?'en-US':'de-DE').format(value);
 const data=()=>window.pulsData87;
-// Rangindex (0..13) -> Emblem-Art. Bestehende Ränge behalten ihre Embleme; 10..14 sind die v93-Ränge
+// Rangindex (0..17) -> Emblem-Art. Bestehende Ränge behalten ihre Embleme; 10..14 sind die v93-Ränge
 // Gym Tourist, Pre-Workout Itcher, Creatine Bloater, Test Booster Believer, Blast & Cruiser (Art 7 bleibt ungenutzt).
-const RANK_ART=[10,0,1,2,3,11,12,4,13,5,14,6,8,9];
+const RANK_ART=[10,0,1,2,3,11,12,4,13,5,14,6,8,9,15,16,17,18];
 const TOP_GROUP=RANK_ART.length-1;
-const maxStage=()=>window.pulsStrength?.maxRankIndex??TOP_GROUP*3;
+const maxStage=()=>window.pulsStrength?.maxRankIndex??39;
 
 /* ---------- Rang-Embleme ----------
    Flache Flächen in Systemfarben (Rand dunkel, Fläche, heller Facettenschnitt), keine Verläufe, kein Glow.
@@ -29,7 +29,10 @@ const COLORS=[
  ['#FF3B30','#B3231B','#FF8C86','#FFFFFF'],['#FFCC00','#A67C00','#FFE47A','#4A3500'],
  // v93: Stein (Gym Tourist, dunkles Symbol), Orange, Oliv, Bronze, Petrol.
  ['#C9BFAE','#857A66','#E8E1D5','#4D4436'],['#FF9500','#B86A00','#FFC46B','#FFFFFF'],
- ['#7D9A3A','#4E6420','#BCD38A','#FFFFFF'],['#B8733A','#7A4A1E','#E2B386','#FFFFFF'],['#1F7A74','#114A46','#7CC6BF','#FFFFFF']];
+ ['#7D9A3A','#4E6420','#BCD38A','#FFFFFF'],['#B8733A','#7A4A1E','#E2B386','#FFFFFF'],['#1F7A74','#114A46','#7CC6BF','#FFFFFF'],
+ // Insulin Gambler, HGH Gut, Open Class Monster, Mr. Olympia.
+ ['#D65A35','#85351E','#F4AC84','#FFFFFF'],['#2D8F72','#165740','#83D6B4','#FFFFFF'],
+ ['#435C75','#243747','#9CBAD2','#FFFFFF'],['#D8B450','#80631B','#FFF0AB','#372800']];
 const SHAPES={
  circle:'M32 8a22 22 0 1 1 0 44a22 22 0 1 1 0-44Z',
  shield:'M32 7L51 13V29C51 41 43 49 32 54C21 49 13 41 13 29V13Z',
@@ -40,7 +43,9 @@ const FORMS=[
  {shape:'circle'},{shape:'shield'},{shape:'shield',ring:1},{shape:'hex'},{shape:'hex',ring:1},
  {shape:'crest',wings:1},{shape:'crest',wings:2,ring:1},{shape:'star',wings:2,laurel:1},
  {shape:'star',wings:2,laurel:1,spikes:1,ring:1},{shape:'star',wings:2,laurel:1,spikes:1,ring:1,flames:1},
- {shape:'circle'},{shape:'hex'},{shape:'hex',ring:1},{shape:'crest',ring:1},{shape:'crest',wings:1,ring:1}];
+ {shape:'circle'},{shape:'hex'},{shape:'hex',ring:1},{shape:'crest',ring:1},{shape:'crest',wings:1,ring:1},
+ {shape:'star',wings:2,ring:1,spikes:1},{shape:'crest',wings:2,laurel:1,ring:1},
+ {shape:'star',wings:2,laurel:1,spikes:1,ring:1},{shape:'star',wings:2,laurel:1,spikes:1,ring:1,flames:1}];
 const GLYPHS=[
  // Tropfen, Koffer, Blitz, Shaker, Hantel, Kettlebell, Flexarm, Blatt, Maske, Krone mit Rauch (24er Raster)
  '<path d="M12 2.5C12 2.5 5 10.6 5 15a7 7 0 0 0 14 0C19 10.6 12 2.5 12 2.5Z"/>',
@@ -58,7 +63,12 @@ const GLYPHS=[
  '<path d="M2.5 11.5h12a6 6 0 0 1-12 0ZM14 12.2L21.2 9.1L22 10.9L14.6 14.1Z"/><path d="M4.2 10.5c.6-2.6 2.2-4 4.3-4s3.7 1.4 4.3 4Z"/><path d="M18.5 2.5l.7 1.7l1.7.7l-1.7.7l-.7 1.7l-.7-1.7l-1.7-.7l1.7-.7Z"/>',
  '<path d="M12 2.5c3.9 0 6.8 3 6.8 7c0 4.3-3.4 7.6-5.6 8.4l.9 1.8H9.9l.9-1.8C8.6 17.1 5.2 13.8 5.2 9.5c0-4 2.9-7 6.8-7ZM9.4 6.2c-1.3.8-2 2.1-2.1 3.6l1.3.1c.1-1.1.6-2 1.5-2.6Z" fill-rule="evenodd"/><path d="M12 20.2c-.9.8-.9 1.4 0 2.2" fill="none" stroke-width="1.3" stroke-linecap="round"/>',
  '<g transform="rotate(-45 12 12)"><path d="M7.5 8h4.5v8H7.5a4 4 0 0 1 0-8Z"/><path d="M12.8 8h3.7a4 4 0 0 1 0 8h-3.7Z" fill-opacity=".55"/></g><path d="M5 2.8l.6 1.5l1.5.6l-1.5.6l-.6 1.5l-.6-1.5l-1.5-.6l1.5-.6Z"/><path d="M19.5 17.6l.4 1l1 .4l-1 .4l-.4 1l-.4-1l-1-.4l1-.4Z"/>',
- '<path d="M18.6 12a6.6 6.6 0 0 1-11.27 4.67M5.4 12a6.6 6.6 0 0 1 11.27-4.67" fill="none" stroke-width="2.4" stroke-linecap="round"/><path d="M5.6 15L9.2 15.7L6.3 18.5Z"/><path d="M18.4 9L14.8 8.3L17.7 5.5Z"/>'];
+ '<path d="M18.6 12a6.6 6.6 0 0 1-11.27 4.67M5.4 12a6.6 6.6 0 0 1 11.27-4.67" fill="none" stroke-width="2.4" stroke-linecap="round"/><path d="M5.6 15L9.2 15.7L6.3 18.5Z"/><path d="M18.4 9L14.8 8.3L17.7 5.5Z"/>',
+ // Dice, abdomen, Monster, Siegerpokal.
+ '<rect x="3" y="3" width="18" height="18" rx="4"/><g fill="'+COLORS[15][1]+'"><circle cx="7" cy="7" r="1.5"/><circle cx="17" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="7" cy="17" r="1.5"/><circle cx="17" cy="17" r="1.5"/></g>',
+ '<path d="M8 2h8l1 5c6 6 5 15-5 15S1 13 7 7Z"/><circle cx="12" cy="14" r="1.5" fill="'+COLORS[16][1]+'"/>',
+ '<path d="M3 3l6 4h6l6-4-2 9 2 7-9 4-9-4 2-7Z"/><path d="M6 10l4 2M18 10l-4 2M8 17h8" fill="none" stroke="'+COLORS[17][1]+'" stroke-width="2"/>',
+ '<path d="M7 2h10v4h5v4c0 4-3 6-7 6l-1 2v2h4v2H6v-2h4v-2l-1-2c-4 0-7-2-7-6V6h5Zm0 6H4v2c0 2 1 3 3 3Zm10 0v5c2 0 3-1 3-3V8Z"/>'];
 const WING={1:'M14 18L4 15L8 23L3 27L10 30L7 36L14 34Z',2:'M13 13L-1 8L5 18L-2 23L7 27L0 33L9 36L4 43L14 40Z'};
 const FLAME_OUTER='M32 -7C37 2 45 1 43 -6C53 3 59 14 57 27C62 23 63 17 62 13C70 28 66 47 54 58H10C-2 47 -6 28 2 13C1 17 2 23 7 27C5 14 11 3 21 -6C19 1 27 2 32 -7Z';
 const FLAME_INNER='M32 -1C36 6 42 6 41 1C49 9 53 19 51 30H13C11 19 15 9 23 1C22 6 28 6 32 -1Z';
@@ -94,7 +104,8 @@ function emblem(index,stage=1,size=40,{label=''}={}){
  svg+=`<path d="M-10 -10H32V30L-10 64Z" fill="${light}" opacity=".45" clip-path="url(#${clip})"/>`;
  if(form.ring)svg+=`${around(.7,shape)} fill="none" stroke="${light}" stroke-width="1.6"/>`;
  svg+=`<g transform="translate(32 30) scale(${form.shape==='circle'?.95:1.05}) translate(-12 -12)" fill="${glyph}" stroke="${glyph}" stroke-width="0">${GLYPHS[art]}</g>`;
- if(index<TOP_GROUP)for(let i=0;i<3;i++)svg+=`<circle cx="${24+i*8}" cy="67" r="2.8" ${i<stage?`fill="${base}" stroke="${rim}"`:`fill="none" stroke="currentColor" opacity=".45"`} stroke-width="1.2"/>`;
+ const stageCount=window.pulsStrength?.ranks[index]?.stages.length??(index===TOP_GROUP?1:index<5?3:2);
+ if(stageCount>1)for(let i=0;i<stageCount;i++)svg+=`<circle cx="${32+(i-(stageCount-1)/2)*8}" cy="67" r="2.8" ${i<stage?`fill="${base}" stroke="${rim}"`:`fill="none" stroke="currentColor" opacity=".45"`} stroke-width="1.2"/>`;
  else svg+=`<path d="M32 61.5L35 66.5L32 71.5L29 66.5Z" fill="${base}" stroke="${rim}" stroke-width="1.2"/>`;
  return svg+'</svg>';
 }
@@ -276,7 +287,7 @@ function ranksHTML(play){
   const status=!r?'future':g.index<r.index?'done':g.index===r.index?'current':'future';
   const stage=status==='done'?3:status==='current'?r.stage:0;
   return `<li class="fb-rung ${status}${play?' motion-play':''}" ${play?`data-motion="enter" style="--motion-i:${Math.min(i,10)}"`:''}>
-   ${emblem(g.index,stage,44)}<span class="fb-rungtext"><strong>${escape(g.name)}</strong><small>${g.stages.length===1?'':'I · II · III'}</small></span>
+   ${emblem(g.index,stage,44)}<span class="fb-rungtext"><strong>${escape(g.name)}</strong><small>${g.stages.length===1?'':g.stages.map((_,j)=>['I','II','III'][j]).join(' · ')}</small></span>
    <span class="fb-rungstate">${status==='current'?`<b>${t('Du','You')}</b>`:status==='done'?icon('check-circle'):''}</span></li>`;
  }).join('');
  return `${hero}<h3 class="fb-title">${t('Deine Übungen','Your exercises')}</h3><ul class="fb-lifts">${lifts||(missingWeight?'':`<li class="fb-empty">${t('Rang unbekannt','Rank unknown')}</li>`)}</ul><h3 class="fb-title">${t('Alle Ränge','All ranks')}</h3><ol class="fb-ladder">${rungs}</ol>`;
