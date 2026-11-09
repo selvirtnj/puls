@@ -45,8 +45,8 @@ function chooseProfileSegment(id,value){let select=$(id);if(!select||select.disa
 function refineProfileForm(){
   let form=$('planner-form');if(!form||form.dataset.refined)return;form.dataset.refined='1';
   form.closest('#mb')?.classList.add('profilemodal');
-  // Erklärtexte ausblenden (per CSS); nur der Erststart-Hinweis bleibt sichtbar.
-  form.querySelectorAll(':scope > .note').forEach(note=>{if(/Alle Angaben sind optional/.test(note.textContent))note.classList.add('keepnote')});
+  // Erklärtexte ausblenden / entfernen.
+  form.querySelectorAll(':scope > .note').forEach(note=>{if(/Alle Angaben sind optional/.test(note.textContent))note.remove()});
   for(let [id,text] of Object.entries(profileLabelText)){let input=$(id),label=input?.closest('label');if(label)profileSetLabel(label,text)}
   let activity=$('pr-activity');if(activity)for(let option of activity.options)if(profileActivityText[option.value])option.textContent=profileActivityText[option.value];
   for(let [id,labels] of Object.entries(profileSegments)){
@@ -94,22 +94,33 @@ function navyBodyFat(profile,measure){
  let bf=86.010*Math.log10(circumference/2.54)-70.041*Math.log10(profile.height/2.54)+36.76;
  return valid(bf,2,70)?bf:null
 }
+function bmiBodyFat(profile,kg){
+ if(!profile||!Number.isFinite(profile.age)||profile.age<18||!['male','female'].includes(profile.sex)||!Number.isFinite(profile.height)||profile.height<=0||!Number.isFinite(kg)||kg<=0)return null;
+ let value=1.2*(kg/(profile.height/100)**2)+.23*profile.age-10.8*(profile.sex==='male'?1:0)-5.4;
+ return Number.isFinite(value)&&value>=0&&value<=100?value:null
+}
 function currentBodyFat(profile=state.profile,rows=state.measurements||[],day=today()){
  const manual=x=>Number.isFinite(x.bodyfat)&&x.bodyfat>=2&&x.bodyfat<=70;
  let dated=rows.filter(x=>x.date<=day).slice().sort((a,b)=>b.date.localeCompare(a.date)||Number(manual(b))-Number(manual(a)));
  // Use one complete measurement day; never combine unrelated dates or invent missing circumferences.
  for(let row of dated){if(manual(row))return {value:row.bodyfat,estimated:false,date:row.date};let value=navyBodyFat(profile,row);if(value!==null)return {value,estimated:true,date:row.date}}
- return null
+ let weight=null;
+ for(let row of state.weights||[])if(row.date<=day&&Number.isFinite(row.kg)&&row.kg>0&&(!weight||row.date>=weight.date))weight=row;
+ let kg=weight?.kg??profile?.weight;
+ let value=bmiBodyFat(profile,kg);
+ return value===null?null:{value,estimated:true,method:'bmi',date:weight?.date||day}
 }
-const navyMeasurementNote='US Navy für Männer: Größe aus dem Profil, Hals und Taille vom selben Tag. Bauchumfang am Nabel und Hals unterhalb des Kehlkopfs messen. Grobe Schätzung, keine Messung.';
+// Historical BMI series keep their actual weight and profile context.
+if(typeof bodyMetrics==='function'){
+ const bmiMetricsBase=bodyMetrics;
+ bodyMetrics=function(weight=currentWeight(),profile=state.profile){let result=bmiMetricsBase(weight,profile);return result?{...result,bf:bmiBodyFat(profile,weight)}:result};
+}
+const navyMeasurementNote='';
 if(typeof englishUI==='object')Object.assign(englishUI,{
- 'Hals':'Neck','Körperfett geschätzt (US Navy)':'Estimated body fat (US Navy)','Körperfett manuell erfasst':'Manually recorded body fat',
+ 'Hals':'Neck','Körperfett':'Body fat','Körperfett geschätzt (US Navy)':'Estimated body fat (US Navy)','Körperfett manuell erfasst':'Manually recorded body fat',
  'Körperfett geschätzt':'Estimated body fat','Körperfett manuell':'Manual body fat','Stand:':'As of:',
- 'US-Navy-Schätzung aus Körpermaßen, keine Messung.':'US Navy estimate from body measurements, not a measurement.',
- 'Manuell erfasster Körperfettanteil.':'Manually recorded body fat percentage.',
- [navyMeasurementNote]:'US Navy for men: height from the profile, neck and waist from the same day. Measure the abdomen at the navel and the neck below the larynx. Rough estimate, not a measurement.'
 });
-function bodyFatMarkup(value){return value?'<p class="note">'+translatedProfileText(value.estimated?'Körperfett geschätzt (US Navy)':'Körperfett manuell erfasst')+': <strong>'+n(round(value.value))+' %</strong> · '+esc(fmtDate(value.date))+'</p>':''}
+function bodyFatMarkup(value){return value?'<p class="note">'+translatedProfileText('Körperfett')+': <strong>'+n(round(value.value))+' %</strong></p>':''}
 const navyMeasurementsForm=measurementsForm;measurementsForm=function(...args){
  let result=navyMeasurementsForm.apply(this,args),form=$('measure-date')?.closest('form');if(!form)return result;
  let saveButton=form.querySelector('button.btn.full');
@@ -124,6 +135,6 @@ function previewNavyBodyFat(){
  target.innerHTML=bodyFatMarkup(currentBodyFat(state.profile,[row],day))
 }
 const navyWeeklyWeightCard=weeklyWeightCard;weeklyWeightCard=function(...args){
- let html=navyWeeklyWeightCard.apply(this,args),bf=currentBodyFat();if(!bf)return html;
- return html.replace(/<span>Körperfett ≈ <strong>.*?<\/strong><\/span>/,'<span>'+translatedProfileText(bf.estimated?'Körperfett geschätzt':'Körperfett manuell')+' <strong>'+n(round(bf.value))+' %</strong></span>').replace('Körperfett grob aus BMI und Alter geschätzt, keine Messung.',translatedProfileText(bf.estimated?'US-Navy-Schätzung aus Körpermaßen, keine Messung.':'Manuell erfasster Körperfettanteil.')+' '+translatedProfileText('Stand:')+' '+esc(fmtDate(bf.date)))
+ let html=navyWeeklyWeightCard.apply(this,args),bf=currentBodyFat();
+ return html.replace(/<span>Körperfett ≈ <strong>.*?<\/strong><\/span>/,'<span>'+translatedProfileText('Körperfett')+' <strong>'+(bf?n(round(bf.value))+' %':'–')+'</strong></span>').replace(/<p(?: class="note")?>Körperfett grob aus BMI und Alter geschätzt, keine Messung\.<\/p>/,'')
 };

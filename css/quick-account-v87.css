@@ -3,14 +3,14 @@
 
 /* ---------- Plus-Menü ---------- */
 #modal .qaquick { display: flex; flex-direction: column; gap: 16px; }
-#modal .qatiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
+#modal .qatiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0; }
 html body #modal .qatile {
   display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
   gap: 6px !important; min-width: 0; min-height: 80px !important; margin: 0 !important; padding: 12px 4px !important;
   border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; color: var(--ds-label) !important;
   font: 500 13px/16px var(--font) !important; text-align: center; cursor: pointer;
 }
-html body #modal .qatile > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body #modal .qatile > span:last-child { max-width: 100%; white-space: normal; overflow-wrap: normal; }
 #modal .qatileicon { display: grid; place-items: center; width: 32px; height: 32px; color: var(--ds-accent); }
 #modal .qatileicon svg { width: 28px; height: 28px; }
 #modal .qatile:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
@@ -26,6 +26,16 @@ html body #modal .qatile > span:last-child { max-width: 100%; overflow: hidden; 
 .qadetail .accountdetailcontent > .dsgrouptitle:first-child { margin-top: 0; }
 .qadetail .dsgroupfoot { margin-bottom: 4px; }
 .qadetail .dsrowvalue { max-width: 55%; overflow: hidden; text-overflow: ellipsis; }
+.qadetail[data-qa-page=targets] .dsrow { min-height: 48px; }
+.qadetail[data-qa-page=targets] .dsgrouptitle { margin-top: 20px; }
+#modal .qaedit { display: flex; flex-direction: column; gap: 12px; }
+#modal .qaedit label { margin: 0; }
+#modal .qaedit input, #modal .qaedit select { min-height: 44px; }
+#modal .qaedit #plan-error:empty, #modal .qaedit .note:empty { display: none; }
+#modal #profile-form[hidden], #modal .qaedit label[hidden] { display: none !important; }
+#modal .qaedit .formgrid { display: block; }
+#modal .qaedit #qa-edit-fields > label { display: flex; flex-direction: column; gap: 8px; }
+#modal .qaedit #qa-edit-fields > label.checklabel { flex-direction: row; align-items: center; min-height: 44px; }
 
 /* Segmentierte Auswahl mit gleitendem Indikator (motion.js setzt .motion-indicator). */
 html body .qaseg { margin: 0 !important; }

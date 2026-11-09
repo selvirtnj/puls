@@ -24,9 +24,9 @@ let savedPlan=savePlan(test);assert.equal(savedPlan.weights.length,2);assert.equ
 test=app(savedPlan);test.run('settings()');assert.equal(test.el('pl-pace').value,'extreme');assert.equal(test.el('pl-learn-tdee').checked,true);assert.equal(test.el('pl-adaptive').checked,false);assert.equal(test.el('pr-rmr').value,'1650.5');
 fill(test,{'pl-direction':'gain','pr-target':90});test.run('updatePlanPreview()');assert.equal(test.el('pl-pace').value,'high');assert(!test.el('pace-info').textContent.includes('Extreme Weight Loss'));
 
-// Legacy backups stay valid; startup and the hidden form retain the personal male profile.
+// Legacy backups stay valid; startup preserves sex, while the legacy hidden form stays male.
 let legacy=JSON.parse(JSON.stringify(savedPlan));legacy.profile={...profilePlan,sex:'female',special:true};legacy.plan={...autoPlan,mode:'manual'};legacy.goals={kcal:2200,p:150,c:250,f:70};
-test=app(legacy);assert(test.run('validData('+JSON.stringify(legacy)+')'));assert.equal(test.run('state.profile.sex'),'male');assert.equal(test.run('state.profile.special'),false);
+test=app(legacy);assert(test.run('validData('+JSON.stringify(legacy)+')'));assert.equal(test.run('state.profile.sex'),'female');assert.equal(test.run('state.profile.special'),false);
 // Also cover a legacy profile arriving after startup, as with an import or cloud pull.
 test.run('state.profile='+JSON.stringify(legacy.profile)+';settings()');assert.equal(test.el('pr-sex').value,'male');assert.equal(test.el('pr-special').checked,false);savedPlan=savePlan(test);assert.equal(savedPlan.profile.sex,'male');assert.equal(savedPlan.profile.special,false);
 test.run('settings()');test.el('pl-mode').value='auto';savedPlan=savePlan(test);assert.equal(savedPlan.plan.mode,'auto');

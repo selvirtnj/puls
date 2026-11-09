@@ -61,7 +61,9 @@ function mockImages(t){
   code(t.apply(cmd('measurements.save',{id:'future',date:'2026-10-29',values:{waist:92},expect:null})),'invalid');
   code(t.apply(cmd('measurements.save',{id:'bad',date:'2026-02-30',values:{neck:10},expect:null})),'invalid');
   row=t.state().measurements[1];op=cmd('measurements.delete',{id:row.id,expect:row});ok(t.apply(op));t.store.delete('puls-native-applied');ok(t.apply(op));assert.equal(t.state().measurements.length,1);assert.equal(t.run('modal.open'),false);
-  t.run('state.measurements=[{id:"old",date:"2026-10-20",neck:40},{id:"other",date:"2026-10-21",waist:95}];save()');interest(t);assert.equal(projection(t).account.body.bodyFat,null,'Navy never combines dates');
+  t.run('state.measurements=[{id:"old",date:"2026-10-20",neck:40},{id:"other",date:"2026-10-21",waist:95}];save()');interest(t);
+  assert.equal(t.run('currentBodyFat().method'),'bmi','Incomplete measurement days use BMI, never combined Navy circumferences');
+  assert.equal(projection(t).account.body.bodyFat.estimated,true);
   console.log('PASS account: measurement merge/delete/IDs/unknown fields, Navy/manual current-vs-history, invalid dates');
 
   t=start();op=cmd('appearance.set',{scheme:'light',language:'en',expect:{scheme:'system',language:'de'}});compare('apply-account-appearance',op);const appearanceAck=t.apply(op);ok(appearanceAck);compare('ack-account-appearance',appearanceAck);assert.equal(t.store.get('puls-color-scheme'),'light');assert.equal(t.state().language,'en');assert.equal(t.run('modal.open'),false);t.store.delete('puls-native-applied');ok(t.apply(op));
