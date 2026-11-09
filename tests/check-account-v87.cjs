@@ -63,6 +63,23 @@ c.document.getElementById=()=>null;
 const plannerHarness=fs.readFileSync('tests/check-onboarding.cjs','utf8').split('(async()=>{')[0];
 vm.runInNewContext(plannerHarness+String.raw`
 let test=app();
+// Persisted formula parameters survive a real save/restart through the bootstrap.
+for(const sex of ['female','male']){
+ let original=app();
+ original.run('state.onboardingComplete=true;state.setupPending=false;state.profile={...'+JSON.stringify(profile)+',sex:'+JSON.stringify(sex)+'};save()');
+ let restarted=app(JSON.parse(original.saved()));
+ assert.equal(restarted.run('state.profile.sex'),sex);
+ assert(restarted.run('validData(state)'));
+ restarted.run('save()');
+ assert.equal(app(JSON.parse(restarted.saved())).run('state.profile.sex'),sex);
+}
+// The legacy fallback still normalizes missing/invalid values, preserving the existing special=false normalization.
+const startupNormalization=fs.readFileSync('js/experience.js','utf8').split('const priorPlanNumbers')[0];
+for(const sex of [undefined,null,'invalid','']){
+ let fixture={profile:{sex,special:true},plan:{}};
+ vm.runInNewContext(startupNormalization,{state:fixture});
+ assert.equal(fixture.profile.sex,'male');assert.equal(fixture.profile.special,false);
+}
 test.run('state.onboardingComplete=true;state.setupPending=false;setupPending=false;state.profile=null;state.plan={mode:"manual",direction:"lose",pace:"medium",macroMode:"manual",protein:1.8,fat:.8,macroInput:"ratio",ratio:{p:30,c:40,f:30}};state.goals={kcal:2000,p:150,c:200,f:67};page="home"');
 test.run(fs.readFileSync('js/quick-account-v87.js','utf8'));
 test.run('settings()');fill(test,{'manual-kcal':2400});
