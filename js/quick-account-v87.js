@@ -181,6 +181,8 @@ if(typeof profileForm==='function'){
       let sex=document.getElementById('pr-sex'),saved=state.profile?.sex;
       if(sex&&sex.type==='hidden'&&['male','female'].includes(saved))sex.value=saved;
       let special=document.getElementById('pr-special');if(special&&special.hidden)special.checked=state.profile?.special===true;
+      // Die Vorschau wurde in der Basis schon mit „male“ berechnet; mit den gespeicherten Werten neu rechnen.
+      if(document.getElementById('plan-preview')&&typeof updatePlanPreview==='function')updatePlanPreview();
     }catch(error){console.error(error)}
     return result;
   };

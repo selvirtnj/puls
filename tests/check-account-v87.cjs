@@ -104,6 +104,20 @@ assert.equal(test.run('dayGoals().p'),190);
 assert.equal(test.run('dayGoals().c'),230);
 assert(test.run('dayGoals().kcal')>test.run('state.goals.kcal'));
 assert(!test.run('qaMacroEditor()').includes('Grundziel'));
+// v92 „Alles eintragen“: gespeichertes Geschlecht ersetzt das versteckte „male“ aus experience.js,
+// und die Vorschau wird danach mit genau diesen Werten berechnet (sonst zeigt sie den Männer-Wert).
+test.run('state.profile={...'+JSON.stringify(profile)+',sex:"female",special:false,age:30,height:180,weight:80,target:75,activity:1.375,kcalMode:"classic"};state.plan={mode:"auto",direction:"lose",pace:"medium",macroMode:"auto",protein:1.8,fat:.8,adaptive:false};state.weights=[];dayActivityKcal=()=>0');
+test.el('pr-sex').type='hidden';test.el('pr-special').hidden=true;
+test.run('qaFullSetup()');
+assert.equal(test.el('pr-sex').value,'female');
+let femaleKcal=test.run('planNumbers(collectProfile(),collectPlan(),collectManual()).kcal');
+let maleKcal=test.run('planNumbers({...collectProfile(),sex:"male"},collectPlan(),collectManual()).kcal');
+assert.notEqual(femaleKcal,maleKcal);
+assert(test.el('plan-preview').innerHTML.includes(test.run('n('+femaleKcal+')')),'Vorschau nutzt das gespeicherte Geschlecht');
+assert(!test.el('plan-preview').innerHTML.includes(test.run('n('+maleKcal+')')),'keine veraltete Männer-Vorschau');
+assert.equal(test.run('commitProfile('+submit+')'),true);
+assert.equal(test.run('state.profile.sex'),'female');
+assert.equal(test.run('state.goals.kcal'),femaleKcal);
 // Small sheets keep the real collectProfile/planError/commitProfile/save chain.
 // Only label movement is simulated here. Browser QA covers actual visibility.
 function sheet(key){
