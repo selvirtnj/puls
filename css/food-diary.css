@@ -132,7 +132,7 @@ body.fdpage .titleline .datebar, body.fdpage .titleline .dsbacktoday { display: 
 #fd-undo { position: fixed; left: 16px; right: 16px; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 2147483000; display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 520px; margin: 0 auto; padding: 4px 6px 4px 16px; border-radius: 12px; background: var(--ds-label); color: var(--ds-bg); font-size: 15px; }
 #fd-undo span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #fd-undo button { min-height: 44px; padding: 0 12px !important; border: 0 !important; background: transparent !important; color: var(--ds-bg) !important; font-size: 15px; font-weight: 600; }
-dialog[open] ~ #fd-undo { bottom: calc(16px + env(safe-area-inset-bottom)); }
+dialog[open] #fd-undo { bottom: calc(16px + env(safe-area-inset-bottom)); }
 
 /* Feedback beim Tippen */
 .fdicon, .fdglass, .fddaylabel, .fdswitch button, .fdentryrow { transition: transform 120ms cubic-bezier(.2, 0, 0, 1) !important; }
