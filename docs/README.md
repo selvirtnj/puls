@@ -7,7 +7,7 @@
 - [Aktueller Stand, Versionen und Übergaben](CURRENT-STATE.md)
 - [Projektstruktur und Prüfablauf](ARCHITECTURE.md)
 - [KI-Team: Claude, Codex, Gemini](AI-TEAM.md) · [Teamablauf](TEAM-WORKFLOW.md)
-- [Gestaltungsplan](DESIGN-WORKPLAN.md)
+- [Design-System](DESIGN-SYSTEM.md) · [Kraftränge](STRENGTH-RANKS.md) · [Aktivitätsdaten](ACTIVITY-DATA.md)
 - [Backend-Übergabe](BACKEND-HANDOFF.md) · [Backend-Einrichtung](../backend/ACCOUNT-SETUP-DE.md)
 - [iOS-App (AltStore)](IOS-APP.md)
 
@@ -17,3 +17,4 @@
 - [Kontoverwaltung · Version 33](archive/ACCOUNT-33.md)
 - [Version 34](archive/RELEASE-34.md) · [Maschinenbibliothek · Version 35](archive/EXERCISES-35.md)
 - [Feature-Audit](archive/PREMIUM-AUDIT.md) · [Entwicklungshistorie](archive/DEVELOPMENT-HISTORY.md)
+- [Gesamt-Audit · 26.10.2026](archive/audit/FINAL-REPORT.md) · [Gestaltungsplan](archive/DESIGN-WORKPLAN.md)

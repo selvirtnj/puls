@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert');
-// Regression for UI-2/UI-3 (docs/audit/UI-AUDIT.md): live set input stays quiet on invalid intermediates and only batches persisting.
+// Regression for UI-2/UI-3 (docs/archive/audit/UI-AUDIT.md): live set input stays quiet on invalid intermediates and only batches persisting.
 let bootstrap=fs.readFileSync('tests/check-premium.cjs','utf8').split("run(`state.foods=")[0];
 const swap=(from,to)=>{assert(bootstrap.includes(from),'bootstrap changed: '+from);bootstrap=bootstrap.replace(from,to)};
 swap('const ctx={document:{getElementById:el,addEventListener(){}','const listeners={},timers=new Map();let timerId=0;const ctx={addEventListener(t,f){(listeners["win:"+t]??=[]).push(f)},document:{getElementById:el,addEventListener(t,f){(listeners[t]??=[]).push(f)}');

@@ -1,6 +1,6 @@
 // Open Food Facts read-only integration. Diary and profile never leave this browser.
 let barcodeControls=null,barcodeReader=null,barcodeEpoch=0,productRequest=null,productDraft=null,lookupTimes=[];
-const productAttribution='<p class="note">Produktdaten: <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener" style="color:var(--lime)">Open Food Facts</a> · <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener" style="color:var(--lime)">ODbL</a>. Community-Daten: bitte mit dem Etikett vergleichen.</p>';
+const productAttribution='<p class="note">Produktdaten: <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener" style="color:var(--lime)">Open Food Facts</a> · <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener" style="color:var(--lime)">ODbL</a>.</p>';
 function normalizeBarcode(raw){return String(raw).replace(/[\s-]/g,'')}
 function validBarcode(code){if(!/^(\d{8}|\d{12}|\d{13}|\d{14})$/.test(code))return false;let sum=0;for(let i=code.length-2,position=0;i>=0;i--,position++)sum+=Number(code[i])*(position%2===0?3:1);return (10-sum%10)%10===Number(code.at(-1))}
 function nutrientNumber(value,max){if(value===undefined||value===null||typeof value==='string'&&value.trim()==='')return null;let x=Number(value);return Number.isFinite(x)&&x>=0&&x<=max?round(x):null}

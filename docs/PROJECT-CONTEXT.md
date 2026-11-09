@@ -4,19 +4,17 @@ Stand der Übergabe: 24.10.2026. Dieser Text fasst die wichtigen Produktentschei
 
 ## Ziel und Nutzung
 
-PULS ist Selvirs persönlicher Fitness-, Gewichts- und Ernährungstracker für das iPhone, zusätzlich am PC nutzbar. Die aktive Version ist eine installierbare Web-App auf GitHub Pages. Die App-Oberfläche ist öffentlich abrufbar; private Kontoprofile werden separat über Supabase gespeichert. Seit 08.11.2026 ist auch die Freundesliste beauftragt; das Produktziel umfasst damit persönliche Nutzung und den Vergleich mit Freunden. Bestehende Authentifizierung und Synchronisierung erhalten. Seit 26.10.2026 beauftragt: schrittweise native SwiftUI-Umstellung der iOS-App (Plan `docs/native/`); die Web-App bleibt parallel live und bis Phase B maßgeblich für Daten, Auth und Sync.
+PULS ist Selvirs persönlicher Fitness-, Gewichts- und Ernährungstracker für das iPhone, zusätzlich am PC nutzbar. Die aktive Version ist eine installierbare Web-App auf GitHub Pages. Die App-Oberfläche ist öffentlich abrufbar; private Kontoprofile werden separat über Supabase gespeichert. Seit 08.11.2026 ist auch die Freundesliste beauftragt; das Produktziel umfasst damit persönliche Nutzung und den Vergleich mit Freunden. Bestehende Authentifizierung und Synchronisierung erhalten. Die iOS-App ist eine WebView-Hülle, die die Live-Web-App lädt (Entscheidung 08.11.2026); die SwiftUI-Umstellung ist gestoppt und unter Tag `native-swiftui-archiv` archiviert. Web bleibt maßgeblich für Daten, Auth und Sync.
 
-Prioritäten: sofort praktisch nutzbar, kompakt und übersichtlich, kostenfrei soweit möglich, Deutsch als Standard mit Englisch als Option, schönes dunkles Originaldesign in Lila. Referenzen sind Cronometer, Liftoff, Hevy und MacroFactor; keine Behauptung einer technischen oder markenrechtlichen Verbindung.
+Prioritäten: sofort praktisch nutzbar, kompakt und übersichtlich, kostenfrei soweit möglich, Deutsch als Standard mit Englisch als Option, ein einheitliches, kompaktes Design im iOS-Stil. Referenzen sind Cronometer, Liftoff, Hevy und MacroFactor; keine Behauptung einer technischen oder markenrechtlichen Verbindung.
 
 ## Navigation und Gestaltung
 
 Entscheidung vom 09.11.2026 — Selvir will keine Erklär- oder Disclaimer-Texte in der UI. Dies ersetzt frühere Vorgaben, Schätzwerte in UI-Texten deutlich als Schätzung zu kennzeichnen. Werte selbst dürfen weiterhin nicht erfunden werden; Methodik und Grenzen bleiben in der Dokumentation festgehalten.
 
-Neue bestätigte Richtung vom 24.10.2026: sportlich und präzise, dunkles lila Original zuerst, weniger verschachtelte Karten, mehr kompakte Zeilen und klare Typografie. Lebendige Aktionsreaktionen und gezielte Erfolgsmomente. Konto zuerst mit kompakter Übersicht und Unterseiten; danach gemeinsame Beurteilung vor Übertragung auf weitere Tabs. Einzelheiten und Abnahmekriterien: `docs/DESIGN-WORKPLAN.md`. Diese neue Kontoaufteilung ersetzt die frühere lange Liste vollständig sichtbarer Abschnitte.
+Stand Vollversion (09.11.2026): ein Design im iOS-Stil mit Farbschema System/Hell/Dunkel und den Farbvarianten Frisch und Mitternacht; Bereichsfarben Training blau, Essen orange, Körper grün. Weniger verschachtelte Karten, kompakte Zeilen, klare Typografie, gezielte Erfolgsmomente. Konto mit kompakter Übersicht und Unterseiten. Freunde und kraftbasierte Ränge sind Teil der App. Regeln: [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md); der frühere Gestaltungsplan liegt in [archive/DESIGN-WORKPLAN.md](archive/DESIGN-WORKPLAN.md).
 
-Selvir hat die Konto-Vorschau ausdrücklich bestätigt und als nächsten Abschnitt die Übersicht im gleichen Stil beauftragt. Kreis/Makrobalken, Tagesnavigation, Essenvorschau, Trainingsaktionen und Gesamtfortschritt bleiben erhalten. Veröffentlichung ist noch nicht beauftragt.
-
-Nach Bestätigung der Übersicht ist auch Training im selben Stil beauftragt: die vier Trainingtabs, laufende Session und Abschluss. Bestehende Trainingslogik und Daten bleiben maßgeblich; zunächst lokale Vorschau.
+Kreis/Makrobalken, Tagesnavigation, Essenvorschau, Trainingsaktionen und Gesamtfortschritt bleiben erhalten; bestehende Trainingslogik und Daten bleiben maßgeblich.
 
 - Untere Leiste: Training | Übersicht | mittiges Plus | Essen | Konto. Symmetrische Icons und gute Touch-Ziele.
 - Übersicht/Essen/Training: oben links Profil/Level/XP, Datum in der Mitte, Streak rechts. Der aktuelle Tag heißt nur „Heute“, andere Tage zeigen Wochentag/Datum.
@@ -24,7 +22,7 @@ Nach Bestätigung der Übersicht ist auch Training im selben Stil beauftragt: di
 - Energie und Makros kombinieren einen sich füllenden Kalorienkreis mit Makrobalken. Restkalorien anzeigen. Auf Essen wischbare, gleich hohe Ansichten für Makros/Mikros; kompakt halten.
 - Eingaben als Bottom Sheets; wo sinnvoll außerhalb antippen oder hinunterwischen zum Schließen. Tabwechsel sollen die Höhe nicht springen lassen.
 - Viele kleine, stimmige Animationen und dezente schaltbare Klänge; reduzierte Bewegung berücksichtigen.
-- Original plus Studio, Ledger, Forge, Orbit, Edition, Terra, Volt, Blueprint, Nocturne: zehn Designs mit unterschiedlichen visuellen Identitäten. Funktionen und grundlegende Abläufe überall erhalten. Design gilt auch für obere/untere Leiste.
+- Ein Design für alle Bereiche einschließlich oberer/unterer Leiste. Alte Design-Felder in Sicherungen bleiben gültig, werden aber nicht mehr als eigene Designs angeboten.
 
 ## Ernährung
 
@@ -71,7 +69,7 @@ Nicht ungefragt wieder einbauen: Essen-/Meal-Planning, Ernährung-planen-Karte, 
 
 Historische Funktionen/Datenfelder können für Backup-Kompatibilität noch im Code stehen. Sie sind kein Auftrag zur erneuten Anzeige. Existierende Backups nicht beim Aufräumen vernichten.
 
-Native App, echte Dynamic Island, Apple Health/Google Fit/Garmin/Withings und native Widgets sind nicht als funktionierende Web-Features vorhanden. Benutzerwünsche dazu wurden früher diskutiert. Die native App wird seit 26.10.2026 schrittweise gebaut (`docs/native/`); Health/Google Fit/Garmin/Withings bleiben nicht beauftragt. Auf gesperrtem iPhone sind Hintergrundtimer/-töne nicht garantiert.
+Native App, echte Dynamic Island, Apple Health/Google Fit/Garmin/Withings und native Widgets sind nicht als funktionierende Web-Features vorhanden. Benutzerwünsche dazu wurden früher diskutiert. Die iOS-Hülle ergänzt über die `pulsNative`-Brücke Pausen-Mitteilung/Live-Aktivität, Haptik, Lauf-GPS, Barcode-Scanner, Apple-Health-Export (nur schreibend, Opt-in) und lokale Erinnerungen; Google Fit/Garmin/Withings bleiben nicht beauftragt. Auf gesperrtem iPhone sind Hintergrundtimer/-töne nicht garantiert.
 
 ## Dauerhafte Entwicklungsentscheidungen
 

@@ -65,7 +65,7 @@ bookFor=function(e){
 muscleChart=function(ws){
  const counts=muscleCounts(ws),max=Math.max(1,...counts.map(([,count])=>count));
  const heading=recapMode==='week'?(recapOffset===0?'Diese Woche · Sätze pro Muskelgruppe':'Woche · Sätze pro Muskelgruppe'):'Monat · Sätze pro Muskelgruppe';
- return `<div class="exercise-muscle-chart"><h3>${heading}</h3>${counts.map(([m,count])=>`<div class="musclerow"><span>${esc(muscleNames[m]||(m==='unassigned'?'Nicht zugeordnet':m))}</span><div><i style="width:${count/max*100}%"></i></div><strong>${count}</strong></div>`).join('')||'<p class="note">Noch keine abgeschlossenen Sätze.</p>'}<p class="note">Primäre Muskelgruppen. Ein Satz kann mehrere Gruppen zählen.</p><p class="note">Eigene Übungen werden anhand des Namens zugeordnet. Bei Bedarf im Übungsverlauf anpassen.</p></div>`;
+ return `<div class="exercise-muscle-chart"><h3>${heading}</h3>${counts.map(([m,count])=>`<div class="musclerow"><span>${esc(muscleNames[m]||(m==='unassigned'?'Nicht zugeordnet':m))}</span><div><i style="width:${count/max*100}%"></i></div><strong>${count}</strong></div>`).join('')||'<p class="note">Noch keine abgeschlossenen Sätze.</p>'}</div>`;
 };
 if(typeof englishUI==='object')Object.assign(englishUI,{
  'Diese Woche · Sätze pro Muskelgruppe':'This week · Sets per muscle group',

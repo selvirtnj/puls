@@ -241,7 +241,7 @@ function ranksHTML(play){
   <strong class="fb-heroname">${rankText(r)}</strong><small>Level ${typeof xpProgress==='function'?xpProgress(xp||0).level:1} · ${number(xp||0)} XP</small>
   ${r?`<span class="fb-meter big" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(r.progress*100)}" aria-label="${t('Fortschritt zur nächsten Stufe','Progress to next stage')}"><i style="width:${Math.round(r.progress*100)}%"></i></span><small>${nextText(r)}</small>`:''}</div>`;
  const own=window.pulsStrength?.all()||[];
- const lifts=own.map(e=>`<li class="fb-liftrow">${emblem(e.index,e.stage,32)}<span><strong>${escape(e.exerciseName)}</strong><small>${escape(e.name)} · ${number(Math.round(e.ratio*100)/100)} kg/KG</small></span></li>`).join('');
+ const lifts=own.map(e=>`<li class="fb-liftrow">${emblem(e.index,e.stage,32)}<span><strong>${escape(e.exerciseName)}</strong><small>${escape(e.name)} · ${number(Math.round(e.ratio*100)/100)} ${t('kg/KG','kg/BW')}</small></span></li>`).join('');
  const rungs=[...ranks].reverse().map((g,i)=>{
   const status=!r?'future':g.index<r.index?'done':g.index===r.index?'current':'future';
   const stage=status==='done'?3:status==='current'?r.stage:0;
@@ -257,7 +257,7 @@ function exercisesHTML(snap){
  if(!choices.has(exerciseKey))exerciseKey=sorted[0]?.[0]||'';
  const rows=exerciseKey?leaderboard(snap,'strength',exerciseKey):[];
  return `<label class="fb-exercise-select">${t('Übung','Exercise')}<select onchange="pulsFriendsBoard.exercise(this.value)">${sorted.map(([key,name])=>`<option value="${escape(key)}" ${key===exerciseKey?'selected':''}>${escape(name)}</option>`).join('')}</select></label>
-  <ol class="fb-rows">${rows.map(p=>`<li class="fb-row"><span class="fb-place">${p.place}</span>${emblem(p.rank.index,p.rank.stage,32)}<span class="fb-rowtext"><strong>${escape(p.name)}${p.self?` (${t('Du','You')})`:''}</strong><small>${rankText(p.rank)}</small></span><b>${number(p.ratio)} kg/KG</b></li>`).join('')||`<li class="fb-empty">${t('Rang unbekannt','Rank unknown')}</li>`}</ol>`;
+  <ol class="fb-rows">${rows.map(p=>`<li class="fb-row"><span class="fb-place">${p.place}</span>${emblem(p.rank.index,p.rank.stage,32)}<span class="fb-rowtext"><strong>${escape(p.name)}${p.self?` (${t('Du','You')})`:''}</strong><small>${rankText(p.rank)}</small></span><b>${number(p.ratio)} ${t('kg/KG','kg/BW')}</b></li>`).join('')||`<li class="fb-empty">${t('Rang unbekannt','Rank unknown')}</li>`}</ol>`;
 }
 function tabsHTML(){
  const tab=(key,label)=>`<button type="button" aria-pressed="${view===key}" onclick="pulsFriendsBoard.view('${key}')">${label}</button>`;

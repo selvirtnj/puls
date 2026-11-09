@@ -71,6 +71,6 @@ if(typeof baselineEnergyLine==='function'){const actBaselineLine=baselineEnergyL
     let base=Math.round(e.baseline),sport=Math.round(e.sport),auto=state.plan?.mode==='auto',goal=auto?dayGoals(dateKey)?.kcal:null,adj=Number.isFinite(goal)?goal-sport-base:0;
     if(!auto||!Number.isFinite(goal)||Math.abs(adj)>base*.5)adj=0;
     let pct=adj?Math.round(adj/base*100):0,en=state.language==='en';
-    return `<p class="note baselineenergy"><span>${en?'Baseline':'Grundbedarf'} ${n(base)}</span>${pct?`<span>${pct>0?'+':'−'}${Math.abs(pct)} % ${en?'goal':'Ziel'}</span>`:''}<span>+ ${en?'exercise':'Sport'} ${n(sport)}</span>${auto&&Number.isFinite(goal)?`<b>= ${n(goal)} kcal</b>`:'<b>kcal</b>'}<small>${en?'estimated':'geschätzt'}</small></p>`;
+    return `<p class="note baselineenergy"><span>${en?'Base':'Grundbedarf'} ${n(base)}</span>${pct?`<span>${pct>0?'+':'−'}${Math.abs(pct)} % ${en?'goal':'Ziel'}</span>`:''}<span>+ ${en?'exercise':'Sport'} ${n(sport)}</span>${auto&&Number.isFinite(goal)?`<b>= ${n(goal)} kcal</b>`:'<b>kcal</b>'}<small>${en?'estimated':'geschätzt'}</small></p>`;
   }catch{return html}
 }}

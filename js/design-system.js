@@ -292,7 +292,7 @@ function dsChooseScheme(mode){
 }
 function dsAppearanceCard(){
   let current=dsCurrentScheme();
-  return `<section class="card dsappearance"><h3>${dsText('Farbschema','Colour scheme')}</h3><div class="segmented dsscheme" role="group" aria-label="${dsText('Darstellung','Appearance')}">${[['system',dsText('System','System')],['light',dsText('Hell','Light')],['dark',dsText('Dunkel','Dark')]].map(([key,label])=>`<button type="button" data-scheme-choice="${key}" aria-pressed="${current===key}" onclick="dsChooseScheme('${key}')" data-no-translate>${label}</button>`).join('')}</div><p class="note">${dsText('System folgt der Einstellung deines Geräts.','System follows your device setting.')}</p></section>`;
+  return `<section class="card dsappearance"><h3>${dsText('Farbschema','Colour scheme')}</h3><div class="segmented dsscheme" role="group" aria-label="${dsText('Darstellung','Appearance')}">${[['system',dsText('System','System')],['light',dsText('Hell','Light')],['dark',dsText('Dunkel','Dark')]].map(([key,label])=>`<button type="button" data-scheme-choice="${key}" aria-pressed="${current===key}" onclick="dsChooseScheme('${key}')" data-no-translate>${label}</button>`).join('')}</div></section>`;
 }
 if(typeof accountAppearanceCard==='function'){const dsAppearanceBase=accountAppearanceCard;accountAppearanceCard=function(...args){return dsAppearanceCard()+dsAppearanceBase.apply(this,args)}}
 if(typeof accountSections!=='undefined'){let entry=accountSections.find(x=>x.key==='design');if(entry){entry.title='Darstellung';entry.note='Hell, Dunkel, Sprache & App-Icon'}}
