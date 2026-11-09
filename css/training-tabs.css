@@ -1,15 +1,13 @@
 /* Training-Tabs, alle Designs: Workout = Starten, Routinen = Verwalten, Kalender ohne doppelte Abschlusslinie. */
 
-/* Workout-Tab: jede Routine eine kompakte Zeile mit Start rechts. */
+/* Workout-Tab: ruhige Karten, Vorschau und ein eindeutiger Startknopf unten. */
 #content .designworkouts[data-train-tab=current] .routinepreview.quickstart {
-  margin: 0 !important;
-  padding: 12px 0 !important;
+  margin: 0 0 12px !important;
+  padding: 12px 16px 16px !important;
   border: 0 !important;
-  border-bottom: 1px solid var(--line) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  border-radius: 12px !important;
+  background: var(--panel) !important;
 }
-#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > :not(.cardhead) { display: none !important; }
 #content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead {
   display: flex;
   flex-wrap: nowrap;
@@ -24,20 +22,66 @@
   letter-spacing: -.02em;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 #content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead small { display: block; margin-top: 2px; color: var(--muted); }
-#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead .textbtn { display: none; }
-#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead .btn {
+html body #content .designworkouts[data-train-tab=current] .quickroutineoptions {
   flex: 0 0 auto;
-  min-width: 84px;
+  min-width: 44px;
   min-height: 44px;
   margin: 0;
-  padding: 10px 16px;
-  border-radius: 8px;
+  padding: 10px !important;
+  color: var(--lime) !important;
 }
-#content .designworkouts[data-train-tab=current] .workoutbody > .sectionhead .quickhidden { display: none; }
-#content .designworkouts[data-train-tab=current] .workoutbody > .btn.secondary.full { margin: 14px 0 0 !important; }
+html body #content .designworkouts[data-train-tab=current] .quickroutinepreview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  margin: 8px 0 16px !important;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--muted);
+}
+html body #content .designworkouts[data-train-tab=current] .quickroutinestart {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0 !important;
+  border-radius: 12px !important;
+}
+html body #content .designworkouts[data-train-tab=current] .workoutbody > .quickempty {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 16px !important;
+  margin: 0 0 16px !important;
+  border-radius: 12px !important;
+  text-align: left;
+}
+#content .designworkouts[data-train-tab=current] .quickempty svg { flex: 0 0 20px; }
+#content .designworkouts[data-train-tab=current] .workoutbody > .sectionhead { gap: 8px; }
+#content .designworkouts[data-train-tab=current] .quicknewroutine { min-height: 44px; }
+html body #content .designworkouts[data-train-tab=current] .quickroutines {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+html body #content .designworkouts[data-train-tab=current] .quickroutines > summary {
+  min-height: 44px;
+  padding: 12px 0;
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+}
 
 /* „Heute erledigt“: klar abgesetzter eigener Abschnitt. */
 #content .designworkouts .workoutbody > h3.donehead {
