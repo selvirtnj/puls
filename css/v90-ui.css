@@ -1,0 +1,122 @@
+/* PULS v90 · UI-Schicht (zuletzt geladen).
+   1. Bereichsfarben: Training Blau, Essen Orange, Körper Grün (Tokens in design-system.css).
+   2. Essen-Tab: wärmer und farbiger, Makro-Box luftiger (Energie oben, drei Makros darunter).
+   3. iPhone-Feinschliff: Safe Areas, Zurück-Pfeile, Zentrierung, Tippflächen, kein waagerechtes Scrollen.
+   Nur Tokens, keine Verläufe/Schatten/Lila. */
+
+/* Wasser bleibt Blau, aber getrennt vom Trainingsblau und vom Seitenakzent (der im Essen-Tab Orange ist). */
+:root, :root[data-scheme=light] { --ds-cat-water: #2479C8; }
+:root[data-scheme=dark] { --ds-cat-water: #4AA3F0; }
+:root[data-scheme=dark][data-palette=midnight] { --ds-cat-water: #5AB0F5; }
+
+/* ---------- Verlaufsgrafik: Gewicht = Körper, Kraft = Training, Kalorien = Essen ---------- */
+.trendlegend .dsseriesdot.dsseries-weight { background: var(--ds-cat-body); }
+.trendlegend .dsseriesdot.dsseries-strength { background: var(--ds-cat-training); }
+.trendlegend .dsseriesdot.dsseries-kcal { background: var(--ds-cat-energy); }
+.progressplot [stroke="#a3b9fb"] { stroke: var(--ds-cat-body); }
+.progressplot [fill="#a3b9fb"] { fill: var(--ds-cat-body); }
+.progressplot [stroke="#c3f86b"] { stroke: var(--ds-cat-training); }
+.progressplot [fill="#c3f86b"] { fill: var(--ds-cat-training); }
+.progressplot [stroke="#f2b87d"] { stroke: var(--ds-cat-energy); }
+.progressplot [fill="#f2b87d"] { fill: var(--ds-cat-energy); }
+
+/* Übersicht: Knöpfe und Links jeder Gruppe in der Bereichsfarbe. */
+html body .dshome :is(.dscatenergy, .dscatfood) { --ds-accent: var(--ds-cat-energy); --ds-accent-text: var(--ds-cat-energy-text); --ds-accent-fill: var(--ds-cat-energy-fill); }
+html body .dshome .dscattraining { --ds-accent: var(--ds-cat-training); --ds-accent-text: var(--ds-cat-training-text); --ds-accent-fill: var(--ds-cat-training-fill); }
+html body .dshome .dscatbody { --ds-accent: var(--ds-cat-body); --ds-accent-text: var(--ds-cat-body-text); --ds-accent-fill: var(--ds-cat-body-fill); }
+html body .dshome .dsenergyfacts .dsbig.dsover { color: var(--ds-red-text) !important; }
+
+/* Tab-Leiste: aktiver Bereich in seiner Farbe (Text-Ton, 4.5:1). */
+html body[data-current-page=workout] #nav button.active { color: var(--ds-cat-training-text) !important; }
+html body[data-current-page=food] #nav button.active { color: var(--ds-cat-energy-text) !important; }
+
+/* ================= iPhone-Feinschliff ================= */
+/* Konto-Unterseiten: Der Zurück-Knopf ragte 8 px links aus #content, das seit dem Tab-Wischen (page-slide.css)
+   waagerecht abschneidet; dadurch war der Pfeil angeschnitten. Jetzt bündig mit dem Seitenrand. */
+html body .accountdetailhead { margin-left: 0 !important; }
+html body .accountback { margin-left: 0 !important; }
+
+/* Tippflächen mindestens 44 × 44 px (vorher 32–40 px). */
+html body main .titleline .datebar .quiet { width: 44px !important; min-width: 44px !important; }
+html body .restglobal { min-height: 44px !important; }
+html body #content select { min-height: 44px; }
+html body .segmented button { min-height: 44px !important; }
+html body #session-root .exerciseoptions { width: 44px !important; min-width: 44px !important; min-height: 44px !important; }
+html body #session-root .exercise .btn.secondary, html body #session-root button.btn.secondary { min-height: 44px !important; }
+body dialog.ffsheet.fpage .fpamountslot .ffamount input, body dialog.ffsheet.fpage .fpunitslot select { min-height: 44px; }
+html body .fpunitnote .textbtn { min-height: 44px; margin-block: -6px; }
+
+/* Konto-Zeile ohne Bereichsfarbe (Blau ist jetzt Training): neutrales Grau, weißes Symbol 5.9:1. */
+html body .qamore [onclick*="qaOpen('account')"] .dsrowicon { background: #636366; }
+
+/* ================= Essen-Tab ================= */
+html body .fdroot { gap: 12px; }
+/* Kopf: Plus in Essen-Orange. */
+html body .fdhead .fdicon { color: var(--ds-cat-energy-text) !important; }
+
+/* Karten mit Farbpunkt vor der Überschrift (gleiches Muster wie auf der Übersicht). */
+html body .fdslidehead h2, html body .fdcardhead h2 { display: inline-flex; align-items: center; gap: 8px; }
+html body .fdslidehead h2::before, html body .fdcardhead h2::before { content: ""; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--ds-cat-energy); }
+html body .fdwater .fdcardhead h2::before { background: var(--ds-cat-water); }
+
+/* Deck: leicht orange getönte Fläche, mehr Luft. */
+html body .fddeck { background: var(--ds-surface); background: color-mix(in srgb, var(--ds-cat-energy) 7%, var(--ds-surface)); }
+html body .fdslide { padding: 12px 16px 0; }
+html body .fdslidehead { min-height: 36px; margin-bottom: 10px; }
+html body .fddot[aria-current=true]::after { background: var(--ds-cat-energy); }
+html body .fddot::after { background: color-mix(in srgb, var(--ds-cat-energy) 28%, var(--ds-surface)); }
+html body .fdarrow { color: var(--ds-cat-energy-text) !important; }
+/* Umschalter Gegessen/Übrig: gewählter Teil in Essen-Orange mit weißer Schrift (4.6:1). */
+html body .fdswitch { background: color-mix(in srgb, var(--ds-cat-energy) 14%, var(--ds-surface)); }
+html body .fdswitch button { position: relative; min-height: 32px; }
+/* 32 px Segment wie iOS, Tippfläche unsichtbar auf 44 px erweitert. */
+html body .fdswitch button::after { content: ""; position: absolute; inset: -6px 0; }
+html body .fddot { width: 36px; }
+html body .fdswitch button[aria-pressed=true] { background: var(--ds-cat-energy-fill) !important; color: #FFFFFF !important; }
+
+/* Spuren je Kategorie getönt, Balken etwas kräftiger. */
+html body .fdmeter { height: 8px; border-radius: 4px; background: var(--ds-fill); }
+html body .fdbar.fdkcal { --fd-tone: var(--fd-k); }
+html body .fdbar.fdp { --fd-tone: var(--fd-p); }
+html body .fdbar.fdc { --fd-tone: var(--fd-c); }
+html body .fdbar.fdf { --fd-tone: var(--fd-f); }
+html body .fdbar[class*=fd] .fdmeter { background: color-mix(in srgb, var(--fd-tone, var(--ds-fill)) 20%, var(--ds-surface)); }
+html body .fdtotalwater .fdmeter { background: color-mix(in srgb, var(--ds-cat-water) 20%, var(--ds-surface)); }
+html body .fdtotalwater .fdmeter i { background: var(--ds-cat-water); }
+
+/* Makro- und Wochenfolie: Energie als breite Zeile, darunter Protein/Kohlenhydrate/Fett in drei Spalten. */
+html body .fdslide:is([data-view=macros], [data-view=week]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, .85fr); column-gap: 14px; align-content: start; }
+html body .fdslide:is([data-view=macros], [data-view=week]) > :not(.fdbar) { grid-column: 1 / -1; }
+html body .fdslide:is([data-view=macros], [data-view=week]) > .fdbar.fdkcal { grid-column: 1 / -1; margin: 0 0 16px; }
+html body .fdslide .fdbar.fdkcal .fdbarline { margin-bottom: 8px; }
+html body .fdslide .fdbar.fdkcal .fdbarline span { font-size: 15px; font-weight: 600; }
+html body .fdslide .fdbar.fdkcal .fdbarline strong { font-size: 17px; font-weight: 600; color: var(--ds-label); }
+html body .fdslide .fdbar.fdkcal .fdmeter { height: 12px; border-radius: 6px; }
+html body .fdslide .fdbar.fdkcal .fdmeter i { border-radius: 6px; }
+html body .fdslide:is([data-view=macros], [data-view=week]) > .fdbar:not(.fdkcal) { display: flex; flex-direction: column; min-width: 0; margin: 0 0 12px; }
+html body .fdslide:is([data-view=macros], [data-view=week]) > .fdbar:not(.fdkcal) .fdbarline { flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 8px; }
+html body .fdslide:is([data-view=macros], [data-view=week]) > .fdbar:not(.fdkcal) .fdbarline span { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; font-size: 13px; color: var(--ds-label-2); }
+html body .fdslide:is([data-view=macros], [data-view=week]) > .fdbar:not(.fdkcal) .fdbarline span::before { content: ""; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--fd-tone); }
+html body .fdslide:is([data-view=macros], [data-view=week]) > .fdbar:not(.fdkcal) .fdbarline strong { max-width: 100%; font-size: 15px; font-weight: 600; line-height: 20px; color: var(--ds-label); white-space: normal; overflow-wrap: break-word; }
+html body .fdslide:is([data-view=macros], [data-view=week]) > .fdbar:not(.fdkcal) .fdmeter { margin-top: auto; }
+html body .fdslide .fdbar.fdover .fdbarline strong { color: var(--ds-red-text) !important; }
+html body .fdslide:is([data-view=macros], [data-view=week]) .fdempty { grid-column: 1 / -1; }
+@media (max-width: 359px) {
+  html body .fdslide:is([data-view=macros], [data-view=week]) { column-gap: 10px; }
+  html body .fdslide:is([data-view=macros], [data-view=week]) > .fdbar:not(.fdkcal) .fdbarline span { font-size: 12px; }
+}
+
+/* Energie-Folie: größere Ringe. */
+html body .fdringwrap { width: 88px; }
+html body .fdringval strong { font-size: 19px; }
+html body .fdringcell { gap: 6px; padding-bottom: 6px; }
+
+/* Wasser in Wasserblau. */
+html body .fdglass.fdfull, html body .fdglass.fdnext { color: var(--ds-cat-water) !important; }
+
+/* Tagebuch: Kalorien in Essen-Orange. */
+html body .fdentrykcal { color: var(--ds-cat-energy-text) !important; }
+html body .fdentrykcal small { color: var(--ds-label-2) !important; }
+html body .fdcard { padding: 10px 14px 12px; }
+html body .fdentries { margin: 0 -14px; }
+html body .fdentryrow { padding: 6px 14px !important; }

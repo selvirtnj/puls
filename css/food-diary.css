@@ -5,7 +5,7 @@
   --fd-p: var(--ds-cat-protein);
   --fd-c: var(--ds-cat-carbs);
   --fd-f: var(--ds-cat-fat);
-  --fd-water: var(--ds-accent);
+  --fd-water: var(--ds-cat-water);
 }
 
 /* Die globale Datumsleiste wird auf der Essen-Seite durch die eigene Kopfzeile ersetzt. */
@@ -73,8 +73,8 @@ html body .fdhead .fdtitle { grid-column: 1; grid-row: 1; margin: 0 !important; 
 .fdbar.fdp .fdmeter i { background: var(--fd-p); }
 .fdbar.fdc .fdmeter i { background: var(--fd-c); }
 .fdbar.fdf .fdmeter i { background: var(--fd-f); }
-.fdbar.fdover .fdmeter i { background: var(--ds-orange) !important; }
-.fdbar.fdover .fdbarline strong { color: var(--ds-orange-text); }
+.fdbar.fdover .fdmeter i { background: var(--ds-cat-over) !important; }
+.fdbar.fdover .fdbarline strong { color: var(--ds-red-text); }
 
 /* Energie-Ringe */
 .fdrings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; }
@@ -84,7 +84,7 @@ html body .fdhead .fdtitle { grid-column: 1; grid-row: 1; margin: 0 !important; 
 .fdringwrap { position: relative; width: 76px; max-width: 100%; aspect-ratio: 1; }
 .fdringwrap .dsring { width: 100%; height: 100%; }
 html body .fdringwrap .dsring .dsringvalue { stroke: var(--fd-k); }
-html body .fdringwrap .dsring.dsover .dsringvalue { stroke: var(--ds-orange); }
+html body .fdringwrap .dsring.dsover .dsringvalue { stroke: var(--ds-cat-over); }
 .fdringval { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .fdringval strong { font-size: 17px; font-weight: 600; line-height: 1.1; color: var(--ds-label); font-variant-numeric: tabular-nums; }
 .fdringval small { font-size: 11px; }

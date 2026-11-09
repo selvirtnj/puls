@@ -926,22 +926,25 @@ html body .puls-splash.splashout { opacity: 0 !important; transition: opacity .2
 .firstrunbanner a, .firstrunnotice a, a[href*="openfoodfacts.org"], a[href*="opendatacommons.org"] { padding-block: 14px; margin-block: -14px; }
 
 /* ---------- Übersicht: Kategoriefarben (v89, Selvirs Wunsch „mehr Farbe“) ----------
-   Warme, sportliche Volltöne statt nur Blau, ohne Verlauf/Neon/Lila: Energie Koralle, Protein Tiefblau,
-   Kohlenhydrate Bernstein, Fett Salbei, Training Sportgrün, Körper Tiefblau. Linien/Flächen erreichen mindestens 3:1
-   zur Kartenfläche, Text 4.5:1; weiße Symbole auf den Farbquadraten mindestens 3:1. Nur in .dshome; Orange bleibt
-   „Ziel überschritten“. */
+   Volltöne ohne Verlauf/Neon/Lila. Linien/Flächen erreichen mindestens 3:1 zur Kartenfläche, Text 4.5:1.
+   Seit v90 ist Orange die Essen-Farbe; „Ziel überschritten“ zeigt deshalb bei Essen/Makros Rot (--ds-cat-over). */
+/* v90 (Selvirs Wunsch): Bereichsfarben neu zugeordnet. Training = Blau, Essen = Orange, Körper = Grün.
+   Makros bleiben innerhalb der warmen Essen-Welt unterscheidbar: Protein Himbeere, Kohlenhydrate Gold, Fett Oliv.
+   *-text erreicht 4.5:1 auf der Kartenfläche, *-fill trägt weiße Symbole/Schrift mit mindestens 4.5:1. */
 :root, :root[data-scheme=light] {
-  --ds-cat-energy: #E0533A; --ds-cat-protein: #2457C5; --ds-cat-carbs: #B7790A; --ds-cat-fat: #5B8A5E; --ds-cat-training: #23854A; --ds-cat-body: #2457C5;
-  --ds-cat-training-text: #1D7340; --ds-cat-body-text: #2457C5;
-  --ds-cat-training-fill: #23854A; --ds-cat-body-fill: #2457C5;
+  --ds-cat-energy: #E2620B; --ds-cat-protein: #C42D4E; --ds-cat-carbs: #A87E00; --ds-cat-fat: #6E8424; --ds-cat-training: #1F63D1; --ds-cat-body: #23854A;
+  --ds-cat-energy-text: #B04A06; --ds-cat-training-text: #1A56B8; --ds-cat-body-text: #1D7340;
+  --ds-cat-training-fill: #1F63D1; --ds-cat-body-fill: #23854A;
+  --ds-cat-over: #D70015;
 }
 :root[data-scheme=dark] {
-  --ds-cat-energy: #FF7A5C; --ds-cat-protein: #6E9BFF; --ds-cat-carbs: #F2B544; --ds-cat-fat: #8DBF8F; --ds-cat-training: #3DC46E; --ds-cat-body: #6E9BFF;
-  --ds-cat-training-text: #3DC46E; --ds-cat-body-text: #8AAEFF;
-  --ds-cat-training-fill: #23854A; --ds-cat-body-fill: #2F63D6;
+  --ds-cat-energy: #FF8A3D; --ds-cat-protein: #FF6B8A; --ds-cat-carbs: #F2C14E; --ds-cat-fat: #A9C25A; --ds-cat-training: #4C8DFF; --ds-cat-body: #3DC46E;
+  --ds-cat-energy-text: #FF9A55; --ds-cat-training-text: #6EA2FF; --ds-cat-body-text: #3DC46E;
+  --ds-cat-training-fill: #2B66D9; --ds-cat-body-fill: #23854A;
+  --ds-cat-over: #FF453A;
 }
 html body .dshome .dscatenergy .dsring .dsringvalue { stroke: var(--ds-cat-energy); }
-html body .dshome .dscatenergy .dsring.dsover .dsringvalue { stroke: var(--ds-orange); }
+html body .dshome .dscatenergy .dsring.dsover .dsringvalue { stroke: var(--ds-cat-over); }
 /* Spuren in der Kategoriefarbe getönt (ältere Browser: neutrale Fläche). */
 html body .dshome .dscatenergy .dsring .dsringtrack { stroke: var(--ds-fill); stroke: color-mix(in srgb, var(--ds-cat-energy) 20%, var(--ds-surface)); }
 html body .dshome .dsmacro .dsmeter { background: var(--ds-fill); background: color-mix(in srgb, var(--ds-cat-macro, var(--ds-accent)) 18%, var(--ds-surface)); }
@@ -951,7 +954,7 @@ html body .dshome .dsmacro[data-macro=p] { --ds-cat-macro: var(--ds-cat-protein)
 html body .dshome .dsmacro[data-macro=c] { --ds-cat-macro: var(--ds-cat-carbs); }
 html body .dshome .dsmacro[data-macro=f] { --ds-cat-macro: var(--ds-cat-fat); }
 html body .dshome .dsmacro .dsmeter { height: 8px; border-radius: 4px; }html body .dshome .dsmacro .dsmeter i { border-radius: 4px; background: var(--ds-cat-macro, var(--ds-accent)); }
-html body .dshome .dsmacro .dsmeter i.dsover { background: var(--ds-orange); }
+html body .dshome .dsmacro .dsmeter i.dsover { background: var(--ds-cat-over); }
 /* Farbquadrate mit weißem Symbol wie in den iOS-Einstellungen. */
 html body .dshome .dscattraining { --ds-cat-fill: var(--ds-cat-training-fill); --ds-cat-text: var(--ds-cat-training-text); }
 html body .dshome .dscatbody { --ds-cat-fill: var(--ds-cat-body-fill); --ds-cat-text: var(--ds-cat-body-text); }
@@ -966,14 +969,17 @@ html body .dshome .dsgrouptitle:has(+ .dscattraining)::before { background: var(
 html body .dshome .dsgrouptitle:has(+ .dscatbody)::before { background: var(--ds-cat-body); }
 
 /* ---------- Kategoriefarben in allen Tabs (v89) ----------
-   Gleiche Bedeutung, gleiche Farbe: Training/Workout immer Sportgrün (Akzent im Workout-Tab, im laufenden Workout
-   und in der Pausen-Anzeige), Körper Tiefblau, Ziele/Energie Koralle. Bedienfarben bleiben sonst Apple-Blau. */
+   Gleiche Bedeutung, gleiche Farbe (v90): Training/Workout immer Blau (Akzent im Workout-Tab, im laufenden Workout,
+   Abschluss-/Rangseite und Pausen-Anzeige), Essen Orange (Akzent im Essen-Tab und in den Essen-Seiten), Körper Grün. */
 html body[data-current-page=workout] main, html body #session-root, html body #rest-popup {
   --ds-accent: var(--ds-cat-training); --ds-accent-text: var(--ds-cat-training-text); --ds-accent-fill: var(--ds-cat-training-fill);
   --lime: var(--ds-cat-training-text); --blue: var(--ds-cat-training-text);
 }
-:root, :root[data-scheme=light] { --ds-cat-energy-fill: #C9452E; --ds-cat-carbs-fill: #946106; }
-:root[data-scheme=dark] { --ds-cat-energy-fill: #C9452E; --ds-cat-carbs-fill: #946106; }
+html body[data-current-page=food] main, html body dialog.ffsheet {
+  --ds-accent: var(--ds-cat-energy); --ds-accent-text: var(--ds-cat-energy-text); --ds-accent-fill: var(--ds-cat-energy-fill);
+}
+:root, :root[data-scheme=light] { --ds-cat-energy-fill: #C2540A; --ds-cat-carbs-fill: #8F6A00; }
+:root[data-scheme=dark] { --ds-cat-energy-fill: #C2540A; --ds-cat-carbs-fill: #8F6A00; }
 /* Konto: Farbquadrate mit weißem Symbol je Bereich. */
 html body .qamore .dsiconrow .dsrowicon { width: 28px; height: 28px; border-radius: 7px; background: var(--ds-accent-fill); color: #FFFFFF; }
 html body .qamore .dsiconrow .dsrowicon svg { width: 18px; height: 18px; }
@@ -981,7 +987,7 @@ html body .qamore [onclick*="qaOpen('profile')"] .dsrowicon, html body .qamore [
 html body .qamore [onclick*="qaOpen('targets')"] .dsrowicon { background: var(--ds-cat-energy-fill); }
 html body .qamore [onclick*="qaOpen('display')"] .dsrowicon { background: var(--ds-cat-carbs-fill); }
 html body .qamore [onclick*="riend"] .dsrowicon, html body .qamore [onclick*="workout"] .dsrowicon, html body .qamore [onclick*="training"] .dsrowicon { background: var(--ds-cat-training-fill); }
-/* Freunde: Trainingsfortschritt Sportgrün, Serie in Koralle; Rang-/Medaillenfarben bleiben. */
+/* Freunde: Trainingsfortschritt Blau, Serie in Orange; Rang-/Medaillenfarben bleiben. */
 :root:root, :root:root[data-scheme=dark] { --fb-flame: var(--ds-cat-energy); }
 html body .fb-meter i { background: var(--ds-cat-training); }
 
@@ -992,14 +998,17 @@ html body .fb-meter i { background: var(--ds-cat-training); }
   --ds-bg: #F3F6F2; --ds-surface: #FDFEFC; --ds-surface-2: #EEF3EC; --ds-field: #E8EEE6; --ds-fill: #DFE7DC; --ds-selected: #FDFEFC;
   --ds-sheet: #F3F6F2; --ds-bar: #F8FAF7; --ds-separator: #C9D3C6; --ds-label: #121812; --ds-label-2: #56625A; --ds-label-3: #7E8A82; --ds-placeholder: #5F6B63;
   --ds-accent: #1E8E4E; --ds-accent-text: #187A42; --ds-accent-fill: #1A7F45; --ds-button-2: #DFE7DC;
-  --ds-cat-energy: #D9640F; --ds-cat-energy-fill: #C2570C; --ds-cat-training: #1E8E4E; --ds-cat-training-text: #187A42; --ds-cat-training-fill: #1A7F45;
+  --ds-cat-energy: #D9640F; --ds-cat-energy-text: #A94A06; --ds-cat-energy-fill: #C2540A;
+  --ds-cat-body: #1E8E4E; --ds-cat-body-text: #187A42; --ds-cat-body-fill: #1A7F45;
 }
 :root[data-scheme=light][data-palette=fresh] dialog { --ds-surface: #FDFEFC; --ds-field: #E8EEE6; }
 :root[data-scheme=dark][data-palette=midnight] {
   --ds-bg: #0B1120; --ds-surface: #151D2E; --ds-surface-2: #1E2840; --ds-field: #1E2840; --ds-fill: #2A3550; --ds-selected: #3A4766;
   --ds-sheet: #151D2E; --ds-bar: #0E1526; --ds-separator: #2C3852; --ds-label: #F2F5FA; --ds-label-2: #A9B4C8; --ds-label-3: #8591A8; --ds-placeholder: #97A2B6;
   --ds-accent: #3D8BFF; --ds-accent-text: #6AA6FF; --ds-accent-fill: #1F6FEB; --ds-button-2: #1E2840;
-  --ds-cat-energy: #FF8A4C; --ds-cat-carbs: #FFB547; --ds-cat-protein: #6EA2FF; --ds-cat-body: #6EA2FF; --ds-cat-body-text: #8AB4FF; --ds-cat-body-fill: #1F6FEB;
+  --ds-cat-energy: #FF8A4C; --ds-cat-energy-text: #FF9A60; --ds-cat-carbs: #FFC247; --ds-cat-protein: #FF7A96; --ds-cat-fat: #B4CC62;
+  --ds-cat-training: #5A9BFF; --ds-cat-training-text: #7AAEFF; --ds-cat-training-fill: #1F6FEB;
+  --ds-cat-body: #3FCB76; --ds-cat-body-text: #3FCB76; --ds-cat-body-fill: #1A7F45;
 }
 :root[data-scheme=dark][data-palette=midnight] dialog { --ds-surface: #1E2840; --ds-field: #2A3550; --ds-fill: #2A3550; }
 /* Vorschau-Farbfelder in Konto → Darstellung. */

@@ -9,16 +9,19 @@ Verbindliche Entscheidung von Selvir. Grundlage: Apple Human Interface Guideline
 - Eine Akzentfarbe für Bedienelemente: Apple-Blau, hell `#007AFF`, dunkel `#0A84FF`. Systemfarben (Grün, Orange, Rot) nur mit Bedeutung (erreicht, Warnung, Fehler); Orange bleibt „Ziel überschritten“.
 - Kategoriefarben (v89, Selvirs Wunsch „mehr Farbe“), nur für Daten-Kategorien in Übersicht und Essen-Tab (Ringe, Balken, Farbpunkte, Symbolquadrate). Vollton, keine Verläufe, kein Lila/Violett, kein Neon. Tokens `--ds-cat-*` in `css/design-system.css`; der Essen-Tab nutzt sie über `--fd-k/p/c/f`.
 
+  v90 (Selvirs Wunsch): **Training = Blau, Essen = Orange, Körper = Grün**, überall gleich (Übersicht, Tabs, Tab-Leiste, laufendes Workout, Abschluss/Rangseite, Konto, Freunde). Seitenakzent im Workout-Bereich Blau, im Essen-Tab und den Essen-Seiten Orange. Im Essen-Bereich zeigt „Ziel überschritten“ Rot (`--ds-cat-over`), weil Orange dort die Bereichsfarbe ist. Frisch/Mitternacht überschreiben einzelne Töne. Weiße Schrift/Symbole auf `*-fill` mindestens 4.5:1. Zusätzliche Regeln in `css/v90-ui.css`.
+
   | Kategorie | Hell | Dunkel |
   |---|---|---|
-  | Energie (kcal) | Koralle `#E0533A` | `#FF7A5C` |
-  | Protein | Tiefblau `#2457C5` | `#6E9BFF` |
-  | Kohlenhydrate | Bernstein `#B7790A` | `#F2B544` |
-  | Fett | Salbei `#5B8A5E` | `#8DBF8F` |
-  | Training | Sportgrün `#23854A` (Text `#1D7340`) | `#3DC46E` |
-  | Körper | Tiefblau `#2457C5` | `#6E9BFF` (Text `#8AAEFF`) |
+  | Essen/Energie (kcal) | Orange `#E2620B` (Text `#B04A06`, Fläche `#C2540A`) | `#FF8A3D` (Text `#FF9A55`) |
+  | Protein | Himbeere `#C42D4E` | `#FF6B8A` |
+  | Kohlenhydrate | Gold `#A87E00` | `#F2C14E` |
+  | Fett | Oliv `#6E8424` | `#A9C25A` |
+  | Training | Blau `#1F63D1` (Text `#1A56B8`) | `#4C8DFF` (Text `#6EA2FF`, Fläche `#2B66D9`) |
+  | Körper | Grün `#23854A` (Text `#1D7340`) | `#3DC46E` (Fläche `#23854A`) |
+  | Wasser | `#2479C8` | `#4AA3F0` |
 
-  Linien und Flächen mindestens 3:1 zur Kartenfläche, Text mindestens 4.5:1. Symbolquadrate mit weißem Symbol: Training `#23854A`, Körper hell `#2457C5`, dunkel `#2F63D6`. Spuren dürfen mit `color-mix` (etwa 20 %) in der Kategoriefarbe getönt sein.
+  Linien und Flächen mindestens 3:1 zur Kartenfläche, Text mindestens 4.5:1. Symbolquadrate mit weißem Symbol: Training `#1F63D1`/`#2B66D9`, Körper `#23854A`, Ziele `#C2540A`, Konto neutral `#636366`. Spuren dürfen mit `color-mix` (etwa 20 %) in der Kategoriefarbe getönt sein.
 - Seitentitel: alle Tabs einheitlich oben links in einer 44-px-Kopfzeile, Title 1 (28 px, fett; unter 360 px Breite 24 px). Im Essen-Tab steht der Titel links neben dem mittigen Datum.
 - Hintergrund hell `#F2F2F7`, Flächen `#FBFBFD`; dunkel `#000000`/`#1C1C1E`/`#2C2C2E` im Apple-Stil. Trennung durch Haarlinien (0.5px, Separator-Farbe), nicht durch Schatten.
 - Schrift: System-Schrift (`-apple-system, BlinkMacSystemFont, system-ui, sans-serif`), kein Webfont. Typo-Stufen nach iOS (Large Title 34, Title 28/22/20, Headline 17 semibold, Body 17, Callout 16, Subhead 15, Footnote 13, Caption 12). Zahlen mit `font-variant-numeric: tabular-nums`.
