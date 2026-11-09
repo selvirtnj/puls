@@ -43,7 +43,7 @@ function fdUndoToast(text,undo){
   box.classList.remove('fdundoin');void box.offsetWidth;box.classList.add('fdundoin');
   fdUndoTimer=setTimeout(()=>{box.remove();fdUndoAction=null},8000);
 }
-function fdUndoRun(){let action=fdUndoAction;fdUndoAction=null;clearTimeout(fdUndoTimer);$('fd-undo')?.remove();if(typeof action==='function'){action();fdSound('undo')}}
+function fdUndoRun(){let action=fdUndoAction;fdUndoAction=null;clearTimeout(fdUndoTimer);$('fd-undo')?.remove();if(typeof action==='function'&&action()!==false)fdSound('undo')}
 
 /* ---------- Kopf ---------- */
 function fdHead(){
@@ -146,24 +146,34 @@ function fdGlassTap(i){
 // Einträge bis zur Restmenge werden gelöscht, ein größerer Eintrag wird verkleinert. Ein Klang, ein Rückgängig.
 function fdWaterRemoveGlass(w=fdWaterState()){
   let list=state.foods.map((x,index)=>({x,index})).filter(({x})=>x.date===date&&fdIsWater(x)&&Number(x.grams)>0).sort((a,b)=>(Number(a.x.loggedAt)||0)-(Number(b.x.loggedAt)||0)||a.index-b.index);
-  let left=w.glassMl,touched=[],removed=new Set();
+  let left=w.glassMl,touched=[],removed=new Set(),replaced=new Map();
   for(let k=list.length-1;k>=0&&left>1e-9;k--){
     let {x,index}=list[k],ml=Number(x.grams);
     touched.push({index,copy:JSON.parse(JSON.stringify(x))});
-    if(ml<=left+1e-9){removed.add(x.id);left-=ml;continue}
-    let rest=Math.round((ml-left)*1000)/1000,f=rest/ml;
-    for(let key of ['kcal','p','c','f'])if(Number.isFinite(Number(x[key])))x[key]=Number(x[key])*f;
-    if(x.nutrients&&typeof x.nutrients==='object')for(let [key,v] of Object.entries(x.nutrients))if(Number.isFinite(v))x.nutrients[key]=key==='water'&&v===ml?rest:v*f;
-    x.grams=rest;left=0;
+    // Rest auf 0,1 ml runden; unter der gültigen Mindestmenge (validData: 0,1) wird der Eintrag ganz gelöscht.
+    let raw=ml-left,rest=Math.round(raw*10)/10;
+    if(ml<=left+1e-9||!(raw>=.1-1e-9)||!(rest>=.1)){removed.add(x.id);left-=ml;continue}
+    let f=rest/ml,next=JSON.parse(JSON.stringify(x));
+    for(let key of ['kcal','p','c','f'])if(Number.isFinite(Number(next[key])))next[key]=Number(next[key])*f;
+    if(next.nutrients&&typeof next.nutrients==='object')for(let [key,v] of Object.entries(next.nutrients))if(Number.isFinite(v))next.nutrients[key]=key==='water'&&v===ml?rest:v*f;
+    next.grams=rest;replaced.set(x.id,next);left=0;
   }
   if(!touched.length)return;
-  state.foods=state.foods.filter(x=>!removed.has(x.id));
+  const apply=()=>state.foods.filter(x=>!removed.has(x.id)).map(x=>replaced.get(x.id)||x);
+  let foods=apply();
+  // Ein vorher gültiger Zustand muss gültig bleiben (Sicherung/Cloud-Pull); sonst verkleinerten Eintrag ganz löschen.
+  if(typeof validData==='function'&&replaced.size){let ok=s=>{try{return validData(JSON.parse(JSON.stringify(s)))}catch{return false}};if(ok(state)&&!ok({...state,foods})){for(let id of replaced.keys())removed.add(id);replaced.clear();foods=apply()}}
+  state.foods=foods;
+  const profile=state,owner=fdOwner(),expected=[...replaced.values()].map(x=>[x.id,JSON.stringify(x)]),gone=[...removed];
   save();render();fdSound('delete');
   fdUndoToast(fdT(`${n(w.glassMl)} ml Wasser entfernt`,`${n(w.glassMl)} ml water removed`),()=>{
+    // Nur exakt den Zwischenstand direkt nach dem Minus zurücknehmen; spätere Änderungen (z. B. Cloud) still behalten.
+    if(state!==profile||fdOwner()!==owner||gone.some(id=>state.foods.some(x=>x.id===id))||expected.some(([id,json])=>{let x=state.foods.find(y=>y.id===id);return !x||JSON.stringify(x)!==json}))return false;
     for(let {index,copy} of touched.slice().sort((a,b)=>a.index-b.index)){let at=state.foods.findIndex(x=>x.id===copy.id);if(at>=0)state.foods[at]=copy;else state.foods.splice(Math.min(index,state.foods.length),0,copy)}
     save();render();
   });
 }
+function fdOwner(){try{return typeof cloudSession!=='undefined'?cloudSession?.user?.id||'local':'local'}catch{return 'local'}}
 function fdWaterInfo(){
   let s=fdWaterSettings(),w=fdWaterState(),manual=s.mode==='manual',rec=null;try{rec=window.pulsData87?.waterRecommendation?.({...state,waterGoal:0,water:{...s,mode:'auto'}},date)}catch{}
   let auto=rec?(rec.mode==='auto'?fdNum(rec.ml)+' ml':fdT('2.000 ml Standard (kein Gewicht)','2,000 ml default (no weight)')):'–';

@@ -71,6 +71,18 @@ state.foods=state.foods.filter(x=>x.id!=='overflow');
  state.waterGoal=1800;state.water={mode:'manual',glassMl:250};c.fdWaterInfo();
  assert.match(body,/2450 ml/,'automatic value ignores the custom goal');
  delete state.water;state.waterGoal=0;
+ // v90-Review: Restmengen bleiben validData-konform (0,1-ml-Raster, sonst Eintrag löschen).
+ c.validData=s=>s.foods.every(x=>Number.isFinite(x.grams)&&x.grams>=.1);
+ state.foods=[water('odd',250.05,1)];c.fdGlassTap(0);assert.deepEqual(state.foods,[],'rest below 0.1 ml deletes the entry');assert(c.validData(state));
+ state.foods=[water('odd2',500.04,1)];c.fdGlassTap(0);assert.equal(state.foods[0].grams,250);assert.equal(state.foods[0].nutrients.water,250);
+ c.validData=s=>s.foods.every(x=>x.grams!==250);state.foods=[water('rule',500,1)];c.fdGlassTap(0);assert.deepEqual(state.foods,[],'rest rejected by validData deletes the entry');
+ delete c.validData;
+ // v90-Review: Undo nimmt nur den unveränderten Zwischenstand zurück, sonst still verwerfen.
+ state.foods=[water('u',500,1)];c.fdGlassTap(0);state.foods[0]={...state.foods[0],grams:1000,nutrients:{water:1000}};
+ assert.equal(undo(),false,'changed entry blocks undo');assert.equal(state.foods[0].grams,1000);
+ state.foods=[water('d',250,1)];c.fdGlassTap(0);state.foods.push(water('d',250,1));assert.equal(undo(),false,'reappeared entry blocks undo');assert.equal(state.foods.length,1);
+ state.foods=[water('p',500,1)];c.fdGlassTap(0);c.state=JSON.parse(JSON.stringify(state));assert.equal(undo(),false,'replaced profile blocks undo');assert.equal(c.state.foods[0].grams,250);c.state=state;
+ state.foods=[water('ok',500,1)];c.fdGlassTap(0);assert.notEqual(undo(),false);assert.equal(state.foods[0].grams,500,'unchanged state still undoes');
  c.fdUndoToast=undoBase;c.fdSound=soundBase;c.window.pulsData87=pulsBase;c.openModal=openBase;state.foods=saved;
 }
 
