@@ -24,7 +24,28 @@ ctx.exerciseCatalog.push({id:'library-bench',name:'Metadata Bench Press',equipme
 assert.equal(api.all(sample([entry('Metadata Bench Press',40,1,'library-bench')]))[0].ratio,.8,'library equipment participates');
 assert.equal(rank('Single-Arm Dumbbell Row',30).ratio,.6);
 assert.equal(rank('Pullups',20).ratio,1.2);assert.equal(rank('Dips',0).ratio,1);
+assert.equal(rank('Pull-Up (Bodyweight)',0).ratio,1,'existing explicitly logged free pull-ups stay supported');
 assert.equal(rank('Assisted Pull-Up Machine',20),undefined);
+for(const name of ['Assistierter Klimmzug','Klimmzug assistiert','Gravitron Klimmzug','Negativ Klimmzug','Negative Pull-Up','Eccentric Pull-Up','Negative Chin-Up','Eccentric Dips','Negative Dips','Negativ Dipmaschine','Australian Pull-Up','Inverted Pull-Up','Assistierte Dips','Assisted Dip Machine','Assistierte Dipmaschine','Pull-Up Machine','Klimmzug Maschine','Chin-Up Machine','Banded Squat','Squat with Bands']){
+ assert.equal(api.classify({name}),null,name);
+ const s=sample([entry(name,30,8)],80),saved=JSON.stringify(s);
+ assert.equal(api.all(s).length,0,name);
+ assert.equal(api.summary(s).strength_rank,null,name);
+ assert.equal(JSON.stringify(s),saved,'excluded history remains unchanged');
+}
+for(const name of ['Pull-Up','Chin-Up','Klimmzug'])assert.equal(api.classify({name,equipment:'Machine'}),null,'equipment also excludes machine pull-ups');
+for(const name of ['Negativ-Bankdrücken','Negativbankdrücken','Negative Bench Press','Decline Bench Press']){
+ assert.equal(api.classify({name}).type,'bench',name);
+ assert.equal(rank(name,100).e1rm,100,name);
+}
+for(const ex of [{name:'Dip Machine'},{name:'Dipmaschine'},{name:'Seated Dip Machine'},{name:'Dips',equipment:'Machine'}]){
+ const model=api.classify(ex);assert.equal(model.type,'triceps',ex.name);assert.equal(model.bodyweight,false);
+ const s=sample([entry(ex.name,30,8)]);s.exerciseBook=[{id:ex.name,...ex}];
+ assert.equal(api.all(s)[0].e1rm,30*(1+8/30),'machine dips use recorded load without bodyweight');
+}
+assert.equal(api.classify({name:'Squat',equipment:'Bands'}),null);
+assert.equal(rank('Weighted Pull-Up',30,8,80).e1rm,110*(1+8/30),'free pull-ups still add explicitly recorded extra load');
+assert.equal(rank('Weighted Dips',30,8,80).e1rm,110*(1+8/30));
 assert.equal(rank('Jump Squat',20),undefined);assert.equal(rank('Unknown Specialty Lift',20),undefined);
 assert.equal(rank('Calf Press On The Leg Press Machine',100),undefined);
 assert.equal(api.all(sample([entry('Barbell Bench Press',100)],null)).length,0);
@@ -41,7 +62,33 @@ const before=JSON.stringify(multi),overall=api.overall(multi);
 assert.equal(overall.groups,3);assert.equal(overall.score,api.all(multi).reduce((n,r)=>n+r.score,0)/3);
 assert(overall.nextLift.kg>0);assert.equal(JSON.stringify(multi),before,'pure projection retains IDs/data');
 const sameGroup=sample([entry('Barbell Bench Press',100),entry('Incline Bench Press',90),entry('Dips',30)]);
-assert.equal(api.overall(sameGroup).index,null,'three chest variants cannot unlock overall');
+assert.equal(api.overall(sameGroup).groups,1,'three chest variants get only one vote');
+assert.equal(api.overall(sameGroup).score,api.all(sameGroup)[0].score);
+const first=sample([entry('Cable Crossover',15,10)],80);
+first.onboardingComplete=true;first.weights=[];
+assert.equal(api.overall(first).groups,1);assert.equal(api.overall(first).score,api.all(first)[0].score);
+const skipped=clone(first);skipped.profile=null;
+assert.equal(api.overall(skipped).rankIndex,null,'skip never invents BW');
+skipped.weights=[{date:'2026-11-08',kg:80}];
+assert.equal(api.overall(skipped).score,api.overall(first).score,'existing measurement unlocks first workout');
+for(const [name,type] of [['Cable Cross-Over','fly'],['Peck Deck (Machine)','fly'],['Hamstring Curl (Machine)','legcurl'],['Knee Extension (Machine)','legextension'],['Latziehen (Kabel)','pulldown'],['Brustdrücken (Maschine)','bench'],['Schulterdrücken (Kurzhantel)','overhead'],['Beinbeugen (Maschine)','legcurl']]){
+ assert.equal(api.classify({name}).type,type,name);assert(rank(name,20,10,80),name);
+}
+for(const name of ['Assisted Chest Press','Bodyweight Squat','Cable Straight Arm Pulldown','Band Chest Press','Reverse Peck Deck','Goblet Squat'])assert.equal(rank(name,20),undefined,name);
+const two=sample([entry('Machine Chest Press',60,10),entry('Seated Cable Row',30,10)],80);
+assert.equal(api.overall(two).groups,2);
+assert.equal(api.overall(two).score,api.all(two).reduce((n,r)=>n+r.score,0)/2,'missing groups add no bonus');
+for(const source of [first,two]){
+ const payload=clone(api.summary(source));
+ assert(Number.isInteger(payload.strength_rank)&&payload.strength_rank>=0&&payload.strength_rank<=24);
+ assert(payload.lift_ranks.length>=1&&payload.lift_ranks.length<=40);
+ for(const lift of payload.lift_ranks){
+  assert.deepEqual(Object.keys(lift).sort(),['key','name','rankIndex','ratio']);
+  assert.match(lift.key,/^[a-z0-9-]{1,180}$/);assert(lift.name.trim().length>=1&&[...lift.name].length<=120);
+  assert(Number.isInteger(lift.rankIndex)&&lift.rankIndex>=0&&lift.rankIndex<=24);
+  assert(lift.ratio>0&&lift.ratio<=1000&&Math.abs(lift.ratio*100-Math.round(lift.ratio*100))<1e-9);
+ }
+}
 multi.workouts[0].exercises.push(entry('Dumbbell Bench Press',30));assert.equal(api.overall(multi).score,overall.score,'only best per group counts');
 multi.workouts[0].exercises.push(entry('Barbell Deadlift',200),entry('Barbell Curl',50),entry('Triceps Pushdown',60));
 assert.equal(api.overall(multi).exercises.length,5);

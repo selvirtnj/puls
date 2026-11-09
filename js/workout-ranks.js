@@ -11,19 +11,23 @@ function rows(id){
   if(seen.has(exerciseId))return [];seen.add(exerciseId);
   const rank=window.pulsStrength.workoutProgress(exerciseId,id),key=rank.after.key||exerciseId;
   if(key!==exerciseId&&seen.has(key))return [];seen.add(key);
-  return [{...rank,name:e.name}];
+  const book=state.exerciseBook?.find(b=>b.id===e.exerciseId),name=book?.name||e.name;
+  const lib=(typeof exerciseCatalog==='undefined'?[]:exerciseCatalog).find(b=>b.id===e.exerciseId||b.name===name);
+  const rankable=window.pulsStrength.classify({...lib,...book,name})!==null;
+  return [{...rank,name:e.name,rankable}];
  });
 }
 let pageRows=null;
 function html(id){
  const workout=state.workouts.find(w=>w.id===id);
- if(pageRows?.id!==id||pageRows.state!==state||pageRows.workout!==workout||pageRows.profile!==state.profile){
-  pageRows={id,state,workout,profile:state.profile,rows:rows(id)};
+ const bodyweight=window.pulsStrength.weightAt(state,workout?.date);
+ if(pageRows?.id!==id||pageRows.state!==state||pageRows.workout!==workout||pageRows.profile!==state.profile||pageRows.bodyweight!==bodyweight){
+  pageRows={id,state,workout,profile:state.profile,bodyweight,rows:rows(id)};
  }
  const ranks=pageRows.rows;
  return `<div class="completion workout-ranks" data-no-translate data-completion-step="3"><h1>${t('Deine Übungsränge','Your exercise ranks')}</h1><div class="wr-list">${ranks.map((r,i)=>{
-  const known=r.after.rankIndex!==null,percent=Math.round(r.to*100);
-  return `<section class="wr-row" data-wr-row="${i}"><div class="wr-emblem">${emblem(r.after)}</div><div class="wr-details"><h2>${escape(r.name)}</h2><div class="wr-rank">${known?escape(r.after.name):t('ohne Rang','unranked')}</div>${r.promoted?`<strong class="wr-promotion">${t('Aufgestiegen','Rank up')}</strong>`:''}${known?`<div class="wr-meter" role="progressbar" aria-label="${escape(r.name)} · ${t('Rangfortschritt','Rank progress')}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${r.to*100}%"></i></div><small>${r.after.nextName?escape(r.after.nextName)+' · '+percent+'%':t('Höchster Rang','Highest rank')}</small>`:''}</div></section>`;
+  const known=r.after.rankIndex!==null,isNew=known&&r.before.rankIndex===null,percent=Math.round(r.to*100);
+  return `<section class="wr-row" data-wr-row="${i}"><div class="wr-emblem">${emblem(r.after)}</div><div class="wr-details"><h2>${escape(r.name)}</h2><div class="wr-rank">${known?escape(r.after.name):bodyweight===null&&r.rankable?`<button type="button" class="textbtn" onclick="pulsWorkoutRanks.weight()">${t('Gewicht eintragen','Add weight')}</button>`:t('ohne Rang','unranked')}</div>${isNew?`<strong class="wr-promotion">${t('Neu','New')}</strong>`:r.promoted?`<strong class="wr-promotion">${t('Aufgestiegen','Rank up')}</strong>`:''}${known?`<div class="wr-meter" role="progressbar" aria-label="${escape(r.name)} · ${t('Rangfortschritt','Rank progress')}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${r.to*100}%"></i></div><small>${r.after.nextName?escape(r.after.nextName)+' · '+percent+'%':t('Höchster Rang','Highest rank')}</small>`:''}</div></section>`;
  }).join('')}</div><button type="button" class="btn full completioncontinue" onclick="minimizeSession();trainTab='current';go('workout')">${t('Fertig','Done')}</button></div>`;
 }
 const baseCompletion=completionHtml;
@@ -42,7 +46,7 @@ let played=null;
 renderWorkoutSession=function(){
  const result=baseSession.apply(this,arguments),root=document.querySelector('#session-root .workout-ranks');
  if(!root){played=null;pageRows=null;return result}
- const key=state.workouts.find(w=>w.id===completionId);
+ const key=pageRows;
  if(played===key)return result;played=key;
  const reduced=window.pulsMotion?.reduced?.()??true;
  let sounded=false;
@@ -65,5 +69,13 @@ renderWorkoutSession=function(){
  }}catch(e){}
  return result;
 };
-window.pulsWorkoutRanks=Object.freeze({rows,html});
+function weight(){
+ const workout=state.workouts.find(w=>w.id===completionId);
+ if(!workout||typeof weightForm!=='function')return;
+ weightForm();
+ // Reuse the existing validated save/sync path, with the actual workout day.
+ const input=document.getElementById('wdate');if(input)input.value=workout.date;
+ const kg=document.getElementById('kg');if(kg)kg.value=state.weights?.find(w=>w.date===workout.date)?.kg??'';
+}
+window.pulsWorkoutRanks=Object.freeze({rows,html,weight});
 })();

@@ -114,11 +114,29 @@ for(const count of [0,1,2,5]){
  f.setStrength(13);assert.equal(f.api.celebrate(),true);assert.equal(f.ctx.state.display.lastRankSeen,13);
  assert.deepEqual(f.log.toasts,['Neuer Rang: Protein Farter II']);assert(f.log.sounds.includes('rankUp'));
  assert.equal(f.api.celebrate(),false);f.api.view('ranks');assert.equal(f.log.toasts.length,1);
+ const saves=f.log.saves;
+ for(const score of [8,12,13,10,13]){
+  f.setStrength(score);assert.equal(f.api.celebrate(),false,'previously seen ranks never celebrate again');
+  assert.equal(f.ctx.state.display.lastRankSeen,13,'seen rank is a high-water mark');
+ }
+ assert.equal(f.log.saves,saves,'lower and recovered ranks do not write profile data');
+ f.setStrength(14);assert.equal(f.api.celebrate(),true);assert.equal(f.ctx.state.display.lastRankSeen,14);
  assert.match(f.mount.innerHTML,/Deine Übungen/);assert.match(f.mount.innerHTML,/Noch [^<]+ kg bei/);
  assert.equal((f.mount.innerHTML.match(/class="fb-rung /g)||[]).length,9);
  const unknown=fixture({snapshot:snapWith([]),strengthScore:null});unknown.api.view('ranks');assert.match(unknown.mount.innerHTML,/Rang unbekannt/);assert.equal(unknown.log.saves,0);
  unknown.api.view('exercises');assert.match(unknown.mount.innerHTML,/Rang unbekannt/);assert(!unknown.mount.innerHTML.includes('kg/KG'));
  f.api.view('exercises');assert.match(f.mount.innerHTML,/pulsFriendsBoard.exercise/);assert.match(f.mount.innerHTML,/kg\/KG/);
+}
+
+// Legacy backups stay valid; reading their high-water mark clamps the in-memory baseline to 24.
+for(const seen of [14,25,26]){
+ const f=fixture({snapshot:snapWith([]),display:{lastRankSeen:seen},strengthScore:8});
+ const maxima=[],math=Object.create(Math);math.max=(...values)=>{maxima.push(values);return Math.max(...values)};f.ctx.Math=math;
+ f.setStrength(Math.min(seen,24));assert.equal(f.api.celebrate(),false);
+ assert.deepEqual(maxima.at(-1),[Math.min(seen,24),Math.min(seen,24),Math.min(seen,24)],'current, seen and previous baseline stay capped at 24');
+ assert.equal(f.ctx.state.display.lastRankSeen,seen);assert.equal(f.log.saves,0);assert.equal(f.log.toasts.length,0);
+ const restored=JSON.parse(JSON.stringify(f.ctx.state));
+ assert(f.ctx.validData(restored));assert.equal(restored.display.lastRankSeen,seen,'backup validation retains the existing supported range');
 }
 
 // Einbindung: eigene Dateien, Reihenfolge nach friends.js/puls-data-v87.js und vor motion.js, Offline-Cache.
@@ -152,7 +170,24 @@ async function asyncChecks(){
  f.ctx.state={...f.ctx.state,workouts:[],display:{lastRankSeen:0}};f.setXp(0);
  assert.equal(f.api.localXp(),0);assert.equal(f.api.celebrate(),false);assert.equal(f.log.saves,saves);
  f.setStrength(15);assert.equal(f.api.celebrate(),false);assert.equal(f.log.toasts.length,0);
+ f.setStrength(8);assert.equal(f.api.celebrate(),false);
+ f.setStrength(15);assert.equal(f.api.celebrate(),false,'profile baseline remains a high-water mark after a decline');
  f.setStrength(18);assert.equal(f.api.celebrate(),true);assert.deepEqual(f.log.toasts,['Neuer Rang: Batman Cycle I']);
 
 }
-asyncChecks().then(()=>console.log('PASS: friends board (ranks/emblems, cards, slacking band, podium 0/1/2/5, unknown rank, one-time rank-up, wiring; no layout/backend).')).catch(error=>{console.error(error);process.exitCode=1});
+async function weightChecks(){
+ const f=fixture({snapshot:snapWith([]),strengthScore:8});
+ f.ctx.state.profile=null;f.ctx.state.weights=[];
+ let opened=0,submit;
+ f.ctx.openModal=(_,html)=>{opened++;f.nodes.get('mb').innerHTML=html};
+ f.api.openRanks();assert.match(f.nodes.get('mb').innerHTML,/Gewicht eintragen/);
+ assert(!f.nodes.get('mb').innerHTML.includes('class="fb-heroname">Rang unbekannt'));
+ const modal=node('modal');modal.open=true;f.nodes.set('modal',modal);
+ const input=node('wdate');input.closest=()=>({addEventListener:(event,fn)=>{assert.equal(event,'submit');submit=fn}});f.nodes.set('wdate',input);
+ let formOpened=0;f.ctx.weightForm=()=>{formOpened++;modal.open=true};
+ f.api.weight();assert.equal(formOpened,1);submit();await Promise.resolve();assert.equal(opened,1,'invalid save keeps form');
+ f.ctx.state.weights=[{date:'2026-11-07',kg:100}];modal.open=false;submit();await Promise.resolve();
+ assert.equal(opened,2);assert(!f.nodes.get('mb').innerHTML.includes('Gewicht eintragen'));
+ assert(f.nodes.get('mb').innerHTML.includes('Low Melanin'));
+}
+asyncChecks().then(weightChecks).then(()=>console.log('PASS: friends board (ranks/emblems, cards, slacking band, podium 0/1/2/5, unknown rank, one-time rank-up, wiring, weight entry; no layout/backend).')).catch(error=>{console.error(error);process.exitCode=1});

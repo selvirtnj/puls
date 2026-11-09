@@ -1,5 +1,5 @@
 /* Strength board: pure local projections and sanitized friend summaries.
- * Only display.lastRankSeen (0..24, legacy 25/26 accepted) is persisted for celebrations. */
+ * Only display.lastRankSeen (high-water mark 0..24, legacy 25/26 accepted) is persisted for celebrations. */
 (function(){
 'use strict';
 const en=()=>typeof state!=='undefined'&&state?.language==='en';
@@ -237,8 +237,10 @@ function nextText(r){
 }
 function ranksHTML(play){
  const xp=localXp(),r=ownRank(),ranks=data()?.ranks||[];
+ const missingWeight=!r&&window.pulsStrength?.weightAt(state,today())===null;
+ const weightButton=`<button type="button" class="textbtn" onclick="pulsFriendsBoard.weight()">${t('Gewicht eintragen','Add weight')}</button>`;
  const hero=`<div class="fb-rankhero"><span class="fb-heroemblem" data-fb-own-emblem>${emblem(r?.index,r?.stage,104,{label:r?.name||t('Rang unbekannt','Rank unknown')})}</span>
-  <strong class="fb-heroname">${rankText(r)}</strong><small>Level ${typeof xpProgress==='function'?xpProgress(xp||0).level:1} · ${number(xp||0)} XP</small>
+  <strong class="fb-heroname">${missingWeight?weightButton:rankText(r)}</strong><small>Level ${typeof xpProgress==='function'?xpProgress(xp||0).level:1} · ${number(xp||0)} XP</small>
   ${r?`<span class="fb-meter big" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(r.progress*100)}" aria-label="${t('Fortschritt zur nächsten Stufe','Progress to next stage')}"><i style="width:${Math.round(r.progress*100)}%"></i></span><small>${nextText(r)}</small>`:''}</div>`;
  const own=window.pulsStrength?.all()||[];
  const lifts=own.map(e=>`<li class="fb-liftrow">${emblem(e.index,e.stage,32)}<span><strong>${escape(e.exerciseName)}</strong><small>${escape(e.name)} · ${number(Math.round(e.ratio*100)/100)} ${t('kg/KG','kg/BW')}</small></span></li>`).join('');
@@ -249,7 +251,7 @@ function ranksHTML(play){
    ${emblem(g.index,stage,44)}<span class="fb-rungtext"><strong>${escape(g.name)}</strong><small>${g.index===8?'':'I · II · III'}</small></span>
    <span class="fb-rungstate">${status==='current'?`<b>${t('Du','You')}</b>`:status==='done'?icon('check-circle'):''}</span></li>`;
  }).join('');
- return `${hero}<h3 class="fb-title">${t('Deine Übungen','Your exercises')}</h3><ul class="fb-lifts">${lifts||`<li class="fb-empty">${t('Rang unbekannt','Rank unknown')}</li>`}</ul><h3 class="fb-title">${t('Alle Ränge','All ranks')}</h3><ol class="fb-ladder">${rungs}</ol>`;
+ return `${hero}<h3 class="fb-title">${t('Deine Übungen','Your exercises')}</h3><ul class="fb-lifts">${lifts||(missingWeight?'':`<li class="fb-empty">${t('Rang unbekannt','Rank unknown')}</li>`)}</ul><h3 class="fb-title">${t('Alle Ränge','All ranks')}</h3><ol class="fb-ladder">${rungs}</ol>`;
 }
 function exercisesHTML(snap){
  const choices=new Map();for(const p of people(snap))for(const e of p.lift_ranks||[])if(!choices.has(e.key))choices.set(e.key,e.name);
@@ -271,7 +273,7 @@ function persistSeen(index){
  const flag=read=>{try{return !!read()}catch{return false}};
  if(flag(()=>cloudApplying)||flag(()=>cloudBusy)||flag(()=>stateLoadCorrupt))return false;
  if(!state.display||typeof state.display!=='object'||Array.isArray(state.display))state.display={};
- if(state.display.lastRankSeen===index)return true;
+ if(Number.isInteger(state.display.lastRankSeen)&&state.display.lastRankSeen>=index)return true;
  state.display.lastRankSeen=index;try{save()}catch(error){console.error(error)}return true;
 }
 // Gefeiert wird nur ein Aufstieg innerhalb desselben Profilobjekts. Nach einem Profilwechsel
@@ -279,11 +281,12 @@ function persistSeen(index){
 let rankBase={state:null,index:-1};
 function celebrate(root=document){
  const s=currentState(),r=ownRank();if(!r||!s)return false;
- const seen=data()?.display?.().lastRankSeen;
+ const storedSeen=data()?.display?.().lastRankSeen;
+ const seen=Number.isInteger(storedSeen)?Math.min(24,storedSeen):storedSeen;
  if(!Number.isInteger(seen)){persistSeen(r.rankIndex);rankBase={state:s,index:r.rankIndex};return false} // Erste Anzeige: merken, nicht feiern.
  // App-Start (noch kein Profil gesehen): ungesehener Aufstieg zählt. Wechsel zu einem anderen Profilobjekt: nur Ausgangspunkt.
  if(rankBase.state&&rankBase.state!==s){rankBase={state:s,index:Math.max(r.rankIndex,seen)};return false}
- if(r.rankIndex<=seen||rankBase.state===s&&r.rankIndex<=rankBase.index){if(r.rankIndex<seen)persistSeen(r.rankIndex);rankBase={state:s,index:r.rankIndex};return false}
+ if(r.rankIndex<=seen||rankBase.state===s&&r.rankIndex<=rankBase.index){rankBase={state:s,index:Math.max(r.rankIndex,seen,rankBase.state===s?rankBase.index:-1)};return false}
  rankBase={state:s,index:r.rankIndex};
  if(!persistSeen(r.rankIndex))return false;
  const target=root.querySelector?.('[data-fb-own-emblem]');
@@ -358,6 +361,14 @@ function openRanks(){
  openModal(t('Ränge','Ranks'),`<section class="fb fb-standalone" data-no-translate>${ranksHTML(true)}</section>`);
  celebrate(document.getElementById('mb')||document);
 }
+function weight(){
+ if(typeof weightForm!=='function')return;
+ const owner=state;weightForm();
+ // After a successful existing form save, return to the recalculated ranks.
+ document.getElementById('wdate')?.closest('form')?.addEventListener('submit',()=>{
+  Promise.resolve().then(()=>{if(state===owner&&!document.getElementById('modal')?.open)openRanks()});
+ });
+}
 // Modal zu: Animationen dürfen beim nächsten Öffnen wieder spielen.
 // Beobachtet das open-Attribut, weil Schließwege der App nicht immer ein close-Ereignis auslösen.
 const sheet=document.getElementById('modal');
@@ -368,5 +379,5 @@ if(typeof MutationObserver==='function'){
  watch('mb');watch('content');
 }
 try{enhance();profileRow()}catch(error){console.error(error)}
-window.pulsFriendsBoard=Object.freeze({view:setView,metric:setMetric,exercise:setExercise,warn,openRanks,emblem,wreath,rankFor,localXp,localStreak,leaderboard,celebrate});
+window.pulsFriendsBoard=Object.freeze({view:setView,metric:setMetric,exercise:setExercise,warn,openRanks,weight,emblem,wreath,rankFor,localXp,localStreak,leaderboard,celebrate});
 })();
