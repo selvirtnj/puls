@@ -48,7 +48,9 @@ function fdUndoRun(){let action=fdUndoAction;fdUndoAction=null;clearTimeout(fdUn
 /* ---------- Kopf ---------- */
 function fdHead(){
   let label=esc(friendlyDay(date));
-  return `<div class="fdhead"><span aria-hidden="true"></span><div class="fddate"><button type="button" class="fdicon" aria-label="${fdT('Vorheriger Tag','Previous day')}" onclick="moveDay(-1)">${phIcon('caret-left')}</button><button type="button" class="fddaylabel" aria-label="${fdT('Datum auswählen','Choose date')}: ${label}" onclick="pickDiaryDate()"><span>${label}</span></button><button type="button" class="fdicon" aria-label="${fdT('Nächster Tag','Next day')}" onclick="moveDay(1)">${phIcon('caret-right')}</button></div><button type="button" class="fdicon fdplus" aria-label="${fdT('Lebensmittel hinzufügen','Add food')}" onclick="fdOpenAdd()">${phIcon('plus')}</button></div>`;
+  // v89: sichtbar kompakt (So., 8.11.), damit links Platz für den Titel bleibt; vorgelesen wird das volle Datum.
+  let short=date===today()?label:esc(new Date(date+'T12:00:00').toLocaleDateString(typeof appLocale==='function'?appLocale():'de-DE',date.slice(0,4)!==today().slice(0,4)?{day:'numeric',month:'numeric',year:'2-digit'}:{weekday:'short',day:'numeric',month:'numeric'}));
+  return `<div class="fdhead"><h1 class="fdtitle">${fdT('Essen','Food')}</h1><div class="fddate"><button type="button" class="fdicon" aria-label="${fdT('Vorheriger Tag','Previous day')}" onclick="moveDay(-1)">${phIcon('caret-left')}</button><button type="button" class="fddaylabel" aria-label="${fdT('Datum auswählen','Choose date')}: ${label}" onclick="pickDiaryDate()"><span>${short}</span></button><button type="button" class="fdicon" aria-label="${fdT('Nächster Tag','Next day')}" onclick="moveDay(1)">${phIcon('caret-right')}</button></div><button type="button" class="fdicon fdplus" aria-label="${fdT('Lebensmittel hinzufügen','Add food')}" onclick="fdOpenAdd()">${phIcon('plus')}</button></div>`;
 }
 let fdJustChecked=false;
 function fdToggleDay(){fdJustChecked=true;setTimeout(()=>fdJustChecked=false,0);let was=(state.foodLogCompleted||[]).includes(date);markFoodDayComplete();fdSound(was?'toggle':'save')}
@@ -125,7 +127,7 @@ let fdWaterMemory={key:'',filled:-1};
 function fdGlass(i,w,fresh){
   let full=i<w.filled,next=i===w.filled,level=full?1:next?w.partial:0;
   let label=full?`${fdT('Glas','Glass')} ${i+1}, ${fdT('getrunken. Tippen entfernt das letzte Glas.','logged. Tap to remove the last glass.')}`:`${fdT('Glas','Glass')} ${i+1}. ${fdT('Tippen fügt','Tap adds')} ${n(w.glassMl)} ml ${fdT('hinzu.','')}`.replace(' .','.');
-  return `<button type="button" class="fdglass${full?' fdfull':''}${next?' fdnext':''}${fresh?' fdfill':''}" style="--level:${level}" aria-label="${label}" onclick="fdGlassTap(${i})"><svg viewBox="0 0 24 32" aria-hidden="true"><path class="fdglasswater" d="M4.4 4h15.2l-2.1 24.3a1.8 1.8 0 0 1-1.8 1.7H8.3a1.8 1.8 0 0 1-1.8-1.7Z"/><path class="fdglassline" d="M3.2 2.8h17.6l-2.2 25.6a2.8 2.8 0 0 1-2.8 2.6H8.2a2.8 2.8 0 0 1-2.8-2.6Z"/></svg>${next?`<span class="fdglassplus">${phIcon('plus')}</span>`:''}</button>`;
+  return `<button type="button" class="fdglass${full?' fdfull':''}${next?' fdnext':''}${fresh?' fdfill':''}" style="--level:${level}" aria-label="${label}" onclick="fdGlassTap(${i})"><svg viewBox="0 0 24 32" aria-hidden="true"><path class="fdglasswater" d="M4.4 4h15.2l-2.1 24.3a1.8 1.8 0 0 1-1.8 1.7H8.3a1.8 1.8 0 0 1-1.8-1.7Z"/><path class="fdglassline" d="M3.2 2.8h17.6l-2.2 25.6a2.8 2.8 0 0 1-2.8 2.6H8.2a2.8 2.8 0 0 1-2.8-2.6Z"/></svg>${next?`<span class="fdglassplus">${phIcon('plus')}</span>`:i===w.filled-1?`<span class="fdglassplus fdglassminus">${phIcon('minus')}</span>`:''}</button>`;
 }
 function fdWaterCard(){
   let w=fdWaterState(),nt=nutrientTotals(),total=nt.totals?.water||0,key=date,fresh=fdWaterMemory.key===key&&w.filled>fdWaterMemory.filled?w.filled-1:-1;
