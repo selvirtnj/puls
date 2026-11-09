@@ -72,7 +72,8 @@ const snapWith=friends=>({self:{...self,xp:5},friends,incoming:[],outgoing:[],nu
  // Warnen: bestehende nudge-RPC, Ton nudgeSend, Knopf sofort gesperrt; ungültige Codes werden ignoriert.
  const button={disabled:false,classList:{add(){}},querySelector:()=>({textContent:''}),closest:()=>null};
  f.api.warn('FEDCBA654322',button);f.api.warn('FEDCBA654322',button);f.api.warn("x');alert(1);//",{});
- assert.deepEqual(f.log.nudges,['FEDCBA654322']);assert(button.disabled);assert.deepEqual(f.log.sounds.filter(s=>s==='nudgeSend'),['nudgeSend']);
+ assert.deepEqual(f.log.nudges,['FEDCBA654322']);assert(button.disabled);assert.equal(f.log.sounds.filter(s=>s==='nudgeSend').length,0,'kein Erfolgston vor dem RPC');
+ assert.match(html,/data-code="FEDCBA654322"/);
  const english=fixture({snapshot:snapWith(friends),language:'en'});assert.match(english.mount.innerHTML,/Tap to warn|Warned · again in 7 h/);assert.match(english.mount.innerHTML,/Rank unknown/);
 }
 
@@ -126,4 +127,30 @@ for(const count of [0,1,2,5]){
  for(const [, rule] of css.matchAll(/animation:([^;]+);/g))assert(/!important/.test(rule)&&(/none|var\(--motion/.test(rule)),'Animation nur mit Tokens und !important');
  assert.match(css,/html\.reduce-motion[^{]*fb-wreath-half[^{]*\{ animation: none !important/);
 }
-console.log('PASS: friends board (ranks/emblems, cards, slacking band, podium 0/1/2/5, unknown rank, one-time rank-up, wiring; no layout/backend).');
+async function asyncChecks(){
+ // Warnen: Erfolgston nur nach bestätigtem Stups (frisches last_nudge im neuen Snapshot); sonst Warnton und Knopf wieder frei.
+ const target=friend(2,{broken:true,last_training:'2026-11-01',streak:0});
+ for(const outcome of ['sent','limited','throws']){
+  const f=fixture({snapshot:snapWith([target])});f.ctx.console={...console,error:()=>{}};
+  f.ctx.pulsFriends.nudge=async code=>{f.log.nudges.push(code);if(outcome==='throws')throw Error('offline');
+   if(outcome==='sent')f.setSnap(snapWith([{...target,last_nudge:new Date(Date.parse('2026-11-08T12:00:02Z')).toISOString()}]))};
+  const label={textContent:''},classes=new Set(),button={disabled:false,isConnected:true,classList:{add:c=>classes.add(c),remove:c=>classes.delete(c)},querySelector:()=>label};
+  const ok=await f.api.warn('FEDCBA654322',button);
+  assert.equal(ok,outcome==='sent',outcome);assert.deepEqual(f.log.nudges,['FEDCBA654322']);
+  assert.equal(f.log.sounds.includes('nudgeSend'),outcome==='sent',outcome);assert.equal(f.log.sounds.includes('warning'),outcome!=='sent',outcome);
+  if(outcome!=='sent'){assert.equal(button.disabled,false);assert.equal(label.textContent,'Zum Warnen tippen')}
+ }
+ // Profilwechsel: kein veralteter XP-Cache, keine Feier, kein Speichern des falschen Rangs.
+ const f=fixture({snapshot:snapWith([]),xp:6400});assert.equal(f.ctx.state.display.lastRankSeen,4);const saves=f.log.saves;
+ f.setXp(0);f.tick(-1999); // innerhalb der früheren 800-ms-Cache-Zeit
+ f.ctx.state={...f.ctx.state,workouts:[],display:{lastRankSeen:0}};
+ assert.equal(f.api.localXp(),0,'Cache gilt nur für dasselbe Profil');
+ assert.equal(f.api.celebrate(),false);assert.equal(f.ctx.state.display.lastRankSeen,0);assert.equal(f.log.saves,saves);assert.equal(f.log.toasts.length,0);
+ // Neues Profil bekommt XP aus einem fremden Gerät/Pull (anderes Objekt): nur Ausgangspunkt, keine Feier.
+ f.ctx.state={...f.ctx.state,workouts:[...f.ctx.state.workouts]};f.setXp(10500);
+ assert.equal(f.api.celebrate(),false);assert.equal(f.log.toasts.length,0);
+ // Echter Aufstieg im selben Profil wird weiterhin genau einmal gefeiert.
+ f.ctx.state.display.lastRankSeen=5;f.setXp(15525);f.ctx.state.workouts=[...f.ctx.state.workouts];
+ assert.equal(f.api.celebrate(),true);assert.deepEqual(f.log.toasts,['Neuer Rang: Mass Monster I']);assert.equal(f.ctx.state.display.lastRankSeen,6);
+}
+asyncChecks().then(()=>console.log('PASS: friends board (ranks/emblems, cards, slacking band, podium 0/1/2/5, unknown rank, one-time rank-up, wiring; no layout/backend).')).catch(error=>{console.error(error);process.exitCode=1});
