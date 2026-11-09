@@ -108,9 +108,12 @@ function wreath(place){
 }
 
 /* ---------- Eigene Werte (lokal, ohne Zustandsänderung) ---------- */
-let xpCache={at:0,value:null};
+// Kurzer Cache nur für dasselbe Profilobjekt und dieselben Trainingslisten; Profilwechsel (neues state-Objekt) verwirft ihn.
+let xpCache={at:0,value:null,state:null,workouts:null,runs:null};
+const currentState=()=>typeof state!=='undefined'?state:null;
 function localXp(){
- if(Date.now()-xpCache.at<800)return xpCache.value;
+ const s=currentState();
+ if(s&&xpCache.state===s&&xpCache.workouts===s.workouts&&xpCache.runs===s.runs&&Date.now()-xpCache.at<800)return xpCache.value;
  let value=null;
  if(typeof totalWorkoutXP==='function'&&typeof state!=='undefined'){
   // totalWorkoutXP nutzt runList(), das alten Profilen runs=[] hinzufügt: auf flacher Kopie rechnen.
@@ -118,7 +121,7 @@ function localXp(){
   try{if(!Array.isArray(state.runs))state={...state,runs:[]};const total=totalWorkoutXP();if(typeof total==='number'&&Number.isFinite(total))value=Math.max(0,Math.round(total))}
   catch{value=null}finally{state=original}
  }
- xpCache={at:Date.now(),value};return value;
+ xpCache={at:Date.now(),value,state:s,workouts:s?.workouts,runs:s?.runs};return value;
 }
 function localStreak(){
  // Gleiche Regel wie friends.js summary(): drei volle Ruhetage unterbrechen die Serie.
@@ -188,7 +191,7 @@ function cardHTML(p,i,play){
  const motion=play?` data-motion="enter" style="--motion-i:${Math.min(i,8)}"`:'';
  const band=p.slacking&&code?`<button type="button" class="fb-slack" ${hours?'disabled':''} onclick="pulsFriendsBoard.warn('${code}',this)" aria-label="${escape(p.name)}: ${hours?t(`Bereits gewarnt, wieder in ${hours} h`,`Already warned, again in ${hours} h`):t('Slacking, zum Warnen tippen','Slacking, tap to warn')}">
    <strong>SLACKING!</strong><span>${hours?t(`Gewarnt · wieder in ${hours} h`,`Warned · again in ${hours} h`):t('Zum Warnen tippen','Tap to warn')}${MEGAPHONE}</span></button>`:'';
- return `<li class="fb-card${p.slacking?' slacking':''}${play?' motion-play':''}"${motion}>
+ return `<li class="fb-card${p.slacking?' slacking':''}${play?' motion-play':''}"${code?` data-code="${code}"`:''}${motion}>
   <div class="fb-cardmain">
    <span class="fb-avatarwrap">${avatar(p)}${r?`<span class="fb-lvl" aria-label="Level ${r.userLevel}">${r.userLevel}</span>`:''}</span>
    <span class="fb-cardtext"><strong>${escape(p.name)}</strong><small>${rankText(r)}</small><small>${lastText(p.last_training)}</small></span>
@@ -265,11 +268,17 @@ function persistSeen(index){
  if(state.display.lastRankSeen===index)return true;
  state.display.lastRankSeen=index;try{save()}catch(error){console.error(error)}return true;
 }
+// Gefeiert wird nur ein Aufstieg innerhalb desselben Profilobjekts. Nach einem Profilwechsel
+// (Login, Cloud-Übernahme, Import) gilt der dann berechnete Rang als Ausgangspunkt.
+let rankBase={state:null,index:-1};
 function celebrate(root=document){
- const r=rankFor(localXp());if(!r)return false;
+ const s=currentState(),r=rankFor(localXp());if(!r||!s)return false;
  const seen=data()?.display?.().lastRankSeen;
- if(!Number.isInteger(seen)){persistSeen(r.index);return false} // Erste Anzeige: Ausgangsrang merken, nicht feiern.
- if(r.index<=seen){if(r.index<seen)persistSeen(r.index);return false}
+ if(!Number.isInteger(seen)){persistSeen(r.index);rankBase={state:s,index:r.index};return false} // Erste Anzeige: merken, nicht feiern.
+ // App-Start (noch kein Profil gesehen): ungesehener Aufstieg zählt. Wechsel zu einem anderen Profilobjekt: nur Ausgangspunkt.
+ if(rankBase.state&&rankBase.state!==s){rankBase={state:s,index:Math.max(r.index,seen)};return false}
+ if(r.index<=seen||rankBase.state===s&&r.index<=rankBase.index){if(r.index<seen)persistSeen(r.index);rankBase={state:s,index:r.index};return false}
+ rankBase={state:s,index:r.index};
  if(!persistSeen(r.index))return false;
  const target=root.querySelector?.('[data-fb-own-emblem]');
  if(target&&window.pulsMotion?.reveal)window.pulsMotion.reveal(target);else if(typeof pulsSound==='function')pulsSound('rankUp');
@@ -318,12 +327,23 @@ function setMetric(next){
  metric=next;const mount=document.getElementById('puls-friends-board-mount');if(mount)draw(mount);
  mount?.querySelector('.fb-metric [aria-pressed="true"]')?.focus({preventScroll:true});
 }
-function warn(code,button){
- if(!codeOK(code)||button?.disabled||!window.pulsFriends?.nudge)return;
+// Erfolgsfeedback erst, wenn der neue Snapshot den Stups bestätigt (last_nudge frisch).
+// Bei Limit, noch aktiver Serie, offline oder Fehler zeigt friends.js die Meldung; hier nur ein Warnton.
+async function warn(code,button){
+ if(!codeOK(code)||button?.disabled||!window.pulsFriends?.nudge)return false;
+ const started=Date.now();
  if(button){button.disabled=true;button.classList.add('sent');const label=button.querySelector('span');if(label)label.textContent=t('Wird gesendet …','Sending …')}
- if(typeof pulsSound==='function')pulsSound('nudgeSend'); // haptics.js ergänzt die Haptik (medium).
- const card=button?.closest('.fb-card');if(card)window.pulsMotion?.success?.(card);
- return window.pulsFriends.nudge(code);
+ try{await window.pulsFriends.nudge(code)}catch(error){console.error(error)}
+ const friend=window.pulsFriendsData87?.getSnapshot?.()?.friends?.find(p=>p.code===code);
+ const sent=!!friend?.last_nudge&&Date.parse(friend.last_nudge)>=started-120000;
+ if(sent){
+  if(typeof pulsSound==='function')pulsSound('nudgeSend'); // haptics.js ergänzt die Haptik (medium).
+  const card=document.querySelector(`.fb-card[data-code="${code}"]`);if(card)window.pulsMotion?.success?.(card);
+ }else{
+  if(typeof pulsSound==='function')pulsSound('warning');
+  if(button?.isConnected){button.disabled=false;button.classList.remove('sent');const label=button.querySelector('span');if(label)label.textContent=t('Zum Warnen tippen','Tap to warn')}
+ }
+ return sent;
 }
 function openRanks(){
  if(typeof openModal!=='function')return;
