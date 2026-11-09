@@ -177,7 +177,8 @@ assert.match(sql2,/puls_valid_lift_ranks\(lift_ranks,case when rank_scale=2 then
 assert.match(sql2,/rank_value not between 0 and max_rank/);assert.match(sql2,/max_rank not in \(24,39\)/);
 assert.match(sql2,/p_xp integer default null,p_strength jsonb default null\)/);
 assert.match(sql2,/drop function if exists public\.puls_friends_publish\(text,integer,date,boolean,bigint,boolean,integer\);/);
-assert.match(sql2,/<>case when p_strength \? 'rank_scale' then 3 else 2 end/);
+// PL/pgSQL ends an IF condition at the first THEN, so a CASE inside it must be parenthesized.
+assert.match(sql2,/<>\(case when p_strength \? 'rank_scale' then 3 else 2 end\)/);
 assert.match(sql2,/\(p_strength->>'rank_scale'\)::numeric<>2/);assert.match(sql2,/scale_value := 2; max_rank := 39;/);
 assert.match(sql2,/rank_scale=case when p_strength is null then rank_scale else scale_value end/);
 assert.match(sql2,/rank_scale=case when p_strength is null then public\.puls_friend_profiles\.rank_scale else excluded\.rank_scale end/);

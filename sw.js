@@ -1,5 +1,5 @@
 /* Static assets only. Auth, API responses and photos are never cached here. */
-const CACHE='puls-static-92',ASSETS=[
+const CACHE='puls-static-93',ASSETS=[
 "js/workout-ranks.js","css/workout-ranks.css",
 "js/routine-favorites.js",
 "css/v90-ui.css",

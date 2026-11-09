@@ -59,7 +59,7 @@ begin
  if p_strength is not null then
   if jsonb_typeof(p_strength)<>'object' then raise exception 'Invalid strength summary' using errcode='22023'; end if;
   if octet_length(p_strength::text)>32768 or not (p_strength ?& array['strength_rank','lift_ranks'])
-   or (select count(*) from jsonb_object_keys(p_strength))<>case when p_strength ? 'rank_scale' then 3 else 2 end
+   or (select count(*) from jsonb_object_keys(p_strength))<>(case when p_strength ? 'rank_scale' then 3 else 2 end)
    then raise exception 'Invalid strength summary' using errcode='22023'; end if;
   if p_strength ? 'rank_scale' then
    if jsonb_typeof(p_strength->'rank_scale')<>'number' or (p_strength->>'rank_scale')::numeric<>2 then
