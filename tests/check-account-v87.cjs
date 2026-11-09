@@ -18,8 +18,8 @@ const c={console,Math,Number,String,Object,Array,Set,Map,JSON,isFinite,state,dat
  quickAddIcons:{},currentWeight:()=>82,dayGoals:()=>state.goals,accountCloudDetail:()=>'Nur auf diesem Gerät gespeichert',
  accountSections:[{key:'plan'},{key:'body'},{key:'adaptive'},{key:'design'},{key:'sounds'},{key:'manage'}],
  accountListRow:({label,detail='',value='',action='',id='',cls=''})=>`<${action?'button':'div'} class="dsrow ${cls}"${id?` id="${id}"`:''}${action?` onclick="${action}"`:''}>${label}${detail?`<small>${detail}</small>`:''}${value!==''?`<span class="dsrowvalue">${value}</span>`:''}</${action?'button':'div'}>`,
- accountGoalSummary:()=>'<section class="accountgoal"></section>',planTargetDate:()=>'März 2027',profileError:()=>'',
- energyFor:()=>({rmr:1800,tdee:2600}),recordGoalHistory(){calls.push('history')},
+ accountGoalSummary:()=>'<section class="accountgoal"></section>',planTargetDate:()=>'März 2027',profileError:()=>'',forecastDays:()=>90,dateAfter:()=>'7. Feb. 2027',
+ energyFor:()=>({rmr:1800,tdee:2600}),planNumbers:()=>({change:-.15,kcal:2000}),recordGoalHistory(){calls.push('history')},
  quickAddRun(){},weightForm(){},measurementsForm(){},recipeEditor(){},foodForm(){calls.push('foodForm')},foodTab(){},fpMealEdit(){calls.push('meal')},fpBackTo(p){calls.push('pane:'+p)},
  accountPage:()=>'<div class="accountcompact accountrefresh accountoverview"></div>',
  openAccountSection(key){c.accountSection=key;c.render()},closeAccountSection(){c.accountSection='';c.render()},
@@ -32,9 +32,14 @@ const run=code=>vm.runInContext(code,c);
 // Plus-Menü: Kacheln und Liste, keine Sprachnotiz, keine Notiz, kein Fasten; fremde Einträge bleiben.
 run('quickAddMenu()');
 assert.equal(modal.title,'Schnell hinzufügen');assert(bodyClasses.has('quickaddopen'));assert.equal(sounds.at(-1),'sheetOpen');
-for(const key of ['search','barcode','photo','training','water','weight','ruler','run','meal','recipe','custom','extra'])assert(modal.html.includes(`data-qa-quick="${key}"`),key);
+for(const key of ['search','barcode','training','water','weight','ruler','run','meal','recipe','custom','extra'])assert(modal.html.includes(`data-qa-quick="${key}"`),key);
 assert(modal.html.includes('class="dsgroup dsactionlist'),'app-polish erkennt das Menü weiter');
-assert(modal.html.includes('+ 300 ml'),'Glasgröße aus pulsData87');
+assert(!modal.html.includes('data-qa-quick="photo"'));
+assert.deepEqual(Array.from(run('qaQuickTiles().map(x=>x[0])')),['search','barcode','run','water','training']);
+assert.equal(run('qaQuickRows().at(-1)[0]'),'ruler');
+assert(!run('qaQuickRows().some(x=>x[0]==="water"||x[0]==="run")'));
+c.addWaterGlass=ml=>calls.push('water:'+ml);run('qaQuickWater()');assert.equal(calls.at(-1),'water:300');
+run('quickAddMenu()');
 assert(!/voice|microphone|Notiz|Fasten|Sprach/i.test(modal.html));
 run('quickAddMenu()');assert.equal(dismissed,1,'zweites Tippen schließt das Menü');
 run('qaQuickMeal()');assert.deepEqual(calls.slice(-2),['foodForm','meal']);
@@ -80,8 +85,7 @@ test.run('state.profile={...'+JSON.stringify(profile)+',kcalMode:"baseline",base
 assert.equal(test.run('dayGoals().p'),190);
 assert.equal(test.run('dayGoals().c'),230);
 assert(test.run('dayGoals().kcal')>test.run('state.goals.kcal'));
-assert(test.run('qaMacroEditor()').includes('bezogen auf Grundziel '+test.run('qaNum(state.goals.kcal)')+' kcal'));
-assert(test.run('qaMacroEditor()').includes('manuelle Makroziele bleiben unverändert'));
+assert(!test.run('qaMacroEditor()').includes('Grundziel'));
 `,{require,console});
 
 // Trainingsblatt ruft die bestehenden Wege auf und zeigt sichere Routinenamen.
@@ -123,9 +127,31 @@ assert(!/Fasten|Check-in|Coaching|Progress-Foto/.test(html));
 for(const key of ['account','profile','targets','display']){run(`qaOpen('${key}')`);html=run('accountPage()');assert(html.includes(`data-qa-page="${key}"`),key);assert(!html.includes('konnte nicht geladen'),key)}
 run("qaOpen('targets')");html=run('accountPage()');
 for(const text of ['Makros','Wasserziel','2450 ml','Hervorgehobene Nährstoffe','Ruheumsatz','Verhältnis'])assert(html.includes(text),text);
+for(const key of ['kcal','mode','direction','pace','target','p','c','f'])assert(html.includes(`qaEdit('${key}')`),key);
+assert(!/settings\(\)|Grundziel|Plan im Detail/.test(html));
 run("qaOpen('display')");html=run('accountPage()');
 for(const text of ['Farbschema','Folien der Tagesübersicht','Haptik','Bewegung','Sprache & App-Icon'])assert(html.includes(text),text);
 run("qaOpen('profile')");html=run('accountPage()');assert(html.includes('25.3'),'BMI berechnet');
+for(const key of ['age','sex','height','weight','target'])assert(html.includes(`qaEdit('${key}')`),key);
+assert(!html.includes('settings()'));
+assert(!/Rezepte|Kombis|Kalender|Trainingsfortschritt|Level & Rekorde/.test(run('qaDiscoverRows()')));
+
+// BMI fallback: sex parameter, current non-future weight, no writes, measurement priority.
+const profileSource=fs.readFileSync('js/profile-refresh.js','utf8');
+vm.runInContext(profileSource.slice(profileSource.indexOf('function navyBodyFat('),profileSource.indexOf('const navyMeasurementNote')),c);
+const snapshot=JSON.stringify(state);
+let bf=run('currentBodyFat()');assert.equal(bf.method,'bmi');
+assert(Math.abs(bf.value-(1.2*(82/1.8**2)+.23*34-10.8-5.4))<1e-9);
+assert(Math.abs(run('currentBodyFat({...state.profile,sex:"female"}).value')-bf.value-10.8)<1e-9);
+assert.equal(run('currentBodyFat({...state.profile,age:undefined})'),null);
+assert.equal(run('currentBodyFat({...state.profile,sex:undefined})'),null);
+assert.equal(run('currentBodyFat({...state.profile,height:undefined})'),null);
+assert.equal(run('currentBodyFat({...state.profile,weight:undefined})'),null);
+assert.equal(run('currentBodyFat(state.profile,[{date:today(),bodyfat:18}]).value'),18);
+assert.notEqual(run('currentBodyFat(state.profile,[{date:today(),neck:40,waist:90}]).method'),'bmi');
+assert.equal(JSON.stringify(state),snapshot);
+state.weights=[{date:'2026-11-08',kg:80},{date:'2026-11-10',kg:100}];
+assert(Math.abs(run('currentBodyFat().value')-(1.2*(80/1.8**2)+.23*34-10.8-5.4))<1e-9);state.weights=[];
 
 // Bestehender Bereich aus einer Unterseite: Zurück führt zur Unterseite, Zurück-Text nennt sie.
 c.accountPage=undefined;run("qaOpen('targets');qaSection('plan')");assert.equal(c.accountSection,'plan');assert.equal(run('qaParent'),'targets');

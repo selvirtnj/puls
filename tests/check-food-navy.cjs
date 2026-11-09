@@ -59,9 +59,9 @@ function navyCases(){
  rows.push({date:'2026-10-26',bodyfat:19});assert.equal(c.currentBodyFat(m,rows).value,19);assert.equal(c.currentBodyFat(m,rows).estimated,false,'newer manual wins');
  assert.equal(c.currentBodyFat(m,[{date:'2026-10-25',neck:40,waist:90},{date:'2026-10-25',bodyfat:18}]).value,18,'manual wins on the same day even in a separate record');
  assert.equal(c.currentBodyFat(m,[{date:'2026-10-24',neck:40},{date:'2026-10-25',waist:90}]),null);
- c.state.measurements=[{date:'2026-10-25',neck:40,waist:90}];assert.match(c.weeklyWeightCard(),/geschätzt/);assert.doesNotMatch(c.weeklyWeightCard(),/BMI und Alter/);
+ c.state.measurements=[{date:'2026-10-25',neck:40,waist:90}];assert.match(c.weeklyWeightCard(),/Körperfett/);assert.doesNotMatch(c.weeklyWeightCard(),/BMI und Alter|US.Navy/);
  assert.deepEqual(Array.from(c.measurementFields.neck),['Hals','cm',15,80]);
- c.state.language='en';assert.match(c.bodyFatMarkup({value:20,estimated:true,date:'2026-10-25'}),/Estimated body fat \(US Navy\)/);assert.match(c.weeklyWeightCard(),/US Navy estimate/);assert.equal(c.englishUI.Hals,'Neck');
+ c.state.language='en';assert.match(c.bodyFatMarkup({value:20,estimated:true,date:'2026-10-25'}),/20 %/);assert.doesNotMatch(c.weeklyWeightCard(),/US Navy estimate/);assert.equal(c.englishUI.Hals,'Neck');
  const languageSource=fs.readFileSync('js/i18n.js','utf8');vm.runInContext(languageSource.slice(languageSource.indexOf('function translatedUI('),languageSource.indexOf('function protectedUIText(')),c);
  assert.equal(c.translatedUI('Hals · cm'),'Neck · cm');assert.equal(c.translatedUI('Hals 40 cm'),'Neck 40 cm');
  // CSV preserves existing column order and keeps missing neck values empty.

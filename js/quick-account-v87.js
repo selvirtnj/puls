@@ -1,5 +1,5 @@
 /* PULS v87 · Plus-Menü und Konto im Stil einer „Mehr“-Übersicht.
-   Plus-Menü: Kachelreihe (Suchen, Barcode, Foto, Training) plus Liste; alle Einträge rufen vorhandene Abläufe auf
+   Plus-Menü: Essen suchen, Barcode, Aktivität, Wasser, Training plus Liste; alle Einträge rufen vorhandene Abläufe auf
    (food-page/food-flow, recipes, quick-units, running). Kein Sprachprotokoll, keine Notiz, kein Fasten.
    Konto: Übersicht mit Unterseiten Konto, Profil, Ziele, Darstellung und dem Bereich „Entdecken“. Die Unterseiten
    bauen auf accountListRow, accountManageBody, accountGoalSummary und den bestehenden Formularen auf; die alten
@@ -37,18 +37,14 @@ function qaGoals(){try{if(typeof dayGoals==='function')return dayGoals(typeof to
 /* ---------- Plus-Menü ---------- */
 const qaKnownQuick=new Set(['food','barcode','camera','recipe','water','weight','workout','run','ruler']);
 function qaQuickTiles(){return [
-  ['search','magnifying-glass',qaT('Suchen','Search'),"foodForm();foodTab('search')"],
+  ['search','magnifying-glass',qaT('Essen suchen','Find food'),"foodForm();foodTab('search')"],
   ['barcode','barcode',qaT('Barcode','Barcode'),"foodForm();foodTab('barcode')"],
-  ['photo','camera',qaT('Foto','Photo'),"foodForm();foodTab('photo')"],
+  ['run','person-simple-run',qaT('Aktivität','Activity'),'quickAddRun()'],
+  ['water','drop',qaT('Wasser','Water'),'qaQuickWater()'],
   ['training','barbell',qaT('Training','Workout'),'qaQuickTraining()']
 ]}
 function qaQuickRows(){
-  let glass=qaWater().glassMl,rows=[
-    ['water','drop',qaT('Wasser','Water'),`+ ${qaNum(glass)} ml`,'qaQuickWater()'],
-    ['weight','scales',qaT('Gewicht','Weight'),qaT('Messwert erfassen','Log a measurement'),'weightForm()'],
-    ['ruler','ruler',qaT('Körpermaße','Body measurements'),qaT('Maße & Biometrie','Measures & biometrics'),'measurementsForm()']
-  ];
-  if(typeof quickAddRun==='function')rows.push(['run','person-simple-run',qaT('Aktivität','Activity'),qaT('Laufen, Rad & mehr','Running, cycling & more'),'quickAddRun()']);
+  let rows=[['weight','scales',qaT('Gewicht','Weight'),qaT('Messwert erfassen','Log a measurement'),'weightForm()']];
   rows.push(
     ['meal','list-plus',qaT('Eigene Mahlzeit','Custom meal'),qaT('Kombi aus mehreren Lebensmitteln','Combo of several foods'),'qaQuickMeal()'],
     ['recipe','cooking-pot',qaT('Eigenes Rezept','Custom recipe'),qaT('Zutaten kombinieren','Combine ingredients'),'recipeEditor()'],
@@ -56,6 +52,7 @@ function qaQuickRows(){
   );
   // Später ergänzte Einträge anderer Module bleiben erhalten.
   if(typeof quickAddActions!=='undefined'&&Array.isArray(quickAddActions))for(let [key,label,note,action] of quickAddActions)if(!qaKnownQuick.has(key)&&typeof action==='string')rows.push([key,typeof quickAddIcons!=='undefined'&&quickAddIcons[key]||'plus-circle',label,note,action]);
+  rows.push(['ruler','ruler',qaT('Körpermaße erfassen','Log body measurements'),qaT('Maße & Biometrie','Measures & biometrics'),'measurementsForm()']);
   return rows;
 }
 function qaQuickHTML(){
@@ -91,7 +88,7 @@ quickAddMenu=function(){
 const qaPages={
   account:{title:['Konto','Account'],icon:'user-gear',body:()=>qaAccountBody()},
   profile:{title:['Profil','Profile'],icon:'user-circle',body:()=>qaProfileBody()},
-  targets:{title:['Ziele','Targets'],icon:'target',body:()=>qaTargetsBody()},
+  targets:{title:['Deine Ziele','Your targets'],icon:'target',body:()=>qaTargetsBody()},
   display:{title:['Darstellung','Display'],icon:'circle-half',body:()=>qaDisplayBody()}
 };
 function qaPageTitle(key){let t=qaPages[key]?.title;return t?qaT(t[0],t[1]):''}
@@ -115,12 +112,7 @@ function qaMainRows(){
 }
 function qaDiscoverRows(){
   let rows=[
-    {label:qaT('Trainingsfortschritt','Training progress'),detail:qaT('Statistik, Muskeln & Rückblick','Stats, muscles & recap'),icon:'chart-line-up',action:"qaGoTrain('insights')"},
-    {label:qaT('Kalender','Calendar'),detail:qaT('Trainings & Aktivitäten','Workouts & activities'),icon:'calendar-blank',action:"qaGoTrain('calendar')"},
-    {label:qaT('Level & Rekorde','Level & records'),detail:qaT('XP, Bestleistungen & Serien','XP, personal bests & streaks'),icon:'trophy',action:"qaGoTrain('records')"},
-    {label:qaT('Körper & Entwicklung','Body & progress'),detail:qaT('Gewichtstrend, Wochenmittel & Maße','Weight trend, weekly averages & measurements'),icon:'scales',action:"qaSection('body')"},
-    {label:qaT('Rezepte','Recipes'),detail:qaT('Eigene Rezepte verwalten','Manage your recipes'),icon:'book-open',action:"qaFood('recipes')"},
-    {label:qaT('Kombis','Combos'),detail:qaT('Eigene Mahlzeiten aus mehreren Lebensmitteln','Custom meals from several foods'),icon:'list-plus',action:"qaFood('meals')"}
+    {label:qaT('Körper & Entwicklung','Body & progress'),detail:qaT('Gewichtstrend & Wochenmittel','Weight trend & weekly averages'),icon:'scales',action:"qaSection('body')"}
   ];
   return rows.map(r=>qaRow({...r,label:esc(r.label),detail:esc(r.detail),chevron:true,cls:'qamenulink'})).join('');
 }
@@ -156,22 +148,113 @@ function qaProfileBody(){
   let p=state.profile||{},w=typeof currentWeight==='function'?currentWeight():null,h=p.height;
   let bmi=Number.isFinite(w)&&Number.isFinite(h)&&h>0?w/(h/100)**2:null,bf=null;
   try{if(typeof currentBodyFat==='function')bf=currentBodyFat()}catch{}
-  let edit='settings()',value=(x,unit='')=>Number.isFinite(x)?qaNum(x)+unit:'–';
+  let value=(x,unit='')=>Number.isFinite(x)?qaNum(x)+unit:'–';
   let rows=[
-    qaRow({label:qaT('Alter','Age'),value:value(p.age),action:edit,chevron:true}),
-    qaRow({label:qaT('Geschlecht','Sex'),value:qaSexLabel(p.sex),action:edit,chevron:true}),
-    qaRow({label:qaT('Größe','Height'),value:value(h,' cm'),action:edit,chevron:true}),
-    qaRow({label:qaT('Gewicht','Weight'),value:value(w,' kg'),action:'weightForm()',chevron:true}),
-    qaRow({label:qaT('Zielgewicht','Target weight'),value:value(p.target,' kg'),action:edit,chevron:true}),
+    qaRow({label:qaT('Alter','Age'),value:value(p.age),action:"qaEdit('age')",chevron:true}),
+    qaRow({label:qaT('Geschlecht','Sex'),value:qaSexLabel(p.sex),action:"qaEdit('sex')",chevron:true}),
+    qaRow({label:qaT('Größe','Height'),value:value(h,' cm'),action:"qaEdit('height')",chevron:true}),
+    qaRow({label:qaT('Gewicht','Weight'),value:value(w,' kg'),action:"qaEdit('weight')",chevron:true}),
+    qaRow({label:qaT('Zielgewicht','Target weight'),value:value(p.target,' kg'),action:"qaEdit('target')",chevron:true}),
     qaRow({label:qaT('Body-Mass-Index (BMI)','Body mass index (BMI)'),value:bmi===null?'–':qaNum(Math.round(bmi*10)/10)}),
-    qaRow({label:qaT('Körperfett','Body fat'),detail:bf?esc((bf.estimated?qaT('Geschätzt (US Navy)','Estimated (US Navy)'):qaT('Gemessen','Measured'))+' · '+(typeof fmtDate==='function'?fmtDate(bf.date):bf.date)):'',value:bf?qaNum(Math.round(bf.value*10)/10)+' %':'–',action:'measurementsForm()',chevron:true})
+    qaRow({label:qaT('Körperfett','Body fat'),value:bf?qaNum(Math.round(bf.value*10)/10)+' %':'–',action:'measurementsForm()',chevron:true})
   ].join('');
   let body=[
     qaRow({label:qaT('Gewichtsverlauf & Wochenmittel','Weight trend & weekly average'),icon:'chart-line-up',action:"qaSection('body')",chevron:true}),
     qaRow({label:qaT('Körpermaße & Biometrie','Body measurements & biometrics'),icon:'ruler',action:'measurementsForm()',chevron:true}),
     qaRow({label:qaT('Gewicht erfassen','Log weight'),icon:'scales',action:'weightForm()',chevron:true,cls:'dsaction'})
   ].join('');
-  return qaGroup('',rows,'qaprofile',qaT('Alter, Geschlecht, Größe und Zielgewicht änderst du in „Profil & Ziele“. Der BMI wird berechnet.','Change age, sex, height and target weight in “Profile & goals”. BMI is calculated.'))+qaGroup(qaT('Körper & Entwicklung','Body & progress'),body);
+  return qaGroup('',rows,'qaprofile')+qaGroup(qaT('Körper & Entwicklung','Body & progress'),body);
+}
+
+/* Small sheets use the existing planner's inputs and complete commit chain.
+   Only the selected label is moved out of the hidden backing form. No draft is
+   written to state, and closing the sheet discards all unsaved inputs. */
+const qaFields={
+  age:['pr-age','Alter','Age'],sex:['pr-sex','Geschlecht','Sex'],height:['pr-height','Größe','Height'],
+  weight:['pr-weight','Gewicht','Weight'],target:['pr-target','Zielgewicht','Target weight'],
+  kcal:['manual-kcal','Kalorienziel','Calorie target'],mode:['pl-mode','Modus','Mode'],
+  direction:['pl-direction','Richtung','Direction'],pace:['pl-pace','Zieltempo','Goal pace'],
+  macroMode:['pl-macros','Makro-Modus','Macro mode'],protein:['pl-protein','Protein pro kg','Protein per kg'],
+  fat:['pl-fat','Fett pro kg','Fat per kg'],p:['manual-p','Protein','Protein'],c:['manual-c','Kohlenhydrate','Carbohydrates'],f:['manual-f','Fett','Fat'],
+  method:['pr-method','Ruheumsatz','Resting energy'],rmr:['pr-rmr','Gemessener Ruheumsatz','Measured resting energy'],
+  activity:['pr-activity','Aktivität','Activity'],kcalMode:['pr-kcal-mode','Kalorienberechnung','Energy calculation'],
+  baseline:['pr-baseline-factor','Alltag ohne Sport','Daily activity'],adaptive:['pl-adaptive','Gewichtsanpassung','Weight adaptation']
+};
+let qaEditKey='';
+function qaEdit(key){
+  let config=qaFields[key];if(!config)return;
+  qaEditKey=key;
+  openModal(qaT(config[1],config[2]),`<div id="profile-form" hidden inert></div><form class="qaedit" id="qa-edit-form" onsubmit="qaSubmitEdit(event)"><div id="qa-edit-fields"></div><p id="qa-edit-preview" class="note" role="status"></p><button class="btn full" type="submit">${qaT('Speichern','Save')}</button></form>`);
+  profileForm();
+  // experience.js replaces sex with a fixed male hidden input. Restore the
+  // actual saved parameter for every small sheet, including unrelated edits.
+  let sex=document.getElementById('pr-sex');
+  if(sex)sex.outerHTML=`<label>${qaT('Geschlecht','Sex')}<select id="pr-sex">${state.profile?'':`<option value="" selected>${qaT('Auswählen','Choose')}</option>`}<option value="female" ${state.profile?.sex==='female'?'selected':''}>${qaT('Weiblich','Female')}</option><option value="male" ${state.profile?.sex==='male'?'selected':''}>${qaT('Männlich','Male')}</option></select></label>`;
+  let special=document.getElementById('pr-special');if(special)special.checked=state.profile?.special===true;
+  qaMountEditField(key);
+  document.getElementById('qa-edit-form').addEventListener('input',qaEditPreview);
+}
+function qaMountEditField(key){
+  let config=qaFields[key];if(!config)return;qaEditKey=key;
+  document.getElementById('mt').textContent=qaT(config[1],config[2]);
+  let fields=document.getElementById('qa-edit-fields'),backing=document.getElementById('planner-form');
+  // A previously skipped empty profile is completed one field at a time in
+  // this same unsaved form. It is committed only once the full profile is valid.
+  for(let label of fields.querySelectorAll(':scope > label'))backing.append(label);
+  let input=document.getElementById(config[0]),label=input?.closest('label');
+  if(!label||!fields)return;
+  // The backing planner may disable controls that are inactive in its current mode.
+  if(key==='kcal')document.getElementById('pl-mode').value='manual';
+  if(['pace','direction'].includes(key))document.getElementById('pl-mode').value='auto';
+  if(['p','c','f'].includes(key))document.getElementById('pl-macros').value='manual';
+  if(['protein','fat'].includes(key))document.getElementById('pl-macros').value='auto';
+  if(key==='rmr')document.getElementById('pr-method').value='measured';
+  input.disabled=false;label.hidden=false;label.classList.remove('profileoff');
+  label.querySelectorAll('.segmented').forEach(el=>el.remove());
+  input.classList.remove('segsource');input.removeAttribute('aria-hidden');input.removeAttribute('tabindex');
+  if(input.tagName==='INPUT'&&input.type==='number'){input.type='text';input.inputMode=key==='age'?'numeric':'decimal'}
+  fields.append(label);
+  let error=document.getElementById('plan-error');if(error){error.setAttribute('role','alert');fields.after(error)}
+  qaEditPreview();input.focus();
+}
+function qaEditNumbers(){
+  for(let id of ['pr-age','pr-height','pr-weight','pr-target','pr-rmr','manual-kcal','manual-p','manual-c','manual-f','pl-protein','pl-fat']){
+    let input=document.getElementById(id);if(input)input.value=input.value.replace(',','.');
+  }
+  // Keep the current calorie budget when editing one macro; show the balancing
+  // macro before saving. A calorie edit keeps the current energy proportions.
+  let key=qaEditKey,g=state.goals||{},read=id=>Number(document.getElementById(id)?.value);
+  if(key==='kcal'){
+    let kcal=read('manual-kcal'),r=qaRatioValid(state.plan?.ratio)&&state.plan?.macroInput==='ratio'?state.plan.ratio:qaRatioFromGoals(g);
+    let grams=state.plan?.macroInput==='ratio'&&qaRatioValid(state.plan.ratio)?g:qaGramsFromRatio(kcal,r);for(let k of ['p','c','f'])document.getElementById('manual-'+k).value=grams[k];
+  }else if(['p','c','f'].includes(key)){
+    let grams={p:g.p,c:g.c,f:g.f,[key]:read('manual-'+key)},balance=key==='c'?'f':'c';
+    let kcal=state.plan?.mode==='auto'?planNumbers(collectProfile(),collectPlan(),g).kcal:g.kcal;
+    grams[balance]=Math.round((kcal-Object.entries(grams).filter(([k])=>k!==balance).reduce((sum,[k,v])=>sum+v*(k==='f'?9:4),0))/(balance==='f'?9:4)*10)/10;
+    for(let k of ['p','c','f'])if(k!==key)document.getElementById('manual-'+k).value=grams[k];
+  }
+}
+function qaEditPreview(){
+  qaEditNumbers();let out=document.getElementById('qa-edit-preview');if(!out)return;
+  let button=document.querySelector('#qa-edit-form button[type=submit]');
+  if(button)button.textContent=!state.profile&&['age','sex','height','weight','target'].some(key=>key!==qaEditKey&&!document.getElementById(qaFields[key][0])?.value.trim())?qaT('Weiter','Continue'):qaT('Speichern','Save');
+  if(['kcal','p','c','f'].includes(qaEditKey)){
+    let m=collectManual();out.textContent=`P ${qaNum(m.p)} g · ${qaT('KH','C')} ${qaNum(m.c)} g · F ${qaNum(m.f)} g`;
+  }else out.textContent='';
+}
+function qaSubmitEdit(event){
+  event.preventDefault();qaEditNumbers();
+  let input=document.getElementById(qaFields[qaEditKey]?.[0]),raw=input?.value?.trim();
+  if(input?.tagName==='INPUT'&&input.type==='text'&&(!raw||!Number.isFinite(Number(raw))||(qaEditKey==='age'&&!Number.isInteger(Number(raw))))){
+    document.getElementById('plan-error').textContent=qaT('Bitte einen gültigen Wert eingeben.','Enter a valid value.');return false;
+  }
+  if(!state.profile&&['age','sex','height','weight','target'].includes(qaEditKey)){
+    let bounds={age:[18,100],height:[120,230],weight:[30,300],target:[30,300]},valid=key=>{let value=document.getElementById(qaFields[key][0]).value.trim();return key==='sex'?['male','female'].includes(value):value!==''&&Number.isFinite(Number(value))&&Number(value)>=bounds[key][0]&&Number(value)<=bounds[key][1]&&(key!=='age'||Number.isInteger(Number(value)))};
+    if(!valid(qaEditKey)){document.getElementById('plan-error').textContent=qaT('Bitte einen gültigen Wert eingeben.','Enter a valid value.');return false}
+    let next=['age','sex','height','weight','target'].find(key=>!valid(key));
+    if(next){document.getElementById('plan-error').textContent='';qaMountEditField(next);return false}
+  }
+  return commitProfile(event);
 }
 
 /* ---------- Unterseite Ziele ---------- */
@@ -200,25 +283,24 @@ function qaMacroEditor(){
   let seg=`<div class="segmented qaseg" role="group" aria-label="${qaT('Makro-Eingabe','Macro input')}" data-motion-indicator><button type="button" aria-pressed="${!open}" onclick="qaMacroInput('grams',this)">${qaT('Gramm','Grams')}</button><button type="button" aria-pressed="${open}" onclick="qaMacroInput('ratio',this)">${qaT('Verhältnis','Ratio')}</button></div>`;
   let input=(k,label)=>`<label class="qaratiofield">${label}<span class="qaratioinput"><input id="qa-ratio-${k}" type="number" inputmode="numeric" min="5" max="80" step="1" required value="${r[k]}" oninput="qaRatioPreview()"><span aria-hidden="true">%</span></span></label>`;
   let form=`<form class="qaratio" id="qa-ratio-form" onsubmit="qaSaveRatio(event)" ${open?'':'hidden'}><div class="qaratiogrid">${input('p',qaT('Protein','Protein'))}${input('c',qaT('Kohlenh.','Carbs'))}${input('f',qaT('Fett','Fat'))}</div><p class="note" id="qa-ratio-preview" role="status"></p><button type="submit" class="btn full">${qaT('Verhältnis übernehmen','Apply ratio')}</button></form>`;
-  let grams=`<div id="qa-grams-edit" ${open?'hidden':''}>${qaGroup('',qaRow({label:qaT('Gramm bearbeiten','Edit grams'),action:'settings()',chevron:true,cls:'dsaction'}))}</div>`;
-  let basis=qaT(`Verhältnis bezogen auf Grundziel ${qaNum(g.kcal)} kcal. Gespeicherte Gramm bleiben auf dieses Ziel bezogen.`,`Ratio based on base target ${qaNum(g.kcal)} kcal. Saved grams remain based on this target.`);
-  if(state.profile?.kcalMode==='baseline')basis+=' '+qaT('Grundbedarf + Sport: Bei automatischem Kalorienziel enthält das Tagesziel den Sportzuschlag; manuelle Makroziele bleiben unverändert.','Baseline + exercise: with automatic calories, the daily target includes exercise; manual macro targets stay unchanged.');
-  return `<div class="qamacroedit"><p class="dsgroupfoot">${basis}</p>${seg}${form}${grams}</div>`;
-}
-function qaEnergyGroup(){
-  let p=state.profile;if(!p||typeof energyFor!=='function'||(typeof profileError==='function'&&profileError(p)))return '';
-  let e=null;try{let w=typeof currentWeight==='function'?currentWeight():null;e=energyFor(p,Number.isFinite(w)?w:p.weight,state.plan,typeof today==='function'?today():undefined)}catch{}
-  if(!e||!Number.isFinite(e.rmr))return '';
-  let rows=qaRow({label:qaT('Ruheumsatz','Resting energy'),value:qaNum(Math.round(e.rmr))+' kcal'});
-  if(p.kcalMode==='baseline'&&Number.isFinite(e.baseline)){rows+=qaRow({label:qaT('Grundbedarf mit Alltag','Baseline incl. daily activity'),value:qaNum(Math.round(e.baseline))+' kcal'});rows+=qaRow({label:qaT('Sport heute','Exercise today'),value:qaNum(Math.round(e.sport||0))+' kcal'})}
-  if(Number.isFinite(e.tdee))rows+=qaRow({label:qaT('Erhalt geschätzt','Estimated maintenance'),value:qaNum(Math.round(e.tdee))+' kcal'});
-  return qaGroup(qaT('Energieverbrauch','Energy expenditure'),rows,'',qaT('Schätzung aus deinem Profil. Bearbeitet wird in „Profil & Ziele“.','Estimate from your profile. Edit it in “Profile & goals”.'));
+  let grams=`<div id="qa-grams-edit" ${open?'hidden':''}>${qaGroup('',qaRow({label:qaT('Gramm bearbeiten','Edit grams'),action:"qaEdit('p')",chevron:true,cls:'dsaction'}))}</div>`;
+  return `<div class="qamacroedit">${seg}${form}${grams}</div>`;
 }
 function qaWaterGroup(){
   let w=qaWater(),rec=null;try{rec=window.pulsData87?.waterRecommendation?.()}catch{}
   let goal=rec&&Number.isFinite(rec.ml)?qaNum(rec.ml)+' ml':'–',mode=w.mode==='manual'?qaT('Eigenes Ziel','Custom'):rec?.mode==='standard'?qaT('Standard ohne Gewicht','Default without weight'):qaT('Automatisch','Automatic');
-  let action=typeof fdWaterInfo==='function'?'fdWaterInfo()':'waterGoalForm()';
-  return qaGroup(qaT('Wasser','Water'),qaRow({label:qaT('Wasserziel','Water target'),detail:esc(mode),value:goal,icon:'drop',action,chevron:true})+qaRow({label:qaT('Glasgröße','Glass size'),value:qaNum(w.glassMl)+' ml',action,chevron:true}));
+  let action="qaWaterSheet('goal')";
+  return qaGroup(qaT('Wasser','Water'),qaRow({label:qaT('Wasserziel','Water target'),detail:esc(mode),value:goal,icon:'drop',action,chevron:true})+qaRow({label:qaT('Glasgröße','Glass size'),value:qaNum(w.glassMl)+' ml',action:"qaWaterSheet('glass')",chevron:true}));
+}
+function qaWaterSheet(key){
+  let w=qaWater(),glass=key==='glass',rec=window.pulsData87?.waterRecommendation?.();
+  openModal(glass?qaT('Glasgröße','Glass size'):qaT('Wasserziel','Water target'),`<form class="qaedit" onsubmit="qaSaveWater(event,'${glass?'glass':'goal'}')">${glass?'':`<label>${qaT('Modus','Mode')}<select id="qa-water-mode" onchange="document.getElementById('qa-water-value-row').hidden=this.value==='auto'"><option value="auto" ${w.mode!=='manual'?'selected':''}>${qaT('Automatisch','Automatic')}</option><option value="manual" ${w.mode==='manual'?'selected':''}>${qaT('Eigenes Ziel','Custom')}</option></select></label>`}<label id="qa-water-value-row" ${!glass&&w.mode!=='manual'?'hidden':''}>${qaT(glass?'Glasgröße · ml':'Tagesziel · ml',glass?'Glass size · ml':'Daily target · ml')}<input id="qa-water-value" type="text" inputmode="numeric" value="${glass?w.glassMl:state.waterGoal||rec?.ml||2000}"></label><button class="btn full">${qaT('Speichern','Save')}</button></form>`);
+}
+function qaSaveWater(event,key){
+  event.preventDefault();let raw=document.getElementById('qa-water-value').value.trim(),v=Number(raw),mode=document.getElementById('qa-water-mode')?.value;
+  if((key==='glass'||mode==='manual')&&(!raw||!Number.isInteger(v)||v<(key==='glass'?100:500)||v>(key==='glass'?1000:10000))){toast(qaT('Bitte einen gültigen Wert eingeben.','Enter a valid value.'));return false}
+  let w=qaEnsure('water');if(key==='glass')w.glassMl=v;else{w.mode=mode==='manual'?'manual':'auto';state.waterGoal=mode==='manual'?v:0}
+  save();modal.close();render();qaSound('save');return true;
 }
 function qaHighlightGroup(){
   if(typeof nutrientLabels!=='object')return '';
@@ -226,19 +308,52 @@ function qaHighlightGroup(){
   let chips=Object.entries(nutrientLabels).map(([key,[label]])=>{let on=list.includes(key);return `<button type="button" class="qachip" data-qa-nutrient="${esc(key)}" aria-pressed="${on}" ${!on&&full?'aria-disabled="true"':''} onclick="qaHighlight('${esc(key)}',this)">${esc(label)}</button>`}).join('');
   return `<h2 class="dsgrouptitle">${qaT('Hervorgehobene Nährstoffe','Highlighted nutrients')}</h2><section class="dsgroup qachips" role="group" aria-label="${qaT('Hervorgehobene Nährstoffe','Highlighted nutrients')}">${chips}</section><p class="dsgroupfoot" id="qa-highlight-count" role="status">${qaHighlightNote(list.length)}</p>`;
 }
-function qaHighlightNote(count){return qaT(`${count} von ${qaHighlightMax} ausgewählt · erscheinen auf der Mikro-Folie im Essen-Tab`,`${count} of ${qaHighlightMax} selected · shown on the micronutrient slide in Food`)}
+function qaHighlightNote(count){return `${count} / ${qaHighlightMax}`}
+function qaTargetRow(key,label,value){return qaRow({label,value,action:`qaEdit('${key}')`,chevron:true})}
+function qaForecast(){
+  let p=state.profile,w=currentWeight();if(!p||profileError(p)||!Number.isFinite(w)||p.special)return '–';
+  let days=forecastDays(w,p.target,energyFor(p,w,state.plan,today()).tdee,qaGoals().kcal);
+  return days===null?'–':days===0?qaT('Erreicht','Reached'):dateAfter(days);
+}
+function qaPaceValue(plan=state.plan){
+  let p=state.profile;if(!p||profileError(p))return '–';
+  let x=planNumbers({...p,weight:currentWeight()}, {...plan,mode:'auto'},state.goals);
+  return Number.isFinite(x.change)?(x.change>0?'+':x.change<0?'−':'')+qaNum(Math.round(Math.abs(x.change)*100))+' %':'–';
+}
 function qaTargetsBody(){
-  let plan=state.plan||{},auto=plan.mode==='auto',g=qaGoals();
-  let goal=typeof accountGoalSummary==='function'?accountGoalSummary():'';
-  let planRows=qaRow({label:qaT('Richtung','Direction'),value:auto?qaName(qaDirectionNames,plan.direction):qaT('Selbst festgelegt','Set manually'),action:'settings()',chevron:true});
-  if(auto&&plan.direction!=='maintain')planRows+=qaRow({label:qaT('Zieltempo','Goal pace'),value:qaName(qaPaceNames,plan.pace),action:'settings()',chevron:true});
-  if(typeof planTargetDate==='function'&&auto)planRows+=qaRow({label:qaT('Zielgewicht voraussichtlich','Target weight expected'),value:esc(planTargetDate())});
-  planRows+=qaRow({label:qaT('Plan im Detail','Plan details'),action:"qaSection('plan')",chevron:true,cls:'dsaction'});
-  let macroFoot=qaManualMacros(plan)?qaT('Eingabe in Gramm oder als Verhältnis der Kalorien. Gramm werden aus dem Verhältnis berechnet.','Enter grams or a ratio of calories. Grams are calculated from the ratio.'):qaT(`Automatisch pro kg Körpergewicht: Protein ${qaNum(plan.protein)} g, Fett ${qaNum(plan.fat)} g. Kohlenhydrate füllen den Rest.`,`Automatic per kg body weight: protein ${qaNum(plan.protein)} g, fat ${qaNum(plan.fat)} g. Carbs fill the rest.`);
-  let macros=qaGroup(qaT('Makros','Macros'),qaMacroRows(g),'qamacros',macroFoot)+(qaManualMacros(plan)?qaMacroEditor():qaGroup('',qaRow({label:qaT('Makros anpassen','Adjust macros'),action:'settings()',chevron:true,cls:'dsaction'})));
-  let nutrients=qaGroup(qaT('Nährstoffziele','Nutrient targets'),qaRow({label:qaT('Eigene Nährstoffziele','Custom nutrient targets'),detail:qaT('Vitamine, Mineralstoffe & mehr','Vitamins, minerals & more'),icon:'list-plus',action:'microTargetForm()',chevron:true}));
-  let adaptive=typeof accountSections!=='undefined'&&accountSections.some(x=>x.key==='adaptive')?qaGroup(qaT('Automatik','Automation'),qaRow({label:qaT('Adaptiver Erhalt','Adaptive maintenance'),detail:qaT('Verlauf & Kalibrierung','History & calibration'),icon:'chart-line-up',action:"qaSection('adaptive')",chevron:true})):'';
-  return goal+qaGroup(qaT('Plan','Plan'),planRows)+macros+qaEnergyGroup()+qaWaterGroup()+nutrients+qaHighlightGroup()+adaptive;
+  let p=state.profile||{},plan=state.plan||{},g=qaGoals(),base=state.goals||{},e=null;
+  try{if(state.profile&&!profileError(p))e=energyFor(p,currentWeight(),plan,today())}catch{}
+  let row=qaTargetRow;
+  let energy=row('kcal',qaT('Kalorienziel','Calorie target'),qaNum(base.kcal)+' kcal')
+    +row('mode',qaT('Modus','Mode'),plan.mode==='auto'?qaT('Berechnet','Calculated'):qaT('Selbst','Custom'))
+    +row('direction',qaT('Richtung','Direction'),qaName(qaDirectionNames,plan.direction))
+    +row('pace',qaT('Zieltempo','Goal pace'),qaPaceValue(plan))
+    +row('target',qaT('Zielgewicht','Target weight'),Number.isFinite(p.target)?qaNum(p.target)+' kg':'–')
+    +qaRow({label:qaT('Prognose','Forecast'),value:qaForecast(),action:'qaForecastSheet()',chevron:true})
+    +row('kcalMode',qaT('Kalorienberechnung','Energy calculation'),p.kcalMode==='baseline'?qaT('Grundbedarf + Sport','Baseline + exercise'):qaT('Klassisch','Classic'))
+    +row('method',qaT('Ruheumsatz','Resting energy'),e?qaNum(Math.round(e.rmr))+' kcal':'–')
+    +(p.method==='measured'?row('rmr',qaT('Gemessener Ruheumsatz','Measured resting energy'),qaNum(p.rmr)+' kcal'):'')
+    +(p.kcalMode==='baseline'?row('baseline',qaT('Alltag ohne Sport','Daily activity'),qaNum(p.baselineFactor||1.2)):row('activity',qaT('Aktivität','Activity'),Number.isFinite(p.activity)?qaNum(p.activity):'–'))
+    +row('adaptive',qaT('Gewichtsanpassung','Weight adaptation'),plan.adaptive===false?qaT('Aus','Off'):qaT('An','On'));
+  let macros=row('macroMode',qaT('Modus','Mode'),qaManualMacros(plan)?qaT('Selbst','Custom'):qaT('Pro kg','Per kg'))
+    +qaRow({label:qaT('Gramm / Verhältnis','Grams / ratio'),value:plan.macroInput==='ratio'&&qaRatioValid(plan.ratio)?['p','c','f'].map(k=>plan.ratio[k]).join(' / ')+' %':qaT('Gramm','Grams'),action:'qaRatioSheet()',chevron:true})
+    +['p','c','f'].map((k,i)=>row(k,[qaT('Protein','Protein'),qaT('Kohlenhydrate','Carbohydrates'),qaT('Fett','Fat')][i],qaNum(base[k])+' g')).join('');
+  if(!qaManualMacros(plan))macros+=row('protein',qaT('Protein pro kg','Protein per kg'),qaNum(plan.protein)+' g')+row('fat',qaT('Fett pro kg','Fat per kg'),qaNum(plan.fat)+' g');
+  let nutrients=Object.entries(typeof nutrientLabels==='object'?nutrientLabels:{}).map(([key,[label,unit]])=>qaRow({label:esc(label),value:Number.isFinite(state.microGoals?.[key])?qaNum(state.microGoals[key])+' '+esc(unit):'–',action:`qaNutrientSheet('${key}')`,chevron:true})).join('');
+  let highlighted=(qaDisplay().highlighted||[]).length;
+  let adaptive=typeof accountSections!=='undefined'&&accountSections.some(x=>x.key==='adaptive')?qaGroup('',qaRow({label:qaT('Adaptiver Erhalt','Adaptive maintenance'),value:e?qaNum(Math.round(e.tdee))+' kcal':'–',action:"qaSection('adaptive')",chevron:true})):'';
+  return qaGroup(qaT('Energie','Energy'),energy)+qaGroup(qaT('Makros','Macros'),macros,'qamacros')+qaWaterGroup()+qaGroup(qaT('Nährstoffziele','Nutrient targets'),nutrients)+qaGroup('',qaRow({label:qaT('Hervorgehobene Nährstoffe','Highlighted nutrients'),value:highlighted+' / '+qaHighlightMax,action:'qaHighlightSheet()',chevron:true}))+adaptive;
+}
+function qaForecastSheet(){openModal(qaT('Prognose','Forecast'),qaGroup('',qaRow({label:qaT('Zielgewicht','Target weight'),value:Number.isFinite(state.profile?.target)?qaNum(state.profile.target)+' kg':'–',action:"qaEdit('target')",chevron:true})+qaRow({label:qaT('Datum','Date'),value:qaForecast()})))}
+function qaRatioSheet(){qaRatioOpen=true;openModal(qaT('Makro-Verhältnis','Macro ratio'),qaMacroEditor());qaRatioPreview()}
+function qaHighlightSheet(){openModal(qaT('Hervorgehobene Nährstoffe','Highlighted nutrients'),qaHighlightGroup())}
+function qaNutrientSheet(key){
+  if(!Object.hasOwn(nutrientLabels,key))return;
+  microTargetForm();let input=document.getElementById('micro-'+key),form=input?.closest('form');if(!form)return;
+  form.classList.add('qaedit');form.querySelectorAll('label').forEach(label=>{label.hidden=label!==input.closest('label')});form.querySelectorAll('.note').forEach(el=>el.remove());
+  input.type='text';input.inputMode='decimal';
+  form.onsubmit=event=>{event.preventDefault();let raw=input.value.trim().replace(',','.');if(raw&&!Number.isFinite(Number(raw))){toast(qaT('Bitte einen gültigen Wert eingeben.','Enter a valid value.'));return}input.value=raw;saveMicroTargets(event)};
+  document.getElementById('mt').textContent=nutrientLabels[key][0];input.focus();
 }
 
 /* ---------- Unterseite Darstellung ---------- */
@@ -250,7 +365,7 @@ function qaViewsGroup(){
   let {on,list}=qaViewOrder();
   let fixed=`<div class="dsrow qaviewrow" data-flip-id="view-macros"><span class="dsrowtext"><span>${qaViewName('macros')}</span><small>${qaT('Immer an erster Stelle','Always first')}</small></span></div>`;
   let rows=list.map(key=>{let active=on.includes(key),i=on.indexOf(key);return `<div class="dsrow qaviewrow" data-flip-id="view-${key}"><span class="dsrowtext"><span>${qaViewName(key)}</span></span>${active?`<span class="qamove"><button type="button" class="qaicon" aria-label="${qaViewName(key)} ${qaT('nach oben','up')}" ${i===0?'disabled':''} onclick="qaViewMove('${key}',-1)">${qaIcon('caret-up')}</button><button type="button" class="qaicon" aria-label="${qaViewName(key)} ${qaT('nach unten','down')}" ${i===on.length-1?'disabled':''} onclick="qaViewMove('${key}',1)">${qaIcon('caret-down')}</button></span>`:''}<input class="qaswitch" type="checkbox" role="switch" aria-label="${qaViewName(key)}" ${active?'checked':''} onchange="qaViewToggle('${key}',this.checked)"></div>`}).join('');
-  return qaGroup(qaT('Folien der Tagesübersicht','Daily summary slides'),fixed+rows,'qaviews',qaT('Reihenfolge und Sichtbarkeit der Folien im Essen-Tab.','Order and visibility of the slides in Food.'));
+  return qaGroup(qaT('Folien der Tagesübersicht','Daily summary slides'),fixed+rows,'qaviews');
 }
 function qaDisplayBody(){
   let d=qaDisplay(),scheme='system';try{if(typeof getColorScheme==='function')scheme=getColorScheme()}catch{}
@@ -258,11 +373,11 @@ function qaDisplayBody(){
   let language=qaGroup('',qaRow({label:qaT('Sprache & App-Icon','Language & app icon'),detail:state.language==='en'?'English':'Deutsch',icon:'text-aa',action:"qaSection('design')",chevron:true}));
   let remaining=`<h2 class="dsgrouptitle">${qaT('Kalorien anzeigen als','Show calories as')}</h2>${qaSeg('remaining',[['eaten',qaT('Gegessen','Eaten')],['remaining',qaT('Übrig','Remaining')]],d.showRemaining?'remaining':'eaten',qaT('Kalorien anzeigen als','Show calories as'))}`;
   let volume=state.soundVolume??35;
-  let feedback=qaSwitch('qa-sound',qaT('Klänge','Sounds'),state.soundEnabled!==false,'qaSetSwitch(\'sound\',this.checked)',qaT('Dezente Töne für Aktionen und Erfolge','Subtle sounds for actions and achievements'))
+  let feedback=qaSwitch('qa-sound',qaT('Klänge','Sounds'),state.soundEnabled!==false,'qaSetSwitch(\'sound\',this.checked)')
     +`<label class="dsrow qavolume"><span class="dsrowtext"><span>${qaT('Lautstärke','Volume')}</span></span><input type="range" min="0" max="70" step="5" value="${volume}" aria-label="${qaT('Lautstärke','Volume')}" oninput="qaVolume(this.value)" onchange="typeof testPulsSound==='function'&&testPulsSound()"></label>`
     +(typeof testPulsSound==='function'?qaRow({label:qaT('Probehören','Preview'),icon:'speaker-high',action:'testPulsSound()',cls:'dsaction'}):'')
-    +qaSwitch('qa-haptics',qaT('Haptik','Haptics'),d.hapticsEnabled!==false,'qaSetSwitch(\'haptics\',this.checked)',qaT('Vibration bei Aktionen, wenn das Gerät sie unterstützt','Vibration for actions where supported'));
-  let motion=`<h2 class="dsgrouptitle">${qaT('Bewegung','Motion')}</h2>${qaSeg('motion',[['system',qaT('Wie System','Like system')],['reduced',qaT('Reduziert','Reduced')]],d.motion==='reduced'?'reduced':'system',qaT('Bewegung','Motion'))}<p class="dsgroupfoot">${qaT('Reduziert schaltet Animationen ab und blendet nur noch kurz ein.','Reduced turns animations off and only fades briefly.')}</p>`;
+    +qaSwitch('qa-haptics',qaT('Haptik','Haptics'),d.hapticsEnabled!==false,'qaSetSwitch(\'haptics\',this.checked)');
+  let motion=`<h2 class="dsgrouptitle">${qaT('Bewegung','Motion')}</h2>${qaSeg('motion',[['system',qaT('Wie System','Like system')],['reduced',qaT('Reduziert','Reduced')]],d.motion==='reduced'?'reduced':'system',qaT('Bewegung','Motion'))}`;
   return appearance+language+qaViewsGroup()+remaining+qaGroup(qaT('Klänge & Haptik','Sounds & haptics'),feedback,'qafeedback')+motion;
 }
 
@@ -306,6 +421,7 @@ if(typeof accountPage==='function'){
     let html=qaAccountBase.apply(this,args);
     if(typeof accountSection!=='undefined'&&accountSection){
       if(qaPages[qaParent])html=html.replace(/(<button type="button" class="accountback"[^>]*>[\s\S]*?<span>)Konto(<\/span>)/,`$1${esc(qaPageTitle(qaParent))}$2`);
+      if(accountSection==='body')html=html.replace(/<button class="textbtn" onclick="measurementsForm\(\)">Körpermaße erfassen<\/button><button class="textbtn" onclick="measurementsForm\(\)">Biometrie<\/button>/,'<button class="textbtn" onclick="measurementsForm()">'+qaT('Körpermaße & Biometrie','Body measurements & biometrics')+'</button>');
       return html;
     }
     if(qaPages[qaPage])return qaDetail(qaPage);
@@ -377,13 +493,13 @@ function qaHighlight(key,button){
   let box=button?.closest?.('.qachips');
   if(box){box.querySelectorAll('[data-qa-nutrient]').forEach(b=>{let active=list.includes(b.dataset.qaNutrient);b.setAttribute('aria-pressed',String(active));if(!active&&list.length>=qaHighlightMax)b.setAttribute('aria-disabled','true');else b.removeAttribute('aria-disabled')})}
   let note=document.getElementById('qa-highlight-count');if(note)note.textContent=qaHighlightNote(list.length);
+  if(button?.closest?.('#mb'))render();
   if(on)qaMotion()?.success?.(button);
 }
 function qaMacroInput(mode,button){
   let form=document.getElementById('qa-ratio-form'),grams=document.getElementById('qa-grams-edit');
   if(mode==='grams'){
     qaRatioOpen=false;
-    if(state.plan?.macroInput==='ratio'){state.plan.macroInput='grams';save()}
   }else if(mode==='ratio'){qaRatioOpen=true}else return;
   if(form)form.hidden=mode!=='ratio';if(grams)grams.hidden=mode==='ratio';
   qaPress(button);qaSound('toggle');if(mode==='ratio'){qaRatioPreview();qaMotion()?.enter?.(form)}
@@ -394,17 +510,17 @@ function qaRatioPreview(){
   let r=qaRatioRead(),sum=r.p+r.c+r.f,kcal=+state.goals?.kcal||0;
   if(!qaRatioValid(r)){out.textContent=Number.isFinite(sum)?qaT(`Summe ${sum} %. Jeder Wert 5 bis 80 %, zusammen 100 %.`,`Total ${sum} %. Each 5 to 80 %, together 100 %.`):qaT('Bitte ganze Zahlen eingeben.','Please enter whole numbers.');out.classList.add('qaerror');return}
   out.classList.remove('qaerror');let g=qaGramsFromRatio(kcal,r);
-  out.textContent=qaT(`Bezogen auf Grundziel ${qaNum(kcal)} kcal: P ${qaNum(g.p)} g · KH ${qaNum(g.c)} g · F ${qaNum(g.f)} g`,`Based on base target ${qaNum(kcal)} kcal: P ${qaNum(g.p)} g · C ${qaNum(g.c)} g · F ${qaNum(g.f)} g`);
+  out.textContent=qaT(`${qaNum(kcal)} kcal · P ${qaNum(g.p)} g · KH ${qaNum(g.c)} g · F ${qaNum(g.f)} g`,`${qaNum(kcal)} kcal · P ${qaNum(g.p)} g · C ${qaNum(g.c)} g · F ${qaNum(g.f)} g`);
 }
 function qaSaveRatio(event){
   event?.preventDefault?.();
   let r=qaRatioRead(),kcal=+state.goals?.kcal;
   if(!qaRatioValid(r)){qaRatioPreview();if(typeof toast==='function')toast(qaT('Verhältnis prüfen: 5 bis 80 % je Wert, zusammen 100 %','Check ratio: 5 to 80 % each, 100 % in total'));qaSound('warning');return false}
-  if(!qaManualMacros()||!(kcal>=1000&&kcal<=20000)){if(typeof toast==='function')toast(qaT('Zuerst eigene Makros und ein Kalorienziel festlegen','Set custom macros and a calorie target first'));return false}
-  state.plan.macroInput='ratio';state.plan.ratio={p:r.p,c:r.c,f:r.f};
+  if(!(kcal>=1000&&kcal<=20000)){if(typeof toast==='function')toast(qaT('Zuerst eigene Makros und ein Kalorienziel festlegen','Set custom macros and a calorie target first'));return false}
+  state.plan.macroMode='manual';state.plan.macroInput='ratio';state.plan.ratio={p:r.p,c:r.c,f:r.f};
   state.goals={...state.goals,...qaGramsFromRatio(kcal,r)};
   if(typeof recordGoalHistory==='function')recordGoalHistory(state.goals,typeof currentWeight==='function'?currentWeight():undefined);
-  save();qaSound('save');qaRatioOpen=false;render();
+  save();qaSound('save');qaRatioOpen=false;if(typeof modal!=='undefined'&&modal.open)modal.close();render();
   if(typeof toast==='function')toast(qaT('Makros aus Verhältnis gespeichert','Macros saved from ratio'));
   qaMotion()?.success?.('.qamacros');
   return true;
