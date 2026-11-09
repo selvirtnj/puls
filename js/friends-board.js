@@ -281,7 +281,8 @@ function persistSeen(index){
 let rankBase={state:null,index:-1};
 function celebrate(root=document){
  const s=currentState(),r=ownRank();if(!r||!s)return false;
- const seen=data()?.display?.().lastRankSeen;
+ const storedSeen=data()?.display?.().lastRankSeen;
+ const seen=Number.isInteger(storedSeen)?Math.min(24,storedSeen):storedSeen;
  if(!Number.isInteger(seen)){persistSeen(r.rankIndex);rankBase={state:s,index:r.rankIndex};return false} // Erste Anzeige: merken, nicht feiern.
  // App-Start (noch kein Profil gesehen): ungesehener Aufstieg zählt. Wechsel zu einem anderen Profilobjekt: nur Ausgangspunkt.
  if(rankBase.state&&rankBase.state!==s){rankBase={state:s,index:Math.max(r.rankIndex,seen)};return false}

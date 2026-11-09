@@ -48,8 +48,9 @@ function classify(ex){
  const n=norm(ex?.name),equipment=norm(ex?.equipment),all=n+' '+equipment;
  // Assisted/counterbalanced/bodyweight-only movements and ambiguous specialty
  // lifts are not comparable by a positive recorded external load.
- if(!n||/assist|unterstutzt|gravitron|negativ|eccentric|australian|inverted|\bband(?:s|ed)?\b|push up|pushup|plyo|jump|isometric|one arm chin|one arm pull|muscle up|bench dip|sissy|split squat|bulgarian|pistol|lunge|thruster|clean|snatch|jerk|good morning|calf|waden|rowing/.test(all))return null;
- if(/pullup|pull up|chin up|chinup|klimmzug|\bdips?\b|dipmaschine/.test(n)&&/machine|maschine/.test(all))return null;
+ if(!n||/assist|unterstutzt|gravitron|australian|inverted|\bband(?:s|ed)?\b|push up|pushup|plyo|jump|isometric|one arm chin|one arm pull|muscle up|bench dip|sissy|split squat|bulgarian|pistol|lunge|thruster|clean|snatch|jerk|good morning|calf|waden|rowing/.test(all))return null;
+ if(/pullup|pull up|chin up|chinup|klimmzug|\bdips?\b|dipmaschine/.test(n)&&/negativ|eccentric/.test(all))return null;
+ if(/pullup|pull up|chin up|chinup|klimmzug/.test(n)&&/machine|maschine/.test(all))return null;
  let type;
  if(/romanian|rumanisch|\brdl\b|stiff leg/.test(n))type='rdl';
  else if(/deadlift|kreuzheben/.test(n))type='deadlift';

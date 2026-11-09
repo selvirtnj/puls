@@ -26,14 +26,23 @@ assert.equal(rank('Single-Arm Dumbbell Row',30).ratio,.6);
 assert.equal(rank('Pullups',20).ratio,1.2);assert.equal(rank('Dips',0).ratio,1);
 assert.equal(rank('Pull-Up (Bodyweight)',0).ratio,1,'existing explicitly logged free pull-ups stay supported');
 assert.equal(rank('Assisted Pull-Up Machine',20),undefined);
-for(const name of ['Assistierter Klimmzug','Klimmzug assistiert','Gravitron Klimmzug','Negativ Klimmzug','Negative Pull-Up','Eccentric Pull-Up','Australian Pull-Up','Inverted Pull-Up','Assistierte Dips','Pull-Up Machine','Klimmzug Maschine','Chin-Up Machine','Dip Machine','Dipmaschine','Banded Squat','Squat with Bands']){
+for(const name of ['Assistierter Klimmzug','Klimmzug assistiert','Gravitron Klimmzug','Negativ Klimmzug','Negative Pull-Up','Eccentric Pull-Up','Negative Chin-Up','Eccentric Dips','Negative Dips','Negativ Dipmaschine','Australian Pull-Up','Inverted Pull-Up','Assistierte Dips','Assisted Dip Machine','Assistierte Dipmaschine','Pull-Up Machine','Klimmzug Maschine','Chin-Up Machine','Banded Squat','Squat with Bands']){
  assert.equal(api.classify({name}),null,name);
  const s=sample([entry(name,30,8)],80),saved=JSON.stringify(s);
  assert.equal(api.all(s).length,0,name);
  assert.equal(api.summary(s).strength_rank,null,name);
  assert.equal(JSON.stringify(s),saved,'excluded history remains unchanged');
 }
-for(const name of ['Pull-Up','Dips'])assert.equal(api.classify({name,equipment:'Machine'}),null,'equipment also excludes assistance');
+for(const name of ['Pull-Up','Chin-Up','Klimmzug'])assert.equal(api.classify({name,equipment:'Machine'}),null,'equipment also excludes machine pull-ups');
+for(const name of ['Negativ-Bankdrücken','Negativbankdrücken','Negative Bench Press','Decline Bench Press']){
+ assert.equal(api.classify({name}).type,'bench',name);
+ assert.equal(rank(name,100).e1rm,100,name);
+}
+for(const ex of [{name:'Dip Machine'},{name:'Dipmaschine'},{name:'Seated Dip Machine'},{name:'Dips',equipment:'Machine'}]){
+ const model=api.classify(ex);assert.equal(model.type,'triceps',ex.name);assert.equal(model.bodyweight,false);
+ const s=sample([entry(ex.name,30,8)]);s.exerciseBook=[{id:ex.name,...ex}];
+ assert.equal(api.all(s)[0].e1rm,30*(1+8/30),'machine dips use recorded load without bodyweight');
+}
 assert.equal(api.classify({name:'Squat',equipment:'Bands'}),null);
 assert.equal(rank('Weighted Pull-Up',30,8,80).e1rm,110*(1+8/30),'free pull-ups still add explicitly recorded extra load');
 assert.equal(rank('Weighted Dips',30,8,80).e1rm,110*(1+8/30));

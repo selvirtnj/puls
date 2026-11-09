@@ -128,10 +128,12 @@ for(const count of [0,1,2,5]){
  f.api.view('exercises');assert.match(f.mount.innerHTML,/pulsFriendsBoard.exercise/);assert.match(f.mount.innerHTML,/kg\/KG/);
 }
 
-// Persisted high-water marks survive restart; legacy 25/26 remain valid without downgrading.
+// Legacy backups stay valid; reading their high-water mark clamps the in-memory baseline to 24.
 for(const seen of [14,25,26]){
  const f=fixture({snapshot:snapWith([]),display:{lastRankSeen:seen},strengthScore:8});
+ const maxima=[],math=Object.create(Math);math.max=(...values)=>{maxima.push(values);return Math.max(...values)};f.ctx.Math=math;
  f.setStrength(Math.min(seen,24));assert.equal(f.api.celebrate(),false);
+ assert.deepEqual(maxima.at(-1),[Math.min(seen,24),Math.min(seen,24),Math.min(seen,24)],'current, seen and previous baseline stay capped at 24');
  assert.equal(f.ctx.state.display.lastRankSeen,seen);assert.equal(f.log.saves,0);assert.equal(f.log.toasts.length,0);
  const restored=JSON.parse(JSON.stringify(f.ctx.state));
  assert(f.ctx.validData(restored));assert.equal(restored.display.lastRankSeen,seen,'backup validation retains the existing supported range');
