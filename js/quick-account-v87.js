@@ -40,7 +40,7 @@ function qaQuickTiles(){return [
   ['search','magnifying-glass',qaT('Suchen','Search'),"foodForm();foodTab('search')"],
   ['barcode','barcode',qaT('Barcode','Barcode'),"foodForm();foodTab('barcode')"],
   ['photo','camera',qaT('Foto','Photo'),"foodForm();foodTab('photo')"],
-  ['training','barbell',qaT('Training','Workout'),'quickAddWorkout()']
+  ['training','barbell',qaT('Training','Workout'),'qaQuickTraining()']
 ]}
 function qaQuickRows(){
   let glass=qaWater().glassMl,rows=[
@@ -65,6 +65,21 @@ function qaQuickHTML(){
 }
 function qaQuickWater(){let ml=qaWater().glassMl;if(typeof modal!=='undefined')modal.close();document.body.classList.remove('quickaddopen');if(typeof addWaterGlass==='function')addWaterGlass(ml);qaSound('water')}
 function qaQuickMeal(){foodForm();if(typeof fpMealEdit==='function')fpMealEdit();else if(typeof fpBackTo==='function')fpBackTo('meals')}
+function qaQuickTraining(){
+  if(activeWorkout())return quickAddWorkout();
+  document.body.classList.remove('quickaddopen');
+  let rows=[
+    qaRow({label:qaT('Leeres Workout starten','Start empty workout'),icon:'barbell',action:'startWorkout()',chevron:true}),
+    qaRow({label:qaT('Routine starten','Start routine'),icon:'list-plus',action:'qaQuickRoutines()',chevron:true}),
+    qaRow({label:qaT('Aktivität / Lauf starten','Start activity / run'),icon:'person-simple-run',action:'quickAddRun()',chevron:true})
+  ].join('');
+  return openModal(qaT('Training starten','Start training'),qaGroup('',rows));
+}
+function qaQuickRoutines(){
+  // Indizes statt IDs im Inline-Handler; Namen werden wie sonst über esc ausgegeben.
+  let rows=state.routines.map((r,i)=>qaRow({label:esc(r.name),action:`modal.close();startRoutine(state.routines[${i}].id)`,chevron:true})).join('');
+  return openModal(qaT('Routine starten','Start routine'),rows?qaGroup('',rows):`<p class="note">${qaT('Noch keine Routinen vorhanden.','No routines yet.')}</p>`);
+}
 // Ersetzt die Definition aus refinement.js; Umschalten und body.quickaddopen aus app-polish.js bleiben hier erhalten.
 quickAddMenu=function(){
   if(typeof modal!=='undefined'&&modal.open&&document.body.classList.contains('quickaddopen')){if(typeof dismissSheet==='function')dismissSheet();else modal.close();return}
@@ -186,7 +201,9 @@ function qaMacroEditor(){
   let input=(k,label)=>`<label class="qaratiofield">${label}<span class="qaratioinput"><input id="qa-ratio-${k}" type="number" inputmode="numeric" min="5" max="80" step="1" required value="${r[k]}" oninput="qaRatioPreview()"><span aria-hidden="true">%</span></span></label>`;
   let form=`<form class="qaratio" id="qa-ratio-form" onsubmit="qaSaveRatio(event)" ${open?'':'hidden'}><div class="qaratiogrid">${input('p',qaT('Protein','Protein'))}${input('c',qaT('Kohlenh.','Carbs'))}${input('f',qaT('Fett','Fat'))}</div><p class="note" id="qa-ratio-preview" role="status"></p><button type="submit" class="btn full">${qaT('Verhältnis übernehmen','Apply ratio')}</button></form>`;
   let grams=`<div id="qa-grams-edit" ${open?'hidden':''}>${qaGroup('',qaRow({label:qaT('Gramm bearbeiten','Edit grams'),action:'settings()',chevron:true,cls:'dsaction'}))}</div>`;
-  return `<div class="qamacroedit">${seg}${form}${grams}</div>`;
+  let basis=qaT(`Verhältnis bezogen auf Grundziel ${qaNum(g.kcal)} kcal. Gespeicherte Gramm bleiben auf dieses Ziel bezogen.`,`Ratio based on base target ${qaNum(g.kcal)} kcal. Saved grams remain based on this target.`);
+  if(state.profile?.kcalMode==='baseline')basis+=' '+qaT('Grundbedarf + Sport: Bei automatischem Kalorienziel enthält das Tagesziel den Sportzuschlag; manuelle Makroziele bleiben unverändert.','Baseline + exercise: with automatic calories, the daily target includes exercise; manual macro targets stay unchanged.');
+  return `<div class="qamacroedit"><p class="dsgroupfoot">${basis}</p>${seg}${form}${grams}</div>`;
 }
 function qaEnergyGroup(){
   let p=state.profile;if(!p||typeof energyFor!=='function'||(typeof profileError==='function'&&profileError(p)))return '';
@@ -377,7 +394,7 @@ function qaRatioPreview(){
   let r=qaRatioRead(),sum=r.p+r.c+r.f,kcal=+state.goals?.kcal||0;
   if(!qaRatioValid(r)){out.textContent=Number.isFinite(sum)?qaT(`Summe ${sum} %. Jeder Wert 5 bis 80 %, zusammen 100 %.`,`Total ${sum} %. Each 5 to 80 %, together 100 %.`):qaT('Bitte ganze Zahlen eingeben.','Please enter whole numbers.');out.classList.add('qaerror');return}
   out.classList.remove('qaerror');let g=qaGramsFromRatio(kcal,r);
-  out.textContent=qaT(`Bei ${qaNum(kcal)} kcal: P ${qaNum(g.p)} g · KH ${qaNum(g.c)} g · F ${qaNum(g.f)} g`,`At ${qaNum(kcal)} kcal: P ${qaNum(g.p)} g · C ${qaNum(g.c)} g · F ${qaNum(g.f)} g`);
+  out.textContent=qaT(`Bezogen auf Grundziel ${qaNum(kcal)} kcal: P ${qaNum(g.p)} g · KH ${qaNum(g.c)} g · F ${qaNum(g.f)} g`,`Based on base target ${qaNum(kcal)} kcal: P ${qaNum(g.p)} g · C ${qaNum(g.c)} g · F ${qaNum(g.f)} g`);
 }
 function qaSaveRatio(event){
   event?.preventDefault?.();
@@ -394,16 +411,28 @@ function qaSaveRatio(event){
 }
 // Wird das Kalorienziel im Planer geändert, folgen die Gramm dem gespeicherten Verhältnis.
 // Werden dort Gramm direkt geändert, gilt wieder die Eingabe in Gramm.
-if(typeof commitProfile==='function'){
+if(typeof commitProfile==='function'&&typeof collectManual==='function'){
+  const qaCollectManual=collectManual;
+  const qaGramsChanged=m=>['p','c','f'].some(k=>m[k]!==state.goals?.[k]);
+  // Vorschau und Commit erhalten dieselben abgeleiteten Gramm VOR planError (4/4/9).
+  // Nur unveränderte Gramm folgen dem Verhältnis; direkte Eingaben behalten Vorrang.
+  collectManual=function(...args){
+    let m=qaCollectManual.apply(this,args),plan=collectPlan();
+    if(plan.macroInput!=='ratio'||!qaManualMacros(plan)||!qaRatioValid(plan.ratio)||qaGramsChanged(m))return m;
+    let kcal=m.kcal;
+    if(plan.mode==='auto'){
+      let p=collectProfile();if(profileError(p))return m;
+      kcal=planNumbers(p,plan,m).kcal;
+    }
+    return kcal>=1000&&kcal<=20000?{...m,...qaGramsFromRatio(kcal,plan.ratio)}:m;
+  };
   const qaCommit=commitProfile;
   commitProfile=function(...args){
-    let before={...(state.goals||{})},result=qaCommit.apply(this,args);
+    let changed=qaGramsChanged(qaCollectManual()),result=qaCommit.apply(this,args);
     try{
       let plan=state.plan;
       if(result===true&&plan?.macroInput==='ratio'&&qaManualMacros(plan)&&qaRatioValid(plan.ratio)){
-        let g=state.goals||{};
-        if(['p','c','f'].some(k=>g[k]!==before[k])){plan.macroInput='grams';save()}
-        else if(g.kcal!==before.kcal&&g.kcal>=1000&&g.kcal<=20000){state.goals={...g,...qaGramsFromRatio(g.kcal,plan.ratio)};if(typeof recordGoalHistory==='function')recordGoalHistory(state.goals,typeof currentWeight==='function'?currentWeight():undefined);save();render()}
+        if(changed){plan.macroInput='grams';save()}
       }
     }catch(error){console.error(error)}
     return result;

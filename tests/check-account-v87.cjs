@@ -23,8 +23,7 @@ const c={console,Math,Number,String,Object,Array,Set,Map,JSON,isFinite,state,dat
  quickAddRun(){},weightForm(){},measurementsForm(){},recipeEditor(){},foodForm(){calls.push('foodForm')},foodTab(){},fpMealEdit(){calls.push('meal')},fpBackTo(p){calls.push('pane:'+p)},
  accountPage:()=>'<div class="accountcompact accountrefresh accountoverview"></div>',
  openAccountSection(key){c.accountSection=key;c.render()},closeAccountSection(){c.accountSection='';c.render()},
- go(next){c.page=next;c.render()},render(){renders++},
- commitProfile(){state.goals={...state.goals,...c.nextGoals};return true},nextGoals:{}};
+ go(next){c.page=next;c.render()},render(){renders++}};
 c.window.pulsData87={display:()=>({...state.display}),water:()=>({mode:'auto',glassMl:state.water.glassMl}),waterRecommendation:()=>({ml:2450,mode:'auto'})};
 vm.createContext(c);
 vm.runInContext(fs.readFileSync('js/quick-account-v87.js','utf8'),c,{filename:'js/quick-account-v87.js'});
@@ -53,10 +52,47 @@ let ratioInputs={p:'25',c:'45',f:'30'};c.document.getElementById=id=>/^qa-ratio-
 assert.equal(run('qaSaveRatio()'),true);
 assert.equal(state.plan.macroInput,'ratio');assert.deepEqual({...state.plan.ratio},{p:25,c:45,f:30});assert.deepEqual([state.goals.p,state.goals.c,state.goals.f],[125,225,67]);
 ratioInputs={p:'50',c:'50',f:'10'};const before=JSON.stringify(state.goals);assert.equal(run('qaSaveRatio()'),false);assert.equal(JSON.stringify(state.goals),before);
-// Planer: neues Kalorienziel → Gramm folgen dem Verhältnis; direkt geänderte Gramm → wieder Gramm-Eingabe.
-c.nextGoals={kcal:2400};run('commitProfile()');assert.deepEqual([state.goals.p,state.goals.c,state.goals.f],[150,270,80]);assert.equal(state.plan.macroInput,'ratio');
-c.nextGoals={p:170};run('commitProfile()');assert.equal(state.plan.macroInput,'grams');
 c.document.getElementById=()=>null;
+
+// Echter Planer samt 4/4/9-Prüfung und Commit, kein Commit-Stub (bestehender Formular-Harness).
+const plannerHarness=fs.readFileSync('tests/check-onboarding.cjs','utf8').split('(async()=>{')[0];
+vm.runInNewContext(plannerHarness+String.raw`
+let test=app();
+test.run('state.onboardingComplete=true;state.setupPending=false;setupPending=false;state.profile=null;state.plan={mode:"manual",direction:"lose",pace:"medium",macroMode:"manual",protein:1.8,fat:.8,macroInput:"ratio",ratio:{p:30,c:40,f:30}};state.goals={kcal:2000,p:150,c:200,f:67};page="home"');
+test.run(fs.readFileSync('js/quick-account-v87.js','utf8'));
+test.run('settings()');fill(test,{'manual-kcal':2400});
+assert.equal(test.run('planError(collectProfile(),collectPlan(),collectManual())'),'');
+assert.equal(test.run('commitProfile('+submit+')'),true);
+assert.deepEqual(JSON.parse(test.run('JSON.stringify(state.goals)')),{kcal:2400,p:180,c:240,f:80});
+assert.equal(test.run('state.plan.macroInput'),'ratio');
+assert.equal(test.run('state.goalHistory.at(-1).p'),180);
+// Unpassende direkte Gramm sperren weiterhin und verändern keine Ziele.
+test.run('settings()');fill(test,{'manual-p':300});
+let before=test.run('JSON.stringify(state)');
+assert.equal(test.run('commitProfile('+submit+')'),false);
+assert.equal(test.run('JSON.stringify(state)'),before);
+// Ausgeglichene direkte Grammeingabe schaltet zurück auf Gramm.
+fill(test,{'manual-p':190,'manual-c':230});
+assert.equal(test.run('commitProfile('+submit+')'),true);
+assert.equal(test.run('state.plan.macroInput'),'grams');
+// Tagesprojektion im echten Baseline-Modus: Sport erhöht kcal, manuelle Gramm bleiben Basiswerte.
+test.run('state.profile={...'+JSON.stringify(profile)+',kcalMode:"baseline",baselineFactor:1.2};state.plan.mode="auto";state.plan.direction="maintain";state.plan.macroInput="ratio";dayActivityKcal=()=>400');
+assert.equal(test.run('dayGoals().p'),190);
+assert.equal(test.run('dayGoals().c'),230);
+assert(test.run('dayGoals().kcal')>test.run('state.goals.kcal'));
+assert(test.run('qaMacroEditor()').includes('bezogen auf Grundziel '+test.run('qaNum(state.goals.kcal)')+' kcal'));
+assert(test.run('qaMacroEditor()').includes('manuelle Makroziele bleiben unverändert'));
+`,{require,console});
+
+// Trainingsblatt ruft die bestehenden Wege auf und zeigt sichere Routinenamen.
+c.activeWorkout=()=>null;c.startWorkout=()=>calls.push('empty');c.quickAddWorkout=()=>calls.push('resume');
+state.routines=[{id:'routine-1',name:'Push <A>'}];
+run('qaQuickTraining()');
+for(const action of ['startWorkout()','qaQuickRoutines()','quickAddRun()'])assert(modal.html.includes(action),action);
+assert(!bodyClasses.has('quickaddopen'));
+run('qaQuickRoutines()');assert(modal.html.includes('Push &lt;A&gt;'));assert(modal.html.includes('startRoutine(state.routines[0].id)'));
+state.routines=[];run('qaQuickRoutines()');assert(modal.html.includes('Noch keine Routinen'));
+c.activeWorkout=()=>({id:'active'});run('qaQuickTraining()');assert.equal(calls.at(-1),'resume');
 
 // Hervorgehobene Nährstoffe: höchstens acht, nur bekannte Schlüssel.
 state.display.highlighted=['fiber','vitc','iron','calcium','b12','folate','potassium','magnesium'];
