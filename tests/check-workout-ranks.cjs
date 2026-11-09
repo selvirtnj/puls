@@ -28,7 +28,20 @@ delete ctx.state.workouts[1].exercises[0].exerciseId;delete ctx.state.workouts[1
 assert(ctx.pulsWorkoutRanks.rows('new')[0].after.rankIndex!==null,'legacy exercises without IDs match their canonical name');
 assert.equal(ctx.pulsWorkoutRanks.rows('new')[1].after.rankIndex,null,'unclassified legacy names never inherit another exercise rank');
 ctx.state.profile={};assert(ctx.pulsWorkoutRanks.html('new').includes('Add weight'));
-assert(!ctx.pulsWorkoutRanks.html('new').includes('unranked'));
+assert(ctx.pulsWorkoutRanks.html('new').includes('unranked'),'unclassified lift cannot be unlocked by adding weight');
+for(const name of ['Push-up','Assistierter Klimmzug','Klimmzug Maschine','Banded Squat']){
+ const source=ctx.state;
+ ctx.state={profile:{},workouts:[{id:'unsupported',date:'2026-11-09',finished:true,exercises:[entry(name,30)]}]};
+ const html=ctx.pulsWorkoutRanks.html('unsupported');
+ assert(html.includes('ohne Rang'));assert(!html.includes('pulsWorkoutRanks.weight()'),name);
+ ctx.state=source;
+}
+ctx.state.exerciseBook=[{id:'custom',name:'Bench Press',equipment:'Dumbbell'}];
+ctx.state.workouts.push({id:'custom-meta',date:'2026-11-09',finished:true,exercises:[entry('custom',30)]});
+assert(ctx.pulsWorkoutRanks.html('custom-meta').includes('Add weight'),'exercise book metadata enables a rankable custom ID');
+ctx.exerciseCatalog.push({id:'assisted-library',name:'Pull-Up',equipment:'Machine'});
+ctx.state.workouts.push({id:'library-meta',date:'2026-11-09',finished:true,exercises:[{...entry('assisted-library',30),name:'Pull-Up'}]});
+assert(!ctx.pulsWorkoutRanks.html('library-meta').includes('pulsWorkoutRanks.weight()'),'catalog equipment excludes assisted machines');
 ctx.state.weights=[{date:'2026-11-09',kg:100}];
 assert(ctx.pulsWorkoutRanks.html('new').includes('New</strong>'),'measurement invalidates cached missing ranks');
 assert(!ctx.pulsWorkoutRanks.html('new').includes('Add weight'));

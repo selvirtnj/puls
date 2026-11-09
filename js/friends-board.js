@@ -1,5 +1,5 @@
 /* Strength board: pure local projections and sanitized friend summaries.
- * Only display.lastRankSeen (0..24, legacy 25/26 accepted) is persisted for celebrations. */
+ * Only display.lastRankSeen (high-water mark 0..24, legacy 25/26 accepted) is persisted for celebrations. */
 (function(){
 'use strict';
 const en=()=>typeof state!=='undefined'&&state?.language==='en';
@@ -273,7 +273,7 @@ function persistSeen(index){
  const flag=read=>{try{return !!read()}catch{return false}};
  if(flag(()=>cloudApplying)||flag(()=>cloudBusy)||flag(()=>stateLoadCorrupt))return false;
  if(!state.display||typeof state.display!=='object'||Array.isArray(state.display))state.display={};
- if(state.display.lastRankSeen===index)return true;
+ if(Number.isInteger(state.display.lastRankSeen)&&state.display.lastRankSeen>=index)return true;
  state.display.lastRankSeen=index;try{save()}catch(error){console.error(error)}return true;
 }
 // Gefeiert wird nur ein Aufstieg innerhalb desselben Profilobjekts. Nach einem Profilwechsel
@@ -285,7 +285,7 @@ function celebrate(root=document){
  if(!Number.isInteger(seen)){persistSeen(r.rankIndex);rankBase={state:s,index:r.rankIndex};return false} // Erste Anzeige: merken, nicht feiern.
  // App-Start (noch kein Profil gesehen): ungesehener Aufstieg zählt. Wechsel zu einem anderen Profilobjekt: nur Ausgangspunkt.
  if(rankBase.state&&rankBase.state!==s){rankBase={state:s,index:Math.max(r.rankIndex,seen)};return false}
- if(r.rankIndex<=seen||rankBase.state===s&&r.rankIndex<=rankBase.index){if(r.rankIndex<seen)persistSeen(r.rankIndex);rankBase={state:s,index:r.rankIndex};return false}
+ if(r.rankIndex<=seen||rankBase.state===s&&r.rankIndex<=rankBase.index){rankBase={state:s,index:Math.max(r.rankIndex,seen,rankBase.state===s?rankBase.index:-1)};return false}
  rankBase={state:s,index:r.rankIndex};
  if(!persistSeen(r.rankIndex))return false;
  const target=root.querySelector?.('[data-fb-own-emblem]');
