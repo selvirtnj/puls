@@ -7,7 +7,7 @@
    Neue Einstellungen werden über window.pulsData87 gelesen und nur mit gültigen Werten gespeichert (save()).
    Lädt nach food-page.js und vor motion.js; window.pulsMotion wird erst beim Klick benutzt. */
 
-let qaPage='',qaParent='',qaScroll=0,qaAnimate='',qaRatioOpen=false;
+let qaPage='',qaParent='',qaAnimate='',qaRatioOpen=false;
 const qaViewKeys=['energy','micros','week'];
 const qaHighlightMax=8;
 
@@ -235,7 +235,7 @@ function qaMountEditField(key){
   let keys=key==='target'?['direction','target']:key==='method'?['method','rmr']:[key];
   for(let fieldKey of keys)qaExposeEditField(fieldKey,fields);
   let error=document.getElementById('plan-error');if(error){error.setAttribute('role','alert');fields.after(error)}
-  qaEditPreview();input.focus();
+  qaEditPreview();input.focus({preventScroll:true});
 }
 function qaExposeEditField(key,fields){
   let input=document.getElementById(qaFields[key][0]),label=input.closest('label');
@@ -391,7 +391,7 @@ function qaNutrientSheet(key){
   form.classList.add('qaedit');form.querySelectorAll('label').forEach(label=>{label.hidden=label!==input.closest('label')});form.querySelectorAll('.note').forEach(el=>el.remove());
   input.type='text';input.inputMode='decimal';
   form.onsubmit=event=>{event.preventDefault();let raw=input.value.trim().replace(',','.');if(raw&&!Number.isFinite(Number(raw))){toast(qaT('Bitte einen gültigen Wert eingeben.','Enter a valid value.'));return}input.value=raw;saveMicroTargets(event)};
-  document.getElementById('mt').textContent=nutrientLabels[key][0];input.focus();
+  document.getElementById('mt').textContent=nutrientLabels[key][0];input.focus({preventScroll:true});
 }
 
 /* ---------- Unterseite Darstellung ---------- */
@@ -428,13 +428,13 @@ function qaDisplayBody(){
 /* ---------- Navigation ---------- */
 function qaOpen(key){
   if(!qaPages[key])return;
-  qaScroll=window.scrollY||0;qaPage=key;qaParent='';qaRatioOpen=false;qaAnimate='push';
+  qaPage=key;qaParent='';qaRatioOpen=false;qaAnimate='push';
   render();window.scrollTo(0,0);document.getElementById('account-section-title')?.focus({preventScroll:true});
 }
 function qaBack(){
   let from=qaPage,el=document.querySelector('#content .qadetail');
-  let done=()=>{if(qaPage!==from)return;qaPage='';qaRatioOpen=false;render();window.scrollTo(0,qaScroll);document.getElementById('qa-link-'+from)?.focus({preventScroll:true})};
-  let motion=qaMotion();if(el&&motion?.pop)motion.pop(el,done);else done();
+  let done=()=>{if(qaPage!==from)return;qaPage='';qaRatioOpen=false;render();window.scrollTo(0,0);document.getElementById('qa-link-'+from)?.focus({preventScroll:true})};
+  let motion=qaMotion();if(el&&motion?.pop&&!(typeof edgeBack!=='undefined'&&edgeBack.completing))motion.pop(el,done);else done();
 }
 // Bestehender Bereich aus einer Unterseite heraus: Zurück führt wieder zur Unterseite.
 function qaSection(key){
@@ -454,7 +454,7 @@ if(typeof closeAccountSection==='function'){
       let previous=accountSection;qaParent='';accountSection='';qaPage=parent;render();window.scrollTo(0,0);
       (document.getElementById('account-link-'+previous)||document.getElementById('account-section-title'))?.focus({preventScroll:true});
     };
-    if(el&&motion?.pop&&!motion.reduced())motion.pop(el,done);else done();
+    if(el&&motion?.pop&&!motion.reduced()&&!(typeof edgeBack!=='undefined'&&edgeBack.completing))motion.pop(el,done);else done();
   };
 }
 if(typeof go==='function'){const qaGo=go;go=function(next,...args){let before=typeof page!=='undefined'?page:'';qaPage='';qaParent='';qaRatioOpen=false;if(next==='account'&&before!=='account')qaAnimate='list';return qaGo.call(this,next,...args)}}

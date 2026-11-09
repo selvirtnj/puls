@@ -183,12 +183,11 @@ function panelHTML(){
  const status=`<p class="note" role="status">${esc(message)}</p>`;
  if(!snapshot)return `<p class="note" role="status">${esc(message||waitingMessage())}</p>`+button(text('Erneut laden','Reload'),'pulsFriends.refresh(true)');
  if(!snapshot.self)return `<p>${text('Freunde sehen deinen Namen, deine Trainingsserie, das letzte Trainingsdatum und deine Kraftränge mit Übungsnamen und kg/KG-Verhältnis. Anfragen zeigen deinen Namen.','Friends see your name, training streak, last training date and strength ranks with exercise names and kg/BW ratios. Requests show your name.')}</p><form onsubmit="pulsFriends.enable(event)"><label>${text('Anzeigename für Freunde','Name for friends')}<input id="friends-name" maxlength="80" required autocomplete="off" value="${esc(state.displayName||'')}"></label><button class="btn full" ${acting?'disabled':''}>${text('Freunde aktivieren','Enable friends')}</button></form>${status}`;
- return `<div class="friends-code"><small>${text('Dein Freundescode','Your friend code')}</small><strong data-no-translate>${snapshot.self.code}</strong>${button(text('Code teilen / kopieren','Share / copy code'),'pulsFriends.share()')}</div><p class="note">${text('Stupse erscheinen beim Öffnen oder Fokussieren der App. Kein Hintergrund-Push. Ein Stups je Freund alle 12 Stunden.','Nudges appear when opening or focusing the app. No background push. One nudge per friend every 12 hours.')}</p><form onsubmit="pulsFriends.add(event)"><label>${text('Freundescode','Friend code')}<input id="friends-code" maxlength="12" minlength="12" pattern="[A-Fa-f0-9]{12}" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label><button class="btn full" ${acting?'disabled':''}>${text('Anfrage senden','Send request')}</button></form>${status}
+ return `<div class="friends-code"><small>${text('Dein Freundescode','Your friend code')}</small><strong data-no-translate>${snapshot.self.code}</strong>${button(text('Code teilen / kopieren','Share / copy code'),'pulsFriends.share()')}</div><form onsubmit="pulsFriends.add(event)"><label>${text('Freundescode','Friend code')}<input id="friends-code" maxlength="12" minlength="12" pattern="[A-Fa-f0-9]{12}" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label><button class="btn full" ${acting?'disabled':''}>${text('Anfrage senden','Send request')}</button></form>${status}
   ${snapshot.nudges.length?`<h3>${text('Stupse','Nudges')}</h3><ul class="friends-list">${snapshot.nudges.map(p=>`<li><strong data-no-translate>${esc(p.name)}</strong><p>Stop slacking off</p><small>${esc(p.sent_at?.slice(0,10)||'')}</small>${button(text('Gelesen','Dismiss'),`pulsFriends.read('${esc(p.id)}')`,true,acting)}</li>`).join('')}</ul>`:''}
   ${snapshot.incoming.length?`<h3>${text('Anfragen','Requests')}</h3><ul class="friends-list">${personRows(snapshot.incoming,'incoming')}</ul>`:''}
   ${snapshot.outgoing.length?`<h3>${text('Gesendet','Sent')}</h3><ul class="friends-list">${personRows(snapshot.outgoing,'outgoing')}</ul>`:''}
   <section id="puls-friends-board-mount"><h3>${text('Freunde','Friends')}</h3><ul class="friends-list">${personRows(snapshot.friends,'friends')||`<li>${text('Noch keine Freunde. Teile deinen Code.','No friends yet. Share your code.')}</li>`}</ul></section>
-  <p class="note">${text('Trainingstage der Serie; drei volle Ruhetage unterbrechen sie. Kennzahlen werden nach dem Profilsync aktualisiert.','Training days in the streak; three full rest days break it. Summaries update after profile sync.')}</p>
   ${button(text('Aktualisieren','Refresh'),'pulsFriends.refresh(true)',true,acting)}
   ${button(text('Freunde deaktivieren','Disable friends'),'pulsFriends.disable()',true,acting)}`;
 }
@@ -254,7 +253,18 @@ async function disable(){
 }
 async function share(){
  const code=context()&&snapshot?.self?.code;if(!codeOK(code))return;
- try{if(navigator.share)await navigator.share({title:'PULS',text:text('Mein PULS-Freundescode: ','My PULS friend code: ')+code});else{await navigator.clipboard.writeText(code);toast(text('Code kopiert','Code copied'))}}catch(error){if(error.name!=='AbortError')toast(text('Bitte den angezeigten Code kopieren.','Please copy the displayed code.'))}
+ if(navigator.share){
+  try{await navigator.share({text:code});return}catch(error){if(error.name==='AbortError')return}
+ }
+ try{
+  if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(code);
+  else{
+   const field=document.createElement('textarea');field.value=code;field.setAttribute('readonly','');
+   Object.assign(field.style,{position:'fixed',top:'0',left:'0',opacity:'0'});modal.appendChild(field);
+   try{field.focus({preventScroll:true});field.select();if(!document.execCommand('copy'))throw Error('copy')}finally{field.remove()}
+  }
+  toast(text('Kopiert','Copied'));
+ }catch{toast(text('Bitte den angezeigten Code kopieren.','Please copy the displayed code.'))}
 }
 window.pulsFriends={open,refresh,enable,add,action,nudge,read,disable,share};
 // Frequent workout DOM paints only mount the entry; network/summary work has its

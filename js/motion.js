@@ -147,13 +147,26 @@
       if(content&&!reduced()){content.classList.remove('motion-page-in');void content.offsetWidth;content.classList.add('motion-page-in');clearTimeout(content.motionTimer);content.motionTimer=setTimeout(()=>content.classList.remove('motion-page-in'),DUR.base+DUR.fast*2+200)}
       scan(document)}
     return result}}
-  if(typeof render==='function'){const motionRender=render;render=function(...args){let result=motionRender.apply(this,args);syncReduced();return result}}
+  const viewKey=()=>[pageKey(),typeof accountSection==='undefined'?'':accountSection,typeof qaPage==='undefined'?'':qaPage,pageKey()==='workout'&&typeof trainTab!=='undefined'?trainTab:''].join('/');
+  let currentView=viewKey();
+  if(typeof render==='function'){const motionRender=render;render=function(...args){
+    let result=motionRender.apply(this,args),next=viewKey();syncReduced();
+    if(next!==currentView){currentView=next;scrollViewTop()}
+    return result;
+  }}
+  // Sheet entry points converge here after the earlier decorators and focus work.
+  if(typeof openModal==='function'){const motionModal=openModal;openModal=function(...args){let result=motionModal.apply(this,args);scrollViewTop(modal);return result}}
+  if(typeof foodTab==='function'){const motionFoodTab=foodTab;foodTab=function(...args){let result=motionFoodTab.apply(this,args);scrollViewTop(modal);return result}}
 
   // Neu eingefügte Elemente gesammelt einmal pro Bild prüfen.
   let pending=new Set(),frame=0;
   const flush=()=>{frame=0;let roots=[...pending];pending.clear();syncReduced();for(let root of roots)if(root.isConnected)scan(root)};
   new MutationObserver(list=>{
-    for(let m of list)for(let node of m.addedNodes)if(node.nodeType===1&&!node.classList?.contains('motion-indicator'))pending.add(node);
+    for(let m of list)for(let node of m.addedNodes)if(node.nodeType===1&&!node.classList?.contains('motion-indicator')){
+      pending.add(node);
+      if(node.matches?.('dialog,#session-root,#run-root'))scrollViewTop(node);
+      if(m.target.id==='foodbody')scrollViewTop(modal);
+    }
     if(pending.size&&!frame)frame=requestAnimationFrame(flush);
   }).observe(document.body,{childList:true,subtree:true});
   addEventListener('resize',()=>document.querySelectorAll('[data-motion-indicator]').forEach(indicator),{passive:true});

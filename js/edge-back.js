@@ -72,7 +72,10 @@ function edgeBackSettleDone(){
   let s=edgeBack.settle;if(!s)return;
   edgeBack.settle=null;clearTimeout(s.timer);s.g.move.removeEventListener('transitionend',s.onEnd);
   edgeBackClear(s.g);
-  if(s.back&&edgeBackValid(s.g))s.g.button.click();
+  if(s.back&&edgeBackValid(s.g)){
+    edgeBack.completing=true;
+    try{s.g.button.click()}finally{edgeBack.completing=false}
+  }
 }
 function edgeBackAbort(){let g=edgeBack.gesture;if(!g)return;edgeBack.gesture=null;if(g.locked)edgeBackFinish(g,false)}
 function edgeBackStart(event){

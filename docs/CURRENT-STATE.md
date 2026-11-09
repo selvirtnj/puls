@@ -1,5 +1,12 @@
 # PULS — aktueller Stand und Übergabe
 
+### Frontend-Korrekturen lokal, Integration offen (09.11.2026)
+
+- Koordinator-Auftrag im Worktree `agent/v94-scrolltop`, Basis `a974a65`. Zentrale Scroll-Rücksetzung für Seiten/Untertabs und verschachtelte Sheets, Fokus ohne Scrollsprung, keine Snapshot-Kopie beim Seitenwechsel, keine zweite Pop-Animation nach einer Kantengeste. Darstellung hat einen Besitzer für die Farbschema-Auswahl.
+- EN-Wörterbuch um Formular-, Fehler-, Status- und Accessibility-Texte ergänzt. Extreme-Warnung auf eine Zeile gekürzt, weitere Erklärabsätze entfernt. Native Extras mit bestehenden Schaltern, Tageschips und kompakten Karten, Feld-IDs und Speicher-/Brückenpfade erhalten. Freunde mit einzeiligen Tabs, sichtbarem Menü und reinem Code beim Teilen/Kopieren. Rang-/Emblem-Logik unverändert.
+- `tests/check-ui-v94.cjs` prüft DE/EN-Markup, deutsche Resttexte einschließlich Formular-/Statusmeldungen und Accessibility-Attributen, native Steuerelemente, exakten Share-/Clipboard-Inhalt, verschachtelte Scrollcontainer und Training-Untertabs. In `scripts/check.cjs` eingebunden. Gesamtsuite und `git diff --check` bestanden. Unabhängiges Review mit Nachprüfung der korrigierten Training-Untertab- und Schema-Getter-Befunde abgeschlossen.
+- Browserprüfung 390 × 844 in DE/EN und Hell/Dunkel offen. Der Browserhost ist nicht erreichbar. Vorschau lieferte HTTP 200, Server gestoppt. Echtes iOS-Wischen, Clipboard, Health und Mitteilungen ungeprüft. Koordinator übernimmt Integration, Browserprüfung und zentrale Release-Versionierung. Kein Commit/Push, kein Version-Bump, keine Live-Backend-Änderung.
+
 ### Version 93 (09.11.2026, veröffentlicht)
 
 - Rangskala v2: 14 Ränge (Gym Tourist … Tren Cougher), 40 Stufen (0..39). `pulsStrength.fromLegacy/toLegacy`, Freundes-Zusammenfassung mit `rank_scale:2`; `lastRankSeen` wird auf die neue Skala migriert (Altwerte 25/26 gelten als ungesehen). Freundesliste zeigt alte (NULL) und neue Skala gemischt korrekt; 5 neue Embleme.

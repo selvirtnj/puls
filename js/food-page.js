@@ -269,7 +269,7 @@ function fpDecorateScanner(){
   bar.insertAdjacentHTML('beforeend',`<button type="button" class="fptypebtn" aria-expanded="false" onclick="fpTypeBarcode(this)">${phIcon('keyboard')}<span>${fdT('Barcode eintippen','Type barcode')}</span></button>`);
   box.querySelector('.ffbarcodeform')?.before(bar);
 }
-function fpTypeBarcode(button){let box=button.closest('.fpscanner');if(!box)return;let open=!box.classList.contains('fptyping');box.classList.toggle('fptyping',open);button.setAttribute('aria-expanded',String(open));if(open)setTimeout(()=>$('barcode-input')?.focus(),0);fdSound('tap')}
+function fpTypeBarcode(button){let box=button.closest('.fpscanner');if(!box)return;let open=!box.classList.contains('fptyping');box.classList.toggle('fptyping',open);button.setAttribute('aria-expanded',String(open));if(open)setTimeout(()=>$('barcode-input')?.focus({preventScroll:true}),0);fdSound('tap')}
 if(typeof lookupBarcode==='function'){const fpLookupBase=lookupBarcode;lookupBarcode=function(event,scannedCode,...rest){if(scannedCode)fdSound('scan');return fpLookupBase.call(this,event,scannedCode,...rest)}}
 
 /* ---------- Kombis ---------- */

@@ -285,16 +285,6 @@ function dsCurrentScheme(){
   try{if(typeof getColorScheme==='function')return getColorScheme()}catch{}
   return ['system','light','dark'].includes(state?.colorScheme)?state.colorScheme:'system';
 }
-function dsChooseScheme(mode){
-  if(typeof setColorScheme!=='function')return;
-  setColorScheme(mode);render();
-  document.querySelector(`.dsappearance [data-scheme-choice="${mode}"]`)?.focus({preventScroll:true});
-}
-function dsAppearanceCard(){
-  let current=dsCurrentScheme();
-  return `<section class="card dsappearance"><h3>${dsText('Farbschema','Colour scheme')}</h3><div class="segmented dsscheme" role="group" aria-label="${dsText('Darstellung','Appearance')}">${[['system',dsText('System','System')],['light',dsText('Hell','Light')],['dark',dsText('Dunkel','Dark')]].map(([key,label])=>`<button type="button" data-scheme-choice="${key}" aria-pressed="${current===key}" onclick="dsChooseScheme('${key}')" data-no-translate>${label}</button>`).join('')}</div></section>`;
-}
-if(typeof accountAppearanceCard==='function'){const dsAppearanceBase=accountAppearanceCard;accountAppearanceCard=function(...args){return dsAppearanceCard()+dsAppearanceBase.apply(this,args)}}
 if(typeof accountSections!=='undefined'){let entry=accountSections.find(x=>x.key==='design');if(entry){entry.title='Darstellung';entry.note='Hell, Dunkel, Sprache & App-Icon'}}
 // Frühere Design- und Farbauswahl ist ohne Oberfläche; der Platzhalter hält den Kontobereich „Darstellung“ erreichbar.
 designChooser=function(){return '<section class="card designchooser" hidden></section>'};
@@ -316,6 +306,6 @@ if(typeof englishUI==='object'){
   dsAddEnglish(derived);
 }
 dsAddEnglish({'Foto aufnehmen':'Take photo','Aus Fotos wählen':'Choose from photos','Bitte eine Zahl eingeben.':'Please enter a number.','Beenden':'Finish','Workout öffnen':'Open workout','Starten':'Start','Fertig':'Done','Abgeschlossen':'Completed','Bestleistung':'Personal best','Übung hinzufügen':'Add exercise','Satz hinzufügen':'Add set','Satz':'Set','Erledigt':'Done','Leeres Workout starten':'Start empty workout','Routine':'Routine','Routine erstellen':'Create routine','Alle Routinen':'All routines','Plan anpassen':'Adjust plan','Gesamtwasser':'Total water','250 ml Wasser hinzufügen':'Add 250 ml water','250 ml Wasser erfasst':'250 ml water logged','Essen hinzufügen':'Add food','Nährwertfoto':'Label photo','Dein Ziel':'Your goal','Körper':'Body','Plan & Entwicklung':'Plan & development','Einstellungen':'Settings','Ziele anpassen':'Edit goals','Zielgewicht':'Target weight','Gewicht erfassen':'Log weight','Angemeldet':'Signed in','Nicht angemeldet':'Not signed in','Nur auf diesem Gerät gespeichert':'Stored on this device only','Foto auswählen':'Choose photo','Datei auswählen':'Choose file','Sicherungsdatei auswählen':'Choose backup file','Anstieg':'Ascent','Höhenmeter':'Elevation gain','Gewicht':'Weight','Tag vollständig':'Day complete','Eingetragen':'Logged','Workout abgeschlossen':'Workout completed','Neue Leistung':'New best','Zum Workout':'Back to workout','Geglätteter Trend':'Smoothed trend','Messwerte':'Measurements','Konto zurücksetzen':'Reset account','Vorherige':'Previous','Weitere Produkte':'More products','Mit Kamera scannen':'Scan with camera','Originalprodukt ansehen':'View original product','Öffnen':'Open','Heute gegessen':'Eaten today','Mikronährstoffe':'Micronutrients'});
-if(typeof englishUI==='object')Object.assign(englishUI,{'Darstellung':'Appearance','Farbschema':'Colour scheme','Hell, Dunkel, Sprache & App-Icon':'Light, dark, language & app icon','Übersicht':'Overview','Essen':'Food','Konto':'Account','Hinzufügen':'Add'});
+if(typeof englishUI==='object')Object.assign(englishUI,{'Darstellung':'Appearance','Farbschema':'Colour scheme','Hell, Dunkel, Sprache & App-Icon':'Light, dark, language & app icon','Übersicht':'Overview','Essen':'Food','Konto':'Account','Hinzufügen':'Add','Nutzername wählen':'Choose username','Erfasse Gewicht, Essen und Trainings.':'Log weight, food and workouts.','Deine farbigen Verlaufslinien entstehen mit deinen Einträgen.':'Your trend lines appear as you log.','Alle Kurven ausgeblendet. Wähle oben eine Kurve aus.':'All lines hidden. Pick one above.'});
 
 render();
