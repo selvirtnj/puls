@@ -28,7 +28,7 @@ function app(options={}){
   for(const id of ['workout-dock','session-root']){el(id).remove=()=>{};el(id).querySelector=()=>null}
   run('render=function(){adaptiveGoals()};dismissSheet=function(){};var navSymbols={workout:""};');
   // Same order as index.html, retaining every file which extends validData and all save wrappers.
-  for(const file of ['interactions','lifecycle','comfort','tracker-tools','nutrition-input','adaptation','food-search','catalog-search','food-upgrade','cloud','account-guide','quick-units','progress-metrics','designs-extra','profile-refresh','running','run-metrics']){
+  for(const file of ['interactions','lifecycle','comfort','tracker-tools','nutrition-input','adaptation','food-search','catalog-search','food-upgrade','cloud','account-guide','quick-units','progress-metrics','profile-refresh','running','run-metrics']){
     run(fs.readFileSync('js/'+file+'.js','utf8'));run('render=function(){adaptiveGoals()}');
   }
   run('var setAppLanguage=function(){},chooseAppIcon=function(){}');

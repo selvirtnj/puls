@@ -127,7 +127,7 @@ let fdWaterMemory={key:'',filled:-1};
 function fdGlass(i,w,fresh){
   let full=i<w.filled,next=i===w.filled,level=full?1:next?w.partial:0;
   let label=full?`${fdT('Glas','Glass')} ${i+1}, ${fdT('getrunken. Tippen entfernt das letzte Glas.','logged. Tap to remove the last glass.')}`:`${fdT('Glas','Glass')} ${i+1}. ${fdT('Tippen fügt','Tap adds')} ${n(w.glassMl)} ml ${fdT('hinzu.','')}`.replace(' .','.');
-  return `<button type="button" class="fdglass${full?' fdfull':''}${next?' fdnext':''}${fresh?' fdfill':''}" style="--level:${level}" aria-label="${label}" onclick="fdGlassTap(${i})"><svg viewBox="0 0 24 32" aria-hidden="true"><path class="fdglasswater" d="M4.4 4h15.2l-2.1 24.3a1.8 1.8 0 0 1-1.8 1.7H8.3a1.8 1.8 0 0 1-1.8-1.7Z"/><path class="fdglassline" d="M3.2 2.8h17.6l-2.2 25.6a2.8 2.8 0 0 1-2.8 2.6H8.2a2.8 2.8 0 0 1-2.8-2.6Z"/></svg>${next?`<span class="fdglassplus">${phIcon('plus')}</span>`:i===w.filled-1?`<span class="fdglassplus fdglassminus">${phIcon('minus')}</span>`:''}</button>`;
+  return `<button type="button" class="fdglass${full?' fdfull':''}${next?' fdnext':''}${fresh?' fdfill':''}" style="--level:${level}" aria-label="${label}" onclick="fdGlassTap(${i})"><svg viewBox="0 0 24 32" aria-hidden="true"><path class="fdglasswater" d="M4.4 4h15.2l-2.1 24.3a1.8 1.8 0 0 1-1.8 1.7H8.3a1.8 1.8 0 0 1-1.8-1.7Z"/><path class="fdglassline" d="M3.2 2.8h17.6l-2.2 25.6a2.8 2.8 0 0 1-2.8 2.6H8.2a2.8 2.8 0 0 1-2.8-2.6Z"/></svg>${next?`<span class="fdglassplus">${phIcon('plus')}</span>`:i===Math.min(w.filled,w.count)-1?`<span class="fdglassplus fdglassminus">${phIcon('minus')}</span>`:''}</button>`;
 }
 function fdWaterCard(){
   let w=fdWaterState(),nt=nutrientTotals(),total=nt.totals?.water||0,key=date,fresh=fdWaterMemory.key===key&&w.filled>fdWaterMemory.filled?w.filled-1:-1;
@@ -139,15 +139,33 @@ function fdWaterCard(){
 }
 function fdGlassTap(i){
   let w=fdWaterState();
-  if(i<w.filled){
-    let last=state.foods.map((x,index)=>({x,index})).filter(({x})=>x.date===date&&fdIsWater(x)).sort((a,b)=>(Number(a.x.loggedAt)||0)-(Number(b.x.loggedAt)||0)||a.index-b.index).at(-1);
-    if(last&&typeof deleteSwipeDiary==='function'){deleteSwipeDiary(last.x.id);fdSound('delete')}
-    return;
-  }
+  if(i<w.filled){fdWaterRemoveGlass(w);return}
   addWaterGlass(w.glassMl);fdSound('water');
 }
+// v90: „−“ entfernt genau eine Glasgröße, beginnend beim jüngsten Trinkwasser-Eintrag:
+// Einträge bis zur Restmenge werden gelöscht, ein größerer Eintrag wird verkleinert. Ein Klang, ein Rückgängig.
+function fdWaterRemoveGlass(w=fdWaterState()){
+  let list=state.foods.map((x,index)=>({x,index})).filter(({x})=>x.date===date&&fdIsWater(x)&&Number(x.grams)>0).sort((a,b)=>(Number(a.x.loggedAt)||0)-(Number(b.x.loggedAt)||0)||a.index-b.index);
+  let left=w.glassMl,touched=[],removed=new Set();
+  for(let k=list.length-1;k>=0&&left>1e-9;k--){
+    let {x,index}=list[k],ml=Number(x.grams);
+    touched.push({index,copy:JSON.parse(JSON.stringify(x))});
+    if(ml<=left+1e-9){removed.add(x.id);left-=ml;continue}
+    let rest=Math.round((ml-left)*1000)/1000,f=rest/ml;
+    for(let key of ['kcal','p','c','f'])if(Number.isFinite(Number(x[key])))x[key]=Number(x[key])*f;
+    if(x.nutrients&&typeof x.nutrients==='object')for(let [key,v] of Object.entries(x.nutrients))if(Number.isFinite(v))x.nutrients[key]=key==='water'&&v===ml?rest:v*f;
+    x.grams=rest;left=0;
+  }
+  if(!touched.length)return;
+  state.foods=state.foods.filter(x=>!removed.has(x.id));
+  save();render();fdSound('delete');
+  fdUndoToast(fdT(`${n(w.glassMl)} ml Wasser entfernt`,`${n(w.glassMl)} ml water removed`),()=>{
+    for(let {index,copy} of touched.slice().sort((a,b)=>a.index-b.index)){let at=state.foods.findIndex(x=>x.id===copy.id);if(at>=0)state.foods[at]=copy;else state.foods.splice(Math.min(index,state.foods.length),0,copy)}
+    save();render();
+  });
+}
 function fdWaterInfo(){
-  let s=fdWaterSettings(),w=fdWaterState(),manual=s.mode==='manual',rec=null;try{rec=window.pulsData87?.waterRecommendation?.({...state,water:{...s,mode:'auto'}},date)}catch{}
+  let s=fdWaterSettings(),w=fdWaterState(),manual=s.mode==='manual',rec=null;try{rec=window.pulsData87?.waterRecommendation?.({...state,waterGoal:0,water:{...s,mode:'auto'}},date)}catch{}
   let auto=rec?(rec.mode==='auto'?fdNum(rec.ml)+' ml':fdT('2.000 ml Standard (kein Gewicht)','2,000 ml default (no weight)')):'–';
   openModal(fdT('Wasserziel','Water target'),`<form class="fdwaterform" onsubmit="fdSaveWater(event)"><div class="segmented fdmode" role="group" aria-label="${fdT('Ziel','Target')}"><button type="button" data-mode="auto" aria-pressed="${!manual}" onclick="fdWaterMode('auto')">${fdT('Automatisch','Automatic')}</button><button type="button" data-mode="manual" aria-pressed="${manual}" onclick="fdWaterMode('manual')">${fdT('Eigenes Ziel','Custom')}</button></div><input type="hidden" id="fd-water-mode" value="${manual?'manual':'auto'}"><p class="note">${fdT('Automatisch heute','Automatic today')}: <strong>${auto}</strong></p><label id="fd-water-goal-row" ${manual?'':'hidden'}>${fdT('Eigenes Tagesziel · ml','Custom daily target · ml')}<input id="fd-water-goal" type="number" inputmode="numeric" min="500" max="10000" step="1" value="${Number(state.waterGoal)>0?state.waterGoal:Math.round(w.goal)}"></label><label>${fdT('Glasgröße · ml','Glass size · ml')}<input id="fd-water-glass" type="number" inputmode="numeric" min="100" max="1000" step="1" required value="${w.glassMl}"></label><button class="btn full">${fdT('Speichern','Save')}</button></form>`);
 }

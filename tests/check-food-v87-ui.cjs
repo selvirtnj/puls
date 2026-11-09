@@ -46,6 +46,43 @@ assert.match(c.fdWaterCard(),/fdGlassTap\(15\)/);
 c.fdGlassTap(c.fdWaterState(day).filled);assert.equal(state.foods.at(-1).grams,250);
 state.foods=state.foods.filter(x=>x.id!=='overflow');
 
+// v90: „−“ liegt immer auf dem letzten sichtbaren vollen Glas und entfernt genau eine Glasgröße (ein Klang, ein Rückgängig).
+{
+ const saved=JSON.parse(JSON.stringify(state.foods)),undoBase=c.fdUndoToast,soundBase=c.fdSound,pulsBase=c.window.pulsData87,openBase=c.openModal;
+ let undo=null,sounds=[];c.fdUndoToast=(text,action)=>{undo=action};c.fdSound=k=>sounds.push(k);
+ const water=(id,ml,t)=>({id,date:day,meal:'Snacks',name:'Trinkwasser',grams:ml,unit:'ml',kcal:0,p:0,c:0,f:0,nutrients:{water:ml},loggedAt:t});
+ state.foods=[water('a',250,1),water('b',500,2),{id:'food',date:day,name:'Reis',grams:100,unit:'g',kcal:130,p:3,c:28,f:0,loggedAt:3}];
+ assert.equal(c.fdWaterState(day).filled,3);
+ c.fdGlassTap(0);
+ assert.deepEqual(state.foods.map(x=>[x.id,x.grams,x.nutrients?.water]),[['a',250,250],['b',250,250],['food',100,undefined]],'larger entry shrinks by one glass');
+ assert.deepEqual(sounds,['delete'],'exactly one delete sound');
+ undo();assert.deepEqual(state.foods.map(x=>[x.id,x.grams]),[['a',250],['b',500],['food',100]],'undo restores the entry');
+ c.fdGlassTap(1);c.fdGlassTap(0);assert.deepEqual(state.foods.map(x=>[x.id,x.grams]),[['a',250],['food',100]],'entry of glass size is deleted');
+ state.foods=[water('a',500,1),water('b',100,2)];c.fdGlassTap(0);
+ assert.deepEqual(state.foods.map(x=>[x.id,x.grams]),[['a',350]],'smaller newest entries: one glass across entries');
+ undo();assert.deepEqual(state.foods.map(x=>[x.id,x.grams]),[['a',500],['b',100]]);
+ state.foods=[water('big',2500,1)];let w=c.fdWaterState(day);assert.equal(w.filled,10);assert.equal(w.count,7);
+ assert.equal((c.fdWaterCard().match(/fdglassminus/g)||[]).length,1,'one minus from 8+ glasses');
+ assert.match(c.fdGlass(6,w,false),/fdglassminus/,'minus on the last visible full glass');
+ c.fdGlassTap(6);assert.equal(state.foods[0].grams,2250);assert.equal(state.foods[0].nutrients.water,2250);
+ // Wasserziel-Info zeigt bei eigenem Ziel den echten Automatikwert.
+ let body='';c.openModal=(title,html)=>{body=html};
+ c.window.pulsData87={waterRecommendation:s=>Number(s.waterGoal)>0?{ml:s.waterGoal,mode:'manual'}:{ml:2450,mode:'auto'}};
+ state.waterGoal=1800;state.water={mode:'manual',glassMl:250};c.fdWaterInfo();
+ assert.match(body,/2450 ml/,'automatic value ignores the custom goal');
+ delete state.water;state.waterGoal=0;
+ c.fdUndoToast=undoBase;c.fdSound=soundBase;c.window.pulsData87=pulsBase;c.openModal=openBase;state.foods=saved;
+}
+
+// v90: „Heute eingetragen“ der Übersicht zeigt kein Wasser.
+{
+ const ds={state,date:day,today:()=>day,fdIsWater:c.fdIsWater,dsText:(de)=>de,dsKcal:String,n:String,esc:String,dsRow:({label})=>'<row>'+label+'</row>',dsGroup:(title,rows)=>rows};
+ vm.createContext(ds);vm.runInContext(fs.readFileSync('js/design-system.js','utf8').match(/function dsFoodGroup\(\)\{[\s\S]*?\n\}/)[0],ds);
+ const saved=state.foods;state.foods=[{id:'w',date:day,name:'Trinkwasser',grams:250,unit:'ml',kcal:0},{id:'r',date:day,name:'Reis',grams:100,unit:'g',kcal:130}];
+ const html=vm.runInContext('dsFoodGroup()',ds);assert(html.includes('Reis'));assert(!html.includes('Trinkwasser'),'water hidden from logged today');
+ state.foods=saved;
+}
+
 // Wochenschnitt nur über Tage mit Einträgen; Wasser zählt nicht.
 state.foods.push({id:'a',date:day,name:'Reis',grams:100,unit:'g',kcal:400,p:10,c:80,f:2},{id:'b',date:'2026-11-07',name:'Skyr',grams:100,unit:'g',kcal:200,p:20,c:4,f:0},{id:'old',date:'2026-10-01',name:'Alt',grams:1,unit:'g',kcal:9999,p:0,c:0,f:0});
 let week=c.fdWeekStats(day);assert.equal(week.days,2);assert.equal(week.avg.kcal,300);assert.equal(week.avg.p,15);

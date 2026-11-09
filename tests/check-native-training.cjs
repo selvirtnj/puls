@@ -10,7 +10,7 @@ const bootstrap=fs.readFileSync('tests/check-premium.cjs','utf8').split('run(`st
   .replace('style:{setProperty(){}}','style:{setProperty(){},removeProperty(){}}');
 // Same order as index.html for every file in the training chains (setValue, finish, start, rest, picker, superset).
 const files=['interactions','lifecycle','workout-polish','comfort','tracker-tools','nutrition-input','adaptation','food-search','catalog-search','food-upgrade','cloud',
-  'account-guide','quick-units','progress-metrics','designs-extra','machine-library','profile-refresh','rest-popup','workout-controls','exercise-muscles','training-polish','running','run-metrics'];
+  'account-guide','quick-units','progress-metrics','machine-library','profile-refresh','rest-popup','workout-controls','exercise-muscles','training-polish','running','run-metrics'];
 function app(options={}){
   const test=vm.runInNewContext('(function(require,options){'+bootstrap+';return {ctx,run,el}})(require,options)',{require,options,console});
   const {ctx,run,el}=test,messages=[],native=[],events={window:{},document:{}},timers=new Map(),writes=[],observers=[];

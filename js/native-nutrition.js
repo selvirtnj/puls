@@ -110,7 +110,7 @@ const ops={
       // Diary does not store density. Editing may scale within its canonical dimension only, just like the Web editor.
       const canonical=canonicalQuantity(a.amount,a.unit,ffBase(old));if(!finite(canonical,.1,10000))return fail('invalid','Menge/Einheit ungültig; keine gespeicherte Tagebuch-Dichte');
       const grams=Number(canonical.toFixed(6));
-      const target=copy(a.expect),factor=grams/target.grams;for(const k of keys)target[k]=round(target[k]*factor);target.grams=grams;
+      const target=copy(a.expect),factor=grams/target.grams;for(const k of keys)if(Number.isFinite(Number(target[k])))target[k]=Number((Number(target[k])*factor).toPrecision(12));target.grams=grams; // v90: wie saveDiaryAmount ungerundet
       if(target.nutrients)for(const k of Object.keys(target.nutrients))target.nutrients[k]*=factor;
       if(same(old,target))return {noop:true,target,result:entryResult(old)};if(!same(old,a.expect))return fail('conflict','Eintrag inzwischen geändert');return busy({target,grams});
     },

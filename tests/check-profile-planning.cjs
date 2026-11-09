@@ -159,6 +159,7 @@ test.run("state.workouts=[{id:'old',date:daysBefore(today(),1),name:'Gym',finish
 assert.equal(test.run('workoutAwards().new.xp'),29,'gym exercise PR keeps 25 XP on top of remaining duration XP');assert.equal(test.run('totalWorkoutXP()'),125);
 test.run('state.workouts=[];state.runs=[];state.routines=[{id:"routine",name:"Gym",exercises:[]}];startRoutine("routine")');assert.equal(test.run('state.workouts[0].durationXpVersion'),1,'routine creation marks only new workouts');
 test.run('state.workouts=[];$("empty-workout-name").value="Gym";startEmptyWorkout({preventDefault(){}})');assert.equal(test.run('state.workouts[0].durationXpVersion'),1,'free workout creation also marked');
+test.run('state.workouts=[];modal.close();startQuickEmptyWorkout()');assert.equal(test.run('state.workouts.length'),1,'v90: plus menu starts an empty workout directly');assert.equal(test.run('state.workouts[0].name'),'Workout');assert.equal(test.run('state.workouts[0].durationXpVersion'),1);assert(!test.run('state.workouts[0].finished'));test.run('startQuickEmptyWorkout()');assert.equal(test.run('state.workouts.length'),1,'running workout is reopened, not duplicated');
 console.log('PASS: late activity/planner/adaptation chain, baseline/gain/extreme/manual/classic, calibration gate, form round-trip, pure day navigation and live sport allowance.');
 `;
 const navyValidation=String.raw`
