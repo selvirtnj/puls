@@ -10,13 +10,9 @@
  *   waterTarget(source=state, day=today()) -> ml (number).
  *   waterRecommendation(source=state, day=today()) ->
  *     {ml, mode:'auto'|'manual'|'standard', weightKg:number|null, basisMl, sportMl}.
- *   rankForLevel(level), rankForXp(xp), rankFor(xp) ->
- *     {index:0..9, key, name, stage:1..3, stageLevel, userLevel, level,
- *      nextAt:number|null, progress:0..1}. stageLevel is the stage threshold;
- *     level remains its compatibility alias; userLevel is the actual XP level.
- *     name includes I/II/III except Tren Cougher; nextAt is cumulative XP for
- *     the next STAGE, null at the final rank. ranks contains 10 frozen groups
- *     {index,key,name,levels:[...],xp:[...]} (stage thresholds).
+ *   rankForLevel(level), rankForXp(xp), rankFor(xp) -> strength overall rank;
+ *     userLevel/level retain independent XP-level information. No XP rank thresholds.
+ *     ranks: nine groups from pulsStrength (25 stages, rankIndex 0..24).
  *   hapticsEnabled(source=state) -> boolean (default true); gates pulsHaptic.
  * Global aliases: PULS_RANKS, pulsWaterTarget, pulsRankForLevel, pulsRankForXp,
  * pulsRankFor, pulsHapticsEnabled. No rank/XP or calculated water is persisted.
@@ -37,7 +33,7 @@ function optionCopy(s){const draft={...s};for(const key of optionKeys)if(s[key]!
 const displayDefaults=()=>({summaryViews:[...views],showRemaining:false,highlighted:[...highlighted],hapticsEnabled:true,motion:'system'});
 const displayRules={summaryViews:x=>subset(x,views),showRemaining:x=>typeof x==='boolean',
  highlighted:x=>subset(x,typeof nutrientLabels==='object'?Object.keys(nutrientLabels):highlighted,8),
- hapticsEnabled:x=>typeof x==='boolean',motion:x=>['system','reduced'].includes(x),lastRankSeen:x=>integer(x,0,9)};
+ hapticsEnabled:x=>typeof x==='boolean',motion:x=>['system','reduced'].includes(x),lastRankSeen:x=>integer(x,0,26)};
 function cleanObject(source,key,rules){
  if(source[key]===undefined)return;
  if(!object(source[key])){delete source[key];return}
@@ -117,24 +113,16 @@ if(state.meals!==undefined){
 }
 migrate87(state);
 
-const xpAt=level=>250*(level-1)+25*(level-1)*(level-2)/2;
-const groups=[['high-estrogen','High Estrogen',[1,2,3]],['gym-tourist','Gym-Tourist',[4,5,6]],
- ['pump-chaser','Pump Chaser',[7,8,9]],['protein-junkie','Protein-Junkie',[10,12,14]],
- ['gym-rat','Gym Rat',[16,18,20]],['iron-addict','Iron Addict',[22,24,26]],
- ['mass-monster','Mass Monster',[28,31,34]],['natty-limit','Natty Limit',[37,40,43]],
- ['fake-natty','Fake Natty',[46,49,52]],['tren-cougher','Tren Cougher',[55]]];
-const ranks=Object.freeze(groups.map(([key,name,levels],index)=>Object.freeze({index,key,name,
- levels:Object.freeze(levels),xp:Object.freeze(levels.map(xpAt))})));
-const stages=ranks.flatMap(r=>r.levels.map((level,i)=>({index:r.index,key:r.key,name:r.name+(r.index===9?'':' '+['I','II','III'][i]),stage:i+1,level,xp:r.xp[i]})));
+// Legacy XP/level entry points retain call compatibility, but rank always comes
+// from strength. XP only supplies the independent userLevel compatibility field.
+const ranks=window.pulsStrength?.ranks||Object.freeze([]);
 function rankForXp(value){
+ const rank=window.pulsStrength?.overall()||{index:null,rankIndex:null,name:'Rang unbekannt',stage:null,progress:0,nextAt:null};
  const xp=finite(value)?Math.floor(value):0;
- let i=0;while(i+1<stages.length&&xp>=stages[i+1].xp)i++;
- const entry=stages[i],nextAt=stages[i+1]?.xp??null;
- const userLevel=typeof xpProgress==='function'?xpProgress(xp).level:Math.floor((Math.sqrt(361+.32*xp)-19)/2)+1;
- return {index:entry.index,key:entry.key,name:entry.name,stage:entry.stage,level:entry.level,stageLevel:entry.level,userLevel,nextAt,
-  progress:nextAt===null?1:Math.max(0,Math.min(1,(xp-entry.xp)/(nextAt-entry.xp)))};
+ const userLevel=typeof xpProgress==='function'?xpProgress(xp).level:1;
+ return {...rank,userLevel,level:userLevel,stageLevel:null};
 }
-function rankForLevel(value){return rankForXp(xpAt(finite(value,1)?Math.floor(value):1))}
+function rankForLevel(value){return {...rankForXp(0),userLevel:finite(value,1)?Math.floor(value):1,level:finite(value,1)?Math.floor(value):1}}
 function hapticsEnabled(s=state){return s?.display?.hapticsEnabled!==false}
 if(typeof pulsHaptic==='function'){
  const baseHaptic=pulsHaptic;

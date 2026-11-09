@@ -11,7 +11,7 @@ function node(id=''){
   setAttribute(k,v){this.attrs[k]=v},addEventListener(){},querySelector(){return null},prepend(child){this.firstElementChild=child},
   insertAdjacentHTML(_,html){this.innerHTML+=html}};
 }
-function fixture({snapshot,xp=6400,language='de',display={}}={}){
+function fixture({snapshot,xp=6400,language='de',display={},strengthScore=12}={}){
  const nodes=new Map(),log={saves:0,toasts:[],sounds:[],nudges:[],actions:[]};let clock=Date.parse('2026-11-08T12:00:00Z');
  class FakeDate extends Date{constructor(...a){super(...(a.length?a:[clock]))}static now(){return clock}}
  const add=id=>{const n=node(id);nodes.set(id,n);return n};
@@ -29,42 +29,49 @@ function fixture({snapshot,xp=6400,language='de',display={}}={}){
   pulsFriends:{nudge:code=>{log.nudges.push(code);return Promise.resolve()},action:(c,k)=>log.actions.push([c,k])},
   pulsFriendsData87:{getSnapshot:()=>snap?JSON.parse(JSON.stringify(snap)):null}};
  ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
+ vm.runInContext(fs.readFileSync('js/strength-ranks.js','utf8'),ctx);
+ function setStrength(score){
+  ctx.state.profile={weight:100};
+  const exercises=score===null?[]:[['bench','Barbell Bench Press'],['squat','Barbell Squat'],['row','Barbell Row']].map(([key,name])=>{
+   const t=ctx.pulsStrength.standards[key].male,i=Math.min(7,Math.floor(score/3));
+   const ratio=score===24?t[8]:t[i]+(t[i+1]-t[i])*(score-i*3)/3;
+   return {name,exerciseId:key,sets:[{kg:ratio*100,reps:1,done:true}]};
+  });
+  ctx.state.workouts=[{id:'w1',finished:true,date:'2026-11-07',sets:[{}],exercises}];
+ }
+ setStrength(strengthScore);
  vm.runInContext(xpLine,ctx);vm.runInContext(dataSource,ctx,{filename:'puls-data-v87.js'});
  vm.runInContext(board,ctx,{filename:'friends-board.js'});
- return {ctx,nodes,panel,mount,log,api:ctx.pulsFriendsBoard,setXp:v=>{currentXp=v;clock+=2000},setSnap:v=>{snap=v},tick:ms=>{clock+=ms}};
+ return {ctx,nodes,panel,mount,log,api:ctx.pulsFriendsBoard,setStrength,setXp:v=>{currentXp=v;clock+=2000},setSnap:v=>{snap=v},tick:ms=>{clock+=ms}};
 }
 const self={code:'ABCDEF123456',name:'Ich'};
-const friend=(i,extra={})=>({code:'FEDCBA65432'+i,name:'Freund '+i,xp:1000*i,streak:i,last_training:'2026-11-0'+(i%7+1),broken:false,updated_at:'2026-11-07T10:00:00Z',...extra});
+const friend=(i,extra={})=>({code:'FEDCBA65432'+i,name:'Freund '+i,strength_rank:6+i,lift_ranks:[{key:'bench-barbell-press--barbell',name:'Barbell Bench Press',rankIndex:6+i,ratio:i/2}],xp:1000*i,streak:i,last_training:'2026-11-0'+(i%7+1),broken:false,updated_at:'2026-11-07T10:00:00Z',...extra});
 const snapWith=friends=>({self:{...self,xp:5},friends,incoming:[],outgoing:[],nudges:[]});
 
-// Ränge: Tabelle aus pulsData87, Schwellen entsprechen xpProgress.
+// Nine strength groups, 25 stages, distinct remapped emblems; unknown never becomes zero.
 {
  const f=fixture({snapshot:snapWith([])}),ranks=f.ctx.pulsData87.ranks;
- assert.equal(ranks.length,10);assert.equal(ranks[0].name,'High Estrogen');assert.equal(ranks[9].name,'Tren Cougher');
- for(const g of ranks)g.levels.forEach((level,k)=>assert.equal(f.ctx.xpProgress(g.xp[k]).level,level,g.name));
- const r=f.api.rankFor(825);assert.equal(r.name,'Gym-Tourist I');assert.equal(r.userLevel,4);assert.equal(r.nextName,'Gym-Tourist II');
- assert.equal(f.api.rankFor(3149).nextName,'Protein-Junkie I');assert.equal(f.api.rankFor(49275).nextAt,null);
- assert.equal(f.api.rankFor(null),null,'unbekanntes XP erfindet keinen Rang');
- // Embleme: alle Ränge × Stufen wohlgeformt, flach (keine Verläufe), eindeutige Clip-IDs, unbekannt = Fragezeichen.
+ assert.equal(ranks.length,9);assert.equal(ranks[8].name,'Tren Cougher');
+ assert.equal(f.api.rankFor(12).name,'Protein Farter I');assert.equal(f.api.rankFor(24).nextAt,null);
+ assert.equal(f.api.rankFor(null),null);assert.equal(f.api.rankFor(25),null);
  const ids=new Set();
- for(let i=0;i<10;i++)for(const stage of [0,1,2,3]){
-  const svg=f.api.emblem(i,stage,40);
-  assert.equal((svg.match(/<svg/g)||[]).length,1);assert(svg.endsWith('</svg>'));assert(!/gradient|filter=|shadow/i.test(svg),'flat emblem');
+ for(let i=0;i<9;i++)for(const stage of [0,1,2,3]){
+  const svg=f.api.emblem(i,stage,40);assert(svg.endsWith('</svg>'));assert(!/gradient|filter=|shadow/i.test(svg));
   const id=svg.match(/clipPath id="([^"]+)"/)[1];assert(!ids.has(id));ids.add(id);
-  if(i<9)assert.equal((svg.match(/<circle cx="\d+" cy="67"/g)||[]).length,3,'drei Stufen-Punkte');
+  if(i<8)assert.equal((svg.match(/<circle cx="\d+" cy="67"/g)||[]).length,3);
  }
- assert.match(f.api.emblem(null),/>\?</);assert.match(f.api.emblem(9,1,40),/fb-flame/);assert(!/fb-flame|fb-wings/.test(f.api.emblem(0,1,40)));
+ assert.match(f.api.emblem(null),/>\?</);assert.match(f.api.emblem(8),/fb-flame/);
  for(const place of [1,2,3])assert.match(f.api.wreath(place),/fb-wreath-l[^]*fb-wreath-r/);
 }
 
 // Freundeskarten: Rang/Level, Rang unbekannt, Slacking-Band, Sperr-Restzeit, Escaping, Entfernen-Menü.
 {
- const friends=[friend(1,{name:'<img onerror=x>',xp:null,last_training:'2026-11-07'}),friend(2,{broken:true,last_training:'2026-11-01',streak:0}),
+ const friends=[friend(1,{name:'<img onerror=x>',xp:null,strength_rank:null,last_training:'2026-11-07'}),friend(2,{broken:true,last_training:'2026-11-01',streak:0}),
   friend(3,{broken:true,last_training:'2026-11-01',last_nudge:'2026-11-08T07:00:00Z'})];
  const f=fixture({snapshot:snapWith(friends)}),html=f.mount.innerHTML;
  assert.equal(f.mount.dataset.fb,'1');assert(!html.includes('legacy'),'Board ersetzt Rückfall-Liste');assert.equal(f.panel.firstElementChild,f.mount);
  assert.match(html,/&lt;img onerror=x&gt;/);assert(!html.includes('<img onerror'));
- assert.match(html,/Rang unbekannt/);assert.match(html,/Pump Chaser III/);assert.match(html,/Zuletzt trainiert: gestern/);
+ assert.match(html,/Rang unbekannt/);assert.match(html,/Protein Farter I/);assert.match(html,/Zuletzt trainiert: gestern/);
  assert.equal((html.match(/class="fb-slack"/g)||[]).length,2);
  assert.match(html,/Gewarnt · wieder in 7 h/);assert.match(html,/pulsFriendsBoard\.warn\('FEDCBA654322',this\)/);
  assert.match(html,/Zuletzt trainiert vor 7 Tagen/);assert.match(html,/pulsFriends\.action\('FEDCBA654321','remove'\)/);
@@ -79,7 +86,7 @@ const snapWith=friends=>({self:{...self,xp:5},friends,incoming:[],outgoing:[],nu
 
 // Bestenliste robust bei 0, 1, 2 und 5 Freunden; man selbst zählt mit (lokales XP).
 for(const count of [0,1,2,5]){
- const list=Array.from({length:count},(_,i)=>friend(i+1,{xp:i===0?null:20000*(i+1)}));
+ const list=Array.from({length:count},(_,i)=>friend(i+1,{strength_rank:i===0?null:Math.min(24,12+i),xp:i===0?null:20000*(i+1)}));
  const f=fixture({snapshot:snapWith(list),xp:6400});f.api.view('board');const html=f.mount.innerHTML;
  assert(!/data-count=/.test(html),'motion.js würde Zähler-Text überschreiben');const people=count+1;assert.match(html,new RegExp(`fb-podium[^"]*" data-size="${Math.min(3,people)}"`));
  assert.equal((html.match(/<li class="fb-row[ "]/g)||[]).length,Math.max(0,people-3));
@@ -99,19 +106,19 @@ for(const count of [0,1,2,5]){
  const off=fixture({snapshot:{self:null,friends:[],incoming:[],outgoing:[],nudges:[]}});assert(off.mount.innerHTML.includes('legacy'));
 }
 
-// Rang-Aufstieg: erste Anzeige merkt nur den Ausgangsrang; Aufstieg wird genau einmal gefeiert.
+// Stage promotions depend only on strength; each is celebrated once.
 {
- const f=fixture({snapshot:snapWith([]),xp:6400}),before=JSON.stringify({...f.ctx.state,display:undefined});
- assert.equal(f.ctx.state.display.lastRankSeen,4);assert.equal(f.log.saves,1);assert.equal(f.log.toasts.length,0);
- f.setXp(10500);assert.equal(f.api.celebrate(),true);assert.equal(f.ctx.state.display.lastRankSeen,5);
- assert.deepEqual(f.log.toasts,['Neuer Rang: Iron Addict I']);assert(f.log.sounds.includes('rankUp'));
- f.tick(2000);assert.equal(f.api.celebrate(),false);f.api.view('ranks');assert.equal(f.log.toasts.length,1,'nur einmal');
- assert.equal(JSON.stringify({...f.ctx.state,display:undefined}),before,'keine weiteren Zustandsänderungen');
- assert(f.ctx.validData(f.ctx.state),'lastRankSeen bleibt gültig');
- assert.match(f.mount.innerHTML,/Noch 1\.575 XP bis Iron Addict II/);assert.match(f.mount.innerHTML,/Alle Ränge/);
- assert.equal((f.mount.innerHTML.match(/class="fb-rung /g)||[]).length,10);
- const busy=fixture({snapshot:snapWith([]),xp:6400,display:{lastRankSeen:2}});
- assert.equal(busy.ctx.state.display.lastRankSeen,4,'Aufstieg beim ersten Öffnen gefeiert');assert.equal(busy.log.toasts.length,1);
+ const f=fixture({snapshot:snapWith([]),strengthScore:12});
+ assert.equal(f.ctx.state.display.lastRankSeen,12);assert.equal(f.log.toasts.length,0);
+ f.setXp(99999);assert.equal(f.api.celebrate(),false,'XP cannot raise strength');
+ f.setStrength(13);assert.equal(f.api.celebrate(),true);assert.equal(f.ctx.state.display.lastRankSeen,13);
+ assert.deepEqual(f.log.toasts,['Neuer Rang: Protein Farter II']);assert(f.log.sounds.includes('rankUp'));
+ assert.equal(f.api.celebrate(),false);f.api.view('ranks');assert.equal(f.log.toasts.length,1);
+ assert.match(f.mount.innerHTML,/Deine Übungen/);assert.match(f.mount.innerHTML,/Noch [^<]+ kg bei/);
+ assert.equal((f.mount.innerHTML.match(/class="fb-rung /g)||[]).length,9);
+ const unknown=fixture({snapshot:snapWith([]),strengthScore:null});unknown.api.view('ranks');assert.match(unknown.mount.innerHTML,/Rang unbekannt/);assert.equal(unknown.log.saves,0);
+ unknown.api.view('exercises');assert.match(unknown.mount.innerHTML,/Rang unbekannt/);assert(!unknown.mount.innerHTML.includes('kg/KG'));
+ f.api.view('exercises');assert.match(f.mount.innerHTML,/pulsFriendsBoard.exercise/);assert.match(f.mount.innerHTML,/kg\/KG/);
 }
 
 // Einbindung: eigene Dateien, Reihenfolge nach friends.js/puls-data-v87.js und vor motion.js, Offline-Cache.
@@ -140,17 +147,12 @@ async function asyncChecks(){
   assert.equal(f.log.sounds.includes('nudgeSend'),outcome==='sent',outcome);assert.equal(f.log.sounds.includes('warning'),outcome!=='sent',outcome);
   if(outcome!=='sent'){assert.equal(button.disabled,false);assert.equal(label.textContent,'Zum Warnen tippen')}
  }
- // Profilwechsel: kein veralteter XP-Cache, keine Feier, kein Speichern des falschen Rangs.
- const f=fixture({snapshot:snapWith([]),xp:6400});assert.equal(f.ctx.state.display.lastRankSeen,4);const saves=f.log.saves;
- f.setXp(0);f.tick(-1999); // innerhalb der früheren 800-ms-Cache-Zeit
- f.ctx.state={...f.ctx.state,workouts:[],display:{lastRankSeen:0}};
- assert.equal(f.api.localXp(),0,'Cache gilt nur für dasselbe Profil');
- assert.equal(f.api.celebrate(),false);assert.equal(f.ctx.state.display.lastRankSeen,0);assert.equal(f.log.saves,saves);assert.equal(f.log.toasts.length,0);
- // Neues Profil bekommt XP aus einem fremden Gerät/Pull (anderes Objekt): nur Ausgangspunkt, keine Feier.
- f.ctx.state={...f.ctx.state,workouts:[...f.ctx.state.workouts]};f.setXp(10500);
- assert.equal(f.api.celebrate(),false);assert.equal(f.log.toasts.length,0);
- // Echter Aufstieg im selben Profil wird weiterhin genau einmal gefeiert.
- f.ctx.state.display.lastRankSeen=5;f.setXp(15525);f.ctx.state.workouts=[...f.ctx.state.workouts];
- assert.equal(f.api.celebrate(),true);assert.deepEqual(f.log.toasts,['Neuer Rang: Mass Monster I']);assert.equal(f.ctx.state.display.lastRankSeen,6);
+ // Profile replacement is a baseline; later local strength improvement still celebrates.
+ const f=fixture({snapshot:snapWith([]),strengthScore:12}),saves=f.log.saves;
+ f.ctx.state={...f.ctx.state,workouts:[],display:{lastRankSeen:0}};f.setXp(0);
+ assert.equal(f.api.localXp(),0);assert.equal(f.api.celebrate(),false);assert.equal(f.log.saves,saves);
+ f.setStrength(15);assert.equal(f.api.celebrate(),false);assert.equal(f.log.toasts.length,0);
+ f.setStrength(18);assert.equal(f.api.celebrate(),true);assert.deepEqual(f.log.toasts,['Neuer Rang: Batman Cycle I']);
+
 }
 asyncChecks().then(()=>console.log('PASS: friends board (ranks/emblems, cards, slacking band, podium 0/1/2/5, unknown rank, one-time rank-up, wiring; no layout/backend).')).catch(error=>{console.error(error);process.exitCode=1});

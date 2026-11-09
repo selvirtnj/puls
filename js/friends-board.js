@@ -1,12 +1,5 @@
-/* PULS v87 Freunde: Bestenliste mit Podium, Rang-Embleme, Rangleiter und Slacking-Warnung.
-   Reine Oberfläche. Liest nur window.pulsFriendsData87.getSnapshot() (nichts Neues wird geteilt),
-   eigene Werte (XP, Serie) werden lokal und ohne Zustandsänderung berechnet.
-   Einziger Schreibzugriff: state.display.lastRankSeen (Feld aus puls-data-v87, validiert 0..9),
-   damit der Rang-Aufstieg genau einmal gefeiert wird.
-   Einhängen: friends.js rendert <section id="puls-friends-board-mount"> mit der alten Liste als Rückfall;
-   diese Datei ersetzt deren Inhalt. Kontoübersicht bekommt eine Rang-Zeile (#fb-profile-rank).
-   window.pulsFriendsBoard: {view(v), metric(m), warn(code, button), openRanks(), emblem(index, stage, size),
-     wreath(place), rankFor(xp), localXp(), localStreak(), leaderboard(snapshot, metric)} */
+/* Strength board: pure local projections and sanitized friend summaries.
+ * Only display.lastRankSeen (0..24, legacy 25/26 accepted) is persisted for celebrations. */
 (function(){
 'use strict';
 const en=()=>typeof state!=='undefined'&&state?.language==='en';
@@ -17,7 +10,7 @@ const codeOK=value=>typeof value==='string'&&/^[A-F0-9]{12}$/.test(value);
 const dayOK=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value);
 const number=value=>new Intl.NumberFormat(en()?'en-US':'de-DE').format(value);
 const data=()=>window.pulsData87;
-const ROMAN=['I','II','III'];
+const RANK_ART=[0,1,2,3,4,5,6,8,9];
 
 /* ---------- Rang-Embleme ----------
    Flache Flächen in Systemfarben (Rand dunkel, Fläche, heller Facettenschnitt), keine Verläufe, kein Glow.
@@ -68,11 +61,12 @@ function laurel(color){
 }
 function emblem(index,stage=1,size=40,{label=''}={}){
  const box='-6 -9 76 84',attrs=`class="fb-emblem" viewBox="${box}" width="${size}" height="${Math.round(size*84/76)}" ${label?`role="img" aria-label="${escape(label)}"`:'aria-hidden="true"'} focusable="false"`;
- if(!Number.isInteger(index)||index<0||index>9){
-  // Unbekannter Rang (kein XP vom Server): gestrichelter Kreis mit Fragezeichen, kein erfundener Rang.
+ if(!Number.isInteger(index)||index<0||index>8){
+  // Fehlende Kraftdaten: Fragezeichen, kein erfundener Rang.
   return `<svg ${attrs}><path d="${SHAPES.circle}" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" opacity=".55"/><text x="32" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="currentColor" opacity=".7">?</text></svg>`;
  }
- const [base,rim,light,glyph]=COLORS[index],form=FORMS[index],shape=SHAPES[form.shape],clip='fbclip'+(++uid);
+ const art=RANK_ART[index];
+ const [base,rim,light,glyph]=COLORS[art],form=FORMS[art],shape=SHAPES[form.shape],clip='fbclip'+(++uid);
  let svg=`<svg ${attrs}>`;
  if(form.flames)svg+=`<path class="fb-flame" d="${FLAME_OUTER}" fill="#FF3B30"/><path class="fb-flame" d="${FLAME_INNER}" fill="#FF9500"/>`;
  if(form.wings){svg+=`<g class="fb-wings" fill="${light}" stroke="${rim}" stroke-width="1.5" stroke-linejoin="round"><path d="${WING[form.wings]}"/><path d="${WING[form.wings]}" transform="matrix(-1 0 0 1 64 0)"/></g>`}
@@ -84,8 +78,8 @@ function emblem(index,stage=1,size=40,{label=''}={}){
  // Facettenschnitt: links oben heller (flach, wie geschliffen), kein Verlauf.
  svg+=`<path d="M-10 -10H32V30L-10 64Z" fill="${light}" opacity=".45" clip-path="url(#${clip})"/>`;
  if(form.ring)svg+=`${around(.7,shape)} fill="none" stroke="${light}" stroke-width="1.6"/>`;
- svg+=`<g transform="translate(32 30) scale(${form.shape==='circle'?.95:1.05}) translate(-12 -12)" fill="${glyph}" stroke="${glyph}" stroke-width="0">${GLYPHS[index]}</g>`;
- if(index<9)for(let i=0;i<3;i++)svg+=`<circle cx="${24+i*8}" cy="67" r="2.8" ${i<stage?`fill="${base}" stroke="${rim}"`:`fill="none" stroke="currentColor" opacity=".45"`} stroke-width="1.2"/>`;
+ svg+=`<g transform="translate(32 30) scale(${form.shape==='circle'?.95:1.05}) translate(-12 -12)" fill="${glyph}" stroke="${glyph}" stroke-width="0">${GLYPHS[art]}</g>`;
+ if(index<8)for(let i=0;i<3;i++)svg+=`<circle cx="${24+i*8}" cy="67" r="2.8" ${i<stage?`fill="${base}" stroke="${rim}"`:`fill="none" stroke="currentColor" opacity=".45"`} stroke-width="1.2"/>`;
  else svg+=`<path d="M32 61.5L35 66.5L32 71.5L29 66.5Z" fill="${base}" stroke="${rim}" stroke-width="1.2"/>`;
  return svg+'</svg>';
 }
@@ -134,28 +128,32 @@ function localStreak(){
   return {streak:count,last};
  }catch{return {streak:0,last:null}}
 }
-function rankFor(xp){
- if(!Number.isInteger(xp)||!data()?.rankForXp)return null;
- const rank=data().rankForXp(xp),group=data().ranks[rank.index];
- const nextStage=rank.nextAt===null?null:rank.stage<group.levels.length?{index:rank.index,stage:rank.stage+1}:{index:rank.index+1,stage:1};
- const nextName=nextStage?data().ranks[nextStage.index].name+(nextStage.index===9?'':' '+ROMAN[nextStage.stage-1]):null;
- return {...rank,xp,nextName};
+function rankFor(rankIndex){
+ if(!Number.isInteger(rankIndex)||rankIndex<0||rankIndex>24)return null;
+ return window.pulsStrength?.rankAt(rankIndex)||null;
 }
+const ownRank=()=>{const r=window.pulsStrength?.overall();return r?.index==null?null:r};
 const rankText=rank=>rank?escape(rank.name):t('Rang unbekannt','Rank unknown');
 
 /* ---------- Daten für die Ansichten ---------- */
 const initials=name=>{const parts=String(name).trim().split(/\s+/).filter(Boolean);const chars=parts.length>1?[...parts[0]].slice(0,1).concat([...parts[1]].slice(0,1)):[...(parts[0]||'?')].slice(0,2);return chars.join('').toUpperCase()};
 function people(snap){
  if(!snap?.self)return [];
- const own=localStreak(),ownXp=localXp();
- const me={code:snap.self.code,name:snap.self.name,self:true,xp:ownXp??snap.self.xp??null,streak:own.streak,last_training:own.last,broken:false};
+ const own=localStreak(),ownXp=localXp(),strength=window.pulsStrength?.summary()||{strength_rank:null,lift_ranks:[]};
+ const me={code:snap.self.code,name:snap.self.name,self:true,...strength,xp:ownXp??snap.self.xp??null,streak:own.streak,last_training:own.last,broken:false};
  const stale=p=>dayOK(p.last_training)&&new Date(today()+'T12:00:00Z')-new Date(p.last_training+'T12:00:00Z')>=4*86400000;
  return [me,...(snap.friends||[]).map(p=>({...p,self:false,streak:stale(p)?0:Number.isInteger(p.streak)?p.streak:0,slacking:!!p.broken||stale(p)}))];
 }
-function leaderboard(snap,metric='xp'){
- const value=p=>metric==='streak'?p.streak:Number.isInteger(p.xp)?p.xp:-1;
- return people(snap).sort((a,b)=>value(b)-value(a)||(b.self-a.self)||String(a.name).localeCompare(String(b.name)))
-  .map((p,i)=>({...p,place:i+1,rank:rankFor(p.xp)}));
+function leaderboard(snap,metric='strength',exerciseKey=null){
+ const rows=people(snap).map(p=>{
+  const lifts=p.lift_ranks||[],lift=exerciseKey?lifts.find(r=>r.key===exerciseKey):null;
+  const ratio=exerciseKey?lift?.ratio:lifts.length?lifts.reduce((n,r)=>n+r.ratio,0)/lifts.length:null;
+  const rank=exerciseKey?rankFor(lift?.rankIndex):p.self?ownRank():rankFor(p.strength_rank);
+  return {...p,ratio,rank,userLevel:Number.isInteger(p.xp)&&typeof xpProgress==='function'?xpProgress(p.xp).level:null};
+ }).filter(p=>!exerciseKey||p.rank);
+ const value=p=>metric==='streak'?p.streak:p.rank?.rankIndex??-1;
+ return rows.sort((a,b)=>value(b)-value(a)||(metric==='streak'?0:(b.ratio??-1)-(a.ratio??-1))||(b.self-a.self)||String(a.name).localeCompare(String(b.name)))
+  .map((p,i)=>({...p,place:i+1}));
 }
 function lastText(day){
  if(!dayOK(day))return t('Noch kein Training','No training yet');
@@ -172,17 +170,17 @@ const flame=(count,cls='')=>`<span class="fb-streak${count>0?' on':''}${cls?' '+
 const MEGAPHONE='<svg class="fb-megaphone" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10v4c0 .6.4 1 1 1h2l1.4 4.6c.2.8 1 1.4 1.9 1.4H10l-1.2-6H10l9 4.5V4.5L10 9H4c-.6 0-1 .4-1 1Z" fill="currentColor"/><path d="M21.5 9.5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 
 /* ---------- Zustand der Ansicht ---------- */
-let view='friends',metric='xp',animated=new Set();
+let view='friends',metric='strength',exerciseKey='',animated=new Set();
 const anim=key=>{if(animated.has(key))return false;animated.add(key);return true};
 function avatar(p,cls=''){
- const color=p.rank?COLORS[p.rank.index][0]:'var(--ds-separator)';
+ const color=p.rank?COLORS[RANK_ART[p.rank.index]][0]:'var(--ds-separator)';
  return `<span class="fb-avatar${cls?' '+cls:''}" style="--fb-rank:${color}" aria-hidden="true">${escape(initials(p.name))}</span>`;
 }
 function meHTML(me){
  const r=me.rank;
  return `<button type="button" class="fb-me" onclick="pulsFriendsBoard.view('ranks')" aria-label="${t('Dein Rang','Your rank')}: ${rankText(r)}">
   <span class="fb-me-emblem" data-fb-own-emblem>${emblem(r?.index,r?.stage,48)}</span>
-  <span class="fb-me-text"><strong>${escape(me.name)} <small>(${t('Du','You')})</small></strong><small>${rankText(r)}${r?` · Level ${r.userLevel}`:''}</small>
+  <span class="fb-me-text"><strong>${escape(me.name)} <small>(${t('Du','You')})</small></strong><small>${rankText(r)}${me.userLevel!==null?` · Level ${me.userLevel}`:''}</small>
    ${r?`<span class="fb-meter" aria-hidden="true"><i style="width:${Math.round(r.progress*100)}%"></i></span>`:''}</span>
   ${flame(me.streak)}</button>`;
 }
@@ -193,7 +191,7 @@ function cardHTML(p,i,play){
    <strong>SLACKING!</strong><span>${hours?t(`Gewarnt · wieder in ${hours} h`,`Warned · again in ${hours} h`):t('Zum Warnen tippen','Tap to warn')}${MEGAPHONE}</span></button>`:'';
  return `<li class="fb-card${p.slacking?' slacking':''}${play?' motion-play':''}"${code?` data-code="${code}"`:''}${motion}>
   <div class="fb-cardmain">
-   <span class="fb-avatarwrap">${avatar(p)}${r?`<span class="fb-lvl" aria-label="Level ${r.userLevel}">${r.userLevel}</span>`:''}</span>
+   <span class="fb-avatarwrap">${avatar(p)}${p.userLevel!==null?`<span class="fb-lvl" aria-label="Level ${p.userLevel}">${p.userLevel}</span>`:''}</span>
    <span class="fb-cardtext"><strong>${escape(p.name)}</strong><small>${rankText(r)}</small><small>${lastText(p.last_training)}</small></span>
    <span class="fb-cardside">${emblem(r?.index,r?.stage,36)}${flame(p.streak)}</span>
    ${code?`<details class="fb-menu"><summary aria-label="${t('Optionen für','Options for')} ${escape(p.name)}">${icon('dots-three')}</summary><button type="button" class="btn secondary" onclick="pulsFriends.action('${code}','remove')">${t('Entfernen','Remove')}</button></details>`:''}
@@ -207,7 +205,7 @@ function friendsHTML(list,play){
 }
 function valueHTML(p,small=false){
  if(metric==='streak')return flame(p.streak,small?'sm':'');
- return p.rank?`<span class="fb-xpval">${emblem(p.rank.index,p.rank.stage,small?20:24)}<b>Lvl ${p.rank.userLevel}</b></span>`:`<span class="fb-xpval unknown">${t('Rang unbekannt','Rank unknown')}</span>`;
+ return p.rank?`<span class="fb-xpval">${emblem(p.rank.index,p.rank.stage,small?20:24)}<b>${rankText(p.rank)}</b></span>`:`<span class="fb-xpval unknown">${t('Rang unbekannt','Rank unknown')}</span>`;
 }
 function boardHTML(list,play){
  const top=list.slice(0,3),rest=list.slice(3),order=[top[1],top[0],top[2]].filter(Boolean);
@@ -226,36 +224,44 @@ function boardHTML(list,play){
    <span class="fb-rowtext"><strong>${escape(p.name)}${p.self?` <small>(${t('Du','You')})</small>`:''}</strong><small>${rankText(p.rank)}</small></span>
    ${valueHTML(p,true)}</li>`).join('');
  return `<div class="segmented fb-metric" role="group" aria-label="${t('Kennzahl','Metric')}">
-   <button type="button" aria-pressed="${metric==='xp'}" onclick="pulsFriendsBoard.metric('xp')">${t('Rang','Rank')}</button>
+   <button type="button" aria-pressed="${metric==='strength'}" onclick="pulsFriendsBoard.metric('strength')">${t('Rang','Rank')}</button>
    <button type="button" aria-pressed="${metric==='streak'}" onclick="pulsFriendsBoard.metric('streak')">${t('Serie','Streak')}</button></div>
   ${podium}${rows?`<ol class="fb-rows" start="4">${rows}</ol>`:''}
-  ${list.length<2?`<p class="fb-empty">${t('Sobald Freunde dabei sind, erscheinen sie hier im Vergleich.','Once friends join, they appear here for comparison.')}</p>`:''}
-  <p class="fb-foot">${metric==='xp'?t('Rang aus gesammelten XP. Bei „Rang unbekannt“ hat die Person noch keinen Rang geteilt.','Rank from earned XP. “Rank unknown” means the person has not shared a rank yet.'):t('Serie: Trainingstage in Folge; drei volle Ruhetage unterbrechen sie.','Streak: consecutive training days; three full rest days break it.')}</p>`;
+  ${list.length<2?`<p class="fb-empty">${t('Sobald Freunde dabei sind, erscheinen sie hier im Vergleich.','Once friends join, they appear here for comparison.')}</p>`:''}`;
+}
+function nextText(r){
+ if(!r)return t('Rang unbekannt','Rank unknown');
+ if(r.nextAt===null)return t('Endrang','Final rank');
+ const lift=r.nextLift;
+ return lift?t(`Noch ${number(Math.ceil(lift.kg*10)/10)} kg bei ${escape(lift.exerciseName)} × ${lift.reps}`,`${number(Math.ceil(lift.kg*10)/10)} kg more at ${escape(lift.exerciseName)} × ${lift.reps}`):escape(r.nextName||'');
 }
 function ranksHTML(play){
- const xp=localXp(),r=rankFor(xp),ranks=data()?.ranks||[];
- const hero=r?`<div class="fb-rankhero">
-   <span class="fb-heroemblem" data-fb-own-emblem>${emblem(r.index,r.stage,104,{label:r.name})}</span>
-   <strong class="fb-heroname">${escape(r.name)}</strong>
-   <small>Level ${r.userLevel} · ${number(xp)} XP</small>
-   <span class="fb-meter big" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(r.progress*100)}" aria-label="${t('Fortschritt zur nächsten Stufe','Progress to next stage')}"><i ${play?'class="motion-play" data-motion="bar"':''} style="width:${Math.round(r.progress*100)}%"></i></span>
-   <small>${r.nextAt===null?t('Endrang erreicht. Respekt.','Final rank reached. Respect.'):t(`Noch ${number(r.nextAt-xp)} XP bis ${escape(r.nextName)}`,`${number(r.nextAt-xp)} XP to ${escape(r.nextName)}`)}</small>
-  </div>`:`<p class="fb-empty">${t('Rang wird berechnet, sobald Trainingsdaten vorliegen.','Your rank appears once training data is available.')}</p>`;
+ const xp=localXp(),r=ownRank(),ranks=data()?.ranks||[];
+ const hero=`<div class="fb-rankhero"><span class="fb-heroemblem" data-fb-own-emblem>${emblem(r?.index,r?.stage,104,{label:r?.name||t('Rang unbekannt','Rank unknown')})}</span>
+  <strong class="fb-heroname">${rankText(r)}</strong><small>Level ${typeof xpProgress==='function'?xpProgress(xp||0).level:1} · ${number(xp||0)} XP</small>
+  ${r?`<span class="fb-meter big" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(r.progress*100)}" aria-label="${t('Fortschritt zur nächsten Stufe','Progress to next stage')}"><i style="width:${Math.round(r.progress*100)}%"></i></span><small>${nextText(r)}</small>`:''}</div>`;
+ const own=window.pulsStrength?.all()||[];
+ const lifts=own.map(e=>`<li class="fb-liftrow">${emblem(e.index,e.stage,32)}<span><strong>${escape(e.exerciseName)}</strong><small>${escape(e.name)} · ${number(Math.round(e.ratio*100)/100)} kg/KG</small></span></li>`).join('');
  const rungs=[...ranks].reverse().map((g,i)=>{
-  const state_=!r?'future':g.index<r.index?'done':g.index===r.index?'current':'future';
-  const stage=state_==='done'?g.levels.length:state_==='current'?r.stage:0;
-  const levels=g.levels.length>1?g.levels.map((l,k)=>`${ROMAN[k]} ${l}`).join(' · '):`${g.levels[0]}`;
-  return `<li class="fb-rung ${state_}${play?' motion-play':''}" ${play?`data-motion="enter" style="--motion-i:${Math.min(i,10)}"`:''}>
-   ${emblem(g.index,stage,44)}
-   <span class="fb-rungtext"><strong>${escape(g.name)}</strong><small>Level ${levels}</small><small>${t('ab','from')} ${number(g.xp[0])} XP</small></span>
-   <span class="fb-rungstate">${state_==='current'?`<b>${t('Du','You')}</b>`:state_==='done'?icon('check-circle'):''}</span></li>`;
+  const status=!r?'future':g.index<r.index?'done':g.index===r.index?'current':'future';
+  const stage=status==='done'?3:status==='current'?r.stage:0;
+  return `<li class="fb-rung ${status}${play?' motion-play':''}" ${play?`data-motion="enter" style="--motion-i:${Math.min(i,10)}"`:''}>
+   ${emblem(g.index,stage,44)}<span class="fb-rungtext"><strong>${escape(g.name)}</strong><small>${g.index===8?'':'I · II · III'}</small></span>
+   <span class="fb-rungstate">${status==='current'?`<b>${t('Du','You')}</b>`:status==='done'?icon('check-circle'):''}</span></li>`;
  }).join('');
- return `${hero}<h3 class="fb-title">${t('Alle Ränge','All ranks')}</h3><ol class="fb-ladder">${rungs}</ol>
-  <p class="fb-foot">${t('XP gibt es für Trainings, Rekorde und Dauer. Ränge sinken nicht durch Pausen.','XP comes from workouts, records and duration. Ranks never drop during breaks.')}</p>`;
+ return `${hero}<h3 class="fb-title">${t('Deine Übungen','Your exercises')}</h3><ul class="fb-lifts">${lifts||`<li class="fb-empty">${t('Rang unbekannt','Rank unknown')}</li>`}</ul><h3 class="fb-title">${t('Alle Ränge','All ranks')}</h3><ol class="fb-ladder">${rungs}</ol>`;
+}
+function exercisesHTML(snap){
+ const choices=new Map();for(const p of people(snap))for(const e of p.lift_ranks||[])if(!choices.has(e.key))choices.set(e.key,e.name);
+ const sorted=[...choices].sort((a,b)=>a[1].localeCompare(b[1]));
+ if(!choices.has(exerciseKey))exerciseKey=sorted[0]?.[0]||'';
+ const rows=exerciseKey?leaderboard(snap,'strength',exerciseKey):[];
+ return `<label class="fb-exercise-select">${t('Übung','Exercise')}<select onchange="pulsFriendsBoard.exercise(this.value)">${sorted.map(([key,name])=>`<option value="${escape(key)}" ${key===exerciseKey?'selected':''}>${escape(name)}</option>`).join('')}</select></label>
+  <ol class="fb-rows">${rows.map(p=>`<li class="fb-row"><span class="fb-place">${p.place}</span>${emblem(p.rank.index,p.rank.stage,32)}<span class="fb-rowtext"><strong>${escape(p.name)}${p.self?` (${t('Du','You')})`:''}</strong><small>${rankText(p.rank)}</small></span><b>${number(p.ratio)} kg/KG</b></li>`).join('')||`<li class="fb-empty">${t('Rang unbekannt','Rank unknown')}</li>`}</ol>`;
 }
 function tabsHTML(){
  const tab=(key,label)=>`<button type="button" aria-pressed="${view===key}" onclick="pulsFriendsBoard.view('${key}')">${label}</button>`;
- return `<div class="segmented fb-tabs" role="group" aria-label="${t('Ansicht','View')}">${tab('friends',t('Freunde','Friends'))}${tab('board',t('Bestenliste','Leaderboard'))}${tab('ranks',t('Ränge','Ranks'))}</div>`;
+ return `<div class="segmented fb-tabs" role="group" aria-label="${t('Ansicht','View')}">${tab('friends',t('Freunde','Friends'))}${tab('board',t('Bestenliste','Leaderboard'))}${tab('exercises',t('Übungen','Exercises'))}${tab('ranks',t('Ränge','Ranks'))}</div>`;
 }
 
 /* ---------- Rang-Aufstieg einmalig feiern ---------- */
@@ -272,14 +278,14 @@ function persistSeen(index){
 // (Login, Cloud-Übernahme, Import) gilt der dann berechnete Rang als Ausgangspunkt.
 let rankBase={state:null,index:-1};
 function celebrate(root=document){
- const s=currentState(),r=rankFor(localXp());if(!r||!s)return false;
+ const s=currentState(),r=ownRank();if(!r||!s)return false;
  const seen=data()?.display?.().lastRankSeen;
- if(!Number.isInteger(seen)){persistSeen(r.index);rankBase={state:s,index:r.index};return false} // Erste Anzeige: merken, nicht feiern.
+ if(!Number.isInteger(seen)){persistSeen(r.rankIndex);rankBase={state:s,index:r.rankIndex};return false} // Erste Anzeige: merken, nicht feiern.
  // App-Start (noch kein Profil gesehen): ungesehener Aufstieg zählt. Wechsel zu einem anderen Profilobjekt: nur Ausgangspunkt.
- if(rankBase.state&&rankBase.state!==s){rankBase={state:s,index:Math.max(r.index,seen)};return false}
- if(r.index<=seen||rankBase.state===s&&r.index<=rankBase.index){if(r.index<seen)persistSeen(r.index);rankBase={state:s,index:r.index};return false}
- rankBase={state:s,index:r.index};
- if(!persistSeen(r.index))return false;
+ if(rankBase.state&&rankBase.state!==s){rankBase={state:s,index:Math.max(r.rankIndex,seen)};return false}
+ if(r.rankIndex<=seen||rankBase.state===s&&r.rankIndex<=rankBase.index){if(r.rankIndex<seen)persistSeen(r.rankIndex);rankBase={state:s,index:r.rankIndex};return false}
+ rankBase={state:s,index:r.rankIndex};
+ if(!persistSeen(r.rankIndex))return false;
  const target=root.querySelector?.('[data-fb-own-emblem]');
  if(target&&window.pulsMotion?.reveal)window.pulsMotion.reveal(target);else if(typeof pulsSound==='function')pulsSound('rankUp');
  if(typeof toast==='function')toast(t('Neuer Rang: ','New rank: ')+r.name);
@@ -292,7 +298,7 @@ function draw(mount,play){
  if(!snap?.self)return false;
  const list=leaderboard(snap,metric);
  const key=view+'|'+metric,animate=play!==false&&anim(key);
- const body=view==='board'?boardHTML(list,animate):view==='ranks'?ranksHTML(animate):friendsHTML(list,animate);
+ const body=view==='board'?boardHTML(list,animate):view==='ranks'?ranksHTML(animate):view==='exercises'?exercisesHTML(snap):friendsHTML(list,animate);
  mount.dataset.fb='1';mount.classList.add('fb');mount.setAttribute('data-no-translate','');
  mount.innerHTML=`${tabsHTML()}<div class="fb-view fb-view-${view}">${body}</div>`;
  const panel=document.getElementById('puls-friends-panel');if(panel&&panel.firstElementChild!==mount)panel.prepend(mount);
@@ -306,10 +312,10 @@ function enhance(){
 function profileRow(){
  const group=document.querySelector('.accountoverview .accountprofilegroup');
  if(!group||group.querySelector('#fb-profile-rank'))return;
- const xp=localXp(),r=rankFor(xp);if(!r)return;
+ const r=ownRank();
  group.insertAdjacentHTML('beforeend',`<button type="button" id="fb-profile-rank" class="dsrow fb-profilerank" data-no-translate onclick="pulsFriendsBoard.openRanks()">
-  <span class="fb-profile-emblem" data-fb-own-emblem>${emblem(r.index,r.stage,40)}</span>
-  <span class="dsrowtext"><span>${escape(r.name)}</span><small>Level ${r.userLevel} · ${r.nextAt===null?t('Endrang','Final rank'):t(`noch ${number(r.nextAt-xp)} XP bis ${escape(r.nextName)}`,`${number(r.nextAt-xp)} XP to ${escape(r.nextName)}`)}</small></span>
+  <span class="fb-profile-emblem" data-fb-own-emblem>${emblem(r?.index,r?.stage,40)}</span>
+  <span class="dsrowtext"><span>${rankText(r)}</span><small>${nextText(r)}</small></span>
   <span class="dsrowchevron" aria-hidden="true">${icon('caret-right')}</span></button>`);
  celebrate(group);
 }
@@ -317,13 +323,15 @@ function profileRow(){
 let pending=false;
 function schedule(){if(pending)return;pending=true;Promise.resolve().then(()=>{pending=false;try{enhance();profileRow()}catch(error){console.error(error)}})}
 function setView(next){
- if(!['friends','board','ranks'].includes(next))return;
+ if(!['friends','board','exercises','ranks'].includes(next))return;
  view=next;const mount=document.getElementById('puls-friends-board-mount');if(mount)draw(mount);
  if(typeof pulsSound==='function')pulsSound('tap');
  mount?.querySelector('.fb-tabs [aria-pressed="true"]')?.focus({preventScroll:true});
 }
+function setExercise(key){exerciseKey=key;const mount=document.getElementById('puls-friends-board-mount');if(mount)draw(mount,false)}
 function setMetric(next){
- if(!['xp','streak'].includes(next))return;
+ if(next==='xp')next='strength';
+ if(!['strength','streak'].includes(next))return;
  metric=next;const mount=document.getElementById('puls-friends-board-mount');if(mount)draw(mount);
  mount?.querySelector('.fb-metric [aria-pressed="true"]')?.focus({preventScroll:true});
 }
@@ -360,5 +368,5 @@ if(typeof MutationObserver==='function'){
  watch('mb');watch('content');
 }
 try{enhance();profileRow()}catch(error){console.error(error)}
-window.pulsFriendsBoard=Object.freeze({view:setView,metric:setMetric,warn,openRanks,emblem,wreath,rankFor,localXp,localStreak,leaderboard,celebrate});
+window.pulsFriendsBoard=Object.freeze({view:setView,metric:setMetric,exercise:setExercise,warn,openRanks,emblem,wreath,rankFor,localXp,localStreak,leaderboard,celebrate});
 })();

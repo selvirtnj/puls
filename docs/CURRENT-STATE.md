@@ -1,5 +1,12 @@
 # PULS — aktueller Stand und Übergabe
 
+### Paket C für v88: Kraft-Ränge (09.11.2026, lokal)
+
+- `agent/v88-ranks`, Basis `86779c6`: reines Kraftmodell in `js/strength-ranks.js`, 9 Ränge/25 Stufen statt XP-Rängen. Beste e1RM aus erledigten Sätzen abgeschlossener/importierter Workouts, Körpergewicht zum Datum, geschlechts-/geräteabhängige Standards. Gesamtrang: beste Übung je Gruppe, höchstens 5 verschiedene Gruppen, mindestens 3. [Standards/API/Regeln](STRENGTH-RANKS.md).
+- Freunde veröffentlichen kompakte Kraftdaten erst nach sauberem Profilsync; Fallback auf alte RPC-Signaturen erhält XP/Serie und Nutzer-/Revisionsgrenzen. Board mit Kraft-Bestenliste, Übungswahl/Vergleich, eigenen Übungsrängen, kg-Ziel zur nächsten Stufe und 9 neu zugeordneten Emblemen. Alte `lastRankSeen`-Werte bis 26 bleiben gültig. Parallele Konto-Dateien unverändert.
+- Neue `backend/friends-strength.sql` benötigt `friends-ranks.sql`, ist nur vorbereitet: JSON-Struktur-/Größenprüfung, eigene revisionsgeprüfte Zeile, SECURITY DEFINER/leerem search_path und angenommene Freundschaften erhalten. Keine Live-Ausführung, kein Commit/Push, keine Versionserhöhung.
+- `C:\Program Files\nodejs\node.exe scripts/check.cjs` und `git diff --check` lokal grün. Kein PostgreSQL-/Live-RLS-Nachweis. Browserprüfung 390 × 844 in Hell/Dunkel hier blockiert (Browserhost/native Pipe nicht verfügbar); unabhängiges Review, UI-Prüfung und zentrale Versionierung vor Veröffentlichung beim Koordinator.
+
 ### Version 87 (09.11.2026)
 
 - Im Arbeitsstand integriert (Verlauf `e8ce137..68da462`); Veröffentlichung durch den Koordinator noch offen.

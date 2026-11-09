@@ -12,7 +12,7 @@ run(fs.readFileSync('js/native-extras.js','utf8'));
 let haptics=0;c.pulsHaptic=()=>++haptics;
 const oldValidator=c.validData;
 let writes=0;c.localStorage.setItem=()=>{writes++};
-const source=fs.readFileSync('js/puls-data-v87.js','utf8');run(source);
+const source=fs.readFileSync('js/puls-data-v87.js','utf8');run(fs.readFileSync('js/strength-ranks.js','utf8'));run(source);
 const api=c.window.pulsData87,clone=x=>JSON.parse(JSON.stringify(x));
 const old=()=>JSON.parse(run('JSON.stringify(initial())'));
 const validate=s=>c.validData(s);
@@ -70,7 +70,7 @@ for(const failure of [null,'weights','nativeExtras']){
  assert.equal(validate(probe),valid);assert.equal(JSON.stringify(shared),before,'shallow validation cannot mutate source subobjects');
  if(!valid)assert.equal(probe.plan,shared.plan,'failed validation does not partially replace fields');
 }
-s={...old(),display:{hapticsEnabled:'false',motion:'bad',lastRankSeen:10,unknown:'discard',highlighted:['injected'],summaryViews:['week','week']},
+s={...old(),display:{hapticsEnabled:'false',motion:'bad',lastRankSeen:27,unknown:'discard',highlighted:['injected'],summaryViews:['week','week']},
  water:{mode:'bad',glassMl:99},foodSearch:{sort:'bad',sources:['fake']},plan:{...clone(c.plan87),macroInput:'ratio'}};
 assert(validate(s));assert.deepEqual(clone(s.display),{});assert.deepEqual(clone(s.water),{});assert.deepEqual(clone(s.foodSearch),{});assert(!Object.hasOwn(s.plan,'macroInput'));
 for(const bad of [null,{},[{}],[{id:'bad',name:'Bad',items:[]}],
@@ -96,19 +96,14 @@ for(const override of [{finished:false},{autoFinished:true},{timeApprox:true},{s
 assert.equal(water({weight:70,age:30},{weights:[{date:'2026-11-07',kg:80},{date:'2026-11-09',kg:100}]}).weightKg,80);
 assert.equal(water({weight:70,age:30},{water:{mode:'manual'},waterGoal:900}).ml,900,'manual always wins, even outside auto clamp');
 assert.equal(water({weight:70,age:30},{water:{mode:'auto'},waterGoal:900}).ml,900);
-// Every stage against xpProgress, including the XP immediately before it.
-const ranks=api.ranks;assert.equal(ranks.length,10);assert.equal(ranks[0].name,'High Estrogen');assert.equal(ranks[9].name,'Tren Cougher');
-for(const rank of ranks)for(let i=0;i<rank.levels.length;i++){
- const level=rank.levels[i],xp=rank.xp[i];assert.equal(c.xpProgress(xp).level,level);
- const at=api.rankForXp(xp);assert.equal(at.index,rank.index);assert.equal(at.stage,i+1);assert.equal(at.stageLevel,level);assert.equal(at.level,level);assert.equal(at.userLevel,c.xpProgress(xp).level);assert.equal(at.progress,xp===ranks[9].xp[0]?1:0);
- assert.deepEqual(at,api.rankForLevel(level));if(xp>0)assert.equal(c.xpProgress(xp-1).level,level-1);
- if(at.nextAt!==null){assert(api.rankForXp(at.nextAt-1).progress<1);assert.notEqual(api.rankForXp(at.nextAt).name,at.name)}
+// Strength is independent of XP; old entry points retain independent user levels.
+const ranks=api.ranks;assert.equal(ranks.length,9);assert.equal(ranks[0].name,'High Estrogen');assert.equal(ranks[8].name,'Tren Cougher');
+for(const xp of [0,250,4000,5000,10000,60000,10000000]){
+ assert.equal(api.rankForXp(xp).userLevel,c.xpProgress(xp).level);
+ assert.equal(api.rankForXp(xp).index,api.rankForXp(0).index);
 }
-assert.equal(api.rankForXp(0).name,'High Estrogen I');assert.equal(api.rankForXp(250).name,'High Estrogen II');
-assert.equal(api.rankForXp(Infinity).name,'High Estrogen I');assert.equal(api.rankForXp(10000000).name,'Tren Cougher');
-assert.equal(api.rankForXp(10000000).nextAt,null);
-for(const xp of [4000,5000,10000,60000,10000000])assert.equal(api.rankForXp(xp).userLevel,c.xpProgress(xp).level);
-assert.equal(api.rankForLevel(60).userLevel,60);assert.equal(api.rankForLevel(60).stageLevel,55);
+assert.equal(api.rankForLevel(60).userLevel,60);assert.equal(api.rankForLevel(60).stageLevel,null);
+for(const seen of [0,9,24,25,26]){const probe={...old(),display:{lastRankSeen:seen}};assert(validate(probe));assert.equal(probe.display.lastRankSeen,seen)}
 for(const file of ['index.html','sw.js'])assert(fs.readFileSync(file,'utf8').includes('js/puls-data-v87.js'));
 assert(fs.readFileSync('index.html','utf8').indexOf('js/puls-data-v87.js')>fs.readFileSync('index.html','utf8').indexOf('js/friends.js'));
 // Real startup with mixed malformed local combos: preserve all valid snapshots.

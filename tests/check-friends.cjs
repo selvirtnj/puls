@@ -3,7 +3,7 @@ const source=fs.readFileSync('js/friends.js','utf8');
 const empty=()=>({self:null,friends:[],incoming:[],outgoing:[],nudges:[]});
 const enrolled=()=>({...empty(),self:{code:'ABCDEF123456',name:'Test'}});
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-function fixture({preview=false,online=true,reply=async name=>name==='snapshot'?enrolled():true}={}){
+function fixture({preview=false,online=true,strength=null,reply=async name=>name==='snapshot'?enrolled():true}={}){
  const nodes=new Map(),events=new Map(),timers=new Map(),intervals=[],requests=[],alerts=[];let timerId=0,refreshSession=async()=>{};
  function node(id=''){
   const n={id,innerHTML:'',textContent:'',value:'',attrs:{},children:[],setAttribute(k,v){this.attrs[k]=v},
@@ -12,7 +12,7 @@ function fixture({preview=false,online=true,reply=async name=>name==='snapshot'?
  }
  const menu=node(),panel=node('puls-friends-panel');node('friends-name').value='Test';node('friends-code').value='FEDCBA654321';node('content');
  const state={workouts:[],goals:{kcal:2200},displayName:'Local',language:'de'};
- const ctx={state,cloudConfigured:true,firstRunPreview:preview,cloudSession:{user:{id:'fixture-a'},access_token:'fixture-a-token'},
+ const ctx={state,pulsStrength:strength?{summary:()=>strength}:undefined,cloudConfigured:true,firstRunPreview:preview,cloudSession:{user:{id:'fixture-a'},access_token:'fixture-a-token'},
   cloudConfig:{url:'https://example.supabase.co',publicKey:'fixture-public'},cloudRevision:3,cloudBusy:false,cloudApplying:false,
   cloudDirty:false,cloudConflict:false,cloudUploadBlocked:false,stateLoadCorrupt:false,cloudRejectedRevision:null,cloudBaseline:JSON.stringify(state),
   cloudFreshSession:()=>refreshSession(),today:()=>'2026-11-08',
@@ -189,6 +189,22 @@ async function main(){
  await fallbackRace.api.refresh(true);await fallbackRace.api.refresh(true);
  assert.equal(fallbackRace.requests.filter(r=>r.name==='publish').length,1,'no old-owner retry after account switch');
  assert.equal(fallbackRace.ctx.pulsFriendsData87.getSnapshot(),null);
+ // v88: new -> v87 -> original RPC, remembering capabilities without dropping revision/opt-in.
+ const strength={strength_rank:12,lift_ranks:[{key:'bench--barbell',name:'Bench',rankIndex:12,ratio:1.25}]};
+ for(const oldest of [false,true]){
+  const legacy=fixture({strength,reply:async(name,body)=>name==='snapshot'?enrolled():
+   Object.hasOwn(body,'p_strength')||oldest&&Object.hasOwn(body,'p_xp')?{http:404,detail:{code:'PGRST202'}}:true});
+  await legacy.api.refresh(true);await legacy.api.refresh(true);
+  const pubs=legacy.requests.filter(r=>r.name==='publish');assert.equal(pubs.length,oldest?3:2);
+  assert.deepEqual(pubs[0].body.p_strength,strength);assert(!Object.hasOwn(pubs.at(-1).body,'p_strength'));
+  assert.equal(Object.hasOwn(pubs.at(-1).body,'p_xp'),!oldest);assert.equal(pubs.at(-1).body.p_source_revision,3);
+  legacy.ctx.cloudRevision=4;await legacy.api.refresh(true);
+  assert(!Object.hasOwn(legacy.requests.filter(r=>r.name==='publish').at(-1).body,'p_strength'));
+ }
+ const shared=fixture({strength,reply:async name=>name==='snapshot'?{...enrolled(),friends:[{...friend,strength_rank:12,lift_ranks:[...strength.lift_ranks,{key:'bad key',name:'x',rankIndex:50,ratio:-1}]}]}:true});
+ await shared.api.refresh(true);await shared.api.refresh(true);
+ assert.deepEqual(shared.requests.find(r=>r.name==='publish').body.p_strength,strength);
+ const sanitized=shared.ctx.pulsFriendsData87.getSnapshot().friends[0];assert.equal(sanitized.strength_rank,12);assert.equal(sanitized.lift_ranks.length,1);
  // Source contracts supplement mocks; they do NOT execute PostgreSQL or prove live RLS.
  const sql=fs.readFileSync('backend/friends.sql','utf8');
  assert.equal((sql.match(/enable row level security/g)||[]).length,5);

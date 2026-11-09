@@ -13,6 +13,17 @@
 .fb ol, .fb ul { list-style: none; margin: 0; padding: 0; }
 .fb strong, .fb b { font-variant-numeric: tabular-nums; }
 .fb-emblem { display: block; flex-shrink: 0; overflow: visible; color: var(--ds-label-2); }
+.fb .fb-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+.fb .fb-tabs button { min-height: 44px; min-width: 0; }
+.fb-exercise-select { display: grid; gap: 6px; margin-bottom: 12px; }
+.fb-exercise-select select { width: 100%; min-width: 0; min-height: 44px; color: var(--ds-label); background: var(--ds-surface); }
+.fb-liftrow { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: .5px solid var(--ds-separator); }
+.fb-liftrow > span { min-width: 0; overflow-wrap: anywhere; }
+.fb-liftrow strong, .fb-liftrow small { display: block; }
+.fb-liftrow small { font-size: 13px; color: var(--ds-label-2); }
+.fb-view-exercises .fb-row > b { max-width: 80px; font-size: 13px; text-align: right; }
+.fb .fb-xpval { min-width: 0; max-width: 100%; }
+.fb-xpval b { overflow-wrap: anywhere; font-size: 12px; }
 
 /* Initialen-Avatar mit Rang-Ring (keine Fotos, die werden nicht geteilt). */
 .fb-avatar { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50% !important; background: var(--ds-fill); color: var(--ds-label); border: 2.5px solid var(--fb-rank, var(--ds-separator)); font-weight: 700; font-size: 16px; line-height: 1; overflow: hidden; }

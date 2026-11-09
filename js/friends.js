@@ -8,7 +8,7 @@ const dayOK=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value);
 const nameOK=value=>typeof value==='string'&&[...value].length>=1&&[...value].length<=40;
 const owner=()=>cloudConfigured&&!firstRunPreview&&navigator.onLine!==false?cloudSession?.user?.id||null:null;
 let currentOwner=null,snapshot=null,lastPublished='',lastAttempt=0,loading=false,acting=false,message='',timer=null;
-let backendAvailable=null,refreshTimer=null,rankPublishAvailable=null; // Capability result lasts only for this page session.
+let backendAvailable=null,refreshTimer=null,rankPublishAvailable=null,strengthPublishAvailable=null; // Per-page capabilities.
 const controllers=new Set();
 function context(){
  const next=owner();
@@ -21,7 +21,8 @@ function context(){
  return next;
 }
 async function rpc(name,body,expected=currentOwner){
- // Retry only the optional XP argument, retaining the owner/revision boundaries.
+ // Strip only unsupported optional summary fields; owner/revision checks stay intact.
+ if(name==='publish'&&strengthPublishAvailable===false&&body){body={...body};delete body.p_strength;}
  if(name==='publish'&&rankPublishAvailable===false&&body&&Object.hasOwn(body,'p_xp')){body={...body};delete body.p_xp}
  if(!expected||context()!==expected)throw Error('context');
  await cloudFreshSession();
@@ -39,6 +40,9 @@ async function rpc(name,body,expected=currentOwner){
   if(context()!==expected)throw Error('context');
   if(!response.ok){
    let detail;try{detail=await response.json()}catch{}
+   if(name==='publish'&&body&&Object.hasOwn(body,'p_strength')&&(response.status===404||detail?.code==='PGRST202'||detail?.code==='42883')){
+    strengthPublishAvailable=false;const previous={...body};delete previous.p_strength;return await rpc(name,previous,expected);
+   }
    if(name==='publish'&&body&&Object.hasOwn(body,'p_xp')&&(response.status===404||detail?.code==='PGRST202')){
     rankPublishAvailable=false;const legacy={...body};delete legacy.p_xp;return await rpc(name,legacy,expected);
    }
@@ -48,6 +52,7 @@ async function rpc(name,body,expected=currentOwner){
   const result=await response.json();
   if(context()!==expected)throw Error('context');
   backendAvailable=true;
+  if(name==='publish'&&body&&Object.hasOwn(body,'p_strength'))strengthPublishAvailable=true;
   if(name==='publish'&&body&&Object.hasOwn(body,'p_xp'))rankPublishAvailable=true;
   return result;
  }finally{clearTimeout(timeout);controllers.delete(controller)}
@@ -79,14 +84,25 @@ function summary(name){
    if(typeof total==='number'&&Number.isFinite(total))xp=Math.min(10000000,Math.max(0,Math.round(total)));
   }finally{state=original}
  }
- return {...(xp===null?{}:{p_xp:xp}),p_display_name:name,p_streak:Math.min(100000,count),p_last_training:last,p_streak_broken:!!last&&count===0,p_source_revision:cloudRevision};
+ const strength=window.pulsStrength?.summary?.();
+ return {...(xp===null?{}:{p_xp:xp}),...(strength?{p_strength:strength}:{}),p_display_name:name,p_streak:Math.min(100000,count),p_last_training:last,p_streak_broken:!!last&&count===0,p_source_revision:cloudRevision};
 }
 function cleanSnapshot(value){
  if(!value||typeof value!=='object')throw Error('network');
  const person=p=>p&&codeOK(p.code)&&nameOK(p.name),stamp=v=>typeof v==='string'&&Number.isFinite(Date.parse(v));
  const rows=(key,valid)=>Array.isArray(value[key])?value[key].filter(valid):[];
  // null is deliberately distinct from 0: the UI must show Rang unbekannt.
- const ranked=p=>({...p,xp:Number.isInteger(p.xp)&&p.xp>=0&&p.xp<=10000000?p.xp:null});
+ const liftOK=r=>r&&typeof r.key==='string'&&/^[a-z0-9-]{1,180}$/.test(r.key)&&
+  typeof r.name==='string'&&r.name.trim().length>0&&[...r.name].length<=120&&
+  Number.isInteger(r.rankIndex)&&r.rankIndex>=0&&r.rankIndex<=24&&typeof r.ratio==='number'&&Number.isFinite(r.ratio)&&r.ratio>0&&r.ratio<=1000;
+ const ranked=p=>{
+  const seen=new Set(),lifts=[];
+  for(const r of Array.isArray(p.lift_ranks)?p.lift_ranks.slice(0,40):[])if(liftOK(r)&&!seen.has(r.key)){
+   seen.add(r.key);lifts.push({key:r.key,name:r.name,rankIndex:r.rankIndex,ratio:Math.round(r.ratio*100)/100});
+  }
+  return {...p,xp:Number.isInteger(p.xp)&&p.xp>=0&&p.xp<=10000000?p.xp:null,
+   strength_rank:Number.isInteger(p.strength_rank)&&p.strength_rank>=0&&p.strength_rank<=24?p.strength_rank:null,lift_ranks:lifts};
+ };
  // One malformed foreign row must not disable requests or the rest of the inbox.
  return {self:person(value.self)?ranked(value.self):null,
   friends:rows('friends',p=>person(p)&&Number.isInteger(p.streak)&&p.streak>=0&&p.streak<=100000&&
@@ -141,7 +157,7 @@ function panelHTML(){
  if(!context())return `<p>${text('Freunde sind nur angemeldet und online verfügbar.','Friends require sign-in and an internet connection.')}</p>`;
  const status=`<p class="note" role="status">${esc(message)}</p>`;
  if(!snapshot)return `<p class="note" role="status">${esc(message||waitingMessage())}</p>`+button(text('Erneut laden','Reload'),'pulsFriends.refresh(true)');
- if(!snapshot.self)return `<p>${text('Freunde sehen nur deinen gewählten Namen, deine Trainingsserie und das letzte Trainingsdatum; wenn du jemandem eine Anfrage schickst, sieht er deinen Namen schon vorher. E-Mail, Profil und Gesundheitsdaten bleiben privat.','Friends only see your chosen name, training streak and last training date; people you send a request to see your name right away. Email, profile and health data stay private.')}</p><form onsubmit="pulsFriends.enable(event)"><label>${text('Anzeigename für Freunde','Name for friends')}<input id="friends-name" maxlength="80" required autocomplete="off" value="${esc(state.displayName||'')}"></label><button class="btn full" ${acting?'disabled':''}>${text('Freunde aktivieren','Enable friends')}</button></form>${status}`;
+ if(!snapshot.self)return `<p>${text('Freunde sehen deinen Namen, deine Trainingsserie, das letzte Trainingsdatum und deine Kraftränge mit Übungsnamen und kg/KG-Verhältnis. Anfragen zeigen deinen Namen.','Friends see your name, training streak, last training date and strength ranks with exercise names and kg/BW ratios. Requests show your name.')}</p><form onsubmit="pulsFriends.enable(event)"><label>${text('Anzeigename für Freunde','Name for friends')}<input id="friends-name" maxlength="80" required autocomplete="off" value="${esc(state.displayName||'')}"></label><button class="btn full" ${acting?'disabled':''}>${text('Freunde aktivieren','Enable friends')}</button></form>${status}`;
  return `<div class="friends-code"><small>${text('Dein Freundescode','Your friend code')}</small><strong data-no-translate>${snapshot.self.code}</strong>${button(text('Code teilen / kopieren','Share / copy code'),'pulsFriends.share()')}</div><p class="note">${text('Stupse erscheinen beim Öffnen oder Fokussieren der App. Kein Hintergrund-Push. Ein Stups je Freund alle 12 Stunden.','Nudges appear when opening or focusing the app. No background push. One nudge per friend every 12 hours.')}</p><form onsubmit="pulsFriends.add(event)"><label>${text('Freundescode','Friend code')}<input id="friends-code" maxlength="12" minlength="12" pattern="[A-Fa-f0-9]{12}" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label><button class="btn full" ${acting?'disabled':''}>${text('Anfrage senden','Send request')}</button></form>${status}
   ${snapshot.nudges.length?`<h3>${text('Stupse','Nudges')}</h3><ul class="friends-list">${snapshot.nudges.map(p=>`<li><strong data-no-translate>${esc(p.name)}</strong><p>Stop slacking off</p><small>${esc(p.sent_at?.slice(0,10)||'')}</small>${button(text('Gelesen','Dismiss'),`pulsFriends.read('${esc(p.id)}')`,true,acting)}</li>`).join('')}</ul>`:''}
   ${snapshot.incoming.length?`<h3>${text('Anfragen','Requests')}</h3><ul class="friends-list">${personRows(snapshot.incoming,'incoming')}</ul>`:''}
