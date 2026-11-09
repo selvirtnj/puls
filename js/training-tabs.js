@@ -17,7 +17,7 @@ function trainingRoutineActions(id){
     if(action==='copy'){
       // Erst im bestehenden Editor prüfen und über saveRoutine speichern.
       // routineForm erzeugt einen tiefen Entwurf; die Quelle bleibt unverändert.
-      routineDraft.id=uid();
+      routineDraft.id=uid();delete routineDraft.favorite; // Kopie startet ohne Favoritenstern.
       let suffix=en?' (copy)':' (Kopie)';
       routineDraft.name=routineDraft.name.slice(0,80-suffix.length)+suffix;
       renderPersonalRoutine();
