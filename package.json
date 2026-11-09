@@ -1,6 +1,6 @@
 {
   "name": "puls-personal-tracker",
-  "version": "86.0.0",
+  "version": "87.0.0",
   "private": true,
   "description": "Personal fitness and nutrition PWA",
   "engines": {
