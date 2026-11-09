@@ -77,15 +77,29 @@ function duration(value){
 }
 async function digest(value){let bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('')}
 function weightUnit(header,sessions,liftoff){
- if(header==='weight kg')return 'kg';
- if(header==='weight lbs'||header==='weight lb')return 'lbs';
- // Ignore blanks/bodyweight zeros. Converted Liftoff pounds retain the original kg grid.
- let values=sessions.flatMap(s=>s.rows.map(r=>r.weight)).filter(n=>typeof n==='number'&&n>0);
- const onGrid=n=>Math.abs(n-Math.round(n*4)/4)<1e-4;
- let metric=values.filter(onGrid).length,pounds=values.filter(n=>onGrid(n/2.20462262185)).length;
- if(metric>pounds)return 'kg';
- if(pounds>metric)return 'lbs';
- return liftoff?'lbs':'kg';
+ const certain=unit=>({unit,unitUncertain:false});
+ if(header==='weight kg')return certain('kg');
+ if(header==='weight lbs'||header==='weight lb'||liftoff)return certain('lbs');
+ // Liftoff's exact schema exports pounds. Other unitless exports need evidence;
+ // ordinary 2.5 increments alone fit both systems and cannot decide the unit.
+ let rows=sessions.flatMap(s=>s.rows).filter(r=>typeof r.weight==='number'&&r.weight>0),values=[...new Set(rows.map(r=>r.weight))];
+ const onGrid=(n,step=.25,tolerance=1e-4)=>Math.abs(n-Math.round(n/step)*step)<tolerance;
+ let metric=values.filter(n=>onGrid(n)).length,pounds=values.filter(n=>onGrid(n/2.20462262185,.25,.023)).length;
+ const majority=n=>values.length>0&&n/values.length>=.75;
+ if(majority(pounds)&&pounds-metric>=values.length*.5)return certain('lbs');
+ if(majority(metric)&&metric-pounds>=values.length*.5&&values.filter(n=>onGrid(n)&&!onGrid(n,2.5)).length>=values.length*.5)return certain('kg');
+ // Count maxima per exercise, never repeated sets as independent heavy lifts.
+ let maxima=new Map();for(let r of rows){let name=key(r.exercise);maxima.set(name,Math.max(maxima.get(name)||0,r.weight))}
+ let heavy=0;for(let [name,max] of maxima){
+  if(/dumbbell|machine|smith|cable|kurzhantel|maschine/.test(name))continue;
+  if(/bench press|bankdrucken/.test(name)&&max>150||/squat|kniebeuge/.test(name)&&max>200||/deadlift|kreuzheben/.test(name)&&max>250)heavy++;
+ }
+ const plates=new Set([45,135,185,225,315,405]);
+ let plateHits=values.filter(n=>plates.has(n)||n>=45&&onGrid(n,2.5)&&!onGrid(n,5)).length;
+ if(heavy>=2||majority(plateHits))return certain('lbs');
+ // A small conventional metric grid, including e.g. 20/22.5/100, is metric evidence.
+ if(majority(metric)&&values.every(n=>onGrid(n,2.5))&&values.some(n=>n===20)&&plateHits===0)return certain('kg');
+ return {unit:pounds>metric||heavy||plateHits>values.length/2?'lbs':'kg',unitUncertain:true};
 }
 async function parse(text){
  let rows=csvRows(text),headers=rows.shift().map(key);if(new Set(headers).size!==headers.length)fail();
@@ -93,7 +107,7 @@ async function parse(text){
  let explicitWeight=column('weight lbs','weight lb','weight kg');
  let cols={date:column('date','start time'),end:column('end time'),name:column('workout name','title'),exercise:column('exercise name','exercise title'),order:column('set order','set index'),weight:explicitWeight>=0?explicitWeight:column('weight'),reps:column('reps'),duration:column('duration','workout duration')};
  if(cols.date<0||cols.exercise<0||cols.weight<0||cols.reps<0)fail();
- let liftoff=headers.includes('set order')&&headers.includes('seconds')&&headers.includes('workout name'),groups=new Map(),omitted=false,skippedRows=0;
+ let liftoff=headers.join('|')==='date|duration|workout name|exercise name|set order|weight|reps|distance|seconds|rpe|notes',groups=new Map(),omitted=false,skippedRows=0;
  for(let row of rows){
   if(row.length!==headers.length)fail();let get=k=>cols[k]<0?'':row[cols[k]].trim(),dt=localDate(get('date')),name=get('name'),exercise=get('exercise');if(exercise.length>200||name.length>200)fail();
   let groupKey=JSON.stringify([dt.stamp,name]),g=groups.get(groupKey),seconds=duration(get('duration')),ignoredEnd=false;
@@ -129,7 +143,7 @@ async function parse(text){
  }
  for(let group of routineGroups)group.id='wi_r_'+await digest(group.name?'name:'+group.name:group.sessions[0]);
  let familyIds={};for(let family of ['push','pull','legs','core','upper','full'])familyIds[family]='wi_r_'+await digest('family:'+family);
- return {sessions,unit:weightUnit(headers[cols.weight],sessions,liftoff),omitted,skippedRows,routineGroups,familyIds,liftoff};
+ return {sessions,...weightUnit(headers[cols.weight],sessions,liftoff),omitted,skippedRows,routineGroups,familyIds,liftoff};
 }
 function kg(value,unit){if(value==='')return '';let n=unit==='lbs'?value/2.20462262185:value,q=Math.round(n*4)/4;return Math.abs(n-q)<0.00001?q:Math.round(n*10)/10}
 function plan(parsed,unit,profile,includeRoutines=true){
@@ -222,7 +236,9 @@ prefillExerciseSets=function(w,e){
 const baseValid=validData;
 validData=function(s){
  const fieldsOK=value=>value===undefined||value&&typeof value==='object'&&!Array.isArray(value)&&Object.entries(value).every(([k,v])=>k.length<=200&&typeof v==='string'&&v.length<=MAX_BYTES);
- return baseValid(s)&&(s.routines||[]).every(r=>r.importWorkoutId===undefined||typeof r.importWorkoutId==='string'&&/^wi_[a-f0-9]{64}$/.test(r.importWorkoutId))&&s.workouts.every(w=>
+ // A weight-only profile supports historical ranks without inventing planning inputs.
+ const weightOnly=s?.profile&&typeof s.profile==='object'&&!Array.isArray(s.profile)&&Object.keys(s.profile).length===1&&typeof s.profile.weight==='number'&&Number.isFinite(s.profile.weight)&&s.profile.weight>=20&&s.profile.weight<=400;
+ return baseValid(weightOnly?{...s,profile:null}:s)&&(s.routines||[]).every(r=>r.importWorkoutId===undefined||typeof r.importWorkoutId==='string'&&/^wi_[a-f0-9]{64}$/.test(r.importWorkoutId))&&s.workouts.every(w=>
   (w.importSource===undefined||w.importSource==='workout-csv'&&/^wi_[a-f0-9]{64}$/.test(w.id))&&
   (w.csvRows===undefined||Array.isArray(w.csvRows)&&w.csvRows.every(fieldsOK))&&w.exercises.every(e=>e.sets.every(set=>(set.setOrder===undefined||typeof set.setOrder==='string'&&set.setOrder.length<=200)&&fieldsOK(set.csvFields))));
 };
@@ -231,7 +247,7 @@ workoutAwards=function(...args){let awards=baseAwards.apply(this,args);for(let w
 // Only this new feature wraps account rendering; existing controls and handlers remain intact.
 const baseManage=accountManageBody;
 accountManageBody=function(...args){let html=baseManage.apply(this,args),row=accountListRow({label:tr('Workout-CSV importieren','Import workout CSV'),action:'workoutImportForm()',cls:'dsaction',chevron:true});return html.replace(/(<h2 class="dsgrouptitle">(?:Daten|Data)<\/h2><section class="dsgroup[^\"]*">)/,'$1'+row)};
-let pending=null,importResult=null,serial=0;
+let pending=null,importResult=null,importWeight=null,serial=0;
 const owner=()=>typeof cloudSession!=='undefined'?cloudSession?.user?.id||'local':'local';
 function current(p){return pending===p&&p.profile===state&&p.owner===owner()&&(!p.onboarding||setupPending&&onboardingImport?.profile===state&&onboardingImport.owner===owner())&&modal.open&&!!$('workout-import-preview')}
 // flows.js finishes only after committing optional profile/weight inputs. Later wrappers
@@ -249,7 +265,7 @@ window.finishWorkoutImportOnboarding=function(){
 };
 window.cancelWorkoutImport=function(){let p=pending;pending=null;if(p?.onboarding&&setupPending&&p.profile===state&&p.owner===owner())finishOnboarding();else modal.close()};
 window.workoutImportForm=function(onboarding=false){
- importResult=null;
+ importResult=null;importWeight=null;
  onboarding=onboarding===true&&setupPending&&onboardingImport?.profile===state&&onboardingImport.owner===owner();
  let p=pending={profile:state,owner:owner(),serial:++serial,parsed:null,routines:true,onboarding};
  openModal(tr('Workout-CSV importieren','Import workout CSV'),`<div data-no-translate><label>${tr('CSV-Datei','CSV file')}<input type="file" accept=".csv,text/csv" onchange="workoutImportFile(this.files[0])"></label><div id="workout-import-preview" aria-live="polite"></div><button type="button" class="btn secondary full" onclick="cancelWorkoutImport()">${tr('Zurück','Back')}</button></div>`);return p;
@@ -261,8 +277,10 @@ window.workoutImportFile=async function(file){
  catch(e){if(current(p)&&request===p.serial)$('workout-import-preview').textContent=e.message}
 };
 function preview(){let p=pending;if(!current(p)||!p.parsed)return;let result=plan(p.parsed,p.unit,state,p.routines),days=p.parsed.sessions.map(s=>s.day).sort();
- $('workout-import-preview').innerHTML=`<div data-no-translate><p>${result.workouts.length} ${tr('neue Sessions','new sessions')} · ${result.sets} ${tr('Sätze','sets')}<br>${result.mapped} ${tr('zugeordnete','matched')} / ${result.fresh} ${tr('neue Übungen','new exercises')}<br>${esc(days[0])} – ${esc(days.at(-1))}<br>${result.duplicates} ${tr('bereits importiert','already imported')}</p><label><input type="checkbox" ${p.routines?'checked':''} onchange="workoutImportRoutines(this.checked)"> ${tr('Routinen übernehmen','Import routines')}</label>${(p.routines?result.routines:[]).map(r=>`<div>${esc(r.name)} · ${r.exercises.length} ${tr('Übungen','exercises')}</div>`).join('')}${p.parsed.skippedRows?`<p>${p.parsed.skippedRows} ${tr('Zeilen ohne Übung','rows without exercise')}</p>`:''}<button type="button" class="btn full" onclick="confirmWorkoutImport()" ${result.workouts.length||p.routines&&result.routines.length?'':'disabled'}>${tr('Import bestätigen','Confirm import')}</button></div>`;
+ const units=p.parsed.unitUncertain?`<div role="group" aria-label="${tr('Gewichtseinheit','Weight unit')}" style="display:flex;gap:8px;margin:8px 0">${['kg','lbs'].map(unit=>`<button type="button" class="btn ${p.unit===unit?'':'secondary'}" aria-pressed="${p.unit===unit}" onclick="workoutImportUnit('${unit}')">${unit}</button>`).join('')}</div>`:'';
+ $('workout-import-preview').innerHTML=`<div data-no-translate><p>${result.workouts.length} ${tr('neue Sessions','new sessions')} · ${result.sets} ${tr('Sätze','sets')}<br>${result.mapped} ${tr('zugeordnete','matched')} / ${result.fresh} ${tr('neue Übungen','new exercises')}<br>${esc(days[0])} – ${esc(days.at(-1))}<br>${result.duplicates} ${tr('bereits importiert','already imported')}</p>${units}<label><input type="checkbox" ${p.routines?'checked':''} onchange="workoutImportRoutines(this.checked)"> ${tr('Routinen übernehmen','Import routines')}</label>${(p.routines?result.routines:[]).map(r=>`<div>${esc(r.name)} · ${r.exercises.length} ${tr('Übungen','exercises')}</div>`).join('')}${p.parsed.skippedRows?`<p>${p.parsed.skippedRows} ${tr('Zeilen ohne Übung','rows without exercise')}</p>`:''}<button type="button" class="btn full" onclick="confirmWorkoutImport()" ${result.workouts.length||p.routines&&result.routines.length?'':'disabled'}>${tr('Import bestätigen','Confirm import')}</button></div>`;
 }
+window.workoutImportUnit=function(unit){if(pending&&current(pending)&&pending.parsed?.unitUncertain&&['kg','lbs'].includes(unit)){pending.unit=unit;preview()}};
 window.workoutImportRoutines=function(value){if(pending){pending.routines=!!value;preview()}};
 function showImportResult(p){
  importResult={profile:state,owner:owner(),onboarding:p.onboarding};
@@ -276,7 +294,24 @@ window.finishWorkoutImportResult=function(enterWeight=false){
  const p=importResult;if(!p||p.profile!==state||p.owner!==owner()||p.onboarding&&(!setupPending||onboardingImport?.profile!==state||onboardingImport.owner!==owner()))return;
  importResult=null;
  if(p.onboarding)window.finishWorkoutImportOnboarding();else{modal.close();render()}
- if(enterWeight===true)weightForm();
+ if(enterWeight===true){
+  weightForm();importWeight={profile:state,owner:owner()};
+  $('mb').innerHTML=$('mb').innerHTML.replace('onsubmit="addWeight(event)"','onsubmit="workoutImportWeight(event)"');
+ }
+};
+window.workoutImportWeight=function(e){
+ const p=importWeight;if(!p||p.profile!==state||p.owner!==owner()||!modal.open){e.preventDefault();return}
+ let raw=String($('kg').value).trim(),weight=/^\d+[.,]?\d*$/.test(raw)?Number(raw.replace(',','.')):NaN;
+ if(Number.isFinite(weight)&&weight>=20&&weight<=400){
+  if(!state.profile?.weight){
+   let profile={...(state.profile||{}),weight};
+   if(!validData({...state,profile})){e.preventDefault();toast(tr('Gewicht konnte nicht gespeichert werden.','Weight could not be saved.'));return}
+   state.profile=profile;
+  }
+  importWeight=null;
+ }
+ // Existing input validation, dated measurement and the ordinary local/cloud save.
+ return addWeight(e);
 };
 window.confirmWorkoutImport=function(){
  let p=pending;if(!p?.parsed||!current(p)){toast(tr('Profil geändert. Bitte Datei erneut auswählen.','Profile changed. Please select the file again.'));return}

@@ -30,7 +30,7 @@ ctx.csvFixture=fixture;
  assert.equal(run('JSON.stringify(state)'),before,'preview must not mutate profile');
  assert(el('workout-import-preview').innerHTML.includes('Import bestätigen'));
  assert(!el('workout-import-preview').innerHTML.includes('<select'),'weights are detected without a unit selector');
- assert.equal(run('typeof window.workoutImportUnit'),'undefined');
+ assert(!el('workout-import-preview').innerHTML.includes('workoutImportUnit('),'certain Liftoff imports hide unit buttons');
  run('window.confirmWorkoutImport()');assert.equal(run('state.workouts.length'),2);assert.equal(run('saveCount'),1);assert(run('validData(state)'));assert(run('validData(JSON.parse(JSON.stringify(state)))'));
  // Imported workouts can be reopened and edited through the real existing handler.
  run('reopenWorkout(state.workouts[0].id)');assert.equal(run('state.workouts[0].finished'),false);assert(run('validData(state)'));assert(run('validData(JSON.parse(JSON.stringify(state)))'));
@@ -94,8 +94,8 @@ ctx.csvFixture=fixture;
   ctx.unitCsv=header.replace('Weight,',weightHeader+',')+'\n2026-06-11,600,Units,Chest Press,1,'+value+',10,,,,\n';
   assert.equal((await run('importApi.parse(unitCsv)')).unit,expected,weightHeader);
  }
- ctx.metricCsv=header+'\n'+['65','65.5','65.25','0',''].map((v,i)=>'2026-06-11,600,Metric,Chest Press,'+(i+1)+','+v+',10,,,,').join('\n');
- ctx.metricParsed=await run('importApi.parse(metricCsv)');assert.equal(ctx.metricParsed.unit,'kg','round kg values override Liftoff fallback');
+ ctx.metricCsv=header.replace('Seconds','Set Seconds')+'\n'+['65','65.5','65.25','0',''].map((v,i)=>'2026-06-11,600,Metric,Chest Press,'+(i+1)+','+v+',10,,,,').join('\n');
+ ctx.metricParsed=await run('importApi.parse(metricCsv)');assert.equal(ctx.metricParsed.unit,'kg','clear fractional metric grid in a non-Liftoff schema');
  assert.equal(run('importApi.plan(metricParsed,metricParsed.unit,initial()).workouts[0].exercises[0].sets[2].kg'),65.25);
  ctx.tieCsv=header+'\n2026-06-11,600,Tie,Chest Press,1,0,10,,,,\n';
  assert.equal((await run('importApi.parse(tieCsv)')).unit,'lbs','no evidence uses Liftoff fallback');
@@ -106,6 +106,40 @@ ctx.csvFixture=fixture;
  assert.equal(run('importApi.plan(metricParsed,metricParsed.unit,{...initial(),workouts:legacyMetric.workouts}).workouts.length'),0);
  assert.equal(run('legacyMetric.workouts[0].exercises[0].sets[0].kg'),99);
  ctx.strongCsv='Date;Workout Name;Duration;Exercise Name;Set Order;Weight;Reps;Notes\n2026-06-11 10:00:00;Strong;30m;Machine Lateral Raise;1;65;10;\n';assert.equal((await run('importApi.parse(strongCsv)')).sessions.length,1);
+ // Exact Liftoff schema always stores pounds, even when the numbers look metric.
+ for(const values of [[135,185,225,45],[137.5],[49.6,110.2,220.5],[102.06,22.68,31.8],[20,22.5,100]]){
+  ctx.unitCsv=header+'\n'+values.map((v,i)=>'2026-06-11,600,Units,Chest Press,'+(i+1)+','+v+',8,,,,').join('\n');
+  const p=await run('importApi.parse(unitCsv)');assert.equal(p.unit,'lbs');assert.equal(p.unitUncertain,false);
+ }
+ const strongHeader='Date;Workout Name;Duration;Exercise Name;Set Order;Weight;Reps;Notes';
+ for(const [values,expected] of [[[135,185,225,45],'lbs'],[[137.5],'lbs'],[[49.6,110.2,220.5],'lbs'],[[20,22.5,100],'kg']]){
+  ctx.unitCsv=strongHeader+'\n'+values.map((v,i)=>'2026-06-11;Units;30m;Bench Press (Barbell);'+(i+1)+';'+v+';8;').join('\n');
+  const p=await run('importApi.parse(unitCsv)');assert.equal(p.unit,expected);assert.equal(p.unitUncertain,false);
+  run('state=initial();migrate();window.workoutImportForm()');await run('window.workoutImportFile({size:1000,text:async()=>unitCsv})');
+  assert(!el('workout-import-preview').innerHTML.includes('workoutImportUnit('),'certain Strong imports hide unit buttons');
+ }
+ // Multiple heavy free-weight maxima indicate pounds; repeated sets of one lift do not.
+ ctx.unitCsv=strongHeader+'\n2026-06-11;Heavy;30m;Bench Press (Barbell);1;160;8;\n2026-06-11;Heavy;30m;Squat (Barbell);1;230;8;';
+ assert.equal((await run('importApi.parse(unitCsv)')).unit,'lbs');assert.equal((await run('importApi.parse(unitCsv)')).unitUncertain,false);
+ ctx.unitCsv=strongHeader+'\n2026-06-11;Heavy;30m;Bench Press (Barbell);1;160;8;\n2026-06-11;Heavy;30m;Bench Press (Barbell);2;160;8;';
+ assert.equal((await run('importApi.parse(unitCsv)')).unitUncertain,true);
+ // Uncertain exports offer only compact kg/lbs buttons; choice changes conversion, never IDs.
+ ctx.uncertainCsv=ctx.strongCsv.replace(';65;10;',';60;10;');
+ const uncertain=await run('importApi.parse(uncertainCsv)');assert.equal(uncertain.unit,'kg');assert.equal(uncertain.unitUncertain,true);
+ run('state=initial();migrate();window.workoutImportForm()');const beforeChoice=run('JSON.stringify(state)');
+ await run('window.workoutImportFile({size:1000,text:async()=>uncertainCsv})');
+ assert(!el('workout-import-preview').innerHTML.includes('<select'));
+ assert.equal((el('workout-import-preview').innerHTML.match(/onclick="workoutImportUnit/g)||[]).length,2);
+ assert(el('workout-import-preview').innerHTML.includes('aria-pressed="true" onclick="workoutImportUnit(\'kg\')"'));
+ run('window.workoutImportUnit("lbs")');assert(el('workout-import-preview').innerHTML.includes('aria-pressed="true" onclick="workoutImportUnit(\'lbs\')"'));
+ run('window.workoutImportUnit("invalid")');assert.equal(run('JSON.stringify(state)'),beforeChoice);
+ run('window.confirmWorkoutImport();window.workoutImportUnit("kg")');assert.equal(run('state.workouts[0].exercises[0].sets[0].kg'),27.2);
+ assert.equal(run('state.workouts[0].id'),uncertain.sessions[0].id);
+ run('window.workoutImportForm()');await run('window.workoutImportFile({size:1000,text:async()=>uncertainCsv})');
+ run('window.workoutImportUnit("kg");window.confirmWorkoutImport()');assert.equal(run('state.workouts.length'),1);assert.equal(run('state.workouts[0].exercises[0].sets[0].kg'),27.2);
+ // Same unlabelled columns in a different order are not the exact Liftoff schema.
+ ctx.unitCsv=header.replace('Date,Duration','Duration,Date')+'\n600,2026-06-11,Units,Chest Press,1,60,8,,,,\n';
+ const reorderedSchema=await run('importApi.parse(unitCsv)');assert.equal(reorderedSchema.liftoff,false);assert.equal(reorderedSchema.unitUncertain,true);
  ctx.strongLetterCsv=ctx.strongCsv.replace(';1;65;10;',';W;20;12;')+'2026-06-11 10:00:00;Strong;30m;Machine Lateral Raise;1;65;10;\n';
  ctx.strongLetterParsed=await run('importApi.parse(strongLetterCsv)');
  assert.equal(run('importApi.plan(strongLetterParsed,"kg",initial()).sets'),2);
@@ -141,7 +175,7 @@ ctx.csvFixture=fixture;
  assert.equal(run('importApi.plan(zeroParsed,"kg",initial()).workouts[0].exercises[0].sets[1].csvFields.seconds'),'30');
  assert.equal(run('importApi.plan(zeroParsed,"kg",initial()).workouts[0].exercises[0].sets[1].csvFields.reps'),undefined);
  // Repeated unnamed patterns, outliers, latest values, routine opt-out and restore dedup.
- ctx.patternCsv=header+'\n'+[
+ ctx.patternCsv=header.replace('Weight,','Weight (kg),')+'\n'+[
  '2026-07-01 10:00:00,600,,Chest Press,2,40,8,,,7,older',
  '2026-07-01 10:00:00,600,,Chest Press,1,45,6,,,,',
  '2026-07-01 10:00:00,600,,Machine Shoulder Press,1,20,10,,,,',
@@ -225,6 +259,31 @@ ctx.csvFixture=fixture;
  const countWithoutFriends=run('refreshCount');run('window.confirmWorkoutImport()');assert.equal(run('refreshCount'),countWithoutFriends);
  assert(el('mb').innerHTML.includes('Gewicht eintragen'));assert(!el('mb').innerHTML.includes('data-import-emblem'));
  run('var originalWeightForm=weightForm;var importWeightCalls=0;weightForm=()=>importWeightCalls++;window.finishWorkoutImportResult(true);weightForm=originalWeightForm');assert.equal(run('importWeightCalls'),1);
+ // Actual post-import form saves only the entered measurement, plus a profile fallback.
+ for(const onboarding of [false,true]){
+  ctx.weightOnboarding=onboarding;
+  run('state=initial();migrate();delete state.profile;state.weights=[];date=today();setupPending=weightOnboarding;if(weightOnboarding)finishOnboarding();window.workoutImportForm(weightOnboarding)');
+  await run('window.workoutImportFile({size:1000,text:async()=>rankCsv})');run('window.confirmWorkoutImport();window.finishWorkoutImportResult(true)');
+  assert(el('mb').innerHTML.includes('onsubmit="workoutImportWeight(event)"'));
+  assert.equal(run('window.pulsStrength.weightAt(state,"2026-06-11")'),null);
+  const weightSaveCount=run('saveCount');
+  run('$("wdate").value=today();$("kg").value="0";window.workoutImportWeight({preventDefault(){}})');
+  assert.equal(run('state.weights.length'),0);assert.equal(run('saveCount'),weightSaveCount);assert(!run('state.profile'));
+  run('$("kg").value="80,5";window.workoutImportWeight({preventDefault(){}})');
+  assert.equal(run('state.weights.length'),1);assert.equal(run('state.weights[0].date'),run('today()'));assert.equal(run('state.profile.weight'),80.5);
+  assert.equal(run('saveCount'),weightSaveCount+1);assert.equal(run('window.pulsStrength.weightAt(state,"2026-06-11")'),80.5);
+  assert.notEqual(run('window.pulsStrength.overall().rankIndex'),null);assert(run('validData(state)'));assert(run('validData(JSON.parse(JSON.stringify(state)))'));
+  assert.equal(run('Object.keys(state.profile).join()'),'weight');assert(!run('setupPending'));
+  assert(!run('validData({...state,profile:{weight:19}})'));assert(!run('validData({...state,profile:{weight:401}})'));assert(!run('validData({...state,profile:{weight:"80"}})'));
+  assert(!run('validData({...state,profile:{weight:80,age:30}})'),'other incomplete profiles remain invalid');
+ }
+ // Existing profile values are preserved; an account switch invalidates the form.
+ run('state=initial();migrate();state.profile={age:30,height:180,weight:75,target:75,sex:"male",activity:1.375,method:"mifflin",rmr:0,special:false};state.weights=[];window.workoutImportForm()');
+ await run('window.workoutImportFile({size:1000,text:async()=>rankCsv})');run('window.confirmWorkoutImport();window.finishWorkoutImportResult(true);$("wdate").value=today();$("kg").value="80";window.workoutImportWeight({preventDefault(){}})');
+ assert.equal(run('state.profile.weight'),75);assert.equal(run('state.weights[0].kg'),80);assert(run('validData(state)'));
+ run('state=initial();migrate();window.workoutImportForm()');await run('window.workoutImportFile({size:1000,text:async()=>rankCsv})');
+ run('window.confirmWorkoutImport();window.finishWorkoutImportResult(true);cloudSession={user:{id:"switched-weight-owner"}};window.workoutImportWeight({preventDefault(){}})');
+ assert.equal(run('state.weights.length'),0);assert(!run('state.profile'));run('cloudSession=null');
  // Escape source/custom exercise names in the result and keep JSON restoration rank-equivalent.
  ctx.escapeRankCsv=header+'\n2026-06-11,600,Ranks,<img src=x onerror=alert(1)> Chest Press,1,40,8,,,,\n';
  run('state=initial();migrate();state.weights=[{id:"rank-weight",date:"2026-01-01",kg:80}];window.workoutImportForm()');
@@ -241,9 +300,13 @@ ctx.csvFixture=fixture;
  run('cloudSession={expires_at:Date.now()/1000+3600,user:{id:"synthetic-import-owner"}};cloudRevision=7;window.workoutImportForm()');
  await run('window.workoutImportFile({size:1000,text:async()=>csvFixture})');run('state.goals.kcal=2300;window.confirmWorkoutImport()');
  assert(run('cloudDirty'));assert.equal(JSON.parse(importDisk.get('puls-v1')).workouts.length,2);assert.equal(run('state.goals.kcal'),2300);
+ run('window.finishWorkoutImportResult(true);$("wdate").value=today();$("kg").value="80";window.workoutImportWeight({preventDefault(){}})');
+ assert(run('cloudDirty'));ctx.savedWeightPayload=JSON.parse(importDisk.get('puls-v1'));
+ assert.equal(ctx.savedWeightPayload.profile.weight,80);assert.equal(ctx.savedWeightPayload.weights.length,1);assert(run('validData(savedWeightPayload)'));
  await run('syncCloud()');assert.equal(casCalls,1);assert(run('cloudConflict'));assert.equal(run('cloudRevision'),7);assert.equal(run('state.workouts.length'),2);
  await run('syncCloud()');assert.equal(casCalls,1,'conflict must stop repeated uploads');
  await run('signOutCloud()');assert.equal(JSON.parse(importDisk.get('puls-cloud-pending-synthetic-import-owner')).workouts.length,2);
+ assert.equal(JSON.parse(importDisk.get('puls-cloud-pending-synthetic-import-owner')).profile.weight,80);
  console.log('PASS: workout CSV preview, units, mapping, append-only confirmation, dedup, backup, owner races, validation and historical analytics.');
 })()
 `,{require,console,process,TextEncoder,AbortController,Buffer},{filename:'workout-import-harness'}).catch(error=>{console.error(error);process.exitCode=1});
