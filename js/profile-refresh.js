@@ -71,7 +71,7 @@ function refineProfileForm(){
 function refinePlannerTabs(){let tabs=document.querySelectorAll('#mb .plannertabs button');if(tabs[1])tabs[1].textContent='Sicherung'}
 
 const profileRefreshForm=profileForm;profileForm=function(...args){let result=profileRefreshForm.apply(this,args);refinePlannerTabs();refineProfileForm();return result};
-const profileRefreshPreview=updatePlanPreview;updatePlanPreview=function(...args){let result=profileRefreshPreview.apply(this,args);let info=$('kcal-mode-info'),mode=$('pr-kcal-mode')?.value;if(info&&profileKcalModeText[mode]&&info.textContent!==profileKcalModeText[mode])info.textContent=profileKcalModeText[mode];syncProfileSegments();return result};
+const profileRefreshPreview=updatePlanPreview;updatePlanPreview=function(...args){let result=profileRefreshPreview.apply(this,args);let info=$('kcal-mode-info'),mode=$('pr-kcal-mode')?.value;if(info){info.textContent='';info.hidden=true}syncProfileSegments();return result};
 // Sicherung: nur Export, Wiederherstellen und CSV; Methoden- und Quellentexte entfallen.
 const profileRefreshData=dataSettings;dataSettings=function(...args){
   let result=profileRefreshData.apply(this,args);refinePlannerTabs();
@@ -113,7 +113,7 @@ function bodyFatMarkup(value){return value?'<p class="note">'+translatedProfileT
 const navyMeasurementsForm=measurementsForm;measurementsForm=function(...args){
  let result=navyMeasurementsForm.apply(this,args),form=$('measure-date')?.closest('form');if(!form)return result;
  let saveButton=form.querySelector('button.btn.full');
- saveButton.insertAdjacentHTML('beforebegin','<div id="navy-preview" aria-live="polite"></div><p class="note">'+translatedProfileText(navyMeasurementNote)+'</p>');
+ saveButton.insertAdjacentHTML('beforebegin','<div id="navy-preview" aria-live="polite"></div>');
  let footer=document.createElement('div');footer.className='profilefooter';saveButton.before(footer);footer.append(saveButton);
  form.addEventListener('input',previewNavyBodyFat);previewNavyBodyFat();return result
 };

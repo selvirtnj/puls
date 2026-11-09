@@ -86,7 +86,9 @@ body dialog.ffsheet.fpage .fphead .ffsearchbar { margin: 0 !important; }
 .fpreset { min-height: 44px; margin-top: 8px; }
 
 /* Detailseite */
-#modal.fpage .ffdetailhead { position: sticky; top: calc(-6px - env(safe-area-inset-top)); z-index: 3; margin: -6px -16px 12px !important; padding: calc(env(safe-area-inset-top) + 6px) 8px 6px; background: var(--ds-bg); }
+#modal.fpage #foodbody:has(> .ffdetail) { padding-top: 0 !important; }
+#modal.fpage .ffdetail { margin-top: 0 !important; padding-top: 0 !important; }
+#modal.fpage .ffdetailhead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; position: sticky; top: 0; z-index: 3; margin: 0 -16px 8px !important; padding: env(safe-area-inset-top) 8px 0; background: var(--ds-bg); }
 #modal.fpage .ffdetailtitle { text-align: center; }
 #modal.fpage .ffdetailtitle h3 { font-size: 17px !important; font-weight: 600 !important; letter-spacing: normal !important; }
 .fpfields { margin: 0 0 12px; }

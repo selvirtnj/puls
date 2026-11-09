@@ -14,6 +14,18 @@ vm.createContext(c);
 vm.runInContext(fs.readFileSync('js/flows.js','utf8').match(/function addWaterGlass[^\n]*/)[0],c);
 for(const file of ['js/food-diary.js','js/food-page.js'])vm.runInContext(fs.readFileSync(file,'utf8'),c,{filename:file});
 
+// Energie liegt links von Makros; Öffnen und Tageswechsel starten trotzdem mit Makros.
+state.display={summaryViews:['week','energy','energy','micros']};
+assert.deepEqual([...c.fdViews()],['energy','macros','week','micros']);
+assert.deepEqual(state.display.summaryViews,['week','energy','energy','micros']);
+c.document.documentElement={classList:{contains:()=>false}};
+vm.runInContext("page='food';fdSlide=3;render()",c);assert.equal(vm.runInContext('fdSlide',c),1);
+vm.runInContext('fdSlide=2;render()',c);assert.equal(vm.runInContext('fdSlide',c),2);
+vm.runInContext("date='2026-11-08';render()",c);assert.equal(vm.runInContext('fdSlide',c),1);
+vm.runInContext("date='2026-11-09';page='home';render()",c);
+state.display.summaryViews=[];assert.deepEqual([...c.fdViews()],['macros']);delete state.display;
+c.friendlyDay=()=> 'Heute';assert(!c.fdHead().includes('fdToggleDay'));
+
 // addWaterGlass nimmt die Glasgröße an und fällt bei Unsinn auf 250 ml zurück.
 c.addWaterGlass(300);c.addWaterGlass(0);c.addWaterGlass();
 assert.deepEqual(state.foods.map(x=>x.grams),[300,250,250]);
@@ -21,10 +33,18 @@ assert(state.foods.every(x=>x.name==='Trinkwasser'&&x.unit==='ml'&&x.kcal===0&&x
 
 // Wasserziel kommt aus pulsData87, Gläser zählen nur Trinkwasser.
 let w=c.fdWaterState(day);
-assert.equal(w.goal,2450);assert.equal(w.mode,'auto');assert.equal(w.drink,800);assert.equal(w.filled,3);assert.equal(w.count,10);assert(Math.abs(w.partial-.2)<1e-9);
+assert.equal(w.goal,2450);assert.equal(w.mode,'auto');assert.equal(w.drink,800);assert.equal(w.filled,3);assert.equal(w.count,7);assert(Math.abs(w.partial-.2)<1e-9);
 c.window.pulsData87={};state.waterGoal=1500;w=c.fdWaterState(day);assert.equal(w.goal,1500);assert.equal(w.mode,'manual');
 state.water={mode:'manual',glassMl:5000};assert.equal(c.fdWaterState(day).glassMl,250,'ungültige Glasgröße fällt auf 250 ml zurück');
 delete state.water;
+
+// Auch oberhalb der sichtbaren Gläser bleibt Hinzufügen mit derselben Glasgröße möglich.
+state.foods.push({id:'overflow',date:day,name:'Trinkwasser',grams:3000,unit:'ml',kcal:0,nutrients:{water:3000}});
+c.nutrientTotals=()=>({totals:{water:3800}});
+assert.equal(c.fdWaterState(day).count,7);
+assert.match(c.fdWaterCard(),/fdGlassTap\(15\)/);
+c.fdGlassTap(c.fdWaterState(day).filled);assert.equal(state.foods.at(-1).grams,250);
+state.foods=state.foods.filter(x=>x.id!=='overflow');
 
 // Wochenschnitt nur über Tage mit Einträgen; Wasser zählt nicht.
 state.foods.push({id:'a',date:day,name:'Reis',grams:100,unit:'g',kcal:400,p:10,c:80,f:2},{id:'b',date:'2026-11-07',name:'Skyr',grams:100,unit:'g',kcal:200,p:20,c:4,f:0},{id:'old',date:'2026-10-01',name:'Alt',grams:1,unit:'g',kcal:9999,p:0,c:0,f:0});

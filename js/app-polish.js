@@ -52,7 +52,6 @@ const polishNutrientTotals=nutrientTotals;nutrientTotals=function(...args){
   if(count){result.totals.water+=estimated;result.coverage.water+=count;result.unknownDrinks=Math.max(0,result.unknownDrinks-count);result.estimatedWater=estimated}
   return result;
 };
-const polishWaterCard=waterCard;waterCard=function(...args){let html=polishWaterCard.apply(this,args),est=nutrientTotals().estimatedWater;return est?html.replace(/<\/p>(?![\s\S]*<\/p>)/,` ${state.language==='en'?'Including':'Davon'} ${n(Math.round(est))} ml ${state.language==='en'?'estimated from drink nutrients.':'aus Getränke-Nährwerten geschätzt.'}</p>`):html};
 // „Tag als vollständig markieren“: Seite bleibt an derselben Stelle, Fokus bleibt auf dem Knopf.
 const polishMarkDay=markFoodDayComplete;markFoodDayComplete=function(...args){
   let y=window.scrollY,result=polishMarkDay.apply(this,args),restore=()=>window.scrollTo(0,y);

@@ -71,7 +71,7 @@
       "calibrated": false
     },
     "forecast": {
-      "html": "<h3 style=\"margin-top:15px\">Ziel-Szenario: 2. Juli 2027</h3><p class=\"note\">36 Wochen bis 78 kg · ab heute bei konstant 2.006 kcal/Tag.</p><details class=\"forecastdetails\"><summary class=\"note\">Annahmen & mögliche Abweichungen</summary><p class=\"note\">Sensitivität bei ±10 % Erhalt: 11. März 2027 bis 2. Juli 2027 · In einem Szenario kein Zieltermin innerhalb von fünf Jahren. Diese Spanne ist kein statistisches Konfidenzintervall.</p><p class=\"note\">Vereinfachte dynamische Näherung nach Hall: 24 kcal/Tag je kg langfristiger Gewichtsänderung, Halbzeit ca. ein Jahr. Nicht das vollständige NIH-Modell; individuelle Anpassung, Wasser und Körperzusammensetzung können deutlich abweichen. Für Muskelaufbau weniger aussagekräftig.</p></details>"
+      "html": "<h3 style=\"margin-top:15px\">Ziel-Szenario: 2. Juli 2027</h3><p class=\"note\">36 Wochen bis 78 kg · ab heute bei konstant 2.006 kcal/Tag.</p><details class=\"forecastdetails\"><summary class=\"note\">Annahmen & mögliche Abweichungen</summary><p class=\"note\">Sensitivität bei ±10 % Erhalt: 11. März 2027 bis 2. Juli 2027 · In einem Szenario kein Zieltermin innerhalb von fünf Jahren. Diese Spanne ist kein statistisches Konfidenzintervall.</p></details>"
     },
     "body": {
       "weight": 83.5,

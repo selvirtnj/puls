@@ -1,5 +1,5 @@
-﻿/* PULS v87 · Essen-Tab als Tagebuch: Kopfzeile (Tag abgeschlossen, Datum, Plus), wischbares Zusammenfassungs-Deck
-   (immer zuerst Makro-Ziele), Wasserkarte mit Gläsern und chronologisches Tagebuch ohne Kategorien.
+﻿/* PULS v87 · Essen-Tab als Tagebuch: Kopfzeile (Datum, Plus), wischbares Zusammenfassungs-Deck
+   (Start bei Makro-Zielen, Energie links davon), Wasserkarte mit Gläsern und chronologisches Tagebuch ohne Kategorien.
    Ersetzt die gesamte nutrition()-Kette. Datenwege bleiben die bestehenden: addWaterGlass(ml), waterForm/logWater,
    editDiaryFood, deleteSwipeDiary/undoDiaryDelete (Rückgängig), markFoodDayComplete, microTargetForm.
    Optionale v87-Felder (display, water, meals, foodSearch) werden nur über geschützte Getter gelesen. */
@@ -47,8 +47,8 @@ function fdUndoRun(){let action=fdUndoAction;fdUndoAction=null;clearTimeout(fdUn
 
 /* ---------- Kopf ---------- */
 function fdHead(){
-  let done=(state.foodLogCompleted||[]).includes(date),label=esc(friendlyDay(date));
-  return `<div class="fdhead"><button type="button" class="fdicon fdcheck${done?' fddone':''}${done&&fdJustChecked?' fdjust':''}" aria-pressed="${done}" aria-label="${done?fdT('Tag ist vollständig erfasst','Day marked complete'):fdT('Tag als vollständig markieren','Mark day complete')}" onclick="fdToggleDay()">${phIcon('check-circle')}</button><div class="fddate"><button type="button" class="fdicon" aria-label="${fdT('Vorheriger Tag','Previous day')}" onclick="moveDay(-1)">${phIcon('caret-left')}</button><button type="button" class="fddaylabel" aria-label="${fdT('Datum auswählen','Choose date')}: ${label}" onclick="pickDiaryDate()"><span>${label}</span></button><button type="button" class="fdicon" aria-label="${fdT('Nächster Tag','Next day')}" onclick="moveDay(1)">${phIcon('caret-right')}</button></div><button type="button" class="fdicon fdplus" aria-label="${fdT('Lebensmittel hinzufügen','Add food')}" onclick="fdOpenAdd()">${phIcon('plus')}</button></div>`;
+  let label=esc(friendlyDay(date));
+  return `<div class="fdhead"><span aria-hidden="true"></span><div class="fddate"><button type="button" class="fdicon" aria-label="${fdT('Vorheriger Tag','Previous day')}" onclick="moveDay(-1)">${phIcon('caret-left')}</button><button type="button" class="fddaylabel" aria-label="${fdT('Datum auswählen','Choose date')}: ${label}" onclick="pickDiaryDate()"><span>${label}</span></button><button type="button" class="fdicon" aria-label="${fdT('Nächster Tag','Next day')}" onclick="moveDay(1)">${phIcon('caret-right')}</button></div><button type="button" class="fdicon fdplus" aria-label="${fdT('Lebensmittel hinzufügen','Add food')}" onclick="fdOpenAdd()">${phIcon('plus')}</button></div>`;
 }
 let fdJustChecked=false;
 function fdToggleDay(){fdJustChecked=true;setTimeout(()=>fdJustChecked=false,0);let was=(state.foodLogCompleted||[]).includes(date);markFoodDayComplete();fdSound(was?'toggle':'save')}
@@ -56,7 +56,7 @@ function fdOpenAdd(){fdSound('sheetOpen');foodForm();if(typeof foodTab==='functi
 
 /* ---------- Deck ---------- */
 let fdSlide=0,fdLastKey='',fdEnter=false,fdSlideFrame=0;
-function fdViews(){let saved=fdDisplay().summaryViews,list=Array.isArray(saved)?saved.filter(v=>['energy','micros','week'].includes(v)):fdDefaults.display.summaryViews;return ['macros',...new Set(list)]}
+function fdViews(){let saved=fdDisplay().summaryViews,list=Array.isArray(saved)?saved.filter(v=>['energy','micros','week'].includes(v)):fdDefaults.display.summaryViews;return [...(list.includes('energy')?['energy']:[]),'macros',...new Set(list.filter(v=>v!=='energy'))]}
 const fdViewNames={macros:['Makro-Ziele','Macro targets'],energy:['Energie','Energy'],micros:['Nährstoffe','Nutrients'],week:['Woche','Week']};
 function fdBar(label,value,goal,unit,cls=''){
   let remaining=fdDisplay().showRemaining===true,over=goal>0&&value>goal+1e-9,pct=goal>0?Math.min(100,value/goal*100):0,digits=unit==='kcal'?0:1;
@@ -79,15 +79,15 @@ function fdSlideEnergy(){
   let cells=fdRingCell(t.kcal,goal>0?t.kcal/goal*100:0,fdT('Gegessen','Eaten'),goal>0&&t.kcal>goal);
   cells+=burn?fdRingCell(burn,100,fdT('Verbrauch','Burned'),false,fdT('Schätzung','Estimate')):`<div class="fdringcell fdmissing"><button type="button" class="textbtn" onclick="${typeof profileForm==='function'?'profileForm()':'settings()'}">${fdT('Profil ergänzen','Complete profile')}</button><small>${fdT('für den Verbrauch','for energy use')}</small></div>`;
   cells+=goal>0?fdRingCell(Math.abs(left),left>=0?left/goal*100:100,left>=0?fdT('Übrig','Left'):fdT('Über Ziel','Over'),left<0):`<div class="fdringcell fdmissing"><small>${fdT('Kein Tagesziel','No daily target')}</small></div>`;
-  return `<div class="fdslidehead"><h2>${fdT('Energie','Energy')}</h2></div><div class="fdrings">${cells}</div><p class="fdnote">${fdT('Verbrauch ist eine Schätzung aus deinem Profil, keine Messung.','Energy use is an estimate from your profile, not a measurement.')}</p>`;
+  return `<div class="fdslidehead"><h2>${fdT('Energie','Energy')}</h2></div><div class="fdrings">${cells}</div>`;
 }
 function fdHighlighted(){let keys=fdDisplay().highlighted;return (Array.isArray(keys)?keys:fdDefaults.display.highlighted).filter(k=>typeof nutrientLabels==='object'&&nutrientLabels[k]).slice(0,8)}
 function fdMicroGoal(key){let own=Number(state.microGoals?.[key]);if(own>0)return own;let refs=typeof referenceMicros==='function'?referenceMicros():null;return Number(refs?.[key])||0}
 function fdSlideMicros(){
-  let nt=nutrientTotals(),keys=fdHighlighted(),items=fdDayFoods().filter(x=>!fdIsWater(x)),known=items.filter(x=>keys.some(k=>Number.isFinite(x.nutrients?.[k]))).length;
+  let nt=nutrientTotals(),keys=fdHighlighted();
   let cells=keys.map(k=>{let [label,unit]=nutrientLabels[k],goal=fdMicroGoal(k),has=(nt.coverage?.[k]||0)>0,value=nt.totals?.[k]||0,pct=goal>0?value/goal*100:0;
     return `<div class="fdmicro${has?'':' fdunknown'}"><div class="fdbarline"><span>${label}</span><strong>${has?(goal>0?Math.round(pct)+' %':fdNum(value,1)+' '+unit):fdT('keine Angabe','no data')}</strong></div><div class="fdmeter"><i style="--w:${has&&goal>0?Math.min(100,pct):0}%"></i></div></div>`}).join('');
-  return `<div class="fdslidehead"><h2>${fdT('Hervorgehobene Nährstoffe','Highlighted nutrients')}</h2><button type="button" class="textbtn" onclick="microTargetForm()">${fdT('Ziele','Targets')}</button></div><div class="fdmicros">${cells}</div><p class="fdnote">${known} ${fdT('von','of')} ${items.length} ${fdT('Einträgen mit Angabe. Fehlende Werte zählen nicht als 0.','entries with data. Missing values do not count as 0.')}</p>`;
+  return `<div class="fdslidehead"><h2>${fdT('Hervorgehobene Nährstoffe','Highlighted nutrients')}</h2><button type="button" class="textbtn" onclick="microTargetForm()">${fdT('Ziele','Targets')}</button></div><div class="fdmicros">${cells}</div>`;
 }
 function fdWeekStats(endDay=date){
   let sums={kcal:0,p:0,c:0,f:0},days=0,end=new Date(endDay+'T12:00:00');
@@ -98,7 +98,7 @@ function fdWeekStats(endDay=date){
 function fdSlideWeek(){
   let {days,avg}=fdWeekStats(),g=(typeof dayGoals==='function'?dayGoals(date):state.goals)||{};
   let body=days?fdBarPlain(fdT('Energie','Energy'),avg.kcal,Number(g.kcal)||0,'kcal','fdkcal')+fdBarPlain('Protein',avg.p,Number(g.p)||0,'g','fdp')+fdBarPlain(fdT('Kohlenhydrate','Carbohydrates'),avg.c,Number(g.c)||0,'g','fdc')+fdBarPlain(fdT('Fett','Fat'),avg.f,Number(g.f)||0,'g','fdf'):`<p class="fdempty">${fdT('In den letzten 7 Tagen noch keine Einträge.','No entries in the last 7 days.')}</p>`;
-  return `<div class="fdslidehead"><h2>${fdT('Wochenschnitt','Weekly average')}</h2><small>${days} ${days===1?fdT('Tag mit Einträgen','day with entries'):fdT('Tage mit Einträgen','days with entries')}</small></div>${body}<p class="fdnote">${fdT('Durchschnitt nur über Tage mit Einträgen, bis zum gewählten Tag.','Average over days with entries only, up to the selected day.')}</p>`;
+  return `<div class="fdslidehead"><h2>${fdT('Wochenschnitt','Weekly average')}</h2><small>${days} ${days===1?fdT('Tag mit Einträgen','day with entries'):fdT('Tage mit Einträgen','days with entries')}</small></div>${body}`;
 }
 function fdBarPlain(label,value,goal,unit,cls){let over=goal>0&&value>goal,pct=goal>0?Math.min(100,value/goal*100):0,digits=unit==='kcal'?0:1;return `<div class="fdbar ${cls}${over?' fdover':''}"><div class="fdbarline"><span>${label}</span><strong>${fdNum(value,digits)}${goal>0?' / '+fdNum(goal,digits):''} ${unit}</strong></div><div class="fdmeter"><i style="--w:${pct}%"></i></div></div>`}
 function fdDeck(){
@@ -118,7 +118,7 @@ function fdWaterState(day=date){
   if(!rec||!Number.isFinite(rec.ml)){let goal=Number(state.waterGoal)||0;rec={ml:goal>0?goal:2000,mode:goal>0?'manual':'standard'}}
   let glassMl=Number(fdWaterSettings().glassMl);if(!Number.isInteger(glassMl)||glassMl<100||glassMl>1000)glassMl=250;
   let drink=fdDayFoods(day).filter(fdIsWater).reduce((s,x)=>s+(Number(x.grams)||0),0);
-  let filled=Math.floor(drink/glassMl+1e-9),total=Math.max(1,Math.ceil(rec.ml/glassMl)),count=Math.min(16,Math.max(total,filled+1));
+  let filled=Math.floor(drink/glassMl+1e-9),total=Math.max(1,Math.ceil(rec.ml/glassMl)),count=Math.min(7,Math.max(total,filled+1));
   return {goal:rec.ml,mode:rec.mode,glassMl,drink,filled,count,partial:Math.max(0,Math.min(1,(drink-filled*glassMl)/glassMl))};
 }
 let fdWaterMemory={key:'',filled:-1};
@@ -130,10 +130,10 @@ function fdGlass(i,w,fresh){
 function fdWaterCard(){
   let w=fdWaterState(),nt=nutrientTotals(),total=nt.totals?.water||0,key=date,fresh=fdWaterMemory.key===key&&w.filled>fdWaterMemory.filled?w.filled-1:-1;
   fdWaterMemory={key,filled:w.filled};
-  let modeText=w.mode==='manual'?fdT('Eigenes Ziel','Custom target'):w.mode==='auto'?fdT('Empfehlung automatisch (Formel)','Automatic recommendation (formula)'):fdT('Standard · Gewicht eintragen für Empfehlung','Default · log your weight for a recommendation');
   let glasses=Array.from({length:w.count},(_,i)=>fdGlass(i,w,i===fresh)).join('');
+  if(w.filled>=w.count)glasses+=`<button type="button" class="fdicon" aria-label="${fdT('Wasser hinzufügen','Add water')} ${w.glassMl} ml" onclick="fdGlassTap(${w.filled})">${phIcon('plus')}</button>`;
   let pct=w.goal>0?Math.min(100,total/w.goal*100):0;
-  return `<section class="fdcard fdwater"><div class="fdcardhead"><div><h2>${fdT('Wasser','Water')}</h2><small>${fdNum(w.drink)} / ${fdNum(w.goal)} ml · ${modeText}</small></div><div class="fdcardactions"><button type="button" class="fdicon" aria-label="${fdT('Wasserziel und Glasgröße','Water target and glass size')}" onclick="fdWaterInfo()">${phIcon('info')}</button><button type="button" class="fdicon" aria-label="${fdT('Freie Menge Wasser eintragen','Log custom water amount')}" onclick="waterForm()">${phIcon('plus')}</button></div></div><div class="fdglasses" role="group" aria-label="${fdT('Wassergläser','Water glasses')}">${glasses}</div><div class="fdbar fdtotalwater"><div class="fdbarline"><span>${fdT('Gesamtwasser inkl. Getränke (geschätzt)','Total water incl. drinks (estimated)')}</span><strong>${fdNum(total)} / ${fdNum(w.goal)} ml</strong></div><div class="fdmeter"><i style="--w:${pct}%"></i></div></div><p class="fdnote">${fdT('Gläser zählen nur Trinkwasser. Das Ziel gilt für Gesamtwasser aus Getränken und Lebensmitteln mit bekanntem Wasseranteil.','Glasses count drinking water only. The target covers total water from drinks and foods with known water content.')}</p></section>`;
+  return `<section class="fdcard fdwater"><div class="fdcardhead"><div><h2>${fdT('Wasser','Water')}</h2><small>${fdNum(w.drink)} / ${fdNum(w.goal)} ml</small></div><div class="fdcardactions"><button type="button" class="fdicon" aria-label="${fdT('Wasserziel und Glasgröße','Water target and glass size')}" onclick="fdWaterInfo()">${phIcon('info')}</button><button type="button" class="fdicon" aria-label="${fdT('Freie Menge Wasser eintragen','Log custom water amount')}" onclick="waterForm()">${phIcon('plus')}</button></div></div><div class="fdglasses" role="group" aria-label="${fdT('Wassergläser','Water glasses')}">${glasses}</div><div class="fdbar fdtotalwater"><div class="fdbarline"><span>${fdT('Gesamtwasser','Total water')}</span><strong>${fdNum(total)} / ${fdNum(w.goal)} ml</strong></div><div class="fdmeter"><i style="--w:${pct}%"></i></div></div></section>`;
 }
 function fdGlassTap(i){
   let w=fdWaterState();
@@ -147,7 +147,7 @@ function fdGlassTap(i){
 function fdWaterInfo(){
   let s=fdWaterSettings(),w=fdWaterState(),manual=s.mode==='manual',rec=null;try{rec=window.pulsData87?.waterRecommendation?.({...state,water:{...s,mode:'auto'}},date)}catch{}
   let auto=rec?(rec.mode==='auto'?fdNum(rec.ml)+' ml':fdT('2.000 ml Standard (kein Gewicht)','2,000 ml default (no weight)')):'–';
-  openModal(fdT('Wasserziel','Water target'),`<form class="fdwaterform" onsubmit="fdSaveWater(event)"><div class="segmented fdmode" role="group" aria-label="${fdT('Ziel','Target')}"><button type="button" data-mode="auto" aria-pressed="${!manual}" onclick="fdWaterMode('auto')">${fdT('Automatisch','Automatic')}</button><button type="button" data-mode="manual" aria-pressed="${manual}" onclick="fdWaterMode('manual')">${fdT('Eigenes Ziel','Custom')}</button></div><input type="hidden" id="fd-water-mode" value="${manual?'manual':'auto'}"><p class="note">${fdT('Automatisch heute','Automatic today')}: <strong>${auto}</strong></p><label id="fd-water-goal-row" ${manual?'':'hidden'}>${fdT('Eigenes Tagesziel · ml','Custom daily target · ml')}<input id="fd-water-goal" type="number" inputmode="numeric" min="500" max="10000" step="1" value="${Number(state.waterGoal)>0?state.waterGoal:Math.round(w.goal)}"></label><label>${fdT('Glasgröße · ml','Glass size · ml')}<input id="fd-water-glass" type="number" inputmode="numeric" min="100" max="1000" step="1" required value="${w.glassMl}"></label><p class="note">${fdT('Formel: Körpergewicht × 35 ml (ab 51 Jahren 30 ml) minus 300 ml Oxidationswasser, plus 500 ml je Trainingsstunde (höchstens 1.500 ml), begrenzt auf 1.500 bis 5.000 ml. Grundlage: DGE-Referenzwerte, ACSM-Empfehlung zum Flüssigkeitsersatz. Schätzung; nicht geeignet bei Herz- oder Nierenerkrankung, ärztlicher Trinkmengenbegrenzung, Schwangerschaft, Stillzeit oder großer Hitze. Ein eigenes Ziel hat Vorrang.','Formula: body weight × 35 ml (30 ml from age 51) minus 300 ml oxidation water, plus 500 ml per training hour (max 1,500 ml), limited to 1,500 to 5,000 ml. Based on DGE reference values and ACSM fluid replacement guidance. Estimate only; not suitable with heart or kidney disease, medical fluid restriction, pregnancy, breastfeeding or great heat. A custom target takes priority.')}</p><button class="btn full">${fdT('Speichern','Save')}</button></form>`);
+  openModal(fdT('Wasserziel','Water target'),`<form class="fdwaterform" onsubmit="fdSaveWater(event)"><div class="segmented fdmode" role="group" aria-label="${fdT('Ziel','Target')}"><button type="button" data-mode="auto" aria-pressed="${!manual}" onclick="fdWaterMode('auto')">${fdT('Automatisch','Automatic')}</button><button type="button" data-mode="manual" aria-pressed="${manual}" onclick="fdWaterMode('manual')">${fdT('Eigenes Ziel','Custom')}</button></div><input type="hidden" id="fd-water-mode" value="${manual?'manual':'auto'}"><p class="note">${fdT('Automatisch heute','Automatic today')}: <strong>${auto}</strong></p><label id="fd-water-goal-row" ${manual?'':'hidden'}>${fdT('Eigenes Tagesziel · ml','Custom daily target · ml')}<input id="fd-water-goal" type="number" inputmode="numeric" min="500" max="10000" step="1" value="${Number(state.waterGoal)>0?state.waterGoal:Math.round(w.goal)}"></label><label>${fdT('Glasgröße · ml','Glass size · ml')}<input id="fd-water-glass" type="number" inputmode="numeric" min="100" max="1000" step="1" required value="${w.glassMl}"></label><button class="btn full">${fdT('Speichern','Save')}</button></form>`);
 }
 function fdWaterMode(mode){if(!$('fd-water-mode'))return;$('fd-water-mode').value=mode;document.querySelectorAll('.fdmode [data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));$('fd-water-goal-row').hidden=mode!=='manual';fdSound('toggle')}
 function fdSaveWater(event){
@@ -171,7 +171,7 @@ function fdDiaryList(){
   fdKnownIds={key:date,ids};
   let rows=items.map(x=>fdDiaryRow(x,!!known&&!known.has(x.id))).join('');
   let kcal=items.reduce((s,x)=>s+(Number(x.kcal)||0),0);
-  let head=`<div class="fdcardhead"><div><h2>${fdT('Tagebuch','Diary')}</h2><small>${items.length} ${items.length===1?fdT('Eintrag','entry'):fdT('Einträge','entries')} · ${fdNum(kcal)} kcal</small></div>${items.length&&typeof fpMealEdit==='function'?`<button type="button" class="textbtn" onclick="fdSaveCombo()">${fdT('Als Kombi','As combo')}</button>`:''}</div>`;
+  let head=`<div class="fdcardhead"><div><h2>${fdT('Tagebuch','Diary')}</h2><small>${items.length} ${items.length===1?fdT('Eintrag','entry'):fdT('Einträge','entries')} · ${fdNum(kcal)} kcal</small></div></div>`;
   let body=rows?`<div class="fdentries">${rows}</div>`:`<div class="fdemptystate"><p>${fdT('Noch nichts eingetragen.','Nothing logged yet.')}</p><button type="button" class="btn" onclick="fdOpenAdd()">${phIcon('plus')} ${fdT('Lebensmittel hinzufügen','Add food')}</button></div>`;
   let done=(state.foodLogCompleted||[]).includes(date);
   return `<section class="fdcard fddiary">${head}${body}${done?`<p class="fdnote fddonenote">${phIcon('check-circle')} ${fdT('Tag vollständig erfasst','Day complete')}</p>`:''}</section>`;
@@ -185,7 +185,7 @@ nutrition=function(){
 };
 const fdRenderBase=render;render=function(...args){
   let key=page==='food'?'food|'+date:'';
-  fdEnter=!!key&&key!==fdLastKey;if(fdEnter){fdSlide=0;fdKnownIds=null;fdWaterMemory={key:'',filled:-1}}
+  fdEnter=!!key&&key!==fdLastKey;if(fdEnter){fdSlide=fdViews().indexOf('macros');fdKnownIds=null;fdWaterMemory={key:'',filled:-1}}
   fdLastKey=key;
   let result=fdRenderBase.apply(this,args);
   document.body.classList.toggle('fdpage',page==='food');

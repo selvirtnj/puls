@@ -8,7 +8,7 @@ function clear(){request?.abort();request=null;draft=null}
 modal.addEventListener('close',clear);
 window.addEventListener('pagehide',clear);
 const basePhoto=photoFoodPanel;
-photoFoodPanel=function(...args){clear();basePhoto.apply(this,args);$('foodbody')?.insertAdjacentHTML('afterbegin',`<button type="button" class="btn secondary full ffsubmit" onclick="foodPhotoOpen()">${text('Foto schätzen (KI)','Estimate photo (AI)')}</button><p class="ffprivacy">${text('Für Gerichte: KI-Schätzung. Für Nährwerttabellen: Texterkennung unten.','For meals: AI estimate. For nutrition labels: text recognition below.')}</p>`)};
+photoFoodPanel=function(...args){clear();basePhoto.apply(this,args);$('foodbody')?.insertAdjacentHTML('afterbegin',`<button type="button" class="btn secondary full ffsubmit" onclick="foodPhotoOpen()">${text('Foto schätzen (KI)','Estimate photo (AI)')}</button>`)};
 const baseTab=foodTab;
 foodTab=function(...args){clear();return baseTab.apply(this,args)};
 const baseValid=validData;
@@ -81,10 +81,10 @@ window.foodPhotoSend=async function(){
 };
 function review(x){
  const uncertainty={low:text('gering','low'),medium:text('mittel','medium'),high:text('hoch','high')}[x.uncertainty];
- $('food-photo-review').innerHTML=`<form class="ffform ffreview" onsubmit="foodPhotoConfirm(event)"><h3>${text('KI-Schätzung prüfen','Review AI estimate')}</h3><p class="ffstatus" data-no-translate>${esc(x.components.join(' · '))}</p><p class="ffstatus">${text('Unsicherheit','Uncertainty')}: ${uncertainty} · ${x.kcalMin}–${x.kcalMax} kcal · ${x.gramsMin}–${x.gramsMax} g</p><p class="ffstatus" data-no-translate>${esc(x.note)}</p><p class="ffstatus">${text('Alle Werte gelten für das ganze fotografierte Essen. Menge und Werte vor dem Speichern korrigieren.','All values refer to the whole photographed meal. Correct the amount and values before saving.')}</p>
+ $('food-photo-review').innerHTML=`<form class="ffform ffreview" onsubmit="foodPhotoConfirm(event)"><h3>${text('KI-Schätzung prüfen','Review AI estimate')}</h3><p class="ffstatus" data-no-translate>${esc(x.components.join(' · '))}</p><p class="ffstatus">${text('Unsicherheit','Uncertainty')}: ${uncertainty} · ${x.kcalMin}–${x.kcalMax} kcal · ${x.gramsMin}–${x.gramsMax} g</p><p class="ffstatus" data-no-translate>${esc(x.note)}</p>
  <label class="fffield">${text('Name','Name')}<input id="food-photo-name" maxlength="100" required value="${esc(x.name)}"></label><label class="fffield">${text('Geschätzte Menge · g','Estimated amount · g')}<input id="food-photo-grams" type="number" inputmode="decimal" min="0.1" max="10000" step="any" required value="${x.grams}"></label>
  ${ffNutrientGrid('food-photo-',x,false)}<input id="grams" type="hidden">
- <label class="foodack"><input id="food-photo-confirm" type="checkbox" required>${text('Ich habe Menge und Werte geprüft. Es bleibt eine KI-Schätzung.','I checked the amount and values. This remains an AI estimate.')}</label><button class="btn full ffsubmit">${text('Bestätigen & eintragen','Confirm & log')}</button><p class="ffprivacy">${text('Beschreibung oben ergänzen und erneut senden, um neu zu schätzen. Die erneute Schätzung ersetzt dieses Formular.','Refine the description above and send again to re-estimate. A new estimate replaces this form.')}</p></form>`;
+ <label class="foodack"><input id="food-photo-confirm" type="checkbox" required>${text('Ich habe Menge und Werte geprüft.','I checked the amount and values.')}</label><button class="btn full ffsubmit">${text('Bestätigen & eintragen','Confirm & log')}</button></form>`;
  $('food-photo-send').textContent=text('Erneut schätzen','Estimate again');
 }
 window.foodPhotoConfirm=function(event){
