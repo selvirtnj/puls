@@ -13,8 +13,8 @@
 .fb ol, .fb ul { list-style: none; margin: 0; padding: 0; }
 .fb strong, .fb b { font-variant-numeric: tabular-nums; }
 .fb-emblem { display: block; flex-shrink: 0; overflow: visible; color: var(--ds-label-2); }
-.fb .fb-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
-.fb .fb-tabs button { min-height: 44px; min-width: 0; }
+.fb .fb-tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; max-width: 100%; }
+#puls-friends-panel .fb .fb-tabs button { flex: 1 0 auto; min-height: 44px; min-width: 0; padding: 8px; font-size: 12px; white-space: nowrap; overflow-wrap: normal; word-break: normal; }
 .fb-exercise-select { display: grid; gap: 6px; margin-bottom: 12px; }
 .fb-exercise-select select { width: 100%; min-width: 0; min-height: 44px; color: var(--ds-label); background: var(--ds-surface); }
 .fb-liftrow { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: .5px solid var(--ds-separator); }
@@ -54,18 +54,19 @@
 
 /* Freundeskarten */
 .fb-cards { display: grid; gap: 10px; }
-.fb-card { border-radius: 12px; background: var(--ds-surface); overflow: hidden; }
+.fb-card { position: relative; border-radius: 12px; background: var(--ds-surface); overflow: visible; }
+.fb-card:has(.fb-menu[open]) { z-index: 2; }
 .fb-cardmain { display: flex; align-items: center; gap: 12px; padding: 12px 6px 12px 14px; }
 .fb-cardtext { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
 .fb-cardtext strong { font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
 .fb-cardtext small { font-size: 13px; color: var(--ds-label-2); }
 .fb-cardside { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
-.fb-menu { position: relative; flex-shrink: 0; align-self: flex-start; }
+.fb-menu { position: relative; flex-shrink: 0; align-self: flex-start; color: var(--ds-label); }
 .fb-menu summary { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 8px; color: var(--ds-label-2); list-style: none; cursor: pointer; }
 .fb-menu summary::-webkit-details-marker { display: none; }
 .fb-menu summary::before, .fb-menu summary::after { content: none !important; display: none !important; }
 .fb-menu summary svg { width: 22px; height: 22px; }
-.fb-menu[open] > button { position: absolute; right: 4px; top: 44px; z-index: 2; min-height: 44px; padding: 0 14px; white-space: nowrap; border: .5px solid var(--ds-separator) !important; }
+.fb-menu[open] > button { position: absolute; right: 4px; top: 44px; z-index: 3; min-width: 140px; min-height: 44px; margin: 0; padding: 12px 16px; white-space: nowrap; border: 1px solid var(--ds-separator) !important; border-radius: 12px; background: var(--ds-surface) !important; color: var(--ds-red-text, var(--ds-label)) !important; }
 
 /* Slacking-Band: volle Breite unten an der Karte */
 .fb-slack { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; margin: 0; padding: 8px 14px; border: 0; border-radius: 0 !important; background: var(--fb-yellow) !important; color: var(--fb-on-yellow) !important; font: inherit; text-align: left; }

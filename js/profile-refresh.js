@@ -33,7 +33,7 @@ function syncProfileSegments(){
     // Im aktuellen Modus irrelevante Auswahl (z. B. Richtung bei selbst gesetzten Kalorien) ganz ausblenden.
     select.closest('label').classList.toggle('profileoff',select.disabled);
   }
-  let pace=$('pl-pace'),info=$('pace-info');if(info)info.classList.toggle('profileoff',!pace||pace.disabled);
+  let pace=$('pl-pace'),info=$('pace-info');if(info){let extreme=pace&&!pace.disabled&&pace.value==='extreme';info.textContent=extreme?translatedProfileText('Max. 25 % Defizit, mind. 1.500 kcal'):'';info.classList.toggle('profileoff',!extreme)}
   document.querySelectorAll('#planner-form label.checklabel').forEach(label=>label.classList.toggle('profileoff',!!label.querySelector('input')?.disabled));
   document.querySelectorAll('#planner-form .profilesection').forEach(section=>section.classList.toggle('profileoff',![...section.children].some(child=>!child.classList.contains('label')&&!child.classList.contains('profileoff')&&!child.hidden&&getComputedStyle(child).display!=='none')));
   let macros=$('pl-macros');$('auto-macros')?.classList.toggle('profileoff',!!macros&&(macros.disabled||macros.value!=='auto'));
