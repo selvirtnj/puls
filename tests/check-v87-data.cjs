@@ -27,7 +27,7 @@ s.water.mode='auto';assert.equal(api.water(s).mode,'manual');assert.equal(api.wa
 s.waterGoal=0;assert.equal(api.water(s).mode,'auto');
 const item={name:'Fixture',grams:50,unit:'g',kcal:120,p:4,c:20,f:3,nutrients:{fiber:2},source:'Fixture',foodRef:'food-1'};
 const optional={water:{mode:'auto',glassMl:400},meals:[{id:'combo-1',name:'Kombi',items:[item]}],
- display:{summaryViews:['week','energy'],showRemaining:true,highlighted:['fiber','iron'],hapticsEnabled:false,motion:'reduced',lastRankSeen:9},
+ display:{summaryViews:['week','energy'],showRemaining:true,highlighted:['fiber','iron'],hapticsEnabled:false,motion:'reduced',lastRankSeen:9,rankScale:2},
  foodSearch:{sort:'frequent',sources:['own','bls']}};
 s={...old(),...clone(optional)};
 s.waterGoal=1900;s.displayName='Fixture identity';
@@ -70,7 +70,7 @@ for(const failure of [null,'weights','nativeExtras']){
  assert.equal(validate(probe),valid);assert.equal(JSON.stringify(shared),before,'shallow validation cannot mutate source subobjects');
  if(!valid)assert.equal(probe.plan,shared.plan,'failed validation does not partially replace fields');
 }
-s={...old(),display:{hapticsEnabled:'false',motion:'bad',lastRankSeen:27,unknown:'discard',highlighted:['injected'],summaryViews:['week','week']},
+s={...old(),display:{hapticsEnabled:'false',motion:'bad',lastRankSeen:40,rankScale:1,unknown:'discard',highlighted:['injected'],summaryViews:['week','week']},
  water:{mode:'bad',glassMl:99},foodSearch:{sort:'bad',sources:['fake']},plan:{...clone(c.plan87),macroInput:'ratio'}};
 assert(validate(s));assert.deepEqual(clone(s.display),{});assert.deepEqual(clone(s.water),{});assert.deepEqual(clone(s.foodSearch),{});assert(!Object.hasOwn(s.plan,'macroInput'));
 for(const bad of [null,{},[{}],[{id:'bad',name:'Bad',items:[]}],
@@ -97,13 +97,38 @@ assert.equal(water({weight:70,age:30},{weights:[{date:'2026-11-07',kg:80},{date:
 assert.equal(water({weight:70,age:30},{water:{mode:'manual'},waterGoal:900}).ml,900,'manual always wins, even outside auto clamp');
 assert.equal(water({weight:70,age:30},{water:{mode:'auto'},waterGoal:900}).ml,900);
 // Strength is independent of XP; old entry points retain independent user levels.
-const ranks=api.ranks;assert.equal(ranks.length,9);assert.equal(ranks[0].name,'High Estrogen');assert.equal(ranks[8].name,'Tren Cougher');
+const ranks=api.ranks;assert.equal(ranks.length,14);assert.equal(ranks[0].name,'Gym Tourist');assert.equal(ranks[1].name,'High Estrogen');assert.equal(ranks[13].name,'Tren Cougher');
 for(const xp of [0,250,4000,5000,10000,60000,10000000]){
  assert.equal(api.rankForXp(xp).userLevel,c.xpProgress(xp).level);
  assert.equal(api.rankForXp(xp).index,api.rankForXp(0).index);
 }
 assert.equal(api.rankForLevel(60).userLevel,60);assert.equal(api.rankForLevel(60).stageLevel,null);
-for(const seen of [0,9,24,25,26]){const probe={...old(),display:{lastRankSeen:seen}};assert(validate(probe));assert.equal(probe.display.lastRankSeen,seen)}
+for(const seen of [0,9,24,25,26,39]){const probe={...old(),display:{lastRankSeen:seen}};assert(validate(probe));assert.equal(probe.display.lastRankSeen,seen)}
+for(const display of [{lastRankSeen:39,rankScale:2},{rankScale:2}]){const probe={...old(),display:clone(display)};assert(validate(probe));assert.deepEqual(clone(probe.display),display)}
+for(const bad of [{lastRankSeen:40},{lastRankSeen:-1},{lastRankSeen:3.5},{rankScale:1},{rankScale:'2'}]){const probe={...old(),display:clone(bad)};assert(validate(probe));assert.deepEqual(clone(probe.display),{})}
+// v93 one-time scale migration of the celebration mark (in memory, no save, idempotent).
+const bench=(kg,bw=80)=>({workouts:[{id:'stable-w',finished:true,date:'2025-01-02',exercises:[{exerciseId:'b',name:'Barbell Bench Press',sets:[{kg,reps:1,done:true}]}]}],weights:[{id:'stable-m',date:'2025-01-01',kg:bw}]});
+assert.equal(c.window.pulsStrength.overall(bench(100)).rankIndex,20,'fixture: 100 kg at 80 kg is Creatine Bloater III');
+const writesBefore=writes;
+for(const [display,source,expected] of [
+ [{lastRankSeen:14},{},{lastRankSeen:22,rankScale:2}],            // old High Melanin III boundary, no current rank
+ [{lastRankSeen:12},bench(100),{lastRankSeen:20,rankScale:2}],    // current rank higher than mapped split stage: no false celebration
+ [{lastRankSeen:14},bench(100),{lastRankSeen:22,rankScale:2}],    // dropped user keeps the old high-water mark
+ [{lastRankSeen:24},{},{lastRankSeen:39,rankScale:2}],
+ [{lastRankSeen:0},{},{lastRankSeen:0,rankScale:2}],
+ [{lastRankSeen:25},bench(100),{lastRankSeen:20,rankScale:2}],    // legacy 25/26: not seen yet -> current baseline
+ [{lastRankSeen:26},{},{rankScale:2}],
+ [{lastRankSeen:33},{},{rankScale:2}],                            // impossible unmarked value
+ [{},{},{rankScale:2}],
+ [{lastRankSeen:12,rankScale:2},bench(100),{lastRankSeen:12,rankScale:2}] // already scale 2: never migrated twice
+]){
+ const probe={...old(),...clone(source),display:clone(display)};api.migrate(probe);
+ for(const [key,value] of Object.entries(expected))assert.equal(probe.display[key],value,JSON.stringify(display)+' '+key);
+ if(!('lastRankSeen' in expected))assert(!Object.hasOwn(probe.display,'lastRankSeen'),JSON.stringify(display));
+ const once=JSON.stringify(probe);api.migrate(probe);assert.equal(JSON.stringify(probe),once,'migration is idempotent');
+ const restored={...old(),display:clone(probe.display)};assert(validate(restored));assert.deepEqual(clone(restored.display),clone(probe.display),'migrated marks pass backup validation');
+}
+assert.equal(writes,writesBefore,'scale migration never saves');
 for(const file of ['index.html','sw.js'])assert(fs.readFileSync(file,'utf8').includes('js/puls-data-v87.js'));
 assert(fs.readFileSync('index.html','utf8').indexOf('js/puls-data-v87.js')>fs.readFileSync('index.html','utf8').indexOf('js/friends.js'));
 // Real startup with mixed malformed local combos: preserve all valid snapshots.

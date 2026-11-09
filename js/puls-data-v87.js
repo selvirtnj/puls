@@ -12,7 +12,9 @@
  *     {ml, mode:'auto'|'manual'|'standard', weightKg:number|null, basisMl, sportMl}.
  *   rankForLevel(level), rankForXp(xp), rankFor(xp) -> strength overall rank;
  *     userLevel/level retain independent XP-level information. No XP rank thresholds.
- *     ranks: nine groups from pulsStrength (25 stages, rankIndex 0..24).
+ *     ranks: 14 groups from pulsStrength (40 stages, rankIndex 0..39, scale 2).
+ *   display.lastRankSeen: celebration high-water mark. display.rankScale===2 marks
+ *     the 40-stage scale; older values (0..24, legacy 25/26) migrate once in migrate().
  *   hapticsEnabled(source=state) -> boolean (default true); gates pulsHaptic.
  * Global aliases: PULS_RANKS, pulsWaterTarget, pulsRankForLevel, pulsRankForXp,
  * pulsRankFor, pulsHapticsEnabled. No rank/XP or calculated water is persisted.
@@ -33,7 +35,8 @@ function optionCopy(s){const draft={...s};for(const key of optionKeys)if(s[key]!
 const displayDefaults=()=>({summaryViews:[...views],showRemaining:false,highlighted:[...highlighted],hapticsEnabled:true,motion:'system'});
 const displayRules={summaryViews:x=>subset(x,views),showRemaining:x=>typeof x==='boolean',
  highlighted:x=>subset(x,typeof nutrientLabels==='object'?Object.keys(nutrientLabels):highlighted,8),
- hapticsEnabled:x=>typeof x==='boolean',motion:x=>['system','reduced'].includes(x),lastRankSeen:x=>integer(x,0,26)};
+ // lastRankSeen 0..39 covers scale 2 and old backups (0..24 plus legacy 25/26); migrate87 maps unmarked values.
+ hapticsEnabled:x=>typeof x==='boolean',motion:x=>['system','reduced'].includes(x),lastRankSeen:x=>integer(x,0,39),rankScale:x=>x===2};
 function cleanObject(source,key,rules){
  if(source[key]===undefined)return;
  if(!object(source[key])){delete source[key];return}
@@ -74,6 +77,21 @@ function water(s=state){
 }
 function meals(s=state){return Array.isArray(s?.meals)?copy(s.meals.filter(m=>mealsOK([m]))):[]}
 function foodSearch(s=state){const draft=optionCopy(s||{});cleanOptions(draft);return {sort:'best',sources:[...sources],...draft.foodSearch}}
+// v93: one-time move of the celebration mark to the 40-stage scale (rankScale 2 prevents repeats).
+// Old stage i maps to the first new stage with the same strength boundary; the currently computed
+// rank is the minimum, so a split stage never celebrates without real progress. Legacy 25/26 or
+// impossible old values count as "not seen yet": the current rank becomes the baseline.
+function migrateRankScale(s){
+ const d=s.display,strength=window.pulsStrength;
+ if(!object(d)||d.rankScale===2||typeof strength?.fromLegacy!=='function')return;
+ const old=d.lastRankSeen;
+ if(Number.isInteger(old)){
+  let current=null;try{current=strength.overall(s)?.rankIndex??null}catch{current=null}
+  const seen=Math.max(strength.fromLegacy(old)??-1,Number.isInteger(current)?current:-1);
+  if(seen>=0)d.lastRankSeen=seen;else delete d.lastRankSeen;
+ }
+ d.rankScale=2;
+}
 function migrate87(s=state){
  if(!object(s))return s;
  cleanOptions(s);
@@ -83,6 +101,7 @@ function migrate87(s=state){
  s.display??={};
  const defaults=displayDefaults();
  for(const [key,value] of Object.entries(defaults))s.display[key]??=value;
+ migrateRankScale(s);
  if(object(s.plan))s.plan.macroInput??='grams';
  s.foodSearch??={};s.foodSearch.sort??='best';s.foodSearch.sources??=[...sources];
  return s;

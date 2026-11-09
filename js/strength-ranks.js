@@ -1,14 +1,34 @@
 /* PULS strength model. Pure projections: no save, storage, Auth or profile mutation.
  * Ratio = best Epley e1RM / bodyweight on the workout day (1 rep uses actual load).
  * Product thresholds, not population percentiles; see docs/STRENGTH-RANKS.md.
- * index = group 0..8; rankIndex = stage 0..24; score = continuous stage 0..24.
+ * Scale 2 (v93): index = group 0..13; rankIndex = stage 0..39; score = continuous stage 0..39.
+ * Scale 1 (v88-v92, still sent by older friends/backups): group 0..8, stage 0..24; see fromLegacy/toLegacy.
  */
 (function(){
 'use strict';
-const names=['High Estrogen','Low Estrogen','Low Melanin','High Melanin','Protein Farter','BPC-157 Considerer','Batman Cycle','Superman Cycle','Tren Cougher'];
+const names=['Gym Tourist','High Estrogen','Low Estrogen','Low Melanin','High Melanin','Pre-Workout Itcher','Creatine Bloater','Protein Farter',
+ 'Test Booster Believer','BPC-157 Considerer','Blast & Cruiser','Batman Cycle','Superman Cycle','Tren Cougher'];
+const SCALE=2,TOP=names.length-1,MAX=TOP*3; // Tren Cougher: one final stage without I-III.
 const ranks=Object.freeze(names.map((name,index)=>Object.freeze({index,key:name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name,
- stages:Object.freeze(index===8?[24]:[index*3,index*3+1,index*3+2])})));
-// Lower bound for each group; below the second bound remains group 0.
+ stages:Object.freeze(index===TOP?[MAX]:[index*3,index*3+1,index*3+2])})));
+// New group lower bounds expressed as continuous stages of the old 25-stage scale. Old groups
+// keep their anchors; Gym Tourist, Pre-Workout Itcher, Creatine Bloater, Test Booster Believer
+// and Blast & Cruiser each take one half of an existing group interval (Superman stays whole).
+const LEGACY_BOUNDS=Object.freeze([0,1.5,3,6,9,10.5,12,13.5,15,16.5,18,19.5,21,24]);
+const legacyRatio=(t,s)=>{if(s>=24)return t[8];const i=Math.floor(s/3);return t[i]+(t[i+1]-t[i])*(s-i*3)/3};
+// Old continuous stage 0..24 -> new continuous stage 0..39 (same strength boundary).
+function fromLegacyScore(s){
+ if(!(s>0))return 0;if(s>=24)return MAX;
+ let k=0;while(k<TOP-1&&s>=LEGACY_BOUNDS[k+1])k++;
+ return k*3+3*(s-LEGACY_BOUNDS[k])/(LEGACY_BOUNDS[k+1]-LEGACY_BOUNDS[k]);
+}
+// Stage indices: old stage i covers new stages fromLegacy(i)..fromLegacy(i+1)-1.
+const fromLegacy=i=>Number.isInteger(i)&&i>=0&&i<=24?Math.round(fromLegacyScore(i)):null;
+function toLegacy(n){
+ if(!Number.isInteger(n)||n<0||n>MAX)return null;
+ let i=0;while(i<24&&fromLegacy(i+1)<=n)i++;return i;
+}
+// Old nine lower bounds per exercise (anchors, unchanged since v90); expanded to 14 below.
 const definitions={
  bench:['chest',[0,.4,.65,.9,1.15,1.4,1.65,1.9,2.2],.65],
  incline:['chest',[0,.35,.55,.75,1,1.2,1.4,1.65,1.9],.65],
@@ -31,8 +51,11 @@ const definitions={
  legextension:['quads',[0,.3,.5,.7,.9,1.1,1.3,1.55,1.8],.75],
  hipthrust:['posterior',[0,.6,1,1.4,1.8,2.2,2.6,3,3.5],.8]
 };
-const standards=Object.freeze(Object.fromEntries(Object.entries(definitions).map(([key,[group,male,factor]])=>[key,Object.freeze({group,
- male:Object.freeze(male),female:Object.freeze(male.map(x=>+(x*factor).toFixed(4)))})])));
+const expand=anchors=>LEGACY_BOUNDS.map(s=>+legacyRatio(anchors,s).toFixed(4));
+const standards=Object.freeze(Object.fromEntries(Object.entries(definitions).map(([key,[group,anchors,factor]])=>{
+ const male=expand(anchors);
+ return [key,Object.freeze({group,male:Object.freeze(male),female:Object.freeze(male.map(x=>+(x*factor).toFixed(4)))})];
+})));
 const current=()=>typeof state==='undefined'?{}:state;
 const day=()=>typeof today==='function'?today():new Date().toISOString().slice(0,10);
 const numeric=x=>typeof x==='number'&&Number.isFinite(x);
@@ -90,19 +113,19 @@ function classify(ex){
  return {type,group:standards[type].group,kind,factor,loadFactor:dumbbell?2:1,bodyweight};
 }
 function rankAt(score,extra={}){
- const value=numeric(score)?Math.max(0,Math.min(24,score)):null;
+ const value=numeric(score)?Math.max(0,Math.min(MAX,score)):null;
  if(value===null)return {index:null,rankIndex:null,key:null,name:current().language==='en'?'Rank unknown':'Rang unbekannt',stage:null,score:null,ratio:null,nextRatio:null,nextAt:null,nextName:null,progress:0,...extra};
- const rankIndex=Math.min(24,Math.floor(value+1e-9)),index=Math.min(8,Math.floor(rankIndex/3)),stage=index===8?1:rankIndex%3+1,g=ranks[index];
- const next=rankIndex===24?null:rankAtName(rankIndex+1);
- return {index,rankIndex,key:g.key,name:g.name+(index===8?'':' '+['I','II','III'][stage-1]),stage,score:value,ratio:null,nextRatio:null,
-  nextAt:rankIndex===24?null:rankIndex+1,nextName:next,progress:rankIndex===24?1:Math.max(0,value-rankIndex),...extra};
+ const rankIndex=Math.min(MAX,Math.floor(value+1e-9)),index=Math.min(TOP,Math.floor(rankIndex/3)),stage=index===TOP?1:rankIndex%3+1,g=ranks[index];
+ const next=rankIndex===MAX?null:rankAtName(rankIndex+1);
+ return {index,rankIndex,key:g.key,name:g.name+(index===TOP?'':' '+['I','II','III'][stage-1]),stage,score:value,ratio:null,nextRatio:null,
+  nextAt:rankIndex===MAX?null:rankIndex+1,nextName:next,progress:rankIndex===MAX?1:Math.max(0,value-rankIndex),...extra};
 }
-function rankAtName(i){const g=ranks[Math.floor(i/3)];return g.name+(i===24?'':' '+['I','II','III'][i%3])}
+function rankAtName(i){const g=ranks[Math.floor(i/3)];return g.name+(i===MAX?'':' '+['I','II','III'][i%3])}
 function scoreFor(ratio,thresholds){
- let i=0;while(i<8&&ratio>=thresholds[i+1]-1e-10)i++;
- return i===8?24:i*3+3*(ratio-thresholds[i])/(thresholds[i+1]-thresholds[i]);
+ let i=0;while(i<TOP&&ratio>=thresholds[i+1]-1e-10)i++;
+ return i===TOP?MAX:i*3+3*(ratio-thresholds[i])/(thresholds[i+1]-thresholds[i]);
 }
-function ratioFor(score,t){if(score>=24)return t[8];const i=Math.floor(score/3);return t[i]+(t[i+1]-t[i])*(score-i*3)/3}
+function ratioFor(score,t){if(score>=MAX)return t[TOP];const i=Math.floor(score/3);return t[i]+(t[i+1]-t[i])*(score-i*3)/3}
 function evaluate(s=current(),until=day()){
  const byId=new Map(),byName=new Map();
  for(const e of catalog()){byId.set(e.id,e);byName.set(canonical(e.name),e)}
@@ -127,8 +150,8 @@ function evaluate(s=current(),until=day()){
     const before=best.get(key);
     // Best estimated maximum, normalized with the weight on that workout day.
     if(before&&(before.e1rm>e1rm||before.e1rm===e1rm&&before.ratio>=ratio))continue;
-    const r=rankAt(score,{ratio,nextRatio:score>=24?null:ratioFor(Math.min(24,Math.floor(score+1e-9)+1),thresholds),
-     exerciseName:name,exerciseId:e.exerciseId,key,rankKey:ranks[Math.min(8,Math.floor(score/3))].key,group:model.group,
+    const r=rankAt(score,{ratio,nextRatio:score>=MAX?null:ratioFor(Math.min(MAX,Math.floor(score+1e-9)+1),thresholds),
+     exerciseName:name,exerciseId:e.exerciseId,key,rankKey:ranks[Math.min(TOP,Math.floor(score/3))].key,group:model.group,
      e1rm,bodyweight:bw,date:w.date,thresholds,loadFactor:model.loadFactor,reps,
      repFactor:reps===1?1:1+reps/30});
     best.set(key,r);
@@ -145,8 +168,8 @@ function overallFrom(all){
  const r=rankAt(score,{ratio,exercises:chosen,groups:chosen.length});
  if(r.nextAt!==null){
   const increase=(r.nextAt-score)*chosen.length;
-  r.nextLift=chosen.filter(x=>x.score+increase<=24+1e-9).map(x=>{
-   const nextRatio=ratioFor(Math.min(24,x.score+increase),x.thresholds);
+  r.nextLift=chosen.filter(x=>x.score+increase<=MAX+1e-9).map(x=>{
+   const nextRatio=ratioFor(Math.min(MAX,x.score+increase),x.thresholds);
    return {exerciseName:x.exerciseName,key:x.key,kg:Math.max(0,(nextRatio-x.ratio)*x.bodyweight/x.loadFactor/x.repFactor),reps:x.reps,nextRatio};
   }).sort((a,b)=>a.kg-b.kg)[0]||null;
  }
@@ -179,8 +202,10 @@ function workoutProgress(exId,workoutId,s=current()){
 }
 function summary(s=current(),until=day()){
  const list=all(s,until),rank=overallFrom(list);
+ // rank_scale marks the 40-stage indices for friends; older servers get toLegacy() values from friends.js.
  return {strength_rank:rank.rankIndex,lift_ranks:list.map(r=>({key:r.key,name:r.exerciseName,rankIndex:r.rankIndex,ratio:Math.round(r.ratio*100)/100}))
-  .filter(r=>/^[a-z0-9-]{1,180}$/.test(r.key)&&[...r.name].length<=120&&r.ratio>0&&r.ratio<=1000).slice(0,40)};
+  .filter(r=>/^[a-z0-9-]{1,180}$/.test(r.key)&&[...r.name].length<=120&&r.ratio>0&&r.ratio<=1000).slice(0,40),rank_scale:SCALE};
 }
-window.pulsStrength=Object.freeze({ranks,standards,classify,weightAt,rankAt,exerciseRank,all,overall,summary,progressToNext,workoutProgress});
+window.pulsStrength=Object.freeze({ranks,standards,classify,weightAt,rankAt,exerciseRank,all,overall,summary,progressToNext,workoutProgress,
+ scale:SCALE,maxRankIndex:MAX,fromLegacy,toLegacy});
 })();

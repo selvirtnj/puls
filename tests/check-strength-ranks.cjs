@@ -5,12 +5,15 @@ const api=ctx.pulsStrength,clone=x=>JSON.parse(JSON.stringify(x));
 const entry=(name,kg,reps=1,id=name)=>({exerciseId:id,name,sets:[{kg,reps,done:true}]});
 const sample=(exercises,bw=100)=>({profile:bw?{weight:bw}:undefined,workouts:[{id:'import-id',finished:true,importSource:'workout-csv',date:'2026-11-08',exercises}]});
 const rank=(name,kg,reps=1,bw=100)=>api.all(sample([entry(name,kg,reps)],bw))[0];
-assert.equal(api.ranks.length,9);assert.equal(api.ranks.at(-1).name,'Tren Cougher');
+// v93: 14 groups, 40 stages (scale 2), names in product order.
+assert.deepEqual(clone(api.ranks.map(r=>r.name)),['Gym Tourist','High Estrogen','Low Estrogen','Low Melanin','High Melanin','Pre-Workout Itcher','Creatine Bloater','Protein Farter','Test Booster Believer','BPC-157 Considerer','Blast & Cruiser','Batman Cycle','Superman Cycle','Tren Cougher']);
+assert.equal(api.scale,2);assert.equal(api.maxRankIndex,39);assert.deepEqual([...api.ranks.at(-1).stages],[39]);
+assert.equal(new Set(api.ranks.map(r=>r.key)).size,14);assert.equal(api.ranks[10].key,'blast-cruiser');
 for(const standard of Object.values(api.standards))for(const sex of ['male','female']){
- assert.equal(standard[sex].length,9);assert(standard[sex].every((n,i,a)=>i===0||n>a[i-1]));
+ assert.equal(standard[sex].length,14);assert(standard[sex].every((n,i,a)=>i===0||n>a[i-1]));
 }
-assert.equal(rank('Barbell Bench Press',200,1,70).index,8);
-assert(rank('Barbell Bench Press',200,1,200).index<8,'same weight at higher BW ranks lower');
+assert.equal(rank('Barbell Bench Press',200,1,70).index,13);
+assert(rank('Barbell Bench Press',200,1,200).index<13,'same weight at higher BW ranks lower');
 assert.equal(rank('Barbell Bench Press',100,6).e1rm,120);
 const maxima=sample([entry('Barbell Bench Press',100)]);maxima.weights=[{date:'2026-11-07',kg:50},{date:'2026-11-08',kg:100}];
 maxima.workouts.push({finished:true,date:'2026-11-07',exercises:[entry('Barbell Bench Press',90)]});
@@ -88,28 +91,41 @@ assert.equal(api.overall(two).groups,2);
 assert.equal(api.overall(two).score,api.all(two).reduce((n,r)=>n+r.score,0)/2,'missing groups add no bonus');
 for(const source of [first,two]){
  const payload=clone(api.summary(source));
- assert(Number.isInteger(payload.strength_rank)&&payload.strength_rank>=0&&payload.strength_rank<=24);
+ assert(Number.isInteger(payload.strength_rank)&&payload.strength_rank>=0&&payload.strength_rank<=39);
+ assert.deepEqual(Object.keys(payload).sort(),['lift_ranks','rank_scale','strength_rank']);assert.equal(payload.rank_scale,2);
  assert(payload.lift_ranks.length>=1&&payload.lift_ranks.length<=40);
  for(const lift of payload.lift_ranks){
   assert.deepEqual(Object.keys(lift).sort(),['key','name','rankIndex','ratio']);
   assert.match(lift.key,/^[a-z0-9-]{1,180}$/);assert(lift.name.trim().length>=1&&[...lift.name].length<=120);
-  assert(Number.isInteger(lift.rankIndex)&&lift.rankIndex>=0&&lift.rankIndex<=24);
+  assert(Number.isInteger(lift.rankIndex)&&lift.rankIndex>=0&&lift.rankIndex<=39);
   assert(lift.ratio>0&&lift.ratio<=1000&&Math.abs(lift.ratio*100-Math.round(lift.ratio*100))<1e-9);
  }
 }
 multi.workouts[0].exercises.push(entry('Dumbbell Bench Press',30));assert.equal(api.overall(multi).score,overall.score,'only best per group counts');
 multi.workouts[0].exercises.push(entry('Barbell Deadlift',200),entry('Barbell Curl',50),entry('Triceps Pushdown',60));
 assert.equal(api.overall(multi).exercises.length,5);
-for(let i=0;i<25;i++){const r=api.rankAt(i);assert.equal(r.rankIndex,i);assert.equal(r.stage,i===24?1:i%3+1)}
-assert.equal(api.rankAt(24).nextAt,null);assert.equal(api.rankAt(24).name,'Tren Cougher');
+for(let i=0;i<40;i++){const r=api.rankAt(i);assert.equal(r.rankIndex,i);assert.equal(r.stage,i===39?1:i%3+1);assert.equal(r.index,Math.min(13,Math.floor(i/3)))}
+assert.equal(api.rankAt(39).nextAt,null);assert.equal(api.rankAt(39).name,'Tren Cougher');assert.equal(api.rankAt(38).nextName,'Tren Cougher');
+assert.equal(api.rankAt(99).rankIndex,39);assert.equal(api.rankAt(0).name,'Gym Tourist I');
 const edge=rank('Barbell Bench Press',40);assert.equal(edge.name,'Low Estrogen I');assert.equal(edge.progress,0);
 assert.equal(rank('Barbell Bench Press',40+25/3).name,'Low Estrogen II');
+assert.equal(rank('Barbell Bench Press',15).name,'Gym Tourist III','true beginners land below High Estrogen');
+assert.equal(rank('Barbell Bench Press',25).name,'High Estrogen I');
+// Legacy stage mapping (scale 1 -> 2): same strength boundary, monotonic, round-trip via toLegacy.
+assert.deepEqual(Array.from({length:25},(_,i)=>api.fromLegacy(i)),[0,2,4,6,7,8,9,10,11,12,14,16,18,20,22,24,26,28,30,32,34,36,37,38,39]);
+for(let i=0;i<=24;i++)assert.equal(api.toLegacy(api.fromLegacy(i)),i);
+for(let n=0;n<=39;n++){const i=api.toLegacy(n);assert(api.fromLegacy(i)<=n&&(i===24||api.fromLegacy(i+1)>n),'stage '+n)}
+for(const bad of [-1,25,26,1.5,null,'3'])assert.equal(api.fromLegacy(bad),null);
+for(const bad of [-1,40,2.5,null])assert.equal(api.toLegacy(bad),null);
+// Old-scale names keep their strength boundaries: old "Low Estrogen I" bench .4 -> new Low Estrogen I.
+assert.equal(api.rankAt(api.fromLegacy(3)).name,'Low Estrogen I');assert.equal(api.rankAt(api.fromLegacy(12)).name,'Creatine Bloater I');
+assert.equal(api.rankAt(api.fromLegacy(18)).name,'Blast & Cruiser I');assert.equal(api.rankAt(api.fromLegacy(24)).name,'Tren Cougher');
 const skip=sample([entry('Barbell Bench Press',300)]);skip.workouts[0].finished=false;assert.equal(api.all(skip).length,0);
 skip.workouts[0].finished=true;skip.workouts[0].exercises[0].sets[0].done=false;assert.equal(api.all(skip).length,0);
 const summary=api.summary(multi);assert.equal(summary.strength_rank,api.overall(multi).rankIndex);assert(summary.lift_ranks.every(r=>Math.abs(r.ratio*100-Math.round(r.ratio*100))<1e-9));
 const many=sample(Array.from({length:45},(_,i)=>entry('Barbell Bench Press Variant '+i,50+i)));
 assert.equal(api.all(many).length,45);assert.equal(api.summary(many).lift_ranks.length,40);
-assert.deepEqual(clone(api.summary({})),{strength_rank:null,lift_ranks:[]});
+assert.deepEqual(clone(api.summary({})),{strength_rank:null,lift_ranks:[],rank_scale:2});
 // SQL source contracts: no PostgreSQL/RLS claim; detect corrupted duplicate functions and insert omissions.
 const sql=fs.readFileSync('backend/friends-strength.sql','utf8');
 assert.equal((sql.match(/create or replace function public.puls_friends_publish/g)||[]).length,1);
@@ -126,11 +142,56 @@ assert.match(sql,/drop function if exists public.puls_friends_publish\(text,inte
 for(const name of ['publish','snapshot'])assert.match(sql,new RegExp('function public.puls_friends_'+name+'[^]*?security definer set search_path=\'\''));
 assert(!sql.slice(sql.indexOf("'incoming'")).includes("'lift_ranks'"),'pending recipients never get lifts');
 assert(!/alter table public\.puls_profiles|puls_save_profile/.test(sql));
-// v90: Isolationen nachkalibriert (Beispiele aus dem Audit, 85 kg), Grundübungen unverändert.
+// v90/v93: Audit-Beispiele (85 kg). Alte Namen bleiben grob erhalten, eingefügte Ränge teilen bestehende Intervalle.
 assert.equal(rank('Dumbbell Lateral Raise',12,12,85).name,'Protein Farter III');
-assert.equal(rank('Machine Lateral Raise',27,12,85).name,'BPC-157 Considerer II');
-assert.equal(rank('Dumbbell Flyes',14,12,85).name,'High Melanin II');
-assert.deepEqual([...api.standards.bench.male],[0,.4,.65,.9,1.15,1.4,1.65,1.9,2.2]);
-assert.deepEqual([...api.standards.squat.male],[0,.6,.9,1.2,1.5,1.8,2.1,2.5,3]);
-assert.deepEqual([...api.standards.legextension.male],[0,.3,.5,.7,.9,1.1,1.3,1.55,1.8]);
+assert.equal(rank('Machine Lateral Raise',27,12,85).name,'Test Booster Believer III');
+assert.equal(rank('Dumbbell Flyes',14,12,85).name,'High Melanin III');
+assert.equal(rank('Barbell Bench Press',100,1,80).name,'Creatine Bloater III');
+// v93 expansion keeps the nine v90 anchors at the old group bounds.
+assert.deepEqual([...api.standards.bench.male],[0,.2,.4,.65,.9,1.025,1.15,1.275,1.4,1.525,1.65,1.775,1.9,2.2]);
+assert.deepEqual([...api.standards.squat.male],[0,.3,.6,.9,1.2,1.35,1.5,1.65,1.8,1.95,2.1,2.3,2.5,3]);
+assert.deepEqual([...api.standards.legextension.male],[0,.15,.3,.5,.7,.8,.9,1,1.1,1.2,1.3,1.425,1.55,1.8]);
+for(const [key,anchors] of [['bench',[0,.4,.65,.9,1.15,1.4,1.65,1.9,2.2]],['lateral',[0,.12,.2,.27,.33,.4,.5,.62,.75]],['deadlift',[0,.8,1.1,1.5,1.8,2.2,2.6,3,3.5]]]){
+ const m=api.standards[key].male;assert.deepEqual([m[0],m[2],m[3],m[4],m[6],m[8],m[10],m[12],m[13]],anchors,key);
+ assert.deepEqual([...api.standards[key].female],[...m].map(x=>+(x*(key==='deadlift'?.75:.65)).toFixed(4)),key+' female');
+}
+// The new scale only refines stages: every old-scale lift stays inside the mapped old stage.
+for(const [name,bw] of [['Barbell Bench Press',80],['Barbell Squat',90],['Barbell Deadlift',75],['Dumbbell Lateral Raise',85],['Overhead Press',70]]){
+ for(let kg=5;kg<=320;kg+=2.5){
+  const r=rank(name,kg,1,bw);if(!r)continue;const old=api.toLegacy(r.rankIndex);
+  assert(api.fromLegacy(old)<=r.rankIndex&&(old===24||r.rankIndex<api.fromLegacy(old+1)),name+' '+kg);
+ }
+}
+// SQL v2 source contracts (scale 2). Not executed: no PostgreSQL/RLS claim.
+const sql2=fs.readFileSync('backend/friends-strength-v2.sql','utf8');
+assert.match(sql2,/^begin;$/m);assert.match(sql2,/^commit;$/m);
+assert.equal((sql2.match(/create or replace function public\.puls_friends_publish\(/g)||[]).length,1);
+assert.equal((sql2.match(/create or replace function public\.puls_friends_snapshot\(/g)||[]).length,1);
+assert.equal((sql2.match(/create or replace function public\.puls_valid_lift_ranks\(value jsonb,max_rank integer\)/g)||[]).length,1);
+assert.match(sql2,/drop function if exists public\.puls_valid_lift_ranks\(jsonb\);/,'old one-argument validator removed, no overload');
+assert(sql2.indexOf('drop constraint if exists puls_friend_profiles_lift_ranks_check')<sql2.indexOf('drop function if exists public.puls_valid_lift_ranks(jsonb)'),'constraint dropped before its function');
+assert.match(sql2,/add column if not exists rank_scale smallint/);
+assert.match(sql2,/check \(rank_scale is null or rank_scale=2\)/);
+assert.match(sql2,/check \(strength_rank between 0 and case when rank_scale=2 then 39 else 24 end\)/);
+assert.match(sql2,/puls_valid_lift_ranks\(lift_ranks,case when rank_scale=2 then 39 else 24 end\)/);
+assert.match(sql2,/rank_value not between 0 and max_rank/);assert.match(sql2,/max_rank not in \(24,39\)/);
+assert.match(sql2,/p_xp integer default null,p_strength jsonb default null\)/);
+assert.match(sql2,/drop function if exists public\.puls_friends_publish\(text,integer,date,boolean,bigint,boolean,integer\);/);
+assert.match(sql2,/<>case when p_strength \? 'rank_scale' then 3 else 2 end/);
+assert.match(sql2,/\(p_strength->>'rank_scale'\)::numeric<>2/);assert.match(sql2,/scale_value := 2; max_rank := 39;/);
+assert.match(sql2,/rank_scale=case when p_strength is null then rank_scale else scale_value end/);
+assert.match(sql2,/rank_scale=case when p_strength is null then public\.puls_friend_profiles\.rank_scale else excluded\.rank_scale end/);
+assert.match(sql2,/strength_rank,lift_ranks,rank_scale\)/);assert.match(sql2,/p_strength->'lift_ranks',scale_value\)/);
+assert.match(sql2,/where user_id=own_id for share/);assert.match(sql2,/profile_revision is distinct from p_source_revision/);
+assert.match(sql2,/source_revision<=p_source_revision/);assert.match(sql2,/source_revision<=excluded\.source_revision/);
+for(const name of ['publish','snapshot'])assert.match(sql2,new RegExp('function public.puls_friends_'+name+'[^]*?security definer set search_path=\'\''));
+assert.match(sql2,/function public\.puls_valid_lift_ranks[^]*?immutable set search_path=''/);
+assert.match(sql2,/'lift_ranks',p\.lift_ranks,'rank_scale',p\.rank_scale\) into result/);
+assert.match(sql2,/'lift_ranks',p\.lift_ranks,'rank_scale',p\.rank_scale,'streak'/);
+assert(!sql2.slice(sql2.indexOf("'incoming'")).includes("'lift_ranks'")&&!sql2.slice(sql2.indexOf("'incoming'")).includes("'rank_scale'"),'pending recipients never get lifts');
+assert.match(sql2,/enable row level security/);assert.match(sql2,/revoke all on public\.puls_friend_profiles from public,anon,authenticated/);
+assert.match(sql2,/revoke all on function public\.puls_valid_lift_ranks\(jsonb,integer\) from public,anon,authenticated/);
+assert.match(sql2,/grant execute on function public\.puls_friends_publish\(text,integer,date,boolean,bigint,boolean,integer,jsonb\),public\.puls_friends_snapshot\(\) to authenticated/);
+assert(!/alter table public\.puls_profiles|puls_save_profile|service_role/.test(sql2));
+assert.equal((sql2.match(/\$\$/g)||[]).length,6);
 console.log('PASS: strength standards, contemporaneous BW, Epley/DB/bodyweight, sex, stages, imported/finished sets, muscle diversity, purity and SQL source contracts.');

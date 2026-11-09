@@ -6,7 +6,7 @@ const ctx={state:{profile:{weight:100},workouts:[workout('old','2026-11-08',30),
 ctx.window=ctx;vm.createContext(ctx);vm.runInContext(source(),ctx);
 const api=ctx.pulsStrength,beforeJSON=JSON.stringify(ctx.state),result=api.workoutProgress('Barbell Bench Press','new');
 assert.equal(result.before.e1rm,30);assert.equal(result.after.e1rm,70);assert(result.promoted);assert(result.from>=0&&result.from<=1);assert(result.to>=0&&result.to<=1);
-assert.equal(api.progressToNext(api.rankAt(24)),1);assert.equal(api.progressToNext(api.rankAt(null)),0);
+assert.equal(api.progressToNext(api.rankAt(39)),1);assert.equal(api.progressToNext(api.rankAt(24)),0);assert.equal(api.progressToNext(api.rankAt(null)),0);
 assert.equal(JSON.stringify(ctx.state),beforeJSON,'projection must not mutate state');
 assert.equal(api.workoutProgress('Unclassified lift','new').after.rankIndex,null);
 ctx.state.workouts[1].startedAt=200;ctx.state.workouts[2].startedAt=300;

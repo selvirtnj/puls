@@ -10,30 +10,36 @@ Freie Klimmzüge/Dips verwenden Körpergewicht plus explizites Zusatzgewicht (0 
 
 Review-Korrektur v92: Namen/Geräte mit `assist*`, `unterstützt`, Gravitron, Negativ/Negative/Eccentric, Australian/Inverted sowie Band/Bands/Banded bleiben ausgeschlossen. Klimmzüge/Chin-ups und Dips mit Machine/Maschine im Namen oder Gerät werden ebenfalls nicht gewertet: eingetragene Unterstützung ist kein Zusatzgewicht. Freie Varianten mit ausdrücklich erfasstem Zusatzgewicht bleiben rangfähig.
 
-## Standards
+## Standards (Skala 2, v93)
 
-Neun Untergrenzen, jeweils e1RM/Körpergewicht, in Reihenfolge High Estrogen, Low Estrogen, Low Melanin, High Melanin, Protein Farter, BPC-157 Considerer, Batman Cycle, Superman Cycle, Tren Cougher. Weibliche Schwellen = männlich × Faktor; ohne `profile.sex === 'female'` gilt männlich. Drei gleich breite Intervalle zwischen Ranggrenzen ergeben I/II/III. Tren Cougher ohne Unterstufen: insgesamt 25 Stufen, Index 0–24.
+Vierzehn Untergrenzen, jeweils e1RM/Körpergewicht, in Reihenfolge Gym Tourist, High Estrogen, Low Estrogen, Low Melanin, High Melanin, Pre-Workout Itcher, Creatine Bloater, Protein Farter, Test Booster Believer, BPC-157 Considerer, Blast & Cruiser, Batman Cycle, Superman Cycle, Tren Cougher. Weibliche Schwellen = männlich × Faktor; ohne `profile.sex === 'female'` gilt männlich. Drei gleich breite Intervalle zwischen Ranggrenzen ergeben I/II/III. Tren Cougher ohne Unterstufen: insgesamt 40 Stufen, Index 0–39 (`rank_scale`/`rankScale` 2).
+
+Herleitung: Die neun v90-Grenzen bleiben Anker. Die fünf neuen Ränge teilen je ein bestehendes Gruppenintervall hälftig: Gym Tourist = untere Hälfte des alten High Estrogen (echte Anfänger, z. B. Bank < 0,2 × KG), Pre-Workout Itcher = obere Hälfte High Melanin, Creatine Bloater = untere Hälfte Protein Farter, Test Booster Believer = untere Hälfte BPC-157 Considerer, Blast & Cruiser = untere Hälfte Batman Cycle. Low Estrogen, Low Melanin und Superman Cycle bleiben unverändert. Damit liegt jede Leistung im selben oder im unmittelbar benachbarten neu eingefügten Rang wie bisher, nur feiner abgestuft. Rangberechnung (e1RM, Gruppen, Mittelwert) unverändert.
 
 | Übung | Schwellen männlich | Faktor weiblich |
 |---|---|---|
-| Bankdrücken | 0 / .4 / .65 / .9 / 1.15 / 1.4 / 1.65 / 1.9 / 2.2 | .65 |
-| Schrägbank | 0 / .35 / .55 / .75 / 1 / 1.2 / 1.4 / 1.65 / 1.9 | .65 |
-| Kniebeuge | 0 / .6 / .9 / 1.2 / 1.5 / 1.8 / 2.1 / 2.5 / 3 | .75 |
-| Kreuzheben | 0 / .8 / 1.1 / 1.5 / 1.8 / 2.2 / 2.6 / 3 / 3.5 | .75 |
-| Rumänisches KH | 0 / .6 / .85 / 1.1 / 1.4 / 1.7 / 2 / 2.3 / 2.7 | .75 |
-| Schulterdrücken | 0 / .25 / .4 / .55 / .7 / .85 / 1 / 1.15 / 1.35 | .65 |
-| Rudern | 0 / .35 / .55 / .75 / 1 / 1.2 / 1.4 / 1.65 / 1.9 | .65 |
-| Klimmzug, Gesamtlast | 0 / .65 / .85 / 1 / 1.2 / 1.4 / 1.6 / 1.85 / 2.1 | .75 |
-| Latzug | 0 / .4 / .6 / .8 / 1 / 1.2 / 1.4 / 1.65 / 1.9 | .65 |
-| Dips, Gesamtlast | 0 / .65 / .85 / 1 / 1.2 / 1.45 / 1.7 / 2 / 2.3 | .70 |
-| Beinpresse | 0 / 1 / 1.5 / 2 / 2.75 / 3.5 / 4.25 / 5 / 6 | .75 |
-| Curls | 0 / .2 / .3 / .42 / .55 / .68 / .82 / 1 / 1.2 | .60 |
-| Trizeps | 0 / .25 / .38 / .5 / .65 / .8 / .95 / 1.12 / 1.35 | .65 |
-| Seitheben | 0 / .12 / .2 / .27 / .33 / .4 / .5 / .62 / .75 | .65 |
-| Fly | 0 / .22 / .38 / .55 / .72 / .9 / 1.1 / 1.32 / 1.55 | .65 |
-| Beinbeuger | 0 / .25 / .4 / .55 / .7 / .9 / 1.1 / 1.3 / 1.5 | .75 |
-| Beinstrecker | 0 / .3 / .5 / .7 / .9 / 1.1 / 1.3 / 1.55 / 1.8 | .75 |
-| Hip Thrust | 0 / .6 / 1 / 1.4 / 1.8 / 2.2 / 2.6 / 3 / 3.5 | .80 |
+| Bankdrücken | 0 / .2 / .4 / .65 / .9 / 1.025 / 1.15 / 1.275 / 1.4 / 1.525 / 1.65 / 1.775 / 1.9 / 2.2 | .65 |
+| Schrägbank | 0 / .175 / .35 / .55 / .75 / .875 / 1 / 1.1 / 1.2 / 1.3 / 1.4 / 1.525 / 1.65 / 1.9 | .65 |
+| Kniebeuge | 0 / .3 / .6 / .9 / 1.2 / 1.35 / 1.5 / 1.65 / 1.8 / 1.95 / 2.1 / 2.3 / 2.5 / 3 | .75 |
+| Kreuzheben | 0 / .4 / .8 / 1.1 / 1.5 / 1.65 / 1.8 / 2 / 2.2 / 2.4 / 2.6 / 2.8 / 3 / 3.5 | .75 |
+| Rumänisches KH | 0 / .3 / .6 / .85 / 1.1 / 1.25 / 1.4 / 1.55 / 1.7 / 1.85 / 2 / 2.15 / 2.3 / 2.7 | .75 |
+| Schulterdrücken | 0 / .125 / .25 / .4 / .55 / .625 / .7 / .775 / .85 / .925 / 1 / 1.075 / 1.15 / 1.35 | .65 |
+| Rudern | 0 / .175 / .35 / .55 / .75 / .875 / 1 / 1.1 / 1.2 / 1.3 / 1.4 / 1.525 / 1.65 / 1.9 | .65 |
+| Klimmzug, Gesamtlast | 0 / .325 / .65 / .85 / 1 / 1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 / 1.725 / 1.85 / 2.1 | .75 |
+| Latzug | 0 / .2 / .4 / .6 / .8 / .9 / 1 / 1.1 / 1.2 / 1.3 / 1.4 / 1.525 / 1.65 / 1.9 | .65 |
+| Dips, Gesamtlast | 0 / .325 / .65 / .85 / 1 / 1.1 / 1.2 / 1.325 / 1.45 / 1.575 / 1.7 / 1.85 / 2 / 2.3 | .70 |
+| Beinpresse | 0 / .5 / 1 / 1.5 / 2 / 2.375 / 2.75 / 3.125 / 3.5 / 3.875 / 4.25 / 4.625 / 5 / 6 | .75 |
+| Curls | 0 / .1 / .2 / .3 / .42 / .485 / .55 / .615 / .68 / .75 / .82 / .91 / 1 / 1.2 | .60 |
+| Trizeps | 0 / .125 / .25 / .38 / .5 / .575 / .65 / .725 / .8 / .875 / .95 / 1.035 / 1.12 / 1.35 | .65 |
+| Seitheben | 0 / .06 / .12 / .2 / .27 / .3 / .33 / .365 / .4 / .45 / .5 / .56 / .62 / .75 | .65 |
+| Fly | 0 / .11 / .22 / .38 / .55 / .635 / .72 / .81 / .9 / 1 / 1.1 / 1.21 / 1.32 / 1.55 | .65 |
+| Beinbeuger | 0 / .125 / .25 / .4 / .55 / .625 / .7 / .8 / .9 / 1 / 1.1 / 1.2 / 1.3 / 1.5 | .75 |
+| Beinstrecker | 0 / .15 / .3 / .5 / .7 / .8 / .9 / 1 / 1.1 / 1.2 / 1.3 / 1.425 / 1.55 / 1.8 | .75 |
+| Hip Thrust | 0 / .3 / .6 / 1 / 1.4 / 1.6 / 1.8 / 2 / 2.2 / 2.4 / 2.6 / 2.8 / 3 / 3.5 | .80 |
+
+Beispiele v93 (je 1 Wdh. bzw. wie angegeben): Bankdrücken 100 kg bei 80 kg KG = Verhältnis 1,25 → Creatine Bloater III (bisher Protein Farter II); 100 kg × 5 → Test Booster Believer II. Seitheben 12 kg Kurzhantel × 12 bei 85 kg → Protein Farter III (unverändert), 27 kg Maschine × 12 → Test Booster Believer III (bisher BPC-157 Considerer II).
+
+Alte Skala (Skala 1, v88–v92): neun Gruppen, 25 Stufen 0–24. `pulsStrength.fromLegacy(i)` bildet alte Stufe i auf die erste neue Stufe mit derselben Kraftgrenze ab (0,2,4,6,7,8,9,10,11,12,14,16,18,20,22,24,26,28,30,32,34,36,37,38,39), `toLegacy(n)` zurück auf die alte Stufe, die n enthält.
 
 Nachkalibrierung v90: Curls, Trizeps, Seitheben und Fly waren deutlich großzügiger als die Grundübungen (Seitheben 12 kg Kurzhantel × 12 bei 85 kg ergab Superman Cycle III, 27 kg Maschine × 12 Tren Cougher) und hoben den Gesamtrang. Mit den neuen Schwellen landen diese Beispiele bei Protein Farter III bzw. BPC-157 Considerer II; Grundübungen, Beinbeuger und Beinstrecker sind unverändert. Bestehende Workouts werden nicht umgeschrieben, Ränge werden nur neu berechnet.
 
@@ -47,17 +53,21 @@ Ersttraining (v92, lokal): Ein vollständig gespeichertes Onboarding-Profil mit 
 
 Ohne Körpergewicht bietet die Abschluss-Rangseite „Gewicht eintragen“ und öffnet das bestehende Gewichtsformular am Workoutdatum. Die Rangansicht bietet denselben Knopf und kehrt nach erfolgreichem Speichern zur neu berechneten Ansicht zurück. Keine Ersatzgewichte oder neuen Profilfelder. Beim ersten Übungsrang steht „Neu“, ohne Aufstiegsbehauptung/-ton; der Balken beginnt bei null und füllt sich bis zum tatsächlichen Fortschritt in der aktuellen Stufe (an einer exakten Stufengrenze bleibt er null). Reduzierte Bewegung zeigt direkt den Endstand.
 
-Auf der Abschlussseite erscheint „Gewicht eintragen“ nur für nach `classify()` grundsätzlich rangfähige Übungen; Push-ups und andere ausgeschlossene Varianten zeigen auch ohne Körpergewicht „ohne Rang“. Die Gesamtrang-Feier verwendet `display.lastRankSeen` als Hochwassermarke: sinkende Ränge werden nicht gespeichert, das erneute Erreichen eines bereits gesehenen Rangs löst keine Feier aus. Profilwechsel behalten ihre eigene Ausgangsbasis. Bestehende Werte 25/26 bleiben unverändert gültig und werden nicht abgesenkt; es gibt kein neues Profilfeld und keine Schemaänderung.
+Auf der Abschlussseite erscheint „Gewicht eintragen“ nur für nach `classify()` grundsätzlich rangfähige Übungen; Push-ups und andere ausgeschlossene Varianten zeigen auch ohne Körpergewicht „ohne Rang“. Die Gesamtrang-Feier verwendet `display.lastRankSeen` als Hochwassermarke: sinkende Ränge werden nicht gespeichert, das erneute Erreichen eines bereits gesehenen Rangs löst keine Feier aus. Profilwechsel behalten ihre eigene Ausgangsbasis.
 
-Freunde: Gesamtrang-Stufenindex, Gleichstand Mittel der veröffentlichten Übungsverhältnisse (max. 40), danach eigene Person/Name. Übungsvergleich: Stufenindex und Verhältnis der gewählten Übung. Geräte-/Namensvarianten behalten getrennte kanonische Schlüssel; Synonyme werden nicht geraten. Geteilte Leistungen sind Clientangaben, keine serverseitig verifizierten Werte.
+Migration v93: `display.rankScale: 2` kennzeichnet die 40-Stufen-Skala (optionales Feld, alte Sicherungen ohne Feld bleiben gültig). `pulsData87.migrate()` (Start, Render, Import, Cloud-Übernahme) und vorsorglich `celebrate()` bilden einen unmarkierten Wert einmalig ab: alte Stufe 0–24 → `max(fromLegacy(alt), aktueller Rang)`, damit geteilte Stufen nach dem Update keine Feier auslösen; Altwerte 25/26 (und unmögliche Werte) gelten als „noch nicht gesehen“, der aktuelle Rang wird Ausgangspunkt (ohne Rang: Feld entfällt). Danach `rankScale: 2`, keine zweite Migration. Speichern erst mit dem nächsten regulären Speichern. `validData()` akzeptiert `lastRankSeen` 0–39 und `rankScale` nur als 2. Grenze: Eine alte App-Version (≤ 92) entfernt `rankScale` als unbekanntes Feld; synchronisiert sie das Profil zurück, wird der Wert erneut als alte Skala gelesen. Folge ist höchstens eine ausbleibende Feier, keine falsche.
+
+Freunde: Gesamtrang-Stufenindex, Gleichstand Mittel der veröffentlichten Übungsverhältnisse (max. 40), danach eigene Person/Name. v93: Zusammenfassungen tragen `rank_scale: 2`. Fremde Zeilen ohne `rank_scale` (alte App-Version oder alter Server) gelten als Skala 1, werden in `friends.js` auf 0–24 geprüft und in `friends-board.js` per `fromLegacy` angezeigt; Skala-2-Zeilen werden auf 0–39 geprüft. Embleme: eigene Embleme für Gym Tourist (Stein, Kreis, Kamera), Pre-Workout Itcher (Orange, Sechseck, Messlöffel), Creatine Bloater (Oliv, Sechseck mit Ring, Ballon), Test Booster Believer (Bronze, Wappen mit Ring, Kapsel), Blast & Cruiser (Petrol, Wappen mit Flügeln und Ring, Kreislaufpfeile); bestehende Embleme unverändert. Übungsvergleich: Stufenindex und Verhältnis der gewählten Übung. Geräte-/Namensvarianten behalten getrennte kanonische Schlüssel; Synonyme werden nicht geraten. Geteilte Leistungen sind Clientangaben, keine serverseitig verifizierten Werte.
 
 ## API und Migration
 
-`strength-ranks.js` nach Bibliothek/Training/Freunde, vor `puls-data-v87.js` und `friends-board.js`. `pulsStrength`: `ranks`, `standards`, `classify`, `weightAt`, `rankAt(score)`, `all(source?, until?)`, `exerciseRank(exId, source?, until?)`, `overall(source?, until?)`, `summary(source?, until?)`. Ergebnis: `index` (Gruppe 0–8), `rankIndex` (Stufe 0–24), `score` (kontinuierlich), Name/Stufe/Verhältnis/nächste Grenze/Fortschritt; Übungen ergänzen Name/Schlüssel, Gesamt ergänzt gewählte Übungen/`nextLift`. Keine Speicher-/Profilmutation. Bisherige `pulsData87.rankFor*` und `PULS_RANKS` liefern Kraftränge; `userLevel`/`level` bleiben XP-basiert. `display.lastRankSeen` speichert die Stufe, alte Werte bis 26 bleiben importierbar.
+`strength-ranks.js` nach Bibliothek/Training/Freunde, vor `puls-data-v87.js` und `friends-board.js`. `pulsStrength`: `ranks`, `standards`, `classify`, `weightAt`, `rankAt(score)`, `all(source?, until?)`, `exerciseRank(exId, source?, until?)`, `overall(source?, until?)`, `summary(source?, until?)`, `scale` (2), `maxRankIndex` (39), `fromLegacy(i)`, `toLegacy(n)`. Ergebnis: `index` (Gruppe 0–13), `rankIndex` (Stufe 0–39), `score` (kontinuierlich), Name/Stufe/Verhältnis/nächste Grenze/Fortschritt; Übungen ergänzen Name/Schlüssel, Gesamt ergänzt gewählte Übungen/`nextLift`. Keine Speicher-/Profilmutation. Bisherige `pulsData87.rankFor*` und `PULS_RANKS` liefern Kraftränge; `userLevel`/`level` bleiben XP-basiert. `display.lastRankSeen` speichert die Stufe (Skala 2, Migration siehe oben).
 
-`summary`: `{strength_rank,lift_ranks:[{key,name,rankIndex,ratio}]}`, max. 40, Ratio auf zwei Nachkommastellen. Keine zusätzlichen absoluten Lasten/Gewichte/Geschlechtsdaten. Dirty-, Konflikt-, Recovery-, Revisions- und Konto-Wechsel-Sperren bleiben erhalten. Alter Server: zuerst ohne `p_strength`, nötigenfalls danach ohne `p_xp`; fremde fehlende Kraftränge bleiben unbekannt.
+`summary`: `{strength_rank,lift_ranks:[{key,name,rankIndex,ratio}],rank_scale:2}`, max. 40, Ratio auf zwei Nachkommastellen. Keine zusätzlichen absoluten Lasten/Gewichte/Geschlechtsdaten. Dirty-, Konflikt-, Recovery-, Revisions- und Konto-Wechsel-Sperren bleiben erhalten. Fallback-Kette: Server vor v2 (`friends-strength.sql`) lehnt `rank_scale`/Stufen > 24 mit 400/22023 „Invalid strength …“ ab → einmal je Seite `toLegacy`-Indizes ohne `rank_scale` senden; Server ohne `p_strength` (404/PGRST202) → ohne `p_strength`; danach nötigenfalls ohne `p_xp`. Ein nicht umrechenbarer Rang sendet kein `p_strength` (NULL erhält den alten Serverstand), nie die explizite Löschung. Fremde fehlende Kraftränge bleiben unbekannt.
 
-SQL-Quellprüfung v92: `backend/friends-strength.sql` verlangt keine Mindestanzahl von Übungen/Muskelgruppen. Ein Gesamtrang 0–24 mit nur einem oder zwei gültigen Lift-Einträgen erfüllt unverändert die Payload-Regeln. Keine SQL-Änderung oder Live-Ausführung; dies belegt keine Live-RLS.
+SQL v93: [friends-strength-v2.sql](../backend/friends-strength-v2.sql) (nur Datei, nicht ausgeführt) ersetzt `friends-strength.sql` vollständig: Spalte `rank_scale smallint` (NULL = Skala 1, 2 = Skala 2), Constraints `strength_rank` 0–24 bzw. 0–39 je Skala, Validator `puls_valid_lift_ranks(jsonb,integer)` ersetzt die alte Ein-Argument-Version (keine Überladung), `p_strength` mit 2 Schlüsseln oder optional `rank_scale: 2`, Rang/Übungen/Skala werden immer gemeinsam gesetzt (alte Clients setzen die Skala zurück auf NULL), Snapshot liefert `rank_scale` für self/angenommene Freunde. Publish-Signatur unverändert, SECURITY DEFINER, leerer search_path, `auth.uid()`, Revisionsprüfung und RPC-only bleiben. Reihenfolge: `friends.sql` → `friends-ranks.sql` → (optional `friends-strength.sql`) → `friends-strength-v2.sql`; danach nicht erneut `friends-strength.sql` einspielen. Grenze: App-Versionen ≤ 92 lesen Skala-2-Werte eines v93-Freundes als alte Stufen (Werte > 24 als „Rang unbekannt“), bis sie aktualisiert sind.
+
+SQL-Quellprüfung v92: `backend/friends-strength.sql` verlangt keine Mindestanzahl von Übungen/Muskelgruppen. Ein Gesamtrang 0–24 (v2: 0–39 mit `rank_scale` 2) mit nur einem oder zwei gültigen Lift-Einträgen erfüllt unverändert die Payload-Regeln. Keine SQL-Änderung oder Live-Ausführung; dies belegt keine Live-RLS.
 
 Manuelle Reihenfolge: vorhandene `friends.sql` → `friends-ranks.sql` → neue [friends-strength.sql](../backend/friends-strength.sql). Wiederholbare Transaktion, entfernt alte Publish-Signaturen; ein optionaler JSON-Parameter. NULL erhält frühere Kraftdaten, `{strength_rank:null,lift_ranks:[]}` löscht sie explizit. JSON-Prüfung: Struktur, Typen, Duplikate, Grenzen, Dezimalstellen, 32 KiB. Snapshot nur self/angenommene Freunde. SECURITY DEFINER, leerer search_path, `auth.uid()`, RPC-only und Revisionsprüfung bleiben erhalten.
 

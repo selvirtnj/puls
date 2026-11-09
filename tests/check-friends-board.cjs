@@ -33,8 +33,8 @@ function fixture({snapshot,xp=6400,language='de',display={},strengthScore=12}={}
  function setStrength(score){
   ctx.state.profile={weight:100};
   const exercises=score===null?[]:[['bench','Barbell Bench Press'],['squat','Barbell Squat'],['row','Barbell Row']].map(([key,name])=>{
-   const t=ctx.pulsStrength.standards[key].male,i=Math.min(7,Math.floor(score/3));
-   const ratio=score===24?t[8]:t[i]+(t[i+1]-t[i])*(score-i*3)/3;
+   const t=ctx.pulsStrength.standards[key].male,top=t.length-1,i=Math.min(top-1,Math.floor(score/3));
+   const ratio=score>=top*3?t[top]:t[i]+(t[i+1]-t[i])*(score-i*3)/3;
    return {name,exerciseId:key,sets:[{kg:ratio*100,reps:1,done:true}]};
   });
   ctx.state.workouts=[{id:'w1',finished:true,date:'2026-11-07',sets:[{}],exercises}];
@@ -48,19 +48,27 @@ const self={code:'ABCDEF123456',name:'Ich'};
 const friend=(i,extra={})=>({code:'FEDCBA65432'+i,name:'Freund '+i,strength_rank:6+i,lift_ranks:[{key:'bench-barbell-press--barbell',name:'Barbell Bench Press',rankIndex:6+i,ratio:i/2}],xp:1000*i,streak:i,last_training:'2026-11-0'+(i%7+1),broken:false,updated_at:'2026-11-07T10:00:00Z',...extra});
 const snapWith=friends=>({self:{...self,xp:5},friends,incoming:[],outgoing:[],nudges:[]});
 
-// Nine strength groups, 25 stages, distinct remapped emblems; unknown never becomes zero.
+// v93: 14 strength groups, 40 stages, one distinct emblem per group; unknown never becomes zero.
 {
  const f=fixture({snapshot:snapWith([])}),ranks=f.ctx.pulsData87.ranks;
- assert.equal(ranks.length,9);assert.equal(ranks[8].name,'Tren Cougher');
- assert.equal(f.api.rankFor(12).name,'Protein Farter I');assert.equal(f.api.rankFor(24).nextAt,null);
- assert.equal(f.api.rankFor(null),null);assert.equal(f.api.rankFor(25),null);
- const ids=new Set();
- for(let i=0;i<9;i++)for(const stage of [0,1,2,3]){
+ assert.equal(ranks.length,14);assert.equal(ranks[13].name,'Tren Cougher');assert.equal(ranks[0].name,'Gym Tourist');
+ assert.equal(f.api.rankFor(21).name,'Protein Farter I');assert.equal(f.api.rankFor(39).nextAt,null);assert.equal(f.api.rankFor(39).name,'Tren Cougher');
+ assert.equal(f.api.rankFor(null),null);assert.equal(f.api.rankFor(40),null);assert.equal(f.api.rankFor(-1),null);
+ const ids=new Set(),looks=new Set();
+ const hue=hex=>{const [r,g,b]=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255),max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+  if(!d)return {h:0,s:0};const h=max===r?((g-b)/d+6)%6:max===g?(b-r)/d+2:(r-g)/d+4;return {h:h*60,s:d/(1-Math.abs(max+min-1))}};
+ for(let i=0;i<14;i++)for(const stage of [0,1,2,3]){
   const svg=f.api.emblem(i,stage,40);assert(svg.endsWith('</svg>'));assert(!/gradient|filter=|shadow/i.test(svg));
   const id=svg.match(/clipPath id="([^"]+)"/)[1];assert(!ids.has(id));ids.add(id);
-  if(i<8)assert.equal((svg.match(/<circle cx="\d+" cy="67"/g)||[]).length,3);
+  if(i<13)assert.equal((svg.match(/<circle cx="\d+" cy="67"/g)||[]).length,3);
+  else assert(!/<circle cx="\d+" cy="67"/.test(svg),'final rank has no stage dots');
+  if(stage===1)looks.add(svg.replace(/fbclip\d+/g,''));
+  // Keine Lila-/Violetttöne und keine Neonfarben (Systemfarben wie bisher).
+  for(const [color] of svg.matchAll(/#[0-9A-F]{6}/gi)){const {h,s}=hue(color);assert(!(s>.25&&h>=250&&h<=320),'no purple '+color)}
  }
- assert.match(f.api.emblem(null),/>\?</);assert.match(f.api.emblem(8),/fb-flame/);
+ assert.equal(looks.size,14,'every group has its own emblem');
+ assert.match(f.api.emblem(null),/>\?</);assert.match(f.api.emblem(13),/fb-flame/);assert.equal(f.api.emblem(14),f.api.emblem(null));
+ for(const i of [0,5,6,8,10])assert(!/fb-flame/.test(f.api.emblem(i)),'new middle ranks stay modest');
  for(const place of [1,2,3])assert.match(f.api.wreath(place),/fb-wreath-l[^]*fb-wreath-r/);
 }
 
@@ -71,7 +79,9 @@ const snapWith=friends=>({self:{...self,xp:5},friends,incoming:[],outgoing:[],nu
  const f=fixture({snapshot:snapWith(friends)}),html=f.mount.innerHTML;
  assert.equal(f.mount.dataset.fb,'1');assert(!html.includes('legacy'),'Board ersetzt Rückfall-Liste');assert.equal(f.panel.firstElementChild,f.mount);
  assert.match(html,/&lt;img onerror=x&gt;/);assert(!html.includes('<img onerror'));
- assert.match(html,/Rang unbekannt/);assert.match(html,/Protein Farter I/);assert.match(html,/Zuletzt trainiert: gestern/);
+ assert.match(html,/Rang unbekannt/);assert.match(html,/High Melanin I/);assert.match(html,/Zuletzt trainiert: gestern/);
+ // Freunde ohne rank_scale (alte App) senden Stufen 0..24: Freund 2 = alt 8 (Low Melanin III) -> neu 11.
+ assert.match(html,/Freund 2<\/strong><small>Low Melanin III/);
  assert.equal((html.match(/class="fb-slack"/g)||[]).length,2);
  assert.match(html,/Gewarnt · wieder in 7 h/);assert.match(html,/pulsFriendsBoard\.warn\('FEDCBA654322',this\)/);
  assert.match(html,/Zuletzt trainiert vor 7 Tagen/);assert.match(html,/pulsFriends\.action\('FEDCBA654321','remove'\)/);
@@ -100,6 +110,26 @@ for(const count of [0,1,2,5]){
  assert.deepEqual(streaks,[...streaks].sort((a,b)=>b-a));
 }
 
+// Alte (ohne rank_scale) und neue Skala (rank_scale 2) gemischt: Anzeige, Bestenliste und Übungsvergleich auf 40 Stufen.
+{
+ const old=friend(1,{name:'Alt',strength_rank:13,lift_ranks:[{key:'bench-barbell-press--barbell',name:'Barbell Bench Press',rankIndex:24,ratio:2.3}]});
+ const neu=friend(2,{name:'Neu',rank_scale:2,strength_rank:30,lift_ranks:[{key:'bench-barbell-press--barbell',name:'Barbell Bench Press',rankIndex:30,ratio:1.7}]});
+ const junk=friend(3,{name:'Kaputt',strength_rank:25,lift_ranks:[{key:'bench-barbell-press--barbell',name:'Barbell Bench Press',rankIndex:26,ratio:1}]});
+ const big=friend(4,{name:'Gross',rank_scale:2,strength_rank:39,lift_ranks:[{key:'bench-barbell-press--barbell',name:'Barbell Bench Press',rankIndex:40,ratio:3}]});
+ const f=fixture({snapshot:snapWith([old,neu,junk,big]),strengthScore:12}),snap=f.ctx.pulsFriendsData87.getSnapshot();
+ const board=f.api.leaderboard(snap,'strength'),by=name=>board.find(p=>p.name===name);
+ assert.equal(by('Alt').rank.rankIndex,20,'legacy 13 (Protein Farter II) -> first new stage with the same boundary');
+ assert.equal(by('Alt').rank.name,'Creatine Bloater III');
+ assert.equal(by('Neu').rank.rankIndex,30);assert.equal(by('Neu').rank.name,'Blast & Cruiser I');
+ assert.equal(by('Kaputt').rank,null,'legacy indices above 24 stay unknown');assert.equal(by('Gross').rank.name,'Tren Cougher');
+ assert.deepEqual([...board.map(p=>p.name)],['Gross','Neu','Alt','Ich','Kaputt']);
+ const lifts=f.api.leaderboard(snap,'strength','bench-barbell-press--barbell');
+ assert.deepEqual(JSON.parse(JSON.stringify(lifts.map(p=>[p.name,p.rank.rankIndex]))),[['Alt',39],['Neu',30]],'invalid lift indices are dropped, legacy 24 is Tren Cougher');
+ f.api.view('board');assert.match(f.mount.innerHTML,/Blast &amp; Cruiser I/);
+ f.api.view('exercises');f.api.exercise('bench-barbell-press--barbell');assert.match(f.mount.innerHTML,/<strong>Alt<\/strong><small>Tren Cougher/);assert(!f.mount.innerHTML.includes('Kaputt'));
+ assert.equal(snap.friends[0].strength_rank,13,'board never rewrites the shared snapshot');
+}
+
 // Ohne aktivierte Freunde bleibt der Rückfall von friends.js unverändert.
 {
  const f=fixture({snapshot:null});assert(f.mount.innerHTML.includes('legacy'));assert.equal(f.mount.dataset.fb,undefined);
@@ -109,10 +139,10 @@ for(const count of [0,1,2,5]){
 // Stage promotions depend only on strength; each is celebrated once.
 {
  const f=fixture({snapshot:snapWith([]),strengthScore:12});
- assert.equal(f.ctx.state.display.lastRankSeen,12);assert.equal(f.log.toasts.length,0);
+ assert.equal(f.ctx.state.display.lastRankSeen,12);assert.equal(f.ctx.state.display.rankScale,2);assert.equal(f.log.toasts.length,0);
  f.setXp(99999);assert.equal(f.api.celebrate(),false,'XP cannot raise strength');
  f.setStrength(13);assert.equal(f.api.celebrate(),true);assert.equal(f.ctx.state.display.lastRankSeen,13);
- assert.deepEqual(f.log.toasts,['Neuer Rang: Protein Farter II']);assert(f.log.sounds.includes('rankUp'));
+ assert.deepEqual(f.log.toasts,['Neuer Rang: High Melanin II']);assert(f.log.sounds.includes('rankUp'));
  assert.equal(f.api.celebrate(),false);f.api.view('ranks');assert.equal(f.log.toasts.length,1);
  const saves=f.log.saves;
  for(const score of [8,12,13,10,13]){
@@ -122,21 +152,38 @@ for(const count of [0,1,2,5]){
  assert.equal(f.log.saves,saves,'lower and recovered ranks do not write profile data');
  f.setStrength(14);assert.equal(f.api.celebrate(),true);assert.equal(f.ctx.state.display.lastRankSeen,14);
  assert.match(f.mount.innerHTML,/Deine Übungen/);assert.match(f.mount.innerHTML,/Noch [^<]+ kg bei/);
- assert.equal((f.mount.innerHTML.match(/class="fb-rung /g)||[]).length,9);
+ assert.equal((f.mount.innerHTML.match(/class="fb-rung /g)||[]).length,14);
+ assert.match(f.mount.innerHTML,/<strong>Tren Cougher<\/strong><small><\/small>/);assert.match(f.mount.innerHTML,/<strong>Gym Tourist<\/strong><small>I · II · III/);
+ f.setStrength(39);assert.equal(f.api.celebrate(),true);assert.deepEqual(f.log.toasts.at(-1),'Neuer Rang: Tren Cougher');assert.equal(f.ctx.state.display.lastRankSeen,39);
  const unknown=fixture({snapshot:snapWith([]),strengthScore:null});unknown.api.view('ranks');assert.match(unknown.mount.innerHTML,/Rang unbekannt/);assert.equal(unknown.log.saves,0);
  unknown.api.view('exercises');assert.match(unknown.mount.innerHTML,/Rang unbekannt/);assert(!unknown.mount.innerHTML.includes('kg/KG'));
  f.api.view('exercises');assert.match(f.mount.innerHTML,/pulsFriendsBoard.exercise/);assert.match(f.mount.innerHTML,/kg\/KG/);
 }
 
-// Legacy backups stay valid; reading their high-water mark clamps the in-memory baseline to 24.
-for(const seen of [14,25,26]){
- const f=fixture({snapshot:snapWith([]),display:{lastRankSeen:seen},strengthScore:8});
- const maxima=[],math=Object.create(Math);math.max=(...values)=>{maxima.push(values);return Math.max(...values)};f.ctx.Math=math;
- f.setStrength(Math.min(seen,24));assert.equal(f.api.celebrate(),false);
- assert.deepEqual(maxima.at(-1),[Math.min(seen,24),Math.min(seen,24),Math.min(seen,24)],'current, seen and previous baseline stay capped at 24');
- assert.equal(f.ctx.state.display.lastRankSeen,seen);assert.equal(f.log.saves,0);assert.equal(f.log.toasts.length,0);
+// v93: old 25-stage marks migrate once (rankScale 2); no false celebration from split stages,
+// legacy 25/26 count as not seen (current rank = baseline), scale-2 values are never remapped.
+for(const [display,migrated,quiet,celebrates] of [
+ [{lastRankSeen:14},22,22,23],          // old High Melanin III -> Protein Farter I boundary; current 8 lower
+ [{lastRankSeen:2},8,8,9],              // mapped 4 below current 8: current is the baseline
+ [{lastRankSeen:25},8,8,9],[{lastRankSeen:26},8,8,9],
+ [{lastRankSeen:30,rankScale:2},30,30,31]
+]){
+ const f=fixture({snapshot:snapWith([]),display,strengthScore:8});
+ assert.equal(f.ctx.state.display.rankScale,2);assert.equal(f.ctx.state.display.lastRankSeen,migrated,JSON.stringify(display));
+ assert.equal(f.log.saves,0,'startup migration never saves');assert.equal(f.log.toasts.length,0,'no celebration after the update');
+ f.ctx.pulsData87.migrate(f.ctx.state);assert.equal(f.ctx.state.display.lastRankSeen,migrated,'no second migration');
+ f.setStrength(quiet);assert.equal(f.api.celebrate(),false,'reaching the migrated mark does not celebrate');
+ f.setStrength(celebrates);assert.equal(f.api.celebrate(),true,'real progress beyond it still celebrates');
+ assert.equal(f.ctx.state.display.lastRankSeen,celebrates);
  const restored=JSON.parse(JSON.stringify(f.ctx.state));
- assert(f.ctx.validData(restored));assert.equal(restored.display.lastRankSeen,seen,'backup validation retains the existing supported range');
+ assert(f.ctx.validData(restored));assert.equal(restored.display.lastRankSeen,celebrates);assert.equal(restored.display.rankScale,2);
+}
+// A profile replaced at runtime (cloud/import) with an unmarked old value is migrated before comparing.
+{
+ const f=fixture({snapshot:snapWith([]),strengthScore:20});
+ f.ctx.state={...f.ctx.state,display:{lastRankSeen:13}};
+ assert.equal(f.api.celebrate(),false);assert.equal(f.ctx.state.display.rankScale,2);assert.equal(f.ctx.state.display.lastRankSeen,20);
+ assert.equal(f.log.toasts.length,0,'old Protein Farter II -> Creatine Bloater III is not a new rank');
 }
 
 // Einbindung: eigene Dateien, Reihenfolge nach friends.js/puls-data-v87.js und vor motion.js, Offline-Cache.
@@ -172,7 +219,7 @@ async function asyncChecks(){
  f.setStrength(15);assert.equal(f.api.celebrate(),false);assert.equal(f.log.toasts.length,0);
  f.setStrength(8);assert.equal(f.api.celebrate(),false);
  f.setStrength(15);assert.equal(f.api.celebrate(),false,'profile baseline remains a high-water mark after a decline');
- f.setStrength(18);assert.equal(f.api.celebrate(),true);assert.deepEqual(f.log.toasts,['Neuer Rang: Batman Cycle I']);
+ f.setStrength(18);assert.equal(f.api.celebrate(),true);assert.deepEqual(f.log.toasts,['Neuer Rang: Creatine Bloater I']);
 
 }
 async function weightChecks(){
@@ -188,6 +235,6 @@ async function weightChecks(){
  f.api.weight();assert.equal(formOpened,1);submit();await Promise.resolve();assert.equal(opened,1,'invalid save keeps form');
  f.ctx.state.weights=[{date:'2026-11-07',kg:100}];modal.open=false;submit();await Promise.resolve();
  assert.equal(opened,2);assert(!f.nodes.get('mb').innerHTML.includes('Gewicht eintragen'));
- assert(f.nodes.get('mb').innerHTML.includes('Low Melanin'));
+ assert(f.nodes.get('mb').innerHTML.includes('Low Estrogen III'));
 }
 asyncChecks().then(weightChecks).then(()=>console.log('PASS: friends board (ranks/emblems, cards, slacking band, podium 0/1/2/5, unknown rank, one-time rank-up, wiring, weight entry; no layout/backend).')).catch(error=>{console.error(error);process.exitCode=1});

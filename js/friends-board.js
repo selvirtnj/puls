@@ -1,5 +1,6 @@
 /* Strength board: pure local projections and sanitized friend summaries.
- * Only display.lastRankSeen (high-water mark 0..24, legacy 25/26 accepted) is persisted for celebrations. */
+ * Only display.lastRankSeen (high-water mark 0..39, with display.rankScale 2) is persisted for celebrations.
+ * Friends without rank_scale 2 (older app versions) send stages 0..24; they are mapped via pulsStrength.fromLegacy. */
 (function(){
 'use strict';
 const en=()=>typeof state!=='undefined'&&state?.language==='en';
@@ -10,18 +11,25 @@ const codeOK=value=>typeof value==='string'&&/^[A-F0-9]{12}$/.test(value);
 const dayOK=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value);
 const number=value=>new Intl.NumberFormat(en()?'en-US':'de-DE').format(value);
 const data=()=>window.pulsData87;
-const RANK_ART=[0,1,2,3,4,5,6,8,9];
+// Rangindex (0..13) -> Emblem-Art. Bestehende Ränge behalten ihre Embleme; 10..14 sind die v93-Ränge
+// Gym Tourist, Pre-Workout Itcher, Creatine Bloater, Test Booster Believer, Blast & Cruiser (Art 7 bleibt ungenutzt).
+const RANK_ART=[10,0,1,2,3,11,12,4,13,5,14,6,8,9];
+const TOP_GROUP=RANK_ART.length-1;
+const maxStage=()=>window.pulsStrength?.maxRankIndex??TOP_GROUP*3;
 
 /* ---------- Rang-Embleme ----------
    Flache Flächen in Systemfarben (Rand dunkel, Fläche, heller Facettenschnitt), keine Verläufe, kein Glow.
-   Pracht steigt mit dem Rang: Kreis, Schild, Schild mit Ring, Sechseck, Sechseck mit Ring, Wappen mit Flügeln,
-   große Flügel, Stern mit Lorbeer, Zacken, zuletzt Flammenkranz und Krone. */
+   Pracht steigt mit dem Rang: Kreis, Schild, Schild mit Ring, Sechseck, Sechseck mit Ring, Wappen,
+   Wappen mit Flügeln, große Flügel, Stern mit Lorbeer, Zacken, zuletzt Flammenkranz und Krone. */
 const COLORS=[
  ['#8E8E93','#5C5C61','#C7C7CC','#FFFFFF'],['#A2845E','#6E5434','#CDB592','#FFFFFF'],
  ['#34C759','#1F7A37','#86E3A0','#FFFFFF'],['#30B0C7','#1B7385','#86D6E4','#FFFFFF'],
  ['#007AFF','#004FA8','#6FB3FF','#FFFFFF'],['#3A5A8C','#22385E','#8FA9D1','#FFFFFF'],
  ['#A3264B','#6E1530','#E28AA3','#FFFFFF'],['#FF9500','#B86A00','#FFC46B','#FFFFFF'],
- ['#FF3B30','#B3231B','#FF8C86','#FFFFFF'],['#FFCC00','#A67C00','#FFE47A','#4A3500']];
+ ['#FF3B30','#B3231B','#FF8C86','#FFFFFF'],['#FFCC00','#A67C00','#FFE47A','#4A3500'],
+ // v93: Stein (Gym Tourist, dunkles Symbol), Orange, Oliv, Bronze, Petrol.
+ ['#C9BFAE','#857A66','#E8E1D5','#4D4436'],['#FF9500','#B86A00','#FFC46B','#FFFFFF'],
+ ['#7D9A3A','#4E6420','#BCD38A','#FFFFFF'],['#B8733A','#7A4A1E','#E2B386','#FFFFFF'],['#1F7A74','#114A46','#7CC6BF','#FFFFFF']];
 const SHAPES={
  circle:'M32 8a22 22 0 1 1 0 44a22 22 0 1 1 0-44Z',
  shield:'M32 7L51 13V29C51 41 43 49 32 54C21 49 13 41 13 29V13Z',
@@ -31,7 +39,8 @@ const SHAPES={
 const FORMS=[
  {shape:'circle'},{shape:'shield'},{shape:'shield',ring:1},{shape:'hex'},{shape:'hex',ring:1},
  {shape:'crest',wings:1},{shape:'crest',wings:2,ring:1},{shape:'star',wings:2,laurel:1},
- {shape:'star',wings:2,laurel:1,spikes:1,ring:1},{shape:'star',wings:2,laurel:1,spikes:1,ring:1,flames:1}];
+ {shape:'star',wings:2,laurel:1,spikes:1,ring:1},{shape:'star',wings:2,laurel:1,spikes:1,ring:1,flames:1},
+ {shape:'circle'},{shape:'hex'},{shape:'hex',ring:1},{shape:'crest',ring:1},{shape:'crest',wings:1,ring:1}];
 const GLYPHS=[
  // Tropfen, Koffer, Blitz, Shaker, Hantel, Kettlebell, Flexarm, Blatt, Maske, Krone mit Rauch (24er Raster)
  '<path d="M12 2.5C12 2.5 5 10.6 5 15a7 7 0 0 0 14 0C19 10.6 12 2.5 12 2.5Z"/>',
@@ -43,7 +52,13 @@ const GLYPHS=[
  '<path d="M5 3.5C6.8 2.8 8.6 3.2 9.2 4.6L9.8 6.2C10 7 9.4 7.6 8.6 7.6H8L8.6 11C10.6 9.4 13.8 9 16.4 10.2C19.6 11.6 21.2 14.4 20.6 17.2C20 20 17.4 21 14.6 21H6.6C4.6 21 3.4 19.6 3.6 17.6L4.2 8.4L3.8 6C3.6 4.8 4.1 3.9 5 3.5Z"/><path d="M11 15.5C12.6 14.2 15 14 16.8 15" fill="none" stroke-width="1.3" stroke-linecap="round" stroke="#6E1530"/>',
  '<path d="M4.5 20C4.5 11 10.5 4 20.5 3.5C21 13.5 14 19.5 5.5 19.5L4.5 21ZM8.5 16.8L15.5 8.5L16.3 9.2L9.3 17.5Z" fill-rule="evenodd"/>',
  '<path d="M2.5 7C8 4.8 16 4.8 21.5 7C21.8 14.5 17.6 20 12 20C6.4 20 2.2 14.5 2.5 7ZM6 10.2c1.4-.8 3-.8 4.2 0c-.6 1.6-3.4 1.6-4.2 0ZM13.8 10.2c1.2-.8 2.8-.8 4.2 0c-.8 1.6-3.6 1.6-4.2 0ZM9 15.2c2-1 4-1 6 0L14.4 16c-1.6-.6-3.2-.6-4.8 0Z" fill-rule="evenodd"/>',
- '<path d="M3.5 21.5V19h17v2.5ZM3.5 18L2.5 9.5L7.8 13.2L12 6.5L16.2 13.2L21.5 9.5L20.5 18Z"/><path d="M8 5.5C7 4.4 8.6 3.4 7.6 2M12 4.2C11 3 12.8 2 11.8.5M16 5.5C15 4.4 16.6 3.4 15.6 2" fill="none" stroke-width="1.3" stroke-linecap="round"/>'];
+ '<path d="M3.5 21.5V19h17v2.5ZM3.5 18L2.5 9.5L7.8 13.2L12 6.5L16.2 13.2L21.5 9.5L20.5 18Z"/><path d="M8 5.5C7 4.4 8.6 3.4 7.6 2M12 4.2C11 3 12.8 2 11.8.5M16 5.5C15 4.4 16.6 3.4 15.6 2" fill="none" stroke-width="1.3" stroke-linecap="round"/>',
+ // v93: Kamera, Messlöffel mit Funken, Ballon, Kapsel mit Funkeln, Kreislaufpfeile
+ '<path d="M8.6 5h6.8l1.4 2.2H20c.9 0 1.6.7 1.6 1.6v9.6c0 .9-.7 1.6-1.6 1.6H4c-.9 0-1.6-.7-1.6-1.6V8.8c0-.9.7-1.6 1.6-1.6h3.2ZM12 9.2a4.4 4.4 0 1 0 0 8.8a4.4 4.4 0 1 0 0-8.8ZM12 11.2a2.4 2.4 0 1 1 0 4.8a2.4 2.4 0 1 1 0-4.8Z" fill-rule="evenodd"/>',
+ '<path d="M2.5 11.5h12a6 6 0 0 1-12 0ZM14 12.2L21.2 9.1L22 10.9L14.6 14.1Z"/><path d="M4.2 10.5c.6-2.6 2.2-4 4.3-4s3.7 1.4 4.3 4Z"/><path d="M18.5 2.5l.7 1.7l1.7.7l-1.7.7l-.7 1.7l-.7-1.7l-1.7-.7l1.7-.7Z"/>',
+ '<path d="M12 2.5c3.9 0 6.8 3 6.8 7c0 4.3-3.4 7.6-5.6 8.4l.9 1.8H9.9l.9-1.8C8.6 17.1 5.2 13.8 5.2 9.5c0-4 2.9-7 6.8-7ZM9.4 6.2c-1.3.8-2 2.1-2.1 3.6l1.3.1c.1-1.1.6-2 1.5-2.6Z" fill-rule="evenodd"/><path d="M12 20.2c-.9.8-.9 1.4 0 2.2" fill="none" stroke-width="1.3" stroke-linecap="round"/>',
+ '<g transform="rotate(-45 12 12)"><path d="M7.5 8h4.5v8H7.5a4 4 0 0 1 0-8Z"/><path d="M12.8 8h3.7a4 4 0 0 1 0 8h-3.7Z" fill-opacity=".55"/></g><path d="M5 2.8l.6 1.5l1.5.6l-1.5.6l-.6 1.5l-.6-1.5l-1.5-.6l1.5-.6Z"/><path d="M19.5 17.6l.4 1l1 .4l-1 .4l-.4 1l-.4-1l-1-.4l1-.4Z"/>',
+ '<path d="M18.6 12a6.6 6.6 0 0 1-11.27 4.67M5.4 12a6.6 6.6 0 0 1 11.27-4.67" fill="none" stroke-width="2.4" stroke-linecap="round"/><path d="M5.6 15L9.2 15.7L6.3 18.5Z"/><path d="M18.4 9L14.8 8.3L17.7 5.5Z"/>'];
 const WING={1:'M14 18L4 15L8 23L3 27L10 30L7 36L14 34Z',2:'M13 13L-1 8L5 18L-2 23L7 27L0 33L9 36L4 43L14 40Z'};
 const FLAME_OUTER='M32 -7C37 2 45 1 43 -6C53 3 59 14 57 27C62 23 63 17 62 13C70 28 66 47 54 58H10C-2 47 -6 28 2 13C1 17 2 23 7 27C5 14 11 3 21 -6C19 1 27 2 32 -7Z';
 const FLAME_INNER='M32 -1C36 6 42 6 41 1C49 9 53 19 51 30H13C11 19 15 9 23 1C22 6 28 6 32 -1Z';
@@ -61,7 +76,7 @@ function laurel(color){
 }
 function emblem(index,stage=1,size=40,{label=''}={}){
  const box='-6 -9 76 84',attrs=`class="fb-emblem" viewBox="${box}" width="${size}" height="${Math.round(size*84/76)}" ${label?`role="img" aria-label="${escape(label)}"`:'aria-hidden="true"'} focusable="false"`;
- if(!Number.isInteger(index)||index<0||index>8){
+ if(!Number.isInteger(index)||index<0||index>TOP_GROUP){
   // Fehlende Kraftdaten: Fragezeichen, kein erfundener Rang.
   return `<svg ${attrs}><path d="${SHAPES.circle}" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" opacity=".55"/><text x="32" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="currentColor" opacity=".7">?</text></svg>`;
  }
@@ -79,7 +94,7 @@ function emblem(index,stage=1,size=40,{label=''}={}){
  svg+=`<path d="M-10 -10H32V30L-10 64Z" fill="${light}" opacity=".45" clip-path="url(#${clip})"/>`;
  if(form.ring)svg+=`${around(.7,shape)} fill="none" stroke="${light}" stroke-width="1.6"/>`;
  svg+=`<g transform="translate(32 30) scale(${form.shape==='circle'?.95:1.05}) translate(-12 -12)" fill="${glyph}" stroke="${glyph}" stroke-width="0">${GLYPHS[art]}</g>`;
- if(index<8)for(let i=0;i<3;i++)svg+=`<circle cx="${24+i*8}" cy="67" r="2.8" ${i<stage?`fill="${base}" stroke="${rim}"`:`fill="none" stroke="currentColor" opacity=".45"`} stroke-width="1.2"/>`;
+ if(index<TOP_GROUP)for(let i=0;i<3;i++)svg+=`<circle cx="${24+i*8}" cy="67" r="2.8" ${i<stage?`fill="${base}" stroke="${rim}"`:`fill="none" stroke="currentColor" opacity=".45"`} stroke-width="1.2"/>`;
  else svg+=`<path d="M32 61.5L35 66.5L32 71.5L29 66.5Z" fill="${base}" stroke="${rim}" stroke-width="1.2"/>`;
  return svg+'</svg>';
 }
@@ -128,9 +143,22 @@ function localStreak(){
   return {streak:count,last};
  }catch{return {streak:0,last:null}}
 }
+// rankIndex always on scale 2 (0..39); friend values are normalized in people().
 function rankFor(rankIndex){
- if(!Number.isInteger(rankIndex)||rankIndex<0||rankIndex>24)return null;
+ if(!Number.isInteger(rankIndex)||rankIndex<0||rankIndex>maxStage())return null;
  return window.pulsStrength?.rankAt(rankIndex)||null;
+}
+// Older app versions publish without rank_scale: stages 0..24 of the nine-group scale.
+function friendStage(value,scale){
+ if(!Number.isInteger(value)||value<0)return null;
+ if(scale===2)return value<=maxStage()?value:null;
+ const map=window.pulsStrength?.fromLegacy;
+ return value<=24&&typeof map==='function'?map(value):null;
+}
+function onScale(p){
+ const scale=p.rank_scale===2?2:1;
+ const lifts=(Array.isArray(p.lift_ranks)?p.lift_ranks:[]).map(r=>({...r,rankIndex:friendStage(r?.rankIndex,scale)})).filter(r=>r.rankIndex!==null);
+ return {...p,strength_rank:friendStage(p.strength_rank,scale),lift_ranks:lifts,rank_scale:2};
 }
 const ownRank=()=>{const r=window.pulsStrength?.overall();return r?.index==null?null:r};
 const rankText=rank=>rank?escape(rank.name):t('Rang unbekannt','Rank unknown');
@@ -142,7 +170,7 @@ function people(snap){
  const own=localStreak(),ownXp=localXp(),strength=window.pulsStrength?.summary()||{strength_rank:null,lift_ranks:[]};
  const me={code:snap.self.code,name:snap.self.name,self:true,...strength,xp:ownXp??snap.self.xp??null,streak:own.streak,last_training:own.last,broken:false};
  const stale=p=>dayOK(p.last_training)&&new Date(today()+'T12:00:00Z')-new Date(p.last_training+'T12:00:00Z')>=4*86400000;
- return [me,...(snap.friends||[]).map(p=>({...p,self:false,streak:stale(p)?0:Number.isInteger(p.streak)?p.streak:0,slacking:!!p.broken||stale(p)}))];
+ return [me,...(snap.friends||[]).map(p=>({...onScale(p),self:false,streak:stale(p)?0:Number.isInteger(p.streak)?p.streak:0,slacking:!!p.broken||stale(p)}))];
 }
 function leaderboard(snap,metric='strength',exerciseKey=null){
  const rows=people(snap).map(p=>{
@@ -248,7 +276,7 @@ function ranksHTML(play){
   const status=!r?'future':g.index<r.index?'done':g.index===r.index?'current':'future';
   const stage=status==='done'?3:status==='current'?r.stage:0;
   return `<li class="fb-rung ${status}${play?' motion-play':''}" ${play?`data-motion="enter" style="--motion-i:${Math.min(i,10)}"`:''}>
-   ${emblem(g.index,stage,44)}<span class="fb-rungtext"><strong>${escape(g.name)}</strong><small>${g.index===8?'':'I · II · III'}</small></span>
+   ${emblem(g.index,stage,44)}<span class="fb-rungtext"><strong>${escape(g.name)}</strong><small>${g.stages.length===1?'':'I · II · III'}</small></span>
    <span class="fb-rungstate">${status==='current'?`<b>${t('Du','You')}</b>`:status==='done'?icon('check-circle'):''}</span></li>`;
  }).join('');
  return `${hero}<h3 class="fb-title">${t('Deine Übungen','Your exercises')}</h3><ul class="fb-lifts">${lifts||(missingWeight?'':`<li class="fb-empty">${t('Rang unbekannt','Rank unknown')}</li>`)}</ul><h3 class="fb-title">${t('Alle Ränge','All ranks')}</h3><ol class="fb-ladder">${rungs}</ol>`;
@@ -273,16 +301,19 @@ function persistSeen(index){
  const flag=read=>{try{return !!read()}catch{return false}};
  if(flag(()=>cloudApplying)||flag(()=>cloudBusy)||flag(()=>stateLoadCorrupt))return false;
  if(!state.display||typeof state.display!=='object'||Array.isArray(state.display))state.display={};
- if(Number.isInteger(state.display.lastRankSeen)&&state.display.lastRankSeen>=index)return true;
- state.display.lastRankSeen=index;try{save()}catch(error){console.error(error)}return true;
+ // Values are always written on scale 2; celebrate() migrates unmarked values first.
+ if(state.display.rankScale===2&&Number.isInteger(state.display.lastRankSeen)&&state.display.lastRankSeen>=index)return true;
+ state.display.rankScale=2;state.display.lastRankSeen=index;try{save()}catch(error){console.error(error)}return true;
 }
 // Gefeiert wird nur ein Aufstieg innerhalb desselben Profilobjekts. Nach einem Profilwechsel
 // (Login, Cloud-Übernahme, Import) gilt der dann berechnete Rang als Ausgangspunkt.
 let rankBase={state:null,index:-1};
 function celebrate(root=document){
  const s=currentState(),r=ownRank();if(!r||!s)return false;
- const storedSeen=data()?.display?.().lastRankSeen;
- const seen=Number.isInteger(storedSeen)?Math.min(24,storedSeen):storedSeen;
+ // Old 25-stage marks (no rankScale 2) are mapped once before comparing; see puls-data-v87 migrate.
+ if(s.display?.rankScale!==2&&typeof data()?.migrate==='function'){try{data().migrate(s)}catch(error){console.error(error)}}
+ const storedSeen=s.display?.rankScale===2?data()?.display?.().lastRankSeen:undefined;
+ const seen=Number.isInteger(storedSeen)?Math.min(maxStage(),storedSeen):storedSeen;
  if(!Number.isInteger(seen)){persistSeen(r.rankIndex);rankBase={state:s,index:r.rankIndex};return false} // Erste Anzeige: merken, nicht feiern.
  // App-Start (noch kein Profil gesehen): ungesehener Aufstieg zählt. Wechsel zu einem anderen Profilobjekt: nur Ausgangspunkt.
  if(rankBase.state&&rankBase.state!==s){rankBase={state:s,index:Math.max(r.rankIndex,seen)};return false}

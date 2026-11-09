@@ -8,7 +8,24 @@ const dayOK=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value);
 const nameOK=value=>typeof value==='string'&&[...value].length>=1&&[...value].length<=40;
 const owner=()=>cloudConfigured&&!firstRunPreview&&navigator.onLine!==false?cloudSession?.user?.id||null:null;
 let currentOwner=null,snapshot=null,lastPublished='',lastAttempt=0,loading=false,acting=false,message='',timer=null;
-let backendAvailable=null,refreshTimer=null,rankPublishAvailable=null,strengthPublishAvailable=null; // Per-page capabilities.
+let backendAvailable=null,refreshTimer=null,rankPublishAvailable=null,strengthPublishAvailable=null,strengthScaleAvailable=null; // Per-page capabilities.
+// v93 summaries carry rank_scale 2 (stages 0..39). Servers before friends-strength-v2.sql accept
+// only {strength_rank,lift_ranks} with stages 0..24: convert to the old scale instead of failing.
+function legacyStrength(value){
+ const toLegacy=window.pulsStrength?.toLegacy;
+ if(!value||typeof value!=='object'||typeof toLegacy!=='function')return null;
+ const lifts=(Array.isArray(value.lift_ranks)?value.lift_ranks:[]).map(r=>({...r,rankIndex:toLegacy(r.rankIndex)})).filter(r=>Number.isInteger(r.rankIndex));
+ const rank=value.strength_rank===null?null:toLegacy(value.strength_rank);
+ // An unconvertible rank must never become the explicit "clear" summary.
+ if(value.strength_rank!==null&&rank===null)return null;
+ return {strength_rank:rank,lift_ranks:lifts};
+}
+const scaled=body=>!!body?.p_strength&&typeof body.p_strength==='object'&&Object.hasOwn(body.p_strength,'rank_scale');
+function withLegacyStrength(body){
+ const next={...body},legacy=legacyStrength(body.p_strength);
+ if(legacy)next.p_strength=legacy;else delete next.p_strength; // NULL keeps the previous server summary.
+ return next;
+}
 const controllers=new Set();
 function context(){
  const next=owner();
@@ -23,6 +40,7 @@ function context(){
 async function rpc(name,body,expected=currentOwner){
  // Strip only unsupported optional summary fields; owner/revision checks stay intact.
  if(name==='publish'&&strengthPublishAvailable===false&&body){body={...body};delete body.p_strength;}
+ if(name==='publish'&&strengthScaleAvailable===false&&scaled(body))body=withLegacyStrength(body);
  if(name==='publish'&&rankPublishAvailable===false&&body&&Object.hasOwn(body,'p_xp')){body={...body};delete body.p_xp}
  if(!expected||context()!==expected)throw Error('context');
  await cloudFreshSession();
@@ -40,6 +58,10 @@ async function rpc(name,body,expected=currentOwner){
   if(context()!==expected)throw Error('context');
   if(!response.ok){
    let detail;try{detail=await response.json()}catch{}
+   // friends-strength.sql (v88) rejects the extra key and stages above 24 with 22023 "Invalid strength ...".
+   if(name==='publish'&&scaled(body)&&response.status===400&&detail?.code==='22023'&&/strength/i.test(String(detail?.message||''))){
+    strengthScaleAvailable=false;return await rpc(name,withLegacyStrength(body),expected);
+   }
    if(name==='publish'&&body&&Object.hasOwn(body,'p_strength')&&(response.status===404||detail?.code==='PGRST202'||detail?.code==='42883')){
     strengthPublishAvailable=false;const previous={...body};delete previous.p_strength;return await rpc(name,previous,expected);
    }
@@ -53,6 +75,7 @@ async function rpc(name,body,expected=currentOwner){
   if(context()!==expected)throw Error('context');
   backendAvailable=true;
   if(name==='publish'&&body&&Object.hasOwn(body,'p_strength'))strengthPublishAvailable=true;
+  if(name==='publish'&&scaled(body))strengthScaleAvailable=true;
   if(name==='publish'&&body&&Object.hasOwn(body,'p_xp'))rankPublishAvailable=true;
   return result;
  }finally{clearTimeout(timeout);controllers.delete(controller)}
@@ -92,16 +115,18 @@ function cleanSnapshot(value){
  const person=p=>p&&codeOK(p.code)&&nameOK(p.name),stamp=v=>typeof v==='string'&&Number.isFinite(Date.parse(v));
  const rows=(key,valid)=>Array.isArray(value[key])?value[key].filter(valid):[];
  // null is deliberately distinct from 0: the UI must show Rang unbekannt.
- const liftOK=r=>r&&typeof r.key==='string'&&/^[a-z0-9-]{1,180}$/.test(r.key)&&
+ // rank_scale 2 = stages 0..39; missing = older app/server with stages 0..24 (friends-board maps them).
+ const stageOK=(v,max)=>Number.isInteger(v)&&v>=0&&v<=max;
+ const liftOK=(r,max)=>r&&typeof r.key==='string'&&/^[a-z0-9-]{1,180}$/.test(r.key)&&
   typeof r.name==='string'&&r.name.trim().length>0&&[...r.name].length<=120&&
-  Number.isInteger(r.rankIndex)&&r.rankIndex>=0&&r.rankIndex<=24&&typeof r.ratio==='number'&&Number.isFinite(r.ratio)&&r.ratio>0&&r.ratio<=1000;
+  stageOK(r.rankIndex,max)&&typeof r.ratio==='number'&&Number.isFinite(r.ratio)&&r.ratio>0&&r.ratio<=1000;
  const ranked=p=>{
-  const seen=new Set(),lifts=[];
-  for(const r of Array.isArray(p.lift_ranks)?p.lift_ranks.slice(0,40):[])if(liftOK(r)&&!seen.has(r.key)){
+  const scale=p.rank_scale===2?2:null,max=scale===2?39:24,seen=new Set(),lifts=[];
+  for(const r of Array.isArray(p.lift_ranks)?p.lift_ranks.slice(0,40):[])if(liftOK(r,max)&&!seen.has(r.key)){
    seen.add(r.key);lifts.push({key:r.key,name:r.name,rankIndex:r.rankIndex,ratio:Math.round(r.ratio*100)/100});
   }
   return {...p,xp:Number.isInteger(p.xp)&&p.xp>=0&&p.xp<=10000000?p.xp:null,
-   strength_rank:Number.isInteger(p.strength_rank)&&p.strength_rank>=0&&p.strength_rank<=24?p.strength_rank:null,lift_ranks:lifts};
+   strength_rank:stageOK(p.strength_rank,max)?p.strength_rank:null,lift_ranks:lifts,rank_scale:scale};
  };
  // One malformed foreign row must not disable requests or the rest of the inbox.
  return {self:person(value.self)?ranked(value.self):null,

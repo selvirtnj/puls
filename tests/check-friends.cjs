@@ -205,6 +205,64 @@ async function main(){
  await shared.api.refresh(true);await shared.api.refresh(true);
  assert.deepEqual(shared.requests.find(r=>r.name==='publish').body.p_strength,strength);
  const sanitized=shared.ctx.pulsFriendsData87.getSnapshot().friends[0];assert.equal(sanitized.strength_rank,12);assert.equal(sanitized.lift_ranks.length,1);
+ // v93: summaries with rank_scale 2 (stages 0..39). Real toLegacy() from strength-ranks.js.
+ const rankCtx={state:{},today:()=>'2026-11-08',exerciseCatalog:[]};rankCtx.window=rankCtx;vm.createContext(rankCtx);
+ vm.runInContext(fs.readFileSync('js/strength-ranks.js','utf8'),rankCtx);const toLegacy=rankCtx.pulsStrength.toLegacy;
+ const scaledStrength={strength_rank:20,lift_ranks:[{key:'bench--barbell',name:'Bench',rankIndex:39,ratio:2.3},{key:'row--barbell',name:'Row',rankIndex:0,ratio:.1}],rank_scale:2};
+ const legacyStrength={strength_rank:13,lift_ranks:[{key:'bench--barbell',name:'Bench',rankIndex:24,ratio:2.3},{key:'row--barbell',name:'Row',rankIndex:0,ratio:.1}]};
+ const v88Reject={http:400,detail:{code:'22023',message:'Invalid strength summary'}};
+ const withScale=(reply,summary=scaledStrength)=>{const f=fixture({reply});f.ctx.pulsStrength={summary:()=>JSON.parse(JSON.stringify(summary)),toLegacy};return f};
+ {
+  // friends-strength.sql (v88): extra key/stages above 24 rejected -> converted old indices, publication succeeds.
+  const v88=withScale(async(name,body)=>name==='snapshot'?enrolled():body.p_strength&&Object.hasOwn(body.p_strength,'rank_scale')?v88Reject:true);
+  await v88.api.refresh(true);await v88.api.refresh(true);
+  let pubs=v88.requests.filter(r=>r.name==='publish');assert.equal(pubs.length,2);
+  assert.equal(pubs[0].body.p_strength.rank_scale,2);assert.deepEqual(pubs[1].body.p_strength,legacyStrength);
+  assert.equal(pubs[1].body.p_xp,825);assert.equal(pubs[1].body.p_source_revision,3,'revision/opt-in fields survive the fallback');
+  assert.equal(v88.ctx.pulsFriendsData87.getSnapshot().self.code,'ABCDEF123456');
+  v88.ctx.cloudRevision=4;await v88.api.refresh(true);pubs=v88.requests.filter(r=>r.name==='publish');
+  assert.equal(pubs.length,3);assert.deepEqual(pubs[2].body.p_strength,legacyStrength,'remember the old scale for this page');
+  for(const p of pubs.slice(1)){assert(p.body.p_strength.lift_ranks.every(r=>r.rankIndex<=24));assert(p.body.p_strength.strength_rank<=24)}
+  // Explicit clearing stays explicit on the old server.
+  const clear=withScale(async(name,body)=>name==='snapshot'?enrolled():body.p_strength&&Object.hasOwn(body.p_strength,'rank_scale')?v88Reject:true,{strength_rank:null,lift_ranks:[],rank_scale:2});
+  await clear.api.refresh(true);await clear.api.refresh(true);
+  assert.deepEqual(clear.requests.filter(r=>r.name==='publish').at(-1).body.p_strength,{strength_rank:null,lift_ranks:[]});
+  // Enabling friends uses the same chain.
+  const enable=withScale(async(name,body)=>name==='snapshot'?empty():body.p_strength&&Object.hasOwn(body.p_strength,'rank_scale')?v88Reject:true);
+  await enable.api.refresh(true);await enable.api.enable({preventDefault(){}});
+  const enrolledPub=enable.requests.filter(r=>r.name==='publish');assert.equal(enrolledPub.length,2);assert(enrolledPub[1].body.p_enable);assert.deepEqual(enrolledPub[1].body.p_strength,legacyStrength);
+ }
+ {
+  // friends-strength-v2.sql: scaled payload accepted and kept.
+  const v2=withScale(async name=>name==='snapshot'?enrolled():true);
+  await v2.api.refresh(true);await v2.api.refresh(true);v2.ctx.cloudRevision=4;await v2.api.refresh(true);
+  const pubs=v2.requests.filter(r=>r.name==='publish');assert.equal(pubs.length,2);
+  for(const p of pubs)assert.deepEqual(p.body.p_strength,scaledStrength);
+  // Other validation errors (22023 without "strength") are not mistaken for an old scale.
+  const bad=withScale(async(name,body)=>name==='snapshot'?enrolled():{http:400,detail:{code:'22023',message:'Invalid friend summary'}});
+  await bad.api.refresh(true);await bad.api.refresh(true);
+  assert.equal(bad.requests.filter(r=>r.name==='publish').length,1);
+  // Pre-strength server (404): drop p_strength entirely, keep XP; scale fallback not involved.
+  const pre=withScale(async(name,body)=>name==='snapshot'?enrolled():Object.hasOwn(body,'p_strength')?{http:404,detail:{code:'PGRST202'}}:true);
+  await pre.api.refresh(true);await pre.api.refresh(true);
+  const prePubs=pre.requests.filter(r=>r.name==='publish');assert.equal(prePubs.length,2);assert(!Object.hasOwn(prePubs[1].body,'p_strength'));assert.equal(prePubs[1].body.p_xp,825);
+  // v88 server rejecting scale, then the legacy summary also missing (404) -> no strength at all, still published.
+  const chain=withScale(async(name,body)=>name==='snapshot'?enrolled():!body.p_strength?true:Object.hasOwn(body.p_strength,'rank_scale')?v88Reject:{http:404,detail:{code:'PGRST202'}});
+  await chain.api.refresh(true);await chain.api.refresh(true);
+  const chainPubs=chain.requests.filter(r=>r.name==='publish');assert.equal(chainPubs.length,3);assert(!Object.hasOwn(chainPubs[2].body,'p_strength'));
+ }
+ {
+  // Snapshot: rank_scale 2 allows stages 0..39; missing/other scale stays 0..24 for friends-board mapping.
+  const rows=[{...friend,code:'FEDCBA654321',name:'Neu',rank_scale:2,strength_rank:39,lift_ranks:[{key:'a--b',name:'A',rankIndex:39,ratio:2},{key:'c--d',name:'C',rankIndex:40,ratio:2}]},
+   {...friend,code:'FEDCBA654322',name:'Alt',strength_rank:30,lift_ranks:[{key:'a--b',name:'A',rankIndex:30,ratio:2},{key:'c--d',name:'C',rankIndex:24,ratio:2}]},
+   {...friend,code:'FEDCBA654323',name:'Fremd',rank_scale:3,strength_rank:24,lift_ranks:[]}];
+  const snap=fixture({reply:async name=>name==='snapshot'?{...enrolled(),self:{...enrolled().self,rank_scale:2,strength_rank:30,lift_ranks:[]},friends:rows}:true});
+  await snap.api.refresh(true);const view=snap.ctx.pulsFriendsData87.getSnapshot(),by=n=>view.friends.find(p=>p.name===n);
+  assert.equal(by('Neu').rank_scale,2);assert.equal(by('Neu').strength_rank,39);assert.deepEqual([...by('Neu').lift_ranks.map(r=>r.rankIndex)],[39]);
+  assert.equal(by('Alt').rank_scale,null);assert.equal(by('Alt').strength_rank,null);assert.deepEqual([...by('Alt').lift_ranks.map(r=>r.rankIndex)],[24]);
+  assert.equal(by('Fremd').rank_scale,null);assert.equal(by('Fremd').strength_rank,24);
+  assert.equal(view.self.rank_scale,2);assert.equal(view.self.strength_rank,30);
+ }
  // Source contracts supplement mocks; they do NOT execute PostgreSQL or prove live RLS.
  const sql=fs.readFileSync('backend/friends.sql','utf8');
  assert.equal((sql.match(/enable row level security/g)||[]).length,5);
