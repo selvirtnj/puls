@@ -51,7 +51,7 @@ function dsTrainingGroup(){
   }
   if(active)rows+=dsRow({label:esc(active.name||'Workout'),detail:dsText('Laufendes Training','Workout in progress'),icon:'barbell',action:typeof openWorkoutSession==='function'?`openWorkoutSession('${esc(active.id)}')`:"trainTab='current';go('workout')",value:dsText('Fortsetzen','Resume'),chevron:true});
   else{
-    for(let r of (state.routines||[]).slice(0,3))rows+=dsRow({label:esc(r.name),detail:`${(r.exercises||[]).length} ${dsText((r.exercises||[]).length===1?'Übung':'Übungen',(r.exercises||[]).length===1?'exercise':'exercises')}`,icon:'barbell',action:`startRoutine('${esc(r.id)}')`,value:dsText('Starten','Start'),chevron:true});
+    for(let r of routinesByFavorite(state.routines).slice(0,3))rows+=dsRow({label:esc(r.name),detail:`${(r.exercises||[]).length} ${dsText((r.exercises||[]).length===1?'Übung':'Übungen',(r.exercises||[]).length===1?'exercise':'exercises')}`,icon:'barbell',action:`startRoutine('${esc(r.id)}')`,value:dsText('Starten','Start'),chevron:true});
     rows+=dsRow({label:dsText('Freies Training','Empty workout'),icon:'plus-circle',action:'startWorkout()',chevron:true});
   }
   rows+=dsRow({label:dsText('Alle Routinen','All routines'),action:"trainTab='routines';go('workout')",chevron:true,cls:'dsaction'});

@@ -3,9 +3,7 @@
    state.routines selbst wird nie umsortiert (Vorschlagsreihenfolge, IDs und Sync bleiben unverändert). */
 (function(){
   const isFavorite=r=>r?.favorite===true;
-  // Stabile Aufteilung: erst Favoriten, dann der Rest, jeweils in bisheriger Reihenfolge.
-  function routinesByFavorite(list){list=Array.isArray(list)?list:[];return [...list.filter(isFavorite),...list.filter(r=>!isFavorite(r))]}
-  window.routinesByFavorite=routinesByFavorite;
+  // routinesByFavorite (enhancements.js) sortiert die Listen direkt in den Renderern.
 
   const favValid=validData;
   validData=function(s){return favValid(s)&&(s.routines||[]).every(r=>r.favorite===undefined||typeof r.favorite==='boolean')};
@@ -30,24 +28,11 @@
     refocus();setTimeout(refocus,0);
   };
 
-  // Für reine Darstellungsfunktionen: state.routines kurz durch die sortierte Kopie ersetzen.
-  // Sie speichern nicht; zurückgesetzt wird nur, wenn niemand state/routines inzwischen ersetzt hat.
-  function sortedView(fn){return function(...args){
-    let s=state,original=s?.routines;
-    if(!Array.isArray(original)||!original.some(isFavorite))return fn.apply(this,args);
-    let view=routinesByFavorite(original);s.routines=view;
-    try{return fn.apply(this,args)}finally{if(s.routines===view)s.routines=original}
-  }}
-
   // Routinen-Tab und Schnellstart im Workout-Tab (training-tabs.js baut dieselben Karten um).
-  const favRoutinesPage=sortedView(routinesPage);
+  const favRoutinesPage=routinesPage;
   routinesPage=function(...args){
     return favRoutinesPage.apply(this,args).replace(/<button class="textbtn" onclick="routineForm\('([A-Za-z0-9_-]{1,100})'\)">/g,(m,id)=>favoriteButton(id)+m);
   };
-  // Übersicht: die ersten drei Routinen.
-  if(typeof dsTrainingGroup==='function')dsTrainingGroup=sortedView(dsTrainingGroup);
-  // „Workout starten“-Liste; bei laufendem Workout öffnet startWorkout nur die Sitzung (mit Render/Speichern).
-  if(typeof startWorkout==='function'){const sortedStart=sortedView(startWorkout),plainStart=startWorkout;startWorkout=function(...args){return (typeof activeWorkout==='function'&&activeWorkout()?plainStart:sortedStart).apply(this,args)}}
   // Plus-Menü: Inline-Handler nutzen den Index in state.routines, daher Originalindex behalten.
   if(typeof qaQuickRoutines==='function')qaQuickRoutines=function(){
     let list=state.routines||[],order=routinesByFavorite(list.map((r,i)=>({favorite:r.favorite,r,i})));

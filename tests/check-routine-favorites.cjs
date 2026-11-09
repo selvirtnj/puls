@@ -19,7 +19,7 @@ for(const bad of ['"yes"','1','null','{}']){run('state.routines[1].favorite='+ba
 run('delete state.routines[1].favorite');
 // Stabile Sortierung: Favoriten oben, sonst bisherige Reihenfolge.
 run('state.routines[3].favorite=true');
-assert.equal(run('window.routinesByFavorite(state.routines).map(r=>r.id).join()'),'r_c,r_d,r_a,r_b');
+assert.equal(run('routinesByFavorite(state.routines).map(r=>r.id).join()'),'r_c,r_d,r_a,r_b');
 assert.equal(run('state.routines.map(r=>r.id).join()'),'r_a,r_b,r_c,r_d','stored order unchanged');
 // Routinenliste: Reihenfolge, Sternknöpfe, gespeicherte Reihenfolge bleibt.
 let html=run('routinesPage()');let pos=id=>html.indexOf("startRoutine('"+id+"')");
