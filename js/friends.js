@@ -146,7 +146,7 @@ function panelHTML(){
   ${snapshot.nudges.length?`<h3>${text('Stupse','Nudges')}</h3><ul class="friends-list">${snapshot.nudges.map(p=>`<li><strong data-no-translate>${esc(p.name)}</strong><p>Stop slacking off</p><small>${esc(p.sent_at?.slice(0,10)||'')}</small>${button(text('Gelesen','Dismiss'),`pulsFriends.read('${esc(p.id)}')`,true,acting)}</li>`).join('')}</ul>`:''}
   ${snapshot.incoming.length?`<h3>${text('Anfragen','Requests')}</h3><ul class="friends-list">${personRows(snapshot.incoming,'incoming')}</ul>`:''}
   ${snapshot.outgoing.length?`<h3>${text('Gesendet','Sent')}</h3><ul class="friends-list">${personRows(snapshot.outgoing,'outgoing')}</ul>`:''}
-  <h3>${text('Freunde','Friends')}</h3><ul class="friends-list">${personRows(snapshot.friends,'friends')||`<li>${text('Noch keine Freunde. Teile deinen Code.','No friends yet. Share your code.')}</li>`}</ul>
+  <section id="puls-friends-board-mount"><h3>${text('Freunde','Friends')}</h3><ul class="friends-list">${personRows(snapshot.friends,'friends')||`<li>${text('Noch keine Freunde. Teile deinen Code.','No friends yet. Share your code.')}</li>`}</ul></section>
   <p class="note">${text('Trainingstage der Serie; drei volle Ruhetage unterbrechen sie. Kennzahlen werden nach dem Profilsync aktualisiert.','Training days in the streak; three full rest days break it. Summaries update after profile sync.')}</p>
   ${button(text('Aktualisieren','Refresh'),'pulsFriends.refresh(true)',true,acting)}
   ${button(text('Freunde deaktivieren','Disable friends'),'pulsFriends.disable()',true,acting)}`;

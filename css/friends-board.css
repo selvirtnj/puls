@@ -1,0 +1,132 @@
+/* PULS v87 Freunde: Bestenliste, Podium, Rang-Embleme, Slacking-Band (js/friends-board.js).
+   Nur Systemtokens (Hell/Dunkel), Radien 8/12, keine Schatten, keine Verläufe.
+   Bewegung nur mit Tokens aus css/motion.css; eigene Keyframes brauchen !important (design-system.css setzt animation:none). */
+:root { --fb-yellow: #FFCC00; --fb-on-yellow: #1C1C1E; --fb-flame: #FF9500; --fb-gold: #A67C00; --fb-silver: #7C7C80; --fb-bronze: #8A4F22; }
+:root[data-scheme=dark] { --fb-yellow: #FFD60A; --fb-flame: #FF9F0A; --fb-gold: #FFD60A; --fb-silver: #C7C7CC; --fb-bronze: #E0A070; }
+
+.fb { display: block; margin: 0 0 20px; color: var(--ds-label); }
+.fb .segmented { margin: 0 0 14px; }
+.fb .fb-title { display: flex; align-items: baseline; gap: 6px; margin: 18px 4px 8px; font-size: 13px; font-weight: 400; color: var(--ds-label-2); text-transform: uppercase; letter-spacing: .02em; }
+.fb .fb-title small { font-size: 13px; color: var(--ds-label-3); }
+.fb .fb-empty { margin: 8px 4px 12px; font-size: 15px; color: var(--ds-label-2); }
+.fb .fb-foot { margin: 10px 4px 0; font-size: 13px; line-height: 18px; color: var(--ds-label-2); }
+.fb ol, .fb ul { list-style: none; margin: 0; padding: 0; }
+.fb strong, .fb b { font-variant-numeric: tabular-nums; }
+.fb-emblem { display: block; flex-shrink: 0; overflow: visible; color: var(--ds-label-2); }
+
+/* Initialen-Avatar mit Rang-Ring (keine Fotos, die werden nicht geteilt). */
+.fb-avatar { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50% !important; background: var(--ds-fill); color: var(--ds-label); border: 2.5px solid var(--fb-rank, var(--ds-separator)); font-weight: 700; font-size: 16px; line-height: 1; overflow: hidden; }
+.fb-avatar.lg { width: 60px; height: 60px; font-size: 20px; }
+.fb-avatarwrap { position: relative; flex-shrink: 0; padding-bottom: 6px; }
+.fb-avatarwrap .fb-avatar { width: 52px; height: 52px; font-size: 18px; }
+.fb-lvl { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); min-width: 24px; padding: 1px 5px; border-radius: 6px; background: var(--ds-label); color: var(--ds-bg); font-size: 12px; font-weight: 700; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Serie (Flamme) */
+.fb-streak { display: inline-flex; align-items: center; gap: 3px; color: var(--ds-label-3); font-size: 17px; }
+.fb-streak svg { width: 22px; height: 22px; }
+.fb-streak b { font-weight: 700; color: var(--ds-label-2); }
+.fb-streak.on { color: var(--fb-flame); }
+.fb-streak.on b { color: var(--ds-label); }
+.fb-streak.sm { font-size: 15px; }
+.fb-streak.sm svg { width: 18px; height: 18px; }
+
+/* Eigene Zeile oben */
+.fb-me { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; margin: 0; padding: 10px 14px; border: 0; border-radius: 12px !important; background: var(--ds-surface) !important; color: var(--ds-label) !important; text-align: left; font: inherit; }
+.fb-me-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.fb-me-text strong { font-size: 17px; overflow-wrap: anywhere; }
+.fb-me-text strong small, .fb-pod-name small, .fb-rowtext strong small { font-weight: 400; color: var(--ds-label-2); font-size: .85em; }
+.fb-me-text > small { font-size: 13px; color: var(--ds-label-2); }
+.fb-meter { display: block; height: 6px; margin-top: 4px; border-radius: 3px; background: var(--ds-fill); overflow: hidden; }
+.fb-meter i { display: block; height: 100%; border-radius: 3px; background: var(--ds-accent); }
+.fb-meter.big { width: 100%; max-width: 280px; height: 8px; margin: 10px auto 6px; border-radius: 4px; }
+.fb-meter.big i { border-radius: 4px; }
+
+/* Freundeskarten */
+.fb-cards { display: grid; gap: 10px; }
+.fb-card { border-radius: 12px; background: var(--ds-surface); overflow: hidden; }
+.fb-cardmain { display: flex; align-items: center; gap: 12px; padding: 12px 6px 12px 14px; }
+.fb-cardtext { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.fb-cardtext strong { font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+.fb-cardtext small { font-size: 13px; color: var(--ds-label-2); }
+.fb-cardside { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+.fb-menu { position: relative; flex-shrink: 0; align-self: flex-start; }
+.fb-menu summary { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 8px; color: var(--ds-label-2); list-style: none; cursor: pointer; }
+.fb-menu summary::-webkit-details-marker { display: none; }
+.fb-menu summary::before, .fb-menu summary::after { content: none !important; display: none !important; }
+.fb-menu summary svg { width: 22px; height: 22px; }
+.fb-menu[open] > button { position: absolute; right: 4px; top: 44px; z-index: 2; min-height: 44px; padding: 0 14px; white-space: nowrap; border: .5px solid var(--ds-separator) !important; }
+
+/* Slacking-Band: volle Breite unten an der Karte */
+.fb-slack { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; margin: 0; padding: 8px 14px; border: 0; border-radius: 0 !important; background: var(--fb-yellow) !important; color: var(--fb-on-yellow) !important; font: inherit; text-align: left; }
+.fb-slack strong { font-size: 15px; font-weight: 800; letter-spacing: .04em; }
+.fb-slack span { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.fb-megaphone { width: 20px; height: 20px; flex-shrink: 0; transform: scaleX(-1); }
+.fb-slack:disabled { opacity: 1; background: var(--ds-fill) !important; color: var(--ds-label-2) !important; }
+.fb-slack.sent { opacity: .7; }
+
+/* Bestenliste: Podium */
+.fb-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 6px; margin: 4px 0 12px; }
+.fb-podium[data-size="1"] { grid-template-columns: minmax(0, 1fr); max-width: 160px; margin-inline: auto; }
+.fb-podium[data-size="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 300px; margin-inline: auto; }
+.fb-pod { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.fb-pod-person { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; width: 100%; padding-bottom: 8px; text-align: center; }
+.fb-wreathwrap { position: relative; display: grid; place-items: center; width: 92px; height: 92px; }
+.fb-pod-1 .fb-wreathwrap { width: 112px; height: 112px; }
+.fb-wreathwrap > * { grid-area: 1 / 1; }
+.fb-wreath { width: 100%; height: 100%; overflow: visible; }
+.fb-pod-1 .fb-avatar.lg { width: 72px; height: 72px; font-size: 24px; }
+.fb-pod-name { max-width: 100%; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fb-pod-1 .fb-pod-name { font-size: 17px; }
+.fb-xpval { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; color: var(--ds-label); }
+.fb-xpval b { font-weight: 700; }
+.fb-xpval.unknown { font-size: 13px; color: var(--ds-label-2); }
+.fb-step { display: grid; place-items: start center; width: 100%; padding-top: 8px; border-radius: 8px 8px 0 0; background: var(--ds-surface); border-top: 3px solid var(--fb-medal, var(--ds-separator)); }
+.fb-step span { font-size: 22px; font-weight: 800; color: var(--fb-medal-text, var(--ds-label)); font-variant-numeric: tabular-nums; }
+.fb-pod-1 .fb-step { height: 76px; --fb-medal: #FFCC00; --fb-medal-text: var(--fb-gold); }
+.fb-pod-2 .fb-step { height: 56px; --fb-medal: #AEAEB2; --fb-medal-text: var(--fb-silver); }
+.fb-pod-3 .fb-step { height: 40px; --fb-medal: #D08A52; --fb-medal-text: var(--fb-bronze); }
+.fb-pod.self .fb-step { background: var(--ds-fill); }
+
+/* Liste ab Platz 4 */
+.fb-rows { display: grid; gap: 8px; }
+.fb-row { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 14px; border-radius: 12px; background: var(--ds-surface); }
+.fb-row.self { background: var(--ds-fill); }
+.fb-place { width: 22px; flex-shrink: 0; font-size: 17px; font-weight: 700; color: var(--ds-label-2); text-align: center; font-variant-numeric: tabular-nums; }
+.fb-rowtext { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.fb-rowtext strong { font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fb-rowtext small { font-size: 13px; color: var(--ds-label-2); }
+
+/* Ränge */
+.fb-rankhero { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 18px 16px 16px; border-radius: 12px; background: var(--ds-surface); text-align: center; }
+.fb-heroemblem { display: block; margin-bottom: 6px; }
+.fb-heroname { font-size: 22px; font-weight: 700; }
+.fb-rankhero small { font-size: 15px; color: var(--ds-label-2); }
+.fb-ladder { border-radius: 12px; background: var(--ds-surface); overflow: hidden; }
+.fb-rung { position: relative; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 8px 16px; }
+.fb-rung + .fb-rung::before { content: ''; position: absolute; top: 0; left: 72px; right: 0; border-top: .5px solid var(--ds-separator); }
+.fb-rung.current { background: var(--ds-fill); }
+.fb-rungtext { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.fb-rungtext strong { font-size: 17px; font-weight: 600; }
+.fb-rungtext small { font-size: 13px; color: var(--ds-label-2); }
+.fb-rungstate { flex-shrink: 0; color: var(--ds-green-text); }
+.fb-rungstate svg { width: 22px; height: 22px; }
+.fb-rungstate b { font-size: 13px; font-weight: 700; color: var(--ds-accent-text); text-transform: uppercase; }
+.fb-standalone { margin-top: 4px; }
+
+/* Rang-Zeile im Konto */
+#fb-profile-rank .fb-profile-emblem { display: block; flex-shrink: 0; width: 40px; }
+#fb-profile-rank .dsrowtext small { font-size: 13px; color: var(--ds-label-2); }
+#fb-profile-rank .dsrowchevron { color: var(--ds-label-3); }
+
+/* ---------- Bewegung ---------- */
+@keyframes fbWreathIn { from { opacity: 0; transform: scale(.4) rotate(var(--fb-turn, 0deg)); } }
+@keyframes fbPersonIn { from { opacity: 0; transform: translateY(12px) scale(.9); } }
+.fb-podium.fb-anim .fb-pod-person { animation: fbPersonIn var(--motion-slow) var(--ease-spring) both !important; animation-delay: calc(var(--motion-i, 0) * 80ms + var(--motion-base)) !important; }
+.fb-podium.fb-anim .fb-wreath-half { transform-box: view-box; transform-origin: 50% 93%; animation: fbWreathIn var(--motion-count) var(--ease-spring) both !important; animation-delay: calc(var(--motion-i, 0) * 80ms + var(--motion-slow)) !important; }
+.fb-podium.fb-anim .fb-wreath-l { --fb-turn: 40deg; }
+.fb-podium.fb-anim .fb-wreath-r { --fb-turn: -40deg; }
+html.reduce-motion .fb-podium.fb-anim .fb-pod-person { animation: motionFade var(--motion-fast) linear both !important; }
+html.reduce-motion .fb-podium.fb-anim .fb-wreath-half { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .fb-podium.fb-anim .fb-pod-person, .fb-podium.fb-anim .fb-wreath-half { animation: none !important; }
+}
