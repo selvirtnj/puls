@@ -155,4 +155,19 @@ async function asyncChecks(){
  f.setStrength(18);assert.equal(f.api.celebrate(),true);assert.deepEqual(f.log.toasts,['Neuer Rang: Batman Cycle I']);
 
 }
-asyncChecks().then(()=>console.log('PASS: friends board (ranks/emblems, cards, slacking band, podium 0/1/2/5, unknown rank, one-time rank-up, wiring; no layout/backend).')).catch(error=>{console.error(error);process.exitCode=1});
+async function weightChecks(){
+ const f=fixture({snapshot:snapWith([]),strengthScore:8});
+ f.ctx.state.profile=null;f.ctx.state.weights=[];
+ let opened=0,submit;
+ f.ctx.openModal=(_,html)=>{opened++;f.nodes.get('mb').innerHTML=html};
+ f.api.openRanks();assert.match(f.nodes.get('mb').innerHTML,/Gewicht eintragen/);
+ assert(!f.nodes.get('mb').innerHTML.includes('class="fb-heroname">Rang unbekannt'));
+ const modal=node('modal');modal.open=true;f.nodes.set('modal',modal);
+ const input=node('wdate');input.closest=()=>({addEventListener:(event,fn)=>{assert.equal(event,'submit');submit=fn}});f.nodes.set('wdate',input);
+ let formOpened=0;f.ctx.weightForm=()=>{formOpened++;modal.open=true};
+ f.api.weight();assert.equal(formOpened,1);submit();await Promise.resolve();assert.equal(opened,1,'invalid save keeps form');
+ f.ctx.state.weights=[{date:'2026-11-07',kg:100}];modal.open=false;submit();await Promise.resolve();
+ assert.equal(opened,2);assert(!f.nodes.get('mb').innerHTML.includes('Gewicht eintragen'));
+ assert(f.nodes.get('mb').innerHTML.includes('Low Melanin'));
+}
+asyncChecks().then(weightChecks).then(()=>console.log('PASS: friends board (ranks/emblems, cards, slacking band, podium 0/1/2/5, unknown rank, one-time rank-up, wiring, weight entry; no layout/backend).')).catch(error=>{console.error(error);process.exitCode=1});

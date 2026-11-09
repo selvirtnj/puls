@@ -48,7 +48,7 @@ function classify(ex){
  const n=norm(ex?.name),equipment=norm(ex?.equipment),all=n+' '+equipment;
  // Assisted/counterbalanced/bodyweight-only movements and ambiguous specialty
  // lifts are not comparable by a positive recorded external load.
- if(!n||/assisted|unterstutzt|band |resistance band|push up|pushup|plyo|jump|isometric|one arm chin|one arm pull|muscle up|bench dip|sissy|split squat|bulgarian|pistol|lunge|thruster|clean|snatch|jerk|good morning|calf|waden|rowing/.test(all))return null;
+ if(!n||/assisted|unterstutzt|\bbands?\b|push up|pushup|plyo|jump|isometric|one arm chin|one arm pull|muscle up|bench dip|sissy|split squat|bulgarian|pistol|lunge|thruster|clean|snatch|jerk|good morning|calf|waden|rowing/.test(all))return null;
  let type;
  if(/romanian|rumanisch|\brdl\b|stiff leg/.test(n))type='rdl';
  else if(/deadlift|kreuzheben/.test(n))type='deadlift';
@@ -56,22 +56,23 @@ function classify(ex){
  else if(/squat|kniebeuge/.test(n))type='squat';
  else if(/hip thrust/.test(n))type='hipthrust';
  else if(/pullup|pull up|chin up|chinup|klimmzug/.test(n))type='pullup';
- else if(/pulldown|pull down|latzug/.test(n))type='pulldown';
+ else if(/pulldown|pull down|latzug|latziehen/.test(n)&&!/straight arm|stiff arm|gestreckt/.test(n))type='pulldown';
  else if(/\bdips?\b|dipmaschine/.test(n))type=/machine|maschine|leverage|plate loaded/.test(all)?'triceps':'dip';
  else if(/lateral raise|side lateral|seitheben/.test(n))type='lateral';
- else if(/fly|flies|butterfly|pec deck/.test(n))type=/rear|reverse/.test(n)?null:'fly';
+ else if(/fly|flies|butterfly|pec deck|peck deck|cable cross|kabel.*cross/.test(n))type=/rear|reverse/.test(n)?null:'fly';
  else if(/row|rudern/.test(n)&&!/upright|aufrecht/.test(n))type='row';
- else if(/leg curl|leg curls|beinbeuger/.test(n))type='legcurl';
- else if(/leg extension|beinstrecker/.test(n))type='legextension';
+ else if(/leg curl|hamstring curl|beinbeug/.test(n))type='legcurl';
+ else if(/leg extension|knee extension|beinstreck/.test(n))type='legextension';
  else if(/curl/.test(n)&&!/wrist|reverse|leg/.test(n))type='curl';
- else if(/tricep|trizeps|pushdown|push down|skullcrusher/.test(n))type='triceps';
- else if(/shoulder.*press|military.*press|overhead.*press|schulter.*press|arnold.*press/.test(n))type='overhead';
+ else if(/tricep|trizeps|pushdown|push down|skull ?crusher/.test(n))type='triceps';
+ else if(/shoulder.*press|military.*press|overhead.*press|schulter.*press|schulterdruck|arnold.*press/.test(n))type='overhead';
  else if(/incline.*(?:press|bench)|schragbank/.test(n))type='incline';
- else if(/bench.*press|chest.*press|bankdrucken|brustpresse|floor press/.test(n))type='bench';
+ else if(/bench.*press|chest.*press|bankdrucken|brustpress|brustdruck|floor press/.test(n))type='bench';
  if(!type||/kettlebell|resistance band|exercise ball|medicine ball/.test(equipment)||/goblet|single dumbbell|one dumbbell/.test(n))return null;
  const dumbbell=/dumbbell|kurzhantel|\bkh\b/.test(all)||/hammer curl/.test(n),single=/single arm|one arm|single leg|one leg|einarm|einbein/.test(n);
  const kind=/smith|multipresse/.test(all)?'smith':dumbbell?'dumbbell':/cable|kabel/.test(all)?'cable':/machine|maschine|leverage|plate loaded|iso lateral|hack squat|leg press|leg curl|leg extension|butterfly/.test(all)?'machine':'barbell';
  const bodyweight=type==='pullup'||type==='dip';
+ if(/body only|bodyweight|body weight|eigengewicht/.test(all)&&!bodyweight)return null;
  // Convert DB-per-hand to combined load; unilateral machines/cables use half
  // the bilateral standard. DB aggregate standards are 80% of barbell presses,
  // 90% of rows/hinges/squats; isolation standards already use aggregate load.
@@ -133,7 +134,7 @@ function evaluate(s=current(),until=day()){
 function overallFrom(all){
  const groups=new Map();for(const r of all)if(!groups.has(r.group))groups.set(r.group,r);
  const chosen=[...groups.values()].slice(0,5);
- if(chosen.length<3)return rankAt(null,{exercises:chosen,groups:chosen.length});
+ if(!chosen.length)return rankAt(null,{exercises:chosen,groups:0});
  const score=chosen.reduce((n,r)=>n+r.score,0)/chosen.length,ratio=chosen.reduce((n,r)=>n+r.ratio,0)/chosen.length;
  const r=rankAt(score,{ratio,exercises:chosen,groups:chosen.length});
  if(r.nextAt!==null){

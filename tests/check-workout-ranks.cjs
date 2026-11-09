@@ -27,7 +27,18 @@ ctx.state.language='en';assert(ctx.pulsWorkoutRanks.html('new').includes('Your e
 delete ctx.state.workouts[1].exercises[0].exerciseId;delete ctx.state.workouts[1].exercises[1].exerciseId;
 assert(ctx.pulsWorkoutRanks.rows('new')[0].after.rankIndex!==null,'legacy exercises without IDs match their canonical name');
 assert.equal(ctx.pulsWorkoutRanks.rows('new')[1].after.rankIndex,null,'unclassified legacy names never inherit another exercise rank');
-ctx.state.profile={};assert(ctx.pulsWorkoutRanks.html('new').includes('unranked'));
+ctx.state.profile={};assert(ctx.pulsWorkoutRanks.html('new').includes('Add weight'));
+assert(!ctx.pulsWorkoutRanks.html('new').includes('unranked'));
+ctx.state.weights=[{date:'2026-11-09',kg:100}];
+assert(ctx.pulsWorkoutRanks.html('new').includes('New</strong>'),'measurement invalidates cached missing ranks');
+assert(!ctx.pulsWorkoutRanks.html('new').includes('Add weight'));
+assert.equal(ctx.pulsWorkoutRanks.rows('new')[0].from,0,'first ranked set begins at zero');
+ctx.state.weights=[];
+let weightOpened=0;
+const weightDate={value:''},weightKg={value:'70'};
+ctx.weightForm=()=>weightOpened++;
+ctx.document.getElementById=id=>id==='wdate'?weightDate:id==='kg'?weightKg:null;
+ctx.pulsWorkoutRanks.weight();assert.equal(weightOpened,1);assert.equal(weightDate.value,'2026-11-09');assert.equal(weightKg.value,'');
 // One projection per exercise supplies both markup and mounted-page feedback.
 let projections=0,legacyLookups=0;
 ctx.pulsStrength={...api,all(...args){legacyLookups++;return api.all(...args)},workoutProgress(...args){projections++;return api.workoutProgress(...args)}};
@@ -52,6 +63,14 @@ root=null;ctx.renderWorkoutSession();ctx.completionHtml('new',3);root={querySele
 ctx.pulsFriendsBoard={emblem(){throw Error('animation emblem failed')}};
 assert.doesNotThrow(()=>ctx.renderWorkoutSession(),'feedback failure cannot interrupt session navigation');
 ctx.pulsFriendsBoard=friendsBoard;
+// A genuinely first ranked workout fills from zero, without a false promotion/sound.
+ctx.state={profile:{weight:80},workouts:[{id:'first',date:'2026-11-09',finished:true,exercises:[entry('Cable Crossover',20)]}]};
+ctx.completionId='first';root=null;ctx.renderWorkoutSession();
+const firstHTML=ctx.completionHtml('first',3);assert(firstHTML.includes('Neu</strong>'));assert(!firstHTML.includes('Aufgestiegen'));
+const firstProgress=ctx.pulsWorkoutRanks.rows('first')[0],soundBefore=sounds;
+const firstBar={animate(frames){assert.equal(frames[0].width,'0%');assert.equal(frames.at(-1).width,firstProgress.to*100+'%')}};
+root={querySelector:()=>({querySelector:s=>s.includes('meter')?firstBar:badge})};
+ctx.renderWorkoutSession();assert.equal(sounds,soundBefore,'new rank has no promotion sound');
 const index=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
 assert(index.indexOf('js/workout-ranks.js')<index.indexOf('js/motion.js'));for(const f of ['js/workout-ranks.js','css/workout-ranks.css'])assert(sw.includes('"'+f+'"'));
 console.log('PASS: workout rank projections, historical/same-day boundaries, fourth finish page, emblems, fill, promotion, reduced motion, review and offline assets.');
@@ -67,5 +86,18 @@ assert(run('completionHtml("rank-finish",0).includes("Stark gemacht")'));
 assert(run('completionHtml("rank-finish",2).includes("completionStep=3")'));
 run('completionStep=3;renderWorkoutSession()');assert(el('session-root').innerHTML.includes('workout-ranks'));
 run('minimizeSession()');assert.equal(run('completionId'),null);
+// Fresh skipped setup: real finish and the existing weight sheet/save path.
+run('state=initial();migrate();state.profile=null;state.weights=[];state.onboardingComplete=true;state.workouts=[{id:"first-skip",date:today(),name:"First",finished:false,startedAt:Date.now()-60000,exercises:[{id:"e",exerciseId:"cross",name:"Cable Crossover",sets:[{kg:20,reps:10,done:true}]}]}];finishWorkout("first-skip");$("finish-bodyweight").value="";confirmWorkoutFinish({preventDefault(){}},"first-skip");completionStep=3;renderWorkoutSession()');
+assert(el('session-root').innerHTML.includes('Gewicht eintragen'));assert.equal(run('state.profile'),null);
+run('window.pulsWorkoutRanks.weight()');assert.equal(el('wdate').value,run('today()'));
+el('kg').value='80';run('addWeight({preventDefault(){}})');
+assert.equal(run('state.weights.length'),1);assert.equal(run('state.weights[0].kg'),80);
+assert(el('session-root').innerHTML.includes('Neu</strong>'));assert(!el('session-root').innerHTML.includes('Gewicht eintragen'));
+assert(!el('session-root').innerHTML.includes('Aufgestiegen'));assert.equal(run('state.workouts[0].id'),'first-skip');
+// Complete onboarding values: profile BW suffices; no invented measurements are needed.
+run('minimizeSession();state=initial();migrate();state.onboardingComplete=true;state.profile={age:30,height:180,weight:80,target:75,sex:"male",activity:1.375,method:"mifflin"};state.weights=[];state.workouts=[{id:"first-profile",date:today(),name:"First",finished:false,startedAt:Date.now()-60000,exercises:[{id:"a",exerciseId:"cross",name:"Cable Crossover",sets:[{kg:20,reps:10,done:true}]},{id:"b",exerciseId:"shoulder",name:"Machine Shoulder (Military) Press",sets:[{kg:30,reps:10,done:true}]},{id:"c",exerciseId:"db",name:"Dumbbell Bench Press",sets:[{kg:18,reps:10,done:true}]}]}];finishWorkout("first-profile");$("finish-bodyweight").value="";confirmWorkoutFinish({preventDefault(){}},"first-profile");completionStep=3;renderWorkoutSession()');
+assert.equal(run('window.pulsStrength.overall(state).groups'),2);
+assert.equal(run('state.weights.length'),0);assert.equal(run('window.pulsStrength.all(state).length'),3);
+assert(el('session-root').innerHTML.includes('Neu</strong>'));assert(!el('session-root').innerHTML.includes('ohne Rang'));
 console.log('PASS: real finish confirmation, saved workout, existing summary/XP and rank continuation chain.');
 `,{require,console,process},{filename:'workout-ranks-integration'});
