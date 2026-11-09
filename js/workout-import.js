@@ -88,14 +88,14 @@ function weightUnit(header,sessions,liftoff){
  const majority=n=>values.length>0&&n/values.length>=.75;
  if(majority(pounds)&&pounds-metric>=values.length*.5)return certain('lbs');
  if(majority(metric)&&metric-pounds>=values.length*.5&&values.filter(n=>onGrid(n)&&!onGrid(n,2.5)).length>=values.length*.5)return certain('kg');
- // Count maxima per exercise, never repeated sets as independent heavy lifts.
- let maxima=new Map();for(let r of rows){let name=key(r.exercise);maxima.set(name,Math.max(maxima.get(name)||0,r.weight))}
- let heavy=0;for(let [name,max] of maxima){
-  if(/dumbbell|machine|smith|cable|kurzhantel|maschine/.test(name))continue;
-  if(/bench press|bankdrucken/.test(name)&&max>150||/squat|kniebeuge/.test(name)&&max>200||/deadlift|kreuzheben/.test(name)&&max>250)heavy++;
- }
+ // Require extreme free-weight loads across sessions, not repeated sets.
+ let heavy=sessions.filter(s=>s.rows.some(r=>{
+  const name=key(r.exercise);
+  if(/dumbbell|machine|smith|cable|kurzhantel|maschine/.test(name))return false;
+  return /bench press|bankdrucken/.test(name)&&r.weight>230||/squat|kniebeuge/.test(name)&&r.weight>320||/deadlift|kreuzheben/.test(name)&&r.weight>350;
+ })).length;
  const plates=new Set([45,135,185,225,315,405]);
- let plateHits=values.filter(n=>plates.has(n)||n>=45&&onGrid(n,2.5)&&!onGrid(n,5)).length;
+ let plateHits=values.filter(n=>plates.has(n)).length;
  if(heavy>=2||majority(plateHits))return certain('lbs');
  // A small conventional metric grid, including e.g. 20/22.5/100, is metric evidence.
  if(majority(metric)&&values.every(n=>onGrid(n,2.5))&&values.some(n=>n===20)&&plateHits===0)return certain('kg');
@@ -236,9 +236,7 @@ prefillExerciseSets=function(w,e){
 const baseValid=validData;
 validData=function(s){
  const fieldsOK=value=>value===undefined||value&&typeof value==='object'&&!Array.isArray(value)&&Object.entries(value).every(([k,v])=>k.length<=200&&typeof v==='string'&&v.length<=MAX_BYTES);
- // A weight-only profile supports historical ranks without inventing planning inputs.
- const weightOnly=s?.profile&&typeof s.profile==='object'&&!Array.isArray(s.profile)&&Object.keys(s.profile).length===1&&typeof s.profile.weight==='number'&&Number.isFinite(s.profile.weight)&&s.profile.weight>=20&&s.profile.weight<=400;
- return baseValid(weightOnly?{...s,profile:null}:s)&&(s.routines||[]).every(r=>r.importWorkoutId===undefined||typeof r.importWorkoutId==='string'&&/^wi_[a-f0-9]{64}$/.test(r.importWorkoutId))&&s.workouts.every(w=>
+ return baseValid(s)&&(s.routines||[]).every(r=>r.importWorkoutId===undefined||typeof r.importWorkoutId==='string'&&/^wi_[a-f0-9]{64}$/.test(r.importWorkoutId))&&s.workouts.every(w=>
   (w.importSource===undefined||w.importSource==='workout-csv'&&/^wi_[a-f0-9]{64}$/.test(w.id))&&
   (w.csvRows===undefined||Array.isArray(w.csvRows)&&w.csvRows.every(fieldsOK))&&w.exercises.every(e=>e.sets.every(set=>(set.setOrder===undefined||typeof set.setOrder==='string'&&set.setOrder.length<=200)&&fieldsOK(set.csvFields))));
 };
@@ -303,11 +301,6 @@ window.workoutImportWeight=function(e){
  const p=importWeight;if(!p||p.profile!==state||p.owner!==owner()||!modal.open){e.preventDefault();return}
  let raw=String($('kg').value).trim(),weight=/^\d+[.,]?\d*$/.test(raw)?Number(raw.replace(',','.')):NaN;
  if(Number.isFinite(weight)&&weight>=20&&weight<=400){
-  if(!state.profile?.weight){
-   let profile={...(state.profile||{}),weight};
-   if(!validData({...state,profile})){e.preventDefault();toast(tr('Gewicht konnte nicht gespeichert werden.','Weight could not be saved.'));return}
-   state.profile=profile;
-  }
   importWeight=null;
  }
  // Existing input validation, dated measurement and the ordinary local/cloud save.

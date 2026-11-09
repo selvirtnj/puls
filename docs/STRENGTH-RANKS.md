@@ -4,7 +4,7 @@ Lokal vorbereitet am 09.11.2026, Basis `86779c6`, ohne Veröffentlichung/Live-SQ
 
 ## Modell
 
-Abgeschlossene Workouts bis zum angefragten Tag, inklusive CSV-Import, mit erledigten Sätzen und bekannten kg/1–12 ganzzahligen Reps. Eine Wiederholung verwendet die tatsächliche Last, sonst Epley `Last × (1 + Reps / 30)`. Je kanonischer Übung zählt das höchste e1RM, bei Gleichstand das höhere Verhältnis. Divisor: jüngste Gewichtsmessung am/vor dem Workoutdatum (bei gleichem Datum letzter Eintrag), sonst Profilgewicht. Spätere Messungen zählen nicht rückwirkend. Ohne Körpergewicht kein Übungsrang.
+Abgeschlossene Workouts bis zum angefragten Tag, inklusive CSV-Import, mit erledigten Sätzen und bekannten kg/1–12 ganzzahligen Reps. Eine Wiederholung verwendet die tatsächliche Last, sonst Epley `Last × (1 + Reps / 30)`. Je kanonischer Übung zählt das höchste e1RM, bei Gleichstand das höhere Verhältnis. Divisor: jüngste Gewichtsmessung am/vor dem Workoutdatum (bei gleichem Datum letzter Eintrag), sonst Profilgewicht. Fehlen beide Quellen, dient die früheste vorhandene gültige Körpergewichtsmessung als Näherung für ältere Trainings (bei gleichem Datum letzter Eintrag). Dieser letzte Rückfall berechnet ausschließlich Ränge und speichert weder ein Teilprofil noch rückdatierte Messungen. Ohne Körpergewicht aus einer dieser Quellen kein Übungsrang.
 
 Freie Klimmzüge/Dips verwenden Körpergewicht plus explizites Zusatzgewicht (0 gültig; leer unbekannt); unterstützte Varianten bleiben ungewertet. Kurzhanteln werden je Hand erfasst und verdoppelt, auch bei einarmigen Varianten. Nicht sinnvoll zuordenbare Übungen und Goblet-/Einzelhantel-Spezialvarianten bleiben ungewertet. Bestehende Profile, Sicherungen und Übungs-/Workout-IDs werden nicht umgeschrieben.
 

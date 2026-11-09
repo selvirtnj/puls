@@ -43,9 +43,9 @@ ctx.exerciseCatalog.push({id:'assisted-library',name:'Pull-Up',equipment:'Machin
 ctx.state.workouts.push({id:'library-meta',date:'2026-11-09',finished:true,exercises:[{...entry('assisted-library',30),name:'Pull-Up'}]});
 assert(!ctx.pulsWorkoutRanks.html('library-meta').includes('pulsWorkoutRanks.weight()'),'catalog equipment excludes assisted machines');
 ctx.state.weights=[{date:'2026-11-09',kg:100}];
-assert(ctx.pulsWorkoutRanks.html('new').includes('New</strong>'),'measurement invalidates cached missing ranks');
+assert(ctx.pulsWorkoutRanks.html('new').includes('Rank up</strong>'),'measurement invalidates cached missing ranks, including older workouts');
 assert(!ctx.pulsWorkoutRanks.html('new').includes('Add weight'));
-assert.equal(ctx.pulsWorkoutRanks.rows('new')[0].from,0,'first ranked set begins at zero');
+assert.equal(ctx.pulsWorkoutRanks.rows('new')[0].before.bodyweight,100,'earliest measurement also unlocks the previous workout');
 ctx.state.weights=[];
 let weightOpened=0;
 const weightDate={value:''},weightKg={value:'70'};

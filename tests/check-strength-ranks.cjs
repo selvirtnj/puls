@@ -55,6 +55,14 @@ for(const kg of ['',null,true,'   '])assert.equal(rank('Pullups',kg),undefined,'
 const history=sample([entry('Barbell Bench Press',100)]);history.weights=[{date:'2026-11-07',kg:80},{date:'2026-11-09',kg:50}];
 assert.equal(api.all(history)[0].bodyweight,80,'future measurement excluded');
 history.weights=[{date:'2026-11-09',kg:50}];assert.equal(api.all(history)[0].bodyweight,100,'profile fallback');
+delete history.profile;
+history.weights=[{date:'2026-11-11',kg:90},{date:'2026-11-10',kg:80},{date:'2026-11-10',kg:82},{date:'2026-11-09',kg:19},{date:'2026-11-09',kg:'75'}];
+const fallbackBefore=JSON.stringify(history);
+assert.equal(api.all(history)[0].bodyweight,82,'earliest valid measurement, last entry on ties, unlocks older imports');
+assert.notEqual(api.overall(history).rankIndex,null);
+assert.equal(JSON.stringify(history),fallbackBefore,'fallback never writes historical measurements or a profile');
+history.weights.push({date:'2026-11-08',kg:85});
+assert.equal(api.all(history)[0].bodyweight,85,'contemporaneous measurement retains priority');
 const female=sample([entry('Barbell Bench Press',100)]);female.profile.sex='female';
 assert(api.all(female)[0].score>rank('Barbell Bench Press',100).score);
 const multi=sample([entry('Barbell Bench Press',100),entry('Barbell Squat',150),entry('Barbell Row',100)]);

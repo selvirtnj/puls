@@ -40,9 +40,13 @@ const norm=x=>String(x||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toL
 const canonical=x=>norm(x).replace(/\bpull ups?\b/g,'pullup').split(' ').map(x=>x.length>3&&x.endsWith('s')&&!x.endsWith('ss')?x.slice(0,-1):x).sort().join('-');
 const catalog=()=>typeof exerciseCatalog==='undefined'?[]:exerciseCatalog;
 function weightAt(s,date){
- let latest=null;
- for(const w of s.weights||[])if(typeof w?.date==='string'&&w.date<=date&&numeric(w.kg)&&w.kg>=20&&w.kg<=400&&(!latest||w.date>=latest.date))latest=w;
- return latest?.kg??(numeric(s.profile?.weight)&&s.profile.weight>=20&&s.profile.weight<=400?s.profile.weight:null);
+ let latest=null,earliest=null;
+ for(const w of s.weights||[])if(typeof w?.date==='string'&&numeric(w.kg)&&w.kg>=20&&w.kg<=400){
+  if(w.date<=date&&(!latest||w.date>=latest.date))latest=w;
+  if(!earliest||w.date<=earliest.date)earliest=w;
+ }
+ // Last-resort approximation for older imports, without creating measurements.
+ return latest?.kg??(numeric(s.profile?.weight)&&s.profile.weight>=20&&s.profile.weight<=400?s.profile.weight:earliest?.kg??null);
 }
 function classify(ex){
  const n=norm(ex?.name),equipment=norm(ex?.equipment),all=n+' '+equipment;
