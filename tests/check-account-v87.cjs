@@ -86,6 +86,67 @@ assert.equal(test.run('dayGoals().p'),190);
 assert.equal(test.run('dayGoals().c'),230);
 assert(test.run('dayGoals().kcal')>test.run('state.goals.kcal'));
 assert(!test.run('qaMacroEditor()').includes('Grundziel'));
+// Small sheets keep the real collectProfile/planError/commitProfile/save chain.
+// Only label movement is simulated here. Browser QA covers actual visibility.
+function sheet(key){
+ test.run('settings()');
+ test.run([
+  '  var sheetLabels=new Map();',
+  '  for(let key of Object.keys(qaFields)){',
+  '   let node=document.getElementById(qaFields[key][0]);',
+  '   let label={hidden:false,classList:{remove(){}},querySelectorAll:()=>[]};',
+  '   sheetLabels.set(qaFields[key][0],label);node.closest=()=>label;',
+  '   node.tagName=key==="method"||key==="direction"?"SELECT":"INPUT";',
+  '   node.type=node.tagName==="INPUT"?"number":"";',
+  '   node.removeAttribute=()=>{};node.focus=()=>{};',
+  '  }',
+  '  var sheetFields=document.getElementById("qa-edit-fields");sheetFields.children=[];',
+  '  sheetFields.append=label=>sheetFields.children.push(label);sheetFields.after=()=>{};',
+  '  document.getElementById("plan-error").setAttribute=()=>{};',
+ ].join('\n'));
+ test.run('qaMountEditField('+JSON.stringify(key)+')');
+}
+test.run('state.profile={...'+JSON.stringify(profile)+',target:80};state.plan={mode:"auto",direction:"maintain",pace:"medium",macroMode:"auto",protein:1.8,fat:.8,adaptive:false};state.weights=[]');
+sheet('target');
+assert.equal(test.el('qa-edit-fields').children.length,2);
+fill(test,{'pr-target':75});
+let heldBefore=test.run('JSON.stringify(state)');
+assert.equal(test.run('qaSubmitEdit('+submit+')'),false,'Halten must not silently discard a different target');
+assert.equal(test.run('JSON.stringify(state)'),heldBefore);
+assert(test.el('plan-error').textContent);
+fill(test,{'pl-direction':'lose'});
+assert.equal(test.run('qaSubmitEdit('+submit+')'),true);
+assert.equal(test.run('state.profile.target'),75);
+assert.equal(test.run('state.plan.direction'),'lose');
+assert(test.run('validData(state)'));
+// Switching from loss to gain validates both inputs before any state is written.
+sheet('target');fill(test,{'pl-direction':'gain','pr-target':75});
+let gainBefore=test.run('JSON.stringify(state)');
+assert.equal(test.run('qaSubmitEdit('+submit+')'),false);
+assert.equal(test.run('JSON.stringify(state)'),gainBefore);
+fill(test,{'pr-target':'85,5'});
+assert.equal(test.run('qaSubmitEdit('+submit+')'),true);
+assert.equal(test.run('state.profile.target'),85.5);
+assert.equal(test.run('state.plan.direction'),'gain');
+assert(test.run('validData(state)'));
+sheet('target');fill(test,{'pl-direction':'maintain','pr-target':80});
+assert.equal(test.run('qaSubmitEdit('+submit+')'),true);
+assert.equal(test.run('state.profile.target'),80);
+// RMR appears as soon as measured is selected, before the first save attempt.
+sheet('method');
+assert.equal(test.run('sheetLabels.get("pr-rmr").hidden'),true);
+fill(test,{'pr-method':'measured','pr-rmr':''});test.run('qaEditPreview()');
+assert.equal(test.run('sheetLabels.get("pr-rmr").hidden'),false);
+assert.equal(test.el('pr-rmr').disabled,false);
+let rmrBefore=test.run('JSON.stringify(state)');
+assert.equal(test.run('qaSubmitEdit('+submit+')'),false);
+assert.equal(test.run('JSON.stringify(state)'),rmrBefore);
+fill(test,{'pr-rmr':1700});
+assert.equal(test.run('qaSubmitEdit('+submit+')'),true);
+assert.equal(test.run('state.profile.method'),'measured');
+assert.equal(test.run('state.profile.rmr'),1700);
+assert(test.run('validData(state)'));
+assert.equal(app(JSON.parse(test.saved())).run('state.profile.rmr'),1700);
 `,{require,console});
 
 // Trainingsblatt ruft die bestehenden Wege auf und zeigt sichere Routinenamen.

@@ -167,7 +167,7 @@ function qaProfileBody(){
 }
 
 /* Small sheets use the existing planner's inputs and complete commit chain.
-   Only the selected label is moved out of the hidden backing form. No draft is
+   Related labels are moved together out of the hidden backing form. No draft is
    written to state, and closing the sheet discards all unsaved inputs. */
 const qaFields={
   age:['pr-age','Alter','Age'],sex:['pr-sex','Geschlecht','Sex'],height:['pr-height','Größe','Height'],
@@ -182,6 +182,7 @@ const qaFields={
 };
 let qaEditKey='';
 function qaEdit(key){
+  if(key==='direction')key='target';
   let config=qaFields[key];if(!config)return;
   qaEditKey=key;
   openModal(qaT(config[1],config[2]),`<div id="profile-form" hidden inert></div><form class="qaedit" id="qa-edit-form" onsubmit="qaSubmitEdit(event)"><div id="qa-edit-fields"></div><p id="qa-edit-preview" class="note" role="status"></p><button class="btn full" type="submit">${qaT('Speichern','Save')}</button></form>`);
@@ -205,17 +206,22 @@ function qaMountEditField(key){
   if(!label||!fields)return;
   // The backing planner may disable controls that are inactive in its current mode.
   if(key==='kcal')document.getElementById('pl-mode').value='manual';
-  if(['pace','direction'].includes(key))document.getElementById('pl-mode').value='auto';
+  if(key==='pace')document.getElementById('pl-mode').value='auto';
   if(['p','c','f'].includes(key))document.getElementById('pl-macros').value='manual';
   if(['protein','fat'].includes(key))document.getElementById('pl-macros').value='auto';
   if(key==='rmr')document.getElementById('pr-method').value='measured';
+  let keys=key==='target'?['direction','target']:key==='method'?['method','rmr']:[key];
+  for(let fieldKey of keys)qaExposeEditField(fieldKey,fields);
+  let error=document.getElementById('plan-error');if(error){error.setAttribute('role','alert');fields.after(error)}
+  qaEditPreview();input.focus();
+}
+function qaExposeEditField(key,fields){
+  let input=document.getElementById(qaFields[key][0]),label=input.closest('label');
   input.disabled=false;label.hidden=false;label.classList.remove('profileoff');
   label.querySelectorAll('.segmented').forEach(el=>el.remove());
   input.classList.remove('segsource');input.removeAttribute('aria-hidden');input.removeAttribute('tabindex');
   if(input.tagName==='INPUT'&&input.type==='number'){input.type='text';input.inputMode=key==='age'?'numeric':'decimal'}
   fields.append(label);
-  let error=document.getElementById('plan-error');if(error){error.setAttribute('role','alert');fields.after(error)}
-  qaEditPreview();input.focus();
 }
 function qaEditNumbers(){
   for(let id of ['pr-age','pr-height','pr-weight','pr-target','pr-rmr','manual-kcal','manual-p','manual-c','manual-f','pl-protein','pl-fat']){
@@ -236,6 +242,10 @@ function qaEditNumbers(){
 }
 function qaEditPreview(){
   qaEditNumbers();let out=document.getElementById('qa-edit-preview');if(!out)return;
+  if(qaEditKey==='method'){
+    let rmr=document.getElementById('pr-rmr'),measured=document.getElementById('pr-method').value==='measured';
+    rmr.closest('label').hidden=!measured;rmr.disabled=!measured;
+  }
   let button=document.querySelector('#qa-edit-form button[type=submit]');
   if(button)button.textContent=!state.profile&&['age','sex','height','weight','target'].some(key=>key!==qaEditKey&&!document.getElementById(qaFields[key][0])?.value.trim())?qaT('Weiter','Continue'):qaT('Speichern','Save');
   if(['kcal','p','c','f'].includes(qaEditKey)){
@@ -253,6 +263,12 @@ function qaSubmitEdit(event){
     if(!valid(qaEditKey)){document.getElementById('plan-error').textContent=qaT('Bitte einen gültigen Wert eingeben.','Enter a valid value.');return false}
     let next=['age','sex','height','weight','target'].find(key=>!valid(key));
     if(next){document.getElementById('plan-error').textContent='';qaMountEditField(next);return false}
+  }
+  if(qaEditKey==='target'){
+    let target=Number(document.getElementById('pr-target').value),weight=Number(document.getElementById('pr-weight').value),direction=document.getElementById('pl-direction').value;
+    if((direction==='maintain'&&target!==weight)||(direction==='lose'&&target>=weight)||(direction==='gain'&&target<=weight)){
+      document.getElementById('plan-error').textContent=qaT('Zielgewicht und Zielrichtung passen nicht zusammen.','Target weight and direction do not match.');return false;
+    }
   }
   return commitProfile(event);
 }
