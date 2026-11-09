@@ -24,7 +24,24 @@ const importAliases=new Map([
  ['Incline Machine Bench Press','Leverage Incline Chest Press'],['Machine Row','Machine Seated Row'],
  ['Hip Abduction','Thigh Abductor'],['Hip Adduction','Thigh Adductor'],
  ['Machine Seated Crunch','Ab Crunch Machine'],['Iso-Lateral Row','Leverage Iso Row'],
- ['Iso-Lateral High Row','Leverage High Row'],['Sled Leg Press','Leg Press']
+ ['Iso-Lateral High Row','Leverage High Row'],['Sled Leg Press','Leg Press'],
+ // v90: Strong/Hevy-Schreibweise „Name (Equipment)“ auf exakte Katalognamen.
+ ['Bench Press (Barbell)','Barbell Bench Press - Medium Grip'],['Bench Press (Dumbbell)','Dumbbell Bench Press'],
+ ['Bench Press (Smith Machine)','Smith Machine Bench Press'],['Decline Bench Press (Barbell)','Decline Barbell Bench Press'],
+ ['Incline Bench Press (Barbell)','Barbell Incline Bench Press - Medium Grip'],['Incline Bench Press (Dumbbell)','Incline Dumbbell Press'],
+ ['Chest Press (Machine)','Machine Bench Press'],['Chest Fly (Dumbbell)','Dumbbell Flyes'],
+ ['Overhead Press (Barbell)','Standing Military Press'],['Overhead Press (Dumbbell)','Dumbbell Shoulder Press'],
+ ['Shoulder Press (Dumbbell)','Dumbbell Shoulder Press'],['Shoulder Press (Machine)','Machine Shoulder (Military) Press'],
+ ['Lateral Raise (Dumbbell)','Side Lateral Raise'],['Lat Pulldown (Cable)','Wide-Grip Lat Pulldown'],
+ ['Bent Over Row (Dumbbell)','Bent Over Two-Dumbbell Row'],['Face Pull (Cable)','Face Pull'],
+ ['Triceps Pushdown (Cable)','Triceps Pushdown'],['Triceps Rope Pushdown','Triceps Pushdown - Rope Attachment'],
+ ['Triceps Extension (Machine)','Machine Triceps Extension'],['Skullcrusher (EZ Bar)','EZ-Bar Skullcrusher'],
+ ['Bicep Curl (Barbell)','Barbell Curl'],['Bicep Curl (Machine)','Machine Bicep Curl'],
+ ['Hammer Curl (Dumbbell)','Hammer Curls'],['Preacher Curl (Barbell)','Preacher Curl'],
+ ['Romanian Deadlift (Barbell)','Romanian Deadlift'],['Hip Thrust (Barbell)','Barbell Hip Thrust'],
+ ['Front Squat (Barbell)','Front Squat (Clean Grip)'],['Hack Squat (Machine)','Hack Squat'],['Leg Press (Machine)','Leg Press'],
+ ['Leg Extension (Machine)','Leg Extensions'],['Lying Leg Curl (Machine)','Lying Leg Curls'],['Seated Leg Curl (Machine)','Seated Leg Curl'],
+ ['Shrug (Barbell)','Barbell Shrug'],['Shrug (Dumbbell)','Dumbbell Shrug'],['Standing Calf Raise (Machine)','Standing Calf Raises']
 ].map(([name,target])=>[exerciseKey(name),target]));
 const ambiguousNames=new Set(['Bench Press','Squat','Lat Pulldown'].map(exerciseKey));
 function csvRows(text){
@@ -94,7 +111,7 @@ async function parse(text){
  }
  for(let group of routineGroups)group.id='wi_r_'+await digest(group.name?'name:'+group.name:group.sessions[0]);
  let familyIds={};for(let family of ['push','pull','legs','core','upper','full'])familyIds[family]='wi_r_'+await digest('family:'+family);
- return {sessions,unit,omitted,skippedRows,routineGroups,familyIds};
+ return {sessions,unit,omitted,skippedRows,routineGroups,familyIds,liftoff};
 }
 function kg(value,unit){if(value==='')return '';let n=unit==='lbs'?value/2.20462262185:value,q=Math.round(n*4)/4;return Math.abs(n-q)<0.00001?q:Math.round(n*10)/10}
 function plan(parsed,unit,profile,includeRoutines=true){
@@ -122,7 +139,7 @@ function plan(parsed,unit,profile,includeRoutines=true){
    e.sets.push(set);
   }
   for(let e of exercises){if(e.sets.every(s=>s._order!==''))e.sets.sort((a,b)=>a._order-b._order);for(let s of e.sets)delete s._order}
-  let w={id:session.id,date:session.day,name:session.name||'Liftoff-Import '+session.day,finished:true,importSource:'workout-csv',exercises};
+  let w={id:session.id,date:session.day,name:session.name||(parsed.liftoff?'Liftoff-Import ':'Import ')+session.day,finished:true,importSource:'workout-csv',exercises};
   if(session.extraRows?.length)w.csvRows=session.extraRows.map(row=>({...row}));
   if(session.hasTime)w.startedAt=session.time;
   if(session.seconds!==undefined){w.durationSeconds=session.seconds;if(session.hasTime)w.finishedAt=session.time+session.seconds*1000}workouts.push(w);

@@ -25,15 +25,17 @@ Neun Untergrenzen, jeweils e1RM/Körpergewicht, in Reihenfolge High Estrogen, Lo
 | Latzug | 0 / .4 / .6 / .8 / 1 / 1.2 / 1.4 / 1.65 / 1.9 | .65 |
 | Dips, Gesamtlast | 0 / .65 / .85 / 1 / 1.2 / 1.45 / 1.7 / 2 / 2.3 | .70 |
 | Beinpresse | 0 / 1 / 1.5 / 2 / 2.75 / 3.5 / 4.25 / 5 / 6 | .75 |
-| Curls | 0 / .15 / .25 / .35 / .45 / .55 / .65 / .8 / 1 | .60 |
-| Trizeps | 0 / .2 / .3 / .4 / .55 / .7 / .85 / 1 / 1.2 | .65 |
-| Seitheben | 0 / .06 / .1 / .14 / .18 / .23 / .28 / .34 / .4 | .65 |
-| Fly | 0 / .2 / .35 / .5 / .65 / .8 / 1 / 1.2 / 1.4 | .65 |
+| Curls | 0 / .2 / .3 / .42 / .55 / .68 / .82 / 1 / 1.2 | .60 |
+| Trizeps | 0 / .25 / .38 / .5 / .65 / .8 / .95 / 1.12 / 1.35 | .65 |
+| Seitheben | 0 / .12 / .2 / .27 / .33 / .4 / .5 / .62 / .75 | .65 |
+| Fly | 0 / .22 / .38 / .55 / .72 / .9 / 1.1 / 1.32 / 1.55 | .65 |
 | Beinbeuger | 0 / .25 / .4 / .55 / .7 / .9 / 1.1 / 1.3 / 1.5 | .75 |
 | Beinstrecker | 0 / .3 / .5 / .7 / .9 / 1.1 / 1.3 / 1.55 / 1.8 | .75 |
 | Hip Thrust | 0 / .6 / 1 / 1.4 / 1.8 / 2.2 / 2.6 / 3 / 3.5 | .80 |
 
-Gerätefaktoren auf Schwellen: Smith 1.05, Maschinen 1.15, Kabel .9. Kurzhantel-Pressen .8, Kurzhantel-Rudern/Kniebeuge/Heben .9, sonst 1. Maschinen-Isolationen, Latzug und Beinpresse haben eigene Standards, Faktor 1. Einarmige/einbeinige Maschinen/Kabel halbieren Schwellen; Kurzhanteln verwenden die verdoppelte Handlast. Frontkniebeuge zusätzlich .8. Zuordnung über Bibliothek, Übungsbuch, Name und Gerät; Maschinenhebel bleiben Näherungen.
+Nachkalibrierung v90: Curls, Trizeps, Seitheben und Fly waren deutlich großzügiger als die Grundübungen (Seitheben 12 kg Kurzhantel × 12 bei 85 kg ergab Superman Cycle III, 27 kg Maschine × 12 Tren Cougher) und hoben den Gesamtrang. Mit den neuen Schwellen landen diese Beispiele bei Protein Farter III bzw. BPC-157 Considerer II; Grundübungen, Beinbeuger und Beinstrecker sind unverändert. Bestehende Workouts werden nicht umgeschrieben, Ränge werden nur neu berechnet.
+
+Gerätefaktoren auf Schwellen: Smith 1.05, Maschinen 1.15, Kabel .9. Kurzhantel-Pressen .8, Kurzhantel-Rudern/Kniebeuge/Heben .9, Kurzhantel-Fly .75, sonst 1. Maschinen-Isolationen, Latzug und Beinpresse haben eigene Standards, Faktor 1. Einarmige/einbeinige Maschinen/Kabel halbieren Schwellen; Kurzhanteln verwenden die verdoppelte Handlast. Frontkniebeuge zusätzlich .8. Zuordnung über Bibliothek, Übungsbuch, Name und Gerät; Maschinenhebel bleiben Näherungen.
 
 ## Gesamt und Freunde
 

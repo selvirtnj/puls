@@ -171,7 +171,7 @@ assert.equal(app(JSON.parse(test.saved())).run('state.profile.rmr'),1700);
 c.activeWorkout=()=>null;c.startWorkout=()=>calls.push('empty');c.quickAddWorkout=()=>calls.push('resume');
 state.routines=[{id:'routine-1',name:'Push <A>'}];
 run('qaQuickTraining()');
-for(const action of ['startWorkout()','qaQuickRoutines()','quickAddRun()'])assert(modal.html.includes(action),action);
+for(const action of ['startQuickEmptyWorkout()','qaQuickRoutines()','quickAddRun()'])assert(modal.html.includes(action),action);
 assert(!bodyClasses.has('quickaddopen'));
 run('qaQuickRoutines()');assert(modal.html.includes('Push &lt;A&gt;'));assert(modal.html.includes('startRoutine(state.routines[0].id)'));
 state.routines=[];run('qaQuickRoutines()');assert(modal.html.includes('Noch keine Routinen'));

@@ -21,10 +21,12 @@ const definitions={
  pulldown:['back',[0,.4,.6,.8,1,1.2,1.4,1.65,1.9],.65],
  dip:['chest',[0,.65,.85,1,1.2,1.45,1.7,2,2.3],.7],
  legpress:['quads',[0,1,1.5,2,2.75,3.5,4.25,5,6],.75],
- curl:['biceps',[0,.15,.25,.35,.45,.55,.65,.8,1],.6],
- triceps:['triceps',[0,.2,.3,.4,.55,.7,.85,1,1.2],.65],
- lateral:['shoulders',[0,.06,.1,.14,.18,.23,.28,.34,.4],.65],
- fly:['chest',[0,.2,.35,.5,.65,.8,1,1.2,1.4],.65],
+ // v90: Isolationen nachkalibriert, damit typische Mittelwerte (z. B. Seitheben 12 kg KH × 12
+ // oder 27 kg Maschine × 12 bei 85 kg) im mittleren Bereich statt in den Spitzenrängen landen.
+ curl:['biceps',[0,.2,.3,.42,.55,.68,.82,1,1.2],.6],
+ triceps:['triceps',[0,.25,.38,.5,.65,.8,.95,1.12,1.35],.65],
+ lateral:['shoulders',[0,.12,.2,.27,.33,.4,.5,.62,.75],.65],
+ fly:['chest',[0,.22,.38,.55,.72,.9,1.1,1.32,1.55],.65],
  legcurl:['posterior',[0,.25,.4,.55,.7,.9,1.1,1.3,1.5],.75],
  legextension:['quads',[0,.3,.5,.7,.9,1.1,1.3,1.55,1.8],.75],
  hipthrust:['posterior',[0,.6,1,1.4,1.8,2.2,2.6,3,3.5],.8]
@@ -74,7 +76,7 @@ function classify(ex){
  // the bilateral standard. DB aggregate standards are 80% of barbell presses,
  // 90% of rows/hinges/squats; isolation standards already use aggregate load.
  let factor=kind==='smith'?1.05:kind==='machine'?1.15:kind==='cable'?.9:1;
- if(kind==='dumbbell')factor=['bench','incline','overhead'].includes(type)?.8:['row','squat','deadlift','rdl'].includes(type)?.9:1;
+ if(kind==='dumbbell')factor=['bench','incline','overhead'].includes(type)?.8:['row','squat','deadlift','rdl'].includes(type)?.9:type==='fly'?.75:1;
  if(['legpress','legcurl','legextension','pulldown','lateral','fly','triceps'].includes(type)&&kind==='machine')factor=1;
  if(type==='squat'&&/front/.test(n))factor*=.8;
  if(single&&kind!=='dumbbell')factor*=.5;

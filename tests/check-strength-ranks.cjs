@@ -71,4 +71,11 @@ assert.match(sql,/drop function if exists public.puls_friends_publish\(text,inte
 for(const name of ['publish','snapshot'])assert.match(sql,new RegExp('function public.puls_friends_'+name+'[^]*?security definer set search_path=\'\''));
 assert(!sql.slice(sql.indexOf("'incoming'")).includes("'lift_ranks'"),'pending recipients never get lifts');
 assert(!/alter table public\.puls_profiles|puls_save_profile/.test(sql));
+// v90: Isolationen nachkalibriert (Beispiele aus dem Audit, 85 kg), Grundübungen unverändert.
+assert.equal(rank('Dumbbell Lateral Raise',12,12,85).name,'Protein Farter III');
+assert.equal(rank('Machine Lateral Raise',27,12,85).name,'BPC-157 Considerer II');
+assert.equal(rank('Dumbbell Flyes',14,12,85).name,'High Melanin II');
+assert.deepEqual([...api.standards.bench.male],[0,.4,.65,.9,1.15,1.4,1.65,1.9,2.2]);
+assert.deepEqual([...api.standards.squat.male],[0,.6,.9,1.2,1.5,1.8,2.1,2.5,3]);
+assert.deepEqual([...api.standards.legextension.male],[0,.3,.5,.7,.9,1.1,1.3,1.55,1.8]);
 console.log('PASS: strength standards, contemporaneous BW, Epley/DB/bodyweight, sex, stages, imported/finished sets, muscle diversity, purity and SQL source contracts.');

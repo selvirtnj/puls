@@ -36,7 +36,7 @@ function dsEnergyCard(){
   return `<div class="dsgroup dsenergy dscat dscatenergy"><div class="dsenergytop"><div class="dsringwrap">${dsRing(e.percent,e.over)}<div class="dsringlabel"><strong>${dsKcal(e.eaten)}</strong><small>${e.goal>0?dsText('von','of')+' '+dsKcal(e.goal):'kcal'}</small></div></div><div class="dsenergyfacts"><span class="dsbig${e.over?' dsover':''}">${e.big}</span><span class="dscaption">${e.caption}</span></div></div>${dsMacroRows(t,g)}<button type="button" class="btn full dsprimary" onclick="foodForm();if(typeof foodTab==='function')foodTab('search')">${dsText('Essen eintragen','Log food')}</button></div>`;
 }
 function dsFoodGroup(){
-  let entries=state.foods.filter(x=>x.date===date),shown=entries.slice(-5).reverse();
+  let entries=state.foods.filter(x=>x.date===date&&!(typeof fdIsWater==='function'&&fdIsWater(x))),shown=entries.slice(-5).reverse();
   let rows=shown.map(x=>typeof swipeDiaryEntry==='function'?swipeDiaryEntry(x):dsRow({label:esc(x.name),detail:`${n(x.grams)} ${x.unit==='ml'?'ml':'g'}`,value:dsKcal(x.kcal)+' kcal'})).join('');
   if(!rows)rows=dsRow({label:dsText('Noch nichts eingetragen.','Nothing logged yet.'),cls:'dsempty'});
   rows+=dsRow({label:entries.length>shown.length?dsText(`Alle ${entries.length} anzeigen`,`Show all ${entries.length}`):dsText('Zum Ernährungstagebuch','Open food diary'),action:"go('food')",chevron:true,cls:'dsaction'});

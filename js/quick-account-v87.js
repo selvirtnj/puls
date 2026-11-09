@@ -68,7 +68,7 @@ function qaQuickTraining(){
   if(activeWorkout())return quickAddWorkout();
   document.body.classList.remove('quickaddopen');
   let rows=[
-    qaRow({label:qaT('Leeres Workout starten','Start empty workout'),icon:'barbell',action:'startWorkout()',chevron:true}),
+    qaRow({label:qaT('Leeres Workout starten','Start empty workout'),icon:'barbell',action:'startQuickEmptyWorkout()',chevron:true}),
     qaRow({label:qaT('Routine starten','Start routine'),icon:'list-plus',action:'qaQuickRoutines()',chevron:true}),
     qaRow({label:qaT('Aktivität / Lauf starten','Start activity / run'),icon:'person-simple-run',action:'quickAddRun()',chevron:true})
   ].join('');

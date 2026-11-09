@@ -70,6 +70,17 @@ ctx.csvFixture=fixture;
   assert(run('exerciseCatalog.some(x=>x.name===aliasTarget)'),target+' missing from catalogue');
   assert.equal(run('importApi.plan(aliasParsed,"kg",initial()).workouts[0].exercises[0].exerciseId'),run('exerciseCatalog.find(x=>x.name===aliasTarget).id'),source);
  }
+ // v90: Strong/Hevy-Schreibweise „Name (Equipment)“ auf exakte Katalognamen.
+ const equipmentPairs=[['Bench Press (Barbell)','Barbell Bench Press - Medium Grip'],['Overhead Press (Barbell)','Standing Military Press'],['Lat Pulldown (Cable)','Wide-Grip Lat Pulldown'],['Incline Bench Press (Dumbbell)','Incline Dumbbell Press'],['Triceps Pushdown (Cable)','Triceps Pushdown'],['Romanian Deadlift (Barbell)','Romanian Deadlift'],['Lateral Raise (Dumbbell)','Side Lateral Raise'],['Bench Press (Dumbbell)','Dumbbell Bench Press'],['Incline Bench Press (Barbell)','Barbell Incline Bench Press - Medium Grip'],['Shoulder Press (Dumbbell)','Dumbbell Shoulder Press'],['Bicep Curl (Barbell)','Barbell Curl'],['Hammer Curl (Dumbbell)','Hammer Curls'],['Chest Fly (Dumbbell)','Dumbbell Flyes'],['Leg Extension (Machine)','Leg Extensions'],['Seated Leg Curl (Machine)','Seated Leg Curl'],['Hip Thrust (Barbell)','Barbell Hip Thrust'],['Front Squat (Barbell)','Front Squat (Clean Grip)'],['Bent Over Row (Dumbbell)','Bent Over Two-Dumbbell Row'],['Face Pull (Cable)','Face Pull'],['Triceps Rope Pushdown','Triceps Pushdown - Rope Attachment'],['Skullcrusher (EZ Bar)','EZ-Bar Skullcrusher'],['Shrug (Dumbbell)','Dumbbell Shrug'],['Standing Calf Raise (Machine)','Standing Calf Raises'],['Chest Press (Machine)','Machine Bench Press']];
+ for(const [source,target] of equipmentPairs){
+  ctx.aliasCsv=header+'\n2026-06-11 10:00:00,00:10:00,Aliases,"'+source+'",1,50,10,,,,\n';ctx.aliasParsed=await run('importApi.parse(aliasCsv)');ctx.aliasTarget=target;
+  assert(run('exerciseCatalog.some(x=>x.name===aliasTarget)'),target+' missing from catalogue');
+  assert.equal(run('importApi.plan(aliasParsed,"kg",initial()).workouts[0].exercises[0].exerciseId'),run('exerciseCatalog.find(x=>x.name===aliasTarget).id'),source);
+ }
+ assert.equal(run('importPlan.workouts[0].name'),'Liftoff-Import 2026-06-11','unnamed Liftoff sessions keep their label');
+ ctx.unnamedStrongCsv='Date;Workout Name;Duration;Exercise Name;Set Order;Weight;Reps;Notes\n2026-06-11 10:00:00;;30m;Machine Lateral Raise;1;65;10;\n';
+ ctx.unnamedStrongParsed=await run('importApi.parse(unnamedStrongCsv)');
+ assert.equal(run('importApi.plan(unnamedStrongParsed,"kg",initial()).workouts[0].name'),'Import 2026-06-11','non-Liftoff sessions are named neutrally');
  ctx.pluralCsv=header+'\n2026-06-11 10:00:00,00:10:00,Plural,Fixture Boxes Presses,1,50,10,,,,\n';ctx.pluralParsed=await run('importApi.parse(pluralCsv)');
  assert.equal(run('importApi.plan(pluralParsed,"kg",{workouts:[],exerciseBook:[{id:"plural-existing",name:"Fixture Box Press",target:0}]}).workouts[0].exercises[0].exerciseId'),'plural-existing');
  for(const name of ['Bench Press','Squat','Lat Pulldown']){ctx.ambiguousCsv=header+'\n2026-06-11 10:00:00,00:10:00,Ambiguous,'+name+',1,50,10,,,,\n';ctx.ambiguousParsed=await run('importApi.parse(ambiguousCsv)');assert.equal(run('importApi.plan(ambiguousParsed,"kg",initial()).fresh'),1,name+' must remain a custom exercise')}
