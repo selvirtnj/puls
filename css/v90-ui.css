@@ -59,8 +59,7 @@ html body .fdslidehead h2, html body .fdcardhead h2 { display: inline-flex; alig
 html body .fdslidehead h2::before, html body .fdcardhead h2::before { content: ""; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--ds-cat-energy); }
 html body .fdwater .fdcardhead h2::before { background: var(--ds-cat-water); }
 
-/* Deck: leicht orange getönte Fläche, mehr Luft. */
-html body .fddeck { background: var(--ds-surface); background: color-mix(in srgb, var(--ds-cat-energy) 7%, var(--ds-surface)); }
+/* Deck: neutrale Kartenfläche wie Wasser/Tagebuch, mehr Luft. */
 html body .fdslide { padding: 12px 16px 0; }
 html body .fdslidehead { min-height: 36px; margin-bottom: 10px; }
 html body .fddot[aria-current=true]::after { background: var(--ds-cat-energy); }
