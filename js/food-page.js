@@ -87,9 +87,9 @@ function fpSourceKeys(x){
   if(x.barcode)keys.add('off');if(!keys.size)keys.add(String(x.id||'').startsWith('base')?'puls':'own');
   return keys;
 }
+function fpFilterSources(items){let allowed=new Set(fpSearchPrefs().sources);return items.filter(x=>[...fpSourceKeys(x)].some(k=>allowed.has(k)))}
 function fpFilterSort(items,usage){
-  let prefs=fpSearchPrefs(),allowed=new Set(prefs.sources);
-  let list=items.filter(x=>[...fpSourceKeys(x)].some(k=>allowed.has(k)));
+  let prefs=fpSearchPrefs(),list=fpFilterSources(items);
   if(prefs.sort==='best')return list;
   usage??=fpUsage(3650);let u=x=>usage.get(x.id)||{count:0,last:0},name=x=>String(x.name||'');
   let cmp={az:(a,b)=>name(a).localeCompare(name(b),'de'),za:(a,b)=>name(b).localeCompare(name(a),'de'),recent:(a,b)=>u(b).last-u(a).last,frequent:(a,b)=>u(b).count-u(a).count}[prefs.sort];
@@ -111,7 +111,7 @@ function fpRefreshPanes(){
   if(!$('fp-track'))return;let q=fpQuery(),usage=fpUsage();
   $('fp-quick')?.toggleAttribute('hidden',!!q);
   $('ff-online')?.classList.toggle('fpoffhidden',!fpSearchPrefs().sources.includes('off'));
-  for(let [key] of fpPanes){if(key==='all')continue;let box=$('fp-list-'+key);if(!box)continue;let items=fpPaneItems(key,q,usage);if(!['meals','frequent'].includes(key))items=fpFilterSort(items,usage);fpLists[key]=items;box.innerHTML=fpPaneHTML(key,items,q)}
+  for(let [key] of fpPanes){if(key==='all')continue;let box=$('fp-list-'+key);if(!box)continue;let items=fpPaneItems(key,q,usage);if(key==='frequent')items=fpFilterSources(items);else if(key!=='meals')items=fpFilterSort(items,usage);fpLists[key]=items;box.innerHTML=fpPaneHTML(key,items,q)}
   let filter=document.querySelector('#fp-filter .fpdot');if(filter)filter.hidden=!fpFilterActive();
 }
 const fpEmpty={frequent:['Hier erscheint, was du in den letzten 90 Tagen oft einträgst.','Foods you log often in the last 90 days appear here.'],recent:['Noch nichts eingetragen.','Nothing logged yet.'],favorites:['Noch keine Favoriten. Im Lebensmittel auf den Stern tippen.','No favourites yet. Tap the star on a food.'],own:['Noch keine eigenen Lebensmittel.','No custom foods yet.'],products:['Noch keine gescannten Produkte.','No scanned products yet.'],drinks:['Keine Getränke mit Angabe je 100 ml.','No drinks with values per 100 ml.'],recipes:['Noch keine Rezepte.','No recipes yet.'],meals:['Kombis sind Vorlagen aus mehreren Lebensmitteln, die du mit einem Tippen einträgst.','Combos are templates of several foods you log with one tap.']};
@@ -123,10 +123,12 @@ function fpPaneHTML(key,items,q){
   if(key==='own')actions=`<div class="fpactions fpsingle"><button type="button" class="btn secondary" onclick="foodTab('custom')">${phIcon('plus')} ${fdT('Eigenes Lebensmittel','Custom food')}</button></div>`;
   return actions+(rows?`<div class="fprows">${rows}</div>`:`<p class="fpempty">${q?fdT('Keine Treffer in diesem Bereich.','No matches here.'):fdT(...fpEmpty[key])}</p>`);
 }
+// Dieselbe Standardmenge wie die Detailseite (zuletzt eingetragen, sonst 100 g/ml); das Plus bucht genau diese.
+function fpDefaultAmount(x){let last=typeof ffLastAmount==='function'?ffLastAmount(x):null;return last>0?last:100}
 function fpAmountLine(x){
-  let base=typeof ffBase==='function'?ffBase(x):(x.unit==='ml'?'ml':'g'),portion=typeof foodPortions==='function'?foodPortions(x)[0]:null,amount=portion?portion.amount:100;
+  let base=typeof ffBase==='function'?ffBase(x):(x.unit==='ml'?'ml':'g'),amount=fpDefaultAmount(x);
   let kcal=Number.isFinite(x.kcal)?fdNum(x.kcal*amount/100)+' kcal':fdT('kcal unbekannt','kcal unknown');
-  let label=portion?`${ffPortionName(portion.name)} · ${n(amount)} ${base}`:`100 ${base}`;
+  let label=amount!==100?`${fdT('Zuletzt','Last')} · ${n(amount)} ${base}`:`100 ${base}`;
   return (x.fpCount?x.fpCount+'× · ':'')+label+' · '+kcal;
 }
 function fpRow(x,open,add){
@@ -150,13 +152,15 @@ function fpOpenItem(x){
   return !!$('ff-detail');
 }
 function fpOpen(key,i){let x=fpLists[key]?.[i];if(x)fpOpenItem(x)}
-function fpQuick(key,i){let x=fpLists[key]?.[i];if(x)fpQuickAdd(()=>fpOpenItem(x))}
-function fpQuickResult(i){if(foodResultList[i])fpQuickAdd(()=>{ffNav.from='search';chooseFoodResult(i)})}
-// Öffnet das Lebensmittel wie gewohnt (letzte Menge oder 100 g/ml) und trägt es über den normalen addFood-Weg ein.
-function fpQuickAdd(open){
+function fpQuick(key,i){let x=fpLists[key]?.[i];if(x)fpQuickAdd(()=>fpOpenItem(x),x)}
+function fpQuickResult(i){let x=foodResultList[i];if(x)fpQuickAdd(()=>{ffNav.from='search';chooseFoodResult(i)},x)}
+// Öffnet das Lebensmittel und trägt genau die in der Zeile angezeigte Menge über den normalen addFood-Weg ein.
+function fpQuickAdd(open,item){
   let before=state.foods.length,mealBefore=fpMealDraft?.items.length??0,picking=!!fpPick;open();
   let form=$('ff-detail')?.querySelector('form.ffform');
-  if(!form||!(Number($('grams')?.value)>0))return;
+  if(!form)return;
+  if(item&&foodSelection&&item.kind!=='recipe'&&typeof ffSetQuantity==='function'){let amount=fpDefaultAmount(item);if(Math.abs(Number($('grams')?.value)-amount)>1e-9)ffSetQuantity(ffBase(foodSelection),amount)}
+  if(!(Number($('grams')?.value)>0))return;
   let name=foodSelection?.name||'';
   modal.close=function(){};
   try{form.requestSubmit?form.requestSubmit():form.dispatchEvent(new Event('submit',{cancelable:true,bubbles:true}))}finally{delete modal.close}
@@ -270,11 +274,14 @@ if(typeof lookupBarcode==='function'){const fpLookupBase=lookupBarcode;lookupBar
 
 /* ---------- Kombis ---------- */
 function fpMealTotals(meal){return (meal.items||[]).reduce((a,x)=>{for(let k of ['kcal','p','c','f'])a[k]+=Number(x[k])||0;return a},{kcal:0,p:0,c:0,f:0})}
-function fpMealRow(meal,i){let t=fpMealTotals(meal);return `<div class="fprow ffrow"><button type="button" class="fprowmain" onclick="fpMealView('${esc(meal.id)}')"><span class="fprowtext"><strong data-no-translate>${esc(meal.name)}</strong><small>${meal.items.length} ${meal.items.length===1?fdT('Position','item'):fdT('Positionen','items')} · ${fdNum(t.kcal)} kcal</small></span><span class="fprowsrc">${fdT('Kombi','Combo')}</span></button><button type="button" class="fprowadd" aria-label="${esc(meal.name)} ${fdT('eintragen','log')}" onclick="fpMealView('${esc(meal.id)}')">${phIcon('plus')}</button></div>`}
+// Kombi-IDs können aus importierten Sicherungen stammen: nur als data-Attribut, nie in Inline-JavaScript.
+document.addEventListener('click',event=>{let el=event.target.closest?.('[data-fp-meal]');if(el)fpMealView(el.dataset.fpMeal)});
+let fpViewMealId=null;
+function fpMealRow(meal,i){let t=fpMealTotals(meal);return `<div class="fprow ffrow"><button type="button" class="fprowmain" data-fp-meal="${esc(meal.id)}"><span class="fprowtext"><strong data-no-translate>${esc(meal.name)}</strong><small>${meal.items.length} ${meal.items.length===1?fdT('Position','item'):fdT('Positionen','items')} · ${fdNum(t.kcal)} kcal</small></span><span class="fprowsrc">${fdT('Kombi','Combo')}</span></button><button type="button" class="fprowadd" aria-label="${esc(meal.name)} ${fdT('eintragen','log')}" data-fp-meal="${esc(meal.id)}">${phIcon('plus')}</button></div>`}
 function fpScaled(item,amount){let f=amount/item.grams,out={};for(let k of ['kcal','p','c','f'])out[k]=round(item[k]*f);let nutrients={};for(let [k,v] of Object.entries(item.nutrients||{}))if(Number.isFinite(v))nutrients[k]=v*f;return {...out,nutrients}}
 function fpMealView(id){
-  let meal=fdField('meals').find(m=>m.id===id);if(!meal||!$('foodbody'))return;
-  $('foodbody').innerHTML=`<div class="fpview">${fpBar(meal.name,"fpBackTo('meals')",`<button type="button" class="fdicon" aria-label="${fdT('Kombi bearbeiten','Edit combo')}" onclick="fpMealEdit('${esc(meal.id)}')">${phIcon('pencil-simple')}</button>`)}<form class="ffform" onsubmit="fpLogMeal(event,'${esc(meal.id)}')"><p class="fdnote">${fdT('Mengen bei Bedarf anpassen. Jede Position wird ein eigener Eintrag mit gespeicherten Nährwerten.','Adjust amounts if needed. Each item becomes its own entry with stored nutrients.')}</p><div class="dsgroup fpitems">${meal.items.map((x,i)=>`<div class="fpitem"><div class="fpitemname"><strong data-no-translate>${esc(x.name)}</strong><small id="fp-item-kcal-${i}">${fdNum(x.kcal)} kcal</small></div><span class="ffunitinput fpitemamount"><input id="fp-item-${i}" type="text" inputmode="decimal" autocomplete="off" aria-label="${fdT('Menge','Amount')} ${esc(x.name)}" value="${esc(ffNum(x.grams))}" oninput="fpMealPreview('${esc(meal.id)}')"><span>${x.unit}</span></span></div>`).join('')}</div><p class="fpmealtotal" id="fp-meal-total"></p><button class="btn full ffsubmit">${fdT('Alle eintragen','Log all')}</button></form></div>`;
+  let meal=fdField('meals').find(m=>m.id===id);if(!meal||!$('foodbody'))return;fpViewMealId=meal.id;
+  $('foodbody').innerHTML=`<div class="fpview">${fpBar(meal.name,"fpBackTo('meals')",`<button type="button" class="fdicon" aria-label="${fdT('Kombi bearbeiten','Edit combo')}" onclick="fpMealEdit(fpViewMealId)">${phIcon('pencil-simple')}</button>`)}<form class="ffform" onsubmit="fpLogMeal(event,fpViewMealId)"><p class="fdnote">${fdT('Mengen bei Bedarf anpassen. Jede Position wird ein eigener Eintrag mit gespeicherten Nährwerten.','Adjust amounts if needed. Each item becomes its own entry with stored nutrients.')}</p><div class="dsgroup fpitems">${meal.items.map((x,i)=>`<div class="fpitem"><div class="fpitemname"><strong data-no-translate>${esc(x.name)}</strong><small id="fp-item-kcal-${i}">${fdNum(x.kcal)} kcal</small></div><span class="ffunitinput fpitemamount"><input id="fp-item-${i}" type="text" inputmode="decimal" autocomplete="off" aria-label="${fdT('Menge','Amount')} ${esc(x.name)}" value="${esc(ffNum(x.grams))}" oninput="fpMealPreview(fpViewMealId)"><span>${x.unit}</span></span></div>`).join('')}</div><p class="fpmealtotal" id="fp-meal-total"></p><button class="btn full ffsubmit">${fdT('Alle eintragen','Log all')}</button></form></div>`;
   $('foodbody').scrollTop=0;fpMealPreview(id);
 }
 function fpMealAmounts(meal){return meal.items.map((x,i)=>ffParse($('fp-item-'+i)?.value))}
@@ -282,14 +289,14 @@ function fpMealPreview(id){let meal=fdField('meals').find(m=>m.id===id);if(!meal
 function fpLogMeal(event,id){
   event.preventDefault();let meal=fdField('meals').find(m=>m.id===id);if(!meal)return;
   let amounts=fpMealAmounts(meal);if(amounts.some(a=>!(a>=.1&&a<=10000))){toast(fdT('Bitte Mengen zwischen 0,1 und 10.000 eingeben','Please enter amounts between 0.1 and 10,000'));return}
-  let now=Date.now(),added=meal.items.map((x,i)=>{let v=fpScaled(x,amounts[i]),entry={id:uid(),date,meal:'Snacks',name:x.name,grams:amounts[i],unit:x.unit,kcal:v.kcal,p:v.p,c:v.c,f:v.f,loggedAt:now+i};if(Object.keys(v.nutrients).length)entry.nutrients=v.nutrients;for(let k of ['source','barcode','foodRef'])if(typeof x[k]==='string'&&x[k])entry[k]=x[k];return entry});
+  let now=Date.now(),added=meal.items.map((x,i)=>{let v=fpScaled(x,amounts[i]),entry={id:uid(),date,meal:'Snacks',name:x.name,grams:amounts[i],unit:x.unit,kcal:v.kcal,p:v.p,c:v.c,f:v.f,loggedAt:now+i};if(Object.keys(v.nutrients).length)entry.nutrients=v.nutrients;return fpCopyProvenance(x,entry)});
   if(!added.every(e=>['kcal','p','c','f'].every(k=>Number.isFinite(e[k])&&e[k]>=0)&&validNutrients(e.nutrients))){toast(fdT('Kombi konnte nicht eingetragen werden','Combo could not be logged'));return}
   state.foods.push(...added);
   let ids=added.map(x=>x.id);save();modal.close();render();fdSound('save');
   fdUndoToast(`${meal.name} ${fdT('eingetragen','logged')} · ${added.length}`,()=>{state.foods=state.foods.filter(x=>!ids.includes(x.id));save();render()});
 }
 // Gleiche Regeln wie der validData-Wrapper in puls-data-v87.js; prüft nur die Kombis, nicht den übrigen Zustand.
-function fpMealsOK(list){let text=(x,max)=>typeof x==='string'&&x.trim().length>=1&&x.length<=max,num=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;return Array.isArray(list)&&list.length<=200&&list.every(m=>text(m.id,60)&&text(m.name,100)&&Array.isArray(m.items)&&m.items.length>=1&&m.items.length<=50&&m.items.every(x=>text(x.name,120)&&num(x.grams)&&x.grams>0&&x.grams<=5000&&['g','ml'].includes(x.unit)&&['kcal','p','c','f'].every(k=>num(x[k]))&&(x.nutrients===undefined||x.nutrients&&typeof x.nutrients==='object'&&Object.values(x.nutrients).every(num))&&['source','barcode','foodRef'].every(k=>x[k]===undefined||typeof x[k]==='string')))}
+function fpMealsOK(list){let text=(x,max)=>typeof x==='string'&&x.trim().length>=1&&x.length<=max,num=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;return Array.isArray(list)&&list.length<=200&&list.every(m=>text(m.id,60)&&text(m.name,100)&&Array.isArray(m.items)&&m.items.length>=1&&m.items.length<=50&&m.items.every(x=>text(x.name,120)&&num(x.grams)&&x.grams>0&&x.grams<=5000&&['g','ml'].includes(x.unit)&&['kcal','p','c','f'].every(k=>num(x[k]))&&(x.nutrients===undefined||x.nutrients&&typeof x.nutrients==='object'&&Object.values(x.nutrients).every(num))&&fpProvenanceText.every(k=>x[k]===undefined||typeof x[k]==='string')&&(x.aiEstimate===undefined||typeof x.aiEstimate==='boolean')))}
 function fpBackTo(pane){fpPane=pane;foodTab('search')}
 function fpMealEdit(id,fromToday=false){
   if(!$('foodbody'))return;let meal=id?fdField('meals').find(m=>m.id===id):null;
@@ -298,16 +305,19 @@ function fpMealEdit(id,fromToday=false){
 }
 function fpMealRender(){
   let d=fpMealDraft,body=$('foodbody');if(!d||!body)return;let t=fpMealTotals(d);
-  body.innerHTML=`<div class="fpview">${fpBar(d.isNew?fdT('Neue Kombi','New combo'):fdT('Kombi bearbeiten','Edit combo'),"fpMealLeave()")}<form class="ffform" onsubmit="fpSaveMeal(event)"><label class="fffield">${fdT('Name','Name')}<input id="fp-meal-name" maxlength="100" required autocomplete="off" placeholder="${fdT('z. B. Frühstück Standard','e.g. usual breakfast')}" value="${esc(d.name)}" oninput="fpMealDraft.name=this.value"></label><div class="ffsectionhead"><span>${fdT('Positionen','Items')}</span><span>${d.items.length}/50</span></div><div class="dsgroup fpitems">${d.items.map((x,i)=>`<div class="fpitem"><div class="fpitemname"><strong data-no-translate>${esc(x.name)}</strong><small>${fdNum(x.kcal)} kcal · P ${fdNum(x.p,1)} · KH ${fdNum(x.c,1)} · F ${fdNum(x.f,1)} g</small></div><span class="ffunitinput fpitemamount"><input type="text" inputmode="decimal" autocomplete="off" aria-label="${fdT('Menge','Amount')} ${esc(x.name)}" value="${esc(ffNum(x.grams))}" onchange="fpMealAmount(${i},this.value)"><span>${x.unit}</span></span><button type="button" class="fficonbtn" aria-label="${esc(x.name)} ${fdT('entfernen','remove')}" onclick="fpMealDraft.items.splice(${i},1);fpMealRender()">${phIcon('x')}</button></div>`).join('')||`<p class="fpempty">${fdT('Noch keine Positionen.','No items yet.')}</p>`}</div><div class="fpactions"><button type="button" class="btn secondary" onclick="fpMealPick()">${phIcon('magnifying-glass')} ${fdT('Lebensmittel suchen','Search food')}</button><button type="button" class="btn secondary" onclick="fpMealFromToday()">${fdT('Aus heutigen Einträgen','From today')}</button></div><p class="fpmealtotal">${fdT('Zusammen','Total')} ${fdNum(t.kcal)} kcal · P ${fdNum(t.p,1)} · KH ${fdNum(t.c,1)} · F ${fdNum(t.f,1)} g</p><button class="btn full ffsubmit">${fdT('Kombi speichern','Save combo')}</button>${d.isNew?'':`<div class="ffsecondary"><button type="button" class="textbtn ffdanger" onclick="fpDeleteMeal('${esc(d.id)}')">${fdT('Kombi löschen','Delete combo')}</button></div>`}</form></div>`;
+  body.innerHTML=`<div class="fpview">${fpBar(d.isNew?fdT('Neue Kombi','New combo'):fdT('Kombi bearbeiten','Edit combo'),"fpMealLeave()")}<form class="ffform" onsubmit="fpSaveMeal(event)"><label class="fffield">${fdT('Name','Name')}<input id="fp-meal-name" maxlength="100" required autocomplete="off" placeholder="${fdT('z. B. Frühstück Standard','e.g. usual breakfast')}" value="${esc(d.name)}" oninput="fpMealDraft.name=this.value"></label><div class="ffsectionhead"><span>${fdT('Positionen','Items')}</span><span>${d.items.length}/50</span></div><div class="dsgroup fpitems">${d.items.map((x,i)=>`<div class="fpitem"><div class="fpitemname"><strong data-no-translate>${esc(x.name)}</strong><small>${fdNum(x.kcal)} kcal · P ${fdNum(x.p,1)} · KH ${fdNum(x.c,1)} · F ${fdNum(x.f,1)} g</small></div><span class="ffunitinput fpitemamount"><input type="text" inputmode="decimal" autocomplete="off" aria-label="${fdT('Menge','Amount')} ${esc(x.name)}" value="${esc(ffNum(x.grams))}" onchange="fpMealAmount(${i},this.value)"><span>${x.unit}</span></span><button type="button" class="fficonbtn" aria-label="${esc(x.name)} ${fdT('entfernen','remove')}" onclick="fpMealDraft.items.splice(${i},1);fpMealRender()">${phIcon('x')}</button></div>`).join('')||`<p class="fpempty">${fdT('Noch keine Positionen.','No items yet.')}</p>`}</div><div class="fpactions"><button type="button" class="btn secondary" onclick="fpMealPick()">${phIcon('magnifying-glass')} ${fdT('Lebensmittel suchen','Search food')}</button><button type="button" class="btn secondary" onclick="fpMealFromToday()">${fdT('Aus heutigen Einträgen','From today')}</button></div><p class="fpmealtotal">${fdT('Zusammen','Total')} ${fdNum(t.kcal)} kcal · P ${fdNum(t.p,1)} · KH ${fdNum(t.c,1)} · F ${fdNum(t.f,1)} g</p><button class="btn full ffsubmit">${fdT('Kombi speichern','Save combo')}</button>${d.isNew?'':`<div class="ffsecondary"><button type="button" class="textbtn ffdanger" onclick="fpDeleteMeal(fpMealDraft.id)">${fdT('Kombi löschen','Delete combo')}</button></div>`}</form></div>`;
   body.scrollTop=0;
 }
 function fpMealLeave(){fpMealDraft=null;fpPick=null;fpBackTo('meals')}
 function fpMealAmount(i,raw){let x=fpMealDraft?.items[i],a=ffParse(raw);if(!x)return;if(!(a>=.1&&a<=5000)){toast(fdT('Menge 0,1 bis 5.000','Amount 0.1 to 5,000'));fpMealRender();return}let v=fpScaled(x,a);Object.assign(x,{grams:a,kcal:x.kcal*a/x.grams,p:x.p*a/x.grams,c:x.c*a/x.grams,f:x.f*a/x.grams});if(x.nutrients)x.nutrients=v.nutrients;fpMealRender()}
+// Herkunft bleibt vollständig erhalten (Quelle, Barcode, Lebensmittel-/Rezeptbezug, KI-Schätzung).
+const fpProvenanceText=['source','barcode','foodRef','recipeId'];
+function fpCopyProvenance(src,out){for(let k of fpProvenanceText)if(typeof src[k]==='string'&&src[k])out[k]=src[k].slice(0,150);if(src.aiEstimate===true)out.aiEstimate=true;return out}
 function fpSnapshot(src,amount){
   let item={name:String(src.name||'').slice(0,120),grams:amount,unit:src.unit==='ml'?'ml':'g'};
   for(let k of ['kcal','p','c','f'])item[k]=src[k];
   if(src.nutrients&&typeof src.nutrients==='object'){let nu={};for(let [k,v] of Object.entries(src.nutrients))if(Number.isFinite(v)&&v>=0)nu[k]=v;if(Object.keys(nu).length)item.nutrients=nu}
-  for(let k of ['source','barcode','foodRef'])if(typeof src[k]==='string'&&src[k])item[k]=src[k].slice(0,150);
+  fpCopyProvenance(src,item);
   return item;
 }
 function fpMealPick(){if(!fpMealDraft)return;fpMealDraft.name=$('fp-meal-name')?.value??fpMealDraft.name;if(fpMealDraft.items.length>=50){toast(fdT('Höchstens 50 Positionen','At most 50 items'));return}fpPick={meal:true};fpPane='all';foodTab('search')}
@@ -318,7 +328,7 @@ const fpAddFoodBase=addFood;addFood=function(event,...rest){
     event?.preventDefault?.();let food=foodSelection,amount=Number($('grams')?.value);
     if(!food||!(amount>=.1&&amount<=5000)){toast(fdT('Menge 0,1 bis 5.000','Amount 0.1 to 5,000'));return}
     if(!['kcal','p','c','f'].every(k=>Number.isFinite(food[k])&&food[k]>=0)){toast(fdT('Werte unvollständig. Bitte eigene Werte eingeben.','Values incomplete. Please enter custom values.'));return}
-    let per={name:food.name,unit:ffBase(food),source:food.source,barcode:food.barcode,foodRef:food.id,nutrients:{}};
+    let per={name:food.name,unit:ffBase(food),source:food.source,barcode:food.barcode,foodRef:food.id,recipeId:food.recipeId,aiEstimate:food.aiEstimate,nutrients:{}};
     for(let k of ['kcal','p','c','f'])per[k]=food[k]*amount/100;
     for(let [k,v] of Object.entries(food.nutrients||{}))if(Number.isFinite(v))per.nutrients[k]=v*amount/100;
     if(food.barcode)per.barcode=String(food.barcode);

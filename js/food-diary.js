@@ -31,10 +31,14 @@ function fdNum(value,digits=0){let f=10**digits;return n(Math.round((Number(valu
 
 /* ---------- Rückgängig-Hinweis (auch für Add Food genutzt) ---------- */
 let fdUndoTimer=null,fdUndoAction=null;
+if(typeof modal!=='undefined')modal.addEventListener('close',()=>{let box=$('fd-undo');if(box&&modal.contains(box))document.body.appendChild(box)});
 function fdUndoToast(text,undo){
   clearTimeout(fdUndoTimer);fdUndoAction=undo;
   let box=$('fd-undo');
-  if(!box){box=document.createElement('div');box.id='fd-undo';box.setAttribute('role','status');document.body.appendChild(box)}
+  // Im offenen modalen Dialog ist alles außerhalb inert; der Hinweis muss daher im Dialog liegen.
+  let host=typeof modal!=='undefined'&&modal.open?modal:document.body;
+  if(!box){box=document.createElement('div');box.id='fd-undo';box.setAttribute('role','status')}
+  if(box.parentElement!==host)host.appendChild(box);
   box.innerHTML=`<span data-no-translate>${esc(text)}</span><button type="button" onclick="fdUndoRun()">${fdT('Rückgängig','Undo')}</button>`;
   box.classList.remove('fdundoin');void box.offsetWidth;box.classList.add('fdundoin');
   fdUndoTimer=setTimeout(()=>{box.remove();fdUndoAction=null},8000);
@@ -150,15 +154,17 @@ function fdSaveWater(event){
   event.preventDefault();let mode=$('fd-water-mode').value==='manual'?'manual':'auto',glass=Math.round(Number($('fd-water-glass').value)),goal=Math.round(Number($('fd-water-goal').value));
   if(!(glass>=100&&glass<=1000)){toast(fdT('Glasgröße 100 bis 1.000 ml','Glass size 100 to 1,000 ml'));return}
   if(mode==='manual'&&!(goal>=500&&goal<=10000)){toast(fdT('Ziel 500 bis 10.000 ml','Target 500 to 10,000 ml'));return}
-  let water=fdEnsure('water');water.mode=mode;water.glassMl=glass;if(mode==='manual')state.waterGoal=goal;
+  let water=fdEnsure('water');water.mode=mode;water.glassMl=glass;state.waterGoal=mode==='manual'?goal:0;
   save();modal.close();render();fdSound('save');
 }
 
 /* ---------- Tagebuch ---------- */
 let fdKnownIds=null;
+// IDs stehen nur in data-Attributen, nie in Inline-JavaScript (importierte IDs sind fremde Daten).
+document.addEventListener('click',event=>{let el=event.target.closest?.('[data-fd-action]'),id=el?.closest('[data-diary-id]')?.dataset.diaryId;if(!id)return;if(el.dataset.fdAction==='delete'){deleteSwipeDiary(id);fdSound('delete')}else if(el.dataset.fdAction==='edit')editDiaryFood(id)});
 function fdDiaryRow(x,fresh){
   let unit=x.unit==='ml'?'ml':'g';
-  return `<div class="swipediary fdentry${fresh?' fdnew':''}" data-diary-id="${esc(x.id)}"><button type="button" class="swipedelete" aria-label="${esc(x.name)} ${fdT('löschen','delete')}" onclick="deleteSwipeDiary('${esc(x.id)}');fdSound('delete')">${phIcon('trash')}<span>${fdT('Löschen','Delete')}</span></button><button type="button" class="diaryrow fdentryrow" onclick="editDiaryFood('${esc(x.id)}')"><span class="fdentrytext"><strong data-no-translate>${esc(x.name)}</strong><small>${fdNum(x.grams,1)} ${unit}</small></span><span class="fdentrykcal">${fdNum(x.kcal)}<small>kcal</small></span></button></div>`;
+  return `<div class="swipediary fdentry${fresh?' fdnew':''}" data-diary-id="${esc(x.id)}"><button type="button" class="swipedelete" aria-label="${esc(x.name)} ${fdT('löschen','delete')}" data-fd-action="delete">${phIcon('trash')}<span>${fdT('Löschen','Delete')}</span></button><button type="button" class="diaryrow fdentryrow" data-fd-action="edit"><span class="fdentrytext"><strong data-no-translate>${esc(x.name)}</strong><small>${fdNum(x.grams,1)} ${unit}</small></span><span class="fdentrykcal">${fdNum(x.kcal)}<small>kcal</small></span></button></div>`;
 }
 function fdDiaryList(){
   let items=fdDayFoods().filter(x=>!fdIsWater(x)),ids=new Set(items.map(x=>x.id)),known=fdKnownIds?.key===date?fdKnownIds.ids:null;

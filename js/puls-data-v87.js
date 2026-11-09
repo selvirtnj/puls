@@ -58,7 +58,8 @@ function mealsOK(value){
   Array.isArray(m.items)&&m.items.length>=1&&m.items.length<=50&&m.items.every(x=>object(x)&&text(x.name,120,1)&&
    finite(x.grams,0,5000)&&x.grams>0&&['g','ml'].includes(x.unit)&&['kcal','p','c','f'].every(k=>finite(x[k]))&&
    (x.nutrients===undefined||object(x.nutrients)&&Object.values(x.nutrients).every(v=>finite(v)))&&
-   ['source','barcode','foodRef'].every(k=>x[k]===undefined||typeof x[k]==='string')));
+   ['source','barcode','foodRef','recipeId'].every(k=>x[k]===undefined||typeof x[k]==='string')&&
+   (x.aiEstimate===undefined||typeof x.aiEstimate==='boolean')));
 }
 const baseValid=validData;
 validData=function(s){
