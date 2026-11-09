@@ -96,16 +96,22 @@ async function parse(text){
  let liftoff=headers.includes('set order')&&headers.includes('seconds')&&headers.includes('workout name'),groups=new Map(),omitted=false,skippedRows=0;
  for(let row of rows){
   if(row.length!==headers.length)fail();let get=k=>cols[k]<0?'':row[cols[k]].trim(),dt=localDate(get('date')),name=get('name'),exercise=get('exercise');if(exercise.length>200||name.length>200)fail();
-  let groupKey=JSON.stringify([dt.stamp,name]),g=groups.get(groupKey),seconds=duration(get('duration'));
-  if(cols.end>=0&&row[cols.end].trim()){let end=localDate(row[cols.end]);if(!dt.hasTime||!end.hasTime||end.time<dt.time)fail();seconds=(end.time-dt.time)/1000}
-  if(!g){g={...dt,name,seconds,rows:[],extraRows:[]};groups.set(groupKey,g)}else if(g.seconds!==seconds)fail();
+  let groupKey=JSON.stringify([dt.stamp,name]),g=groups.get(groupKey),seconds=duration(get('duration')),ignoredEnd=false;
+  if(cols.end>=0&&row[cols.end].trim()){
+   let end=localDate(row[cols.end]);
+   // A contradictory end stamp is not evidence of an overnight duration.
+   if(dt.hasTime&&end.hasTime&&end.time>=dt.time)seconds=(end.time-dt.time)/1000;else ignoredEnd=true;
+  }
+  // Liftoff can round the same session's duration differently across set rows.
+  // Max is independent of row order; uniform-duration exports retain their IDs.
+  if(!g){g={...dt,name,seconds,rows:[],extraRows:[]};groups.set(groupKey,g)}else if(seconds!==undefined)g.seconds=g.seconds===undefined?seconds:Math.max(g.seconds,seconds);
   if(!exercise){skippedRows++;g.extraRows.push(Object.fromEntries(headers.map((h,i)=>[h,row[i]])));continue}
   let orderValue=get('order'),weight=number(get('weight'),0,100000),reps=number(get('reps'),0,100000,true),order=/^[a-z]+$/i.test(orderValue)?'':number(orderValue,0,MAX_ROWS,true);
   // Zero reps denotes a timed/distance set in some exports. Leave reps unknown in PULS.
   // Keep source-only fields verbatim, including units in their headers and multiline notes.
   let csvFields=Object.fromEntries(headers.flatMap((h,i)=>{
    const value=row[i].trim(),numeric=Number(value.replace(',','.'));
-   return !Object.values(cols).includes(i)&&value&&(!Number.isFinite(numeric)||numeric>0)?[[h,row[i]]]:[];
+   return (!Object.values(cols).includes(i)||ignoredEnd&&i===cols.end)&&value&&(!Number.isFinite(numeric)||numeric>0)?[[h,row[i]]]:[];
   }));
   g.rows.push({exercise,weight,reps:reps===0?'':reps,order,setOrder:orderValue,csvFields});
  }

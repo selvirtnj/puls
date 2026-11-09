@@ -62,6 +62,33 @@ ctx.csvFixture=fixture;
  for(const bad of [fixture.replace('2026-06-11','2026-02-30'),fixture.replace('143.30047042025','-12'),fixture.replace(',10,',',1.5,'),fixture+'"unterminated',header+'\nwrong',header]){ctx.badCsv=bad;await assert.rejects(run('importApi.parse(badCsv)'))}
  ctx.hevyCsv='title,start_time,end_time,exercise_title,set_index,weight_kg,reps,duration_seconds\nMorning,"11 Jun 2026, 10:00","11 Jun 2026, 10:30",Machine Lateral Raise,0,65,10,\n';
  const hevy=await run('importApi.parse(hevyCsv)');assert.equal(hevy.unit,'kg');assert.equal(hevy.sessions[0].seconds,1800);
+ // Session duration uses the maximum, including missing values, regardless of row order.
+ const durationRows=['01 hours 38 minutes 23 seconds','01 hours 38 minutes 24 seconds',''].map((d,i)=>'2026-06-11 23:12:30,'+d+',Duration,Chest Press,'+(i+1)+',40,8,,,,');
+ ctx.durationCsv=header+'\n'+durationRows.join('\n');ctx.durationParsed=await run('importApi.parse(durationCsv)');
+ assert.equal(ctx.durationParsed.sessions[0].seconds,5904);
+ ctx.durationCsv=header+'\n'+durationRows.toReversed().join('\n');
+ assert.equal((await run('importApi.parse(durationCsv)')).sessions[0].id,ctx.durationParsed.sessions[0].id);
+ ctx.durationCsv=header+'\n'+durationRows.map(row=>row.replace(/23 seconds|,,Duration/,m=>m==='23 seconds'?'24 seconds':',01 hours 38 minutes 24 seconds,Duration')).join('\n');
+ const uniformDuration=await run('importApi.parse(durationCsv)');
+ const legacySignature=JSON.stringify(['2026-06-11T23:12:30','Duration',5904,[1,2,3].map(i=>JSON.stringify(['chest press',i,40,8])).sort()]);
+ assert.equal(uniformDuration.sessions[0].id,'wi_'+require('node:crypto').createHash('sha256').update(legacySignature).digest('hex'),'uniform exports retain the pre-fix signature');
+ assert.equal(uniformDuration.sessions[0].id,ctx.durationParsed.sessions[0].id);
+ assert.equal(run('importApi.plan(durationParsed,"kg",{...initial(),workouts:importApi.plan(durationParsed,"kg",initial()).workouts}).duplicates'),1);
+ // Contradictory end stamps retain source text without inventing an overnight interval.
+ ctx.overnightCsv='title,start_time,end_time,exercise_title,set_index,weight_kg,reps,duration\nNight,2026-06-11 23:50:00,2026-06-11 00:10:00,Plank,0,,,1200\n';
+ ctx.overnightParsed=await run('importApi.parse(overnightCsv)');
+ assert.equal(ctx.overnightParsed.sessions[0].seconds,1200);
+ assert.equal(run('importApi.plan(overnightParsed,"kg",initial()).workouts[0].exercises[0].sets[0].csvFields["end time"]'),'2026-06-11 00:10:00');
+ ctx.overnightCsv=ctx.overnightCsv.replace(',1200\n',',\n');
+ assert.equal((await run('importApi.parse(overnightCsv)')).sessions[0].seconds,undefined);
+ ctx.cardioCsv=header+'\n2026-06-11,600,Cardio,Plank,1,,,,60,,\n2026-06-11,600,Cardio,Running,1,,0,1000,,,\n';
+ ctx.cardioParsed=await run('importApi.parse(cardioCsv)');
+ run('var cardioPlan=importApi.plan(cardioParsed,"kg",initial())');
+ assert(run('cardioPlan.workouts[0].exercises.every(e=>e.sets[0].kg===""&&e.sets[0].reps==="")'));
+ assert.equal(run('cardioPlan.workouts[0].exercises[0].sets[0].csvFields.seconds'),'60');
+ assert.equal(run('cardioPlan.workouts[0].exercises[1].sets[0].csvFields.distance'),'1000');
+ run('var cardioProfile={...initial(),workouts:cardioPlan.workouts,exerciseBook:cardioPlan.added,routines:cardioPlan.routines}');
+ assert(run('validData(JSON.parse(JSON.stringify(cardioProfile)))'));
  // Unit headers win over grid evidence and format; unlabelled grids are inferred.
  for(const [weightHeader,value,expected] of [['Weight (kg)','143.30047042025','kg'],['weight_kg','143.30047042025','kg'],['Weight (lbs)','65','lbs'],['weight_lbs','65','lbs'],['Weight (lb)','65','lbs']]){
   ctx.unitCsv=header.replace('Weight,',weightHeader+',')+'\n2026-06-11,600,Units,Chest Press,1,'+value+',10,,,,\n';
