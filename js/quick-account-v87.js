@@ -1,5 +1,5 @@
 /* PULS v87 · Plus-Menü und Konto im Stil einer „Mehr“-Übersicht.
-   Plus-Menü: Essen suchen, Barcode, Aktivität, Wasser, Training plus Liste; alle Einträge rufen vorhandene Abläufe auf
+   Plus-Menü: Essen suchen, Barcode, KI-Foto, Aktivität, Training plus Liste; alle Einträge rufen vorhandene Abläufe auf
    (food-page/food-flow, recipes, quick-units, running). Kein Sprachprotokoll, keine Notiz, kein Fasten.
    Konto: Übersicht mit Unterseiten Konto, Profil, Ziele, Darstellung und dem Bereich „Entdecken“. Die Unterseiten
    bauen auf accountListRow, accountManageBody, accountGoalSummary und den bestehenden Formularen auf; die alten
@@ -39,10 +39,12 @@ const qaKnownQuick=new Set(['food','barcode','camera','recipe','water','weight',
 function qaQuickTiles(){return [
   ['search','magnifying-glass',qaT('Essen suchen','Find food'),"foodForm();foodTab('search')"],
   ['barcode','barcode',qaT('Barcode','Barcode'),"foodForm();foodTab('barcode')"],
+  ['photo','camera',qaT('KI-Foto','AI photo'),'qaQuickPhoto()'],
   ['run','person-simple-run',qaT('Aktivität','Activity'),'quickAddRun()'],
-  ['water','drop',qaT('Wasser','Water'),'qaQuickWater()'],
   ['training','barbell',qaT('Training','Workout'),'qaQuickTraining()']
 ]}
+// Öffnet direkt die KI-Schätzung aus food-photo.js; ohne sie bleibt der normale Foto-Reiter.
+function qaQuickPhoto(){foodForm();foodTab('photo');if(typeof foodPhotoOpen==='function')foodPhotoOpen()}
 function qaQuickRows(){
   let rows=[['weight','scales',qaT('Gewicht','Weight'),qaT('Messwert erfassen','Log a measurement'),'weightForm()']];
   rows.push(
@@ -103,7 +105,7 @@ function qaProfileDetail(){
 function qaTargetsDetail(){let g=qaGoals();return Number.isFinite(g?.kcal)?`${qaNum(g.kcal)} kcal · P ${qaNum(g.p)} · ${qaT('KH','C')} ${qaNum(g.c)} · F ${qaNum(g.f)} g`:qaT('Kalorien & Makros','Calories & macros')}
 function qaDisplayDetail(){
   let scheme='system';try{if(typeof getColorScheme==='function')scheme=getColorScheme()}catch{}
-  let names={system:qaT('System','System'),light:qaT('Hell','Light'),dark:qaT('Dunkel','Dark')};
+  let names={system:qaT('System','System'),light:qaT('Hell','Light'),dark:qaT('Dunkel','Dark'),fresh:qaT('Frisch','Fresh'),midnight:qaT('Mitternacht','Midnight')};
   return (names[scheme]||names.system)+' · '+(state.language==='en'?'English':'Deutsch');
 }
 function qaMainRows(){
@@ -383,9 +385,15 @@ function qaViewsGroup(){
   let rows=list.map(key=>{let active=on.includes(key),i=on.indexOf(key);return `<div class="dsrow qaviewrow" data-flip-id="view-${key}"><span class="dsrowtext"><span>${qaViewName(key)}</span></span>${active?`<span class="qamove"><button type="button" class="qaicon" aria-label="${qaViewName(key)} ${qaT('nach oben','up')}" ${i===0?'disabled':''} onclick="qaViewMove('${key}',-1)">${qaIcon('caret-up')}</button><button type="button" class="qaicon" aria-label="${qaViewName(key)} ${qaT('nach unten','down')}" ${i===on.length-1?'disabled':''} onclick="qaViewMove('${key}',1)">${qaIcon('caret-down')}</button></span>`:''}<input class="qaswitch" type="checkbox" role="switch" aria-label="${qaViewName(key)}" ${active?'checked':''} onchange="qaViewToggle('${key}',this.checked)"></div>`}).join('');
   return qaGroup(qaT('Folien der Tagesübersicht','Daily summary slides'),fixed+rows,'qaviews');
 }
+// v89: zwei zusätzliche Farbstile (color-scheme.js), als Auswahlliste unter System/Hell/Dunkel.
+function qaPaletteGroup(scheme){
+  let row=(key,label)=>`<button type="button" class="dsrow dsiconrow qapalette" data-qa-palette="${key}" aria-pressed="${scheme===key}" onclick="qaSetPalette('${key}')"><span class="dsrowicon qaswatch qaswatch-${key}" aria-hidden="true"></span><span class="dsrowtext"><span>${label}</span></span>${scheme===key?`<span class="dsrowvalue qapalettecheck" aria-hidden="true">${qaIcon('check')}</span>`:''}</button>`;
+  return `<section class="dsgroup qapalettes" role="group" aria-label="${qaT('Farbstil','Colour style')}">${row('fresh',qaT('Frisch','Fresh'))}${row('midnight',qaT('Mitternacht','Midnight'))}</section>`;
+}
+function qaSetPalette(mode){if(['fresh','midnight'].includes(mode)&&typeof setColorScheme==='function'){setColorScheme(mode);qaSound('toggle')}}
 function qaDisplayBody(){
   let d=qaDisplay(),scheme='system';try{if(typeof getColorScheme==='function')scheme=getColorScheme()}catch{}
-  let appearance=`<h2 class="dsgrouptitle">${qaT('Farbschema','Colour scheme')}</h2>${qaSeg('scheme',[['system',qaT('System','System')],['light',qaT('Hell','Light')],['dark',qaT('Dunkel','Dark')]],scheme,qaT('Farbschema','Colour scheme'))}`;
+  let appearance=`<h2 class="dsgrouptitle">${qaT('Farbschema','Colour scheme')}</h2>${qaSeg('scheme',[['system',qaT('System','System')],['light',qaT('Hell','Light')],['dark',qaT('Dunkel','Dark')]],scheme,qaT('Farbschema','Colour scheme'))}`+qaPaletteGroup(scheme);
   let language=qaGroup('',qaRow({label:qaT('Sprache & App-Icon','Language & app icon'),detail:state.language==='en'?'English':'Deutsch',icon:'text-aa',action:"qaSection('design')",chevron:true}));
   let remaining=`<h2 class="dsgrouptitle">${qaT('Kalorien anzeigen als','Show calories as')}</h2>${qaSeg('remaining',[['eaten',qaT('Gegessen','Eaten')],['remaining',qaT('Übrig','Remaining')]],d.showRemaining?'remaining':'eaten',qaT('Kalorien anzeigen als','Show calories as'))}`;
   let volume=state.soundVolume??35;

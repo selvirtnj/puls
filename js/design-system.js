@@ -16,13 +16,13 @@ function dsRow({label,detail='',value='',icon='',action='',chevron=false,cls=''}
   let tag=action?'button':'div',attrs=action?` type="button" onclick="${action}"`:'';
   return `<${tag} class="dsrow${icon?' dsiconrow':''}${cls?' '+cls:''}"${attrs}>${icon?`<span class="dsrowicon" aria-hidden="true">${phIcon(icon)}</span>`:''}<span class="dsrowtext"><span>${label}</span>${detail?`<small>${detail}</small>`:''}</span>${value!==''?`<span class="dsrowvalue">${value}</span>`:''}${chevron?`<span class="dsrowchevron" aria-hidden="true">${phIcon('caret-right')}</span>`:''}</${tag}>`;
 }
-function dsGroup(title,rows,foot=''){return `${title?`<h2 class="dsgrouptitle">${title}</h2>`:''}<div class="dsgroup">${rows}</div>${foot?`<p class="dsgroupfoot">${foot}</p>`:''}`}
+function dsGroup(title,rows,foot='',cls=''){return `${title?`<h2 class="dsgrouptitle">${title}</h2>`:''}<div class="dsgroup${cls?' '+cls:''}">${rows}</div>${foot?`<p class="dsgroupfoot">${foot}</p>`:''}`}
 function dsDayGoals(){return (typeof dayGoals==='function'?dayGoals(date):state.goals)||{}}
-/* Makros einheitlich in Akzentfarbe; Orange nur, wenn ein Ziel überschritten ist. */
+/* Makros in Akzentfarbe, auf der Übersicht per data-macro in Kategoriefarben (v89); Orange nur, wenn ein Ziel überschritten ist. */
 function dsMacroRows(t,g){
   return `<div class="dsmacros">${[['p',dsText('Protein','Protein')],['c',dsText('Kohlenhydrate','Carbs')],['f',dsText('Fett','Fat')]].map(([k,label])=>{
     let target=Number(g[k])||0,value=t[k]||0,width=target>0?Math.min(100,value/target*100):0,isOver=target>0&&value>target;
-    return `<div class="dsmacro"><span>${label}</span><strong>${n(Math.round(value))}${target>0?' / '+n(target):''} g</strong><div class="dsmeter" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${target||100}" aria-valuenow="${Math.min(target,Math.max(0,Math.round(value)))}" aria-valuetext="${n(Math.round(value))}${target>0?' / '+n(target):''} g"><i class="${isOver?'dsover':''}" style="width:${width}%"></i></div></div>`;
+    return `<div class="dsmacro" data-macro="${k}"><span>${label}</span><strong>${n(Math.round(value))}${target>0?' / '+n(target):''} g</strong><div class="dsmeter" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${target||100}" aria-valuenow="${Math.min(target,Math.max(0,Math.round(value)))}" aria-valuetext="${n(Math.round(value))}${target>0?' / '+n(target):''} g"><i class="${isOver?'dsover':''}" style="width:${width}%"></i></div></div>`;
   }).join('')}</div>`;
 }
 function dsEnergyFacts(t,g){
@@ -33,14 +33,14 @@ function dsEnergyFacts(t,g){
 }
 function dsEnergyCard(){
   let t=totals(),g=dsDayGoals(),e=dsEnergyFacts(t,g);
-  return `<div class="dsgroup dsenergy"><div class="dsenergytop"><div class="dsringwrap">${dsRing(e.percent,e.over)}<div class="dsringlabel"><strong>${dsKcal(e.eaten)}</strong><small>${e.goal>0?dsText('von','of')+' '+dsKcal(e.goal):'kcal'}</small></div></div><div class="dsenergyfacts"><span class="dsbig${e.over?' dsover':''}">${e.big}</span><span class="dscaption">${e.caption}</span></div></div>${dsMacroRows(t,g)}<button type="button" class="btn full dsprimary" onclick="foodForm();if(typeof foodTab==='function')foodTab('search')">${dsText('Essen eintragen','Log food')}</button></div>`;
+  return `<div class="dsgroup dsenergy dscat dscatenergy"><div class="dsenergytop"><div class="dsringwrap">${dsRing(e.percent,e.over)}<div class="dsringlabel"><strong>${dsKcal(e.eaten)}</strong><small>${e.goal>0?dsText('von','of')+' '+dsKcal(e.goal):'kcal'}</small></div></div><div class="dsenergyfacts"><span class="dsbig${e.over?' dsover':''}">${e.big}</span><span class="dscaption">${e.caption}</span></div></div>${dsMacroRows(t,g)}<button type="button" class="btn full dsprimary" onclick="foodForm();if(typeof foodTab==='function')foodTab('search')">${dsText('Essen eintragen','Log food')}</button></div>`;
 }
 function dsFoodGroup(){
   let entries=state.foods.filter(x=>x.date===date),shown=entries.slice(-5).reverse();
   let rows=shown.map(x=>typeof swipeDiaryEntry==='function'?swipeDiaryEntry(x):dsRow({label:esc(x.name),detail:`${n(x.grams)} ${x.unit==='ml'?'ml':'g'}`,value:dsKcal(x.kcal)+' kcal'})).join('');
   if(!rows)rows=dsRow({label:dsText('Noch nichts eingetragen.','Nothing logged yet.'),cls:'dsempty'});
   rows+=dsRow({label:entries.length>shown.length?dsText(`Alle ${entries.length} anzeigen`,`Show all ${entries.length}`):dsText('Zum Ernährungstagebuch','Open food diary'),action:"go('food')",chevron:true,cls:'dsaction'});
-  return dsGroup(date===today()?dsText('Heute eingetragen','Logged today'):dsText('Eingetragen','Logged'),rows);
+  return dsGroup(date===today()?dsText('Heute eingetragen','Logged today'):dsText('Eingetragen','Logged'),rows,'','dscat dscatfood');
 }
 function dsTrainingGroup(){
   let active=typeof activeWorkout==='function'?activeWorkout():null,rows='';
@@ -61,13 +61,13 @@ function dsTrainingGroup(){
     foot=dsText('Aktiv diese Woche','Active this week')+': '+n(mins)+(goal?' / '+n(goal):'')+' min';
     if(typeof runWeekRange==='function'&&typeof runKmBetween==='function'&&typeof runKm==='function'){let {start,end}=runWeekRange();foot+=' · '+runKm(Math.round(runKmBetween(start,end)*10)/10)+' km'}
   }
-  return dsGroup(dsText('Training','Training'),rows,foot);
+  return dsGroup(dsText('Training','Training'),rows,foot,'dscat dscattraining');
 }
 function dsBodyGroup(){
   let latest=[...state.weights].filter(x=>x.date<=today()).sort((a,b)=>b.date.localeCompare(a.date))[0];
   let rows=dsRow({label:dsText('Gewicht','Weight'),detail:latest?dsText('Zuletzt','Last')+' '+esc(friendlyDay(latest.date)):dsText('Noch kein Eintrag','No entry yet'),icon:'scales',value:latest?n(latest.kg)+' kg':''});
   rows+=dsRow({label:dsText('Gewicht erfassen','Log weight'),action:'weightForm()',chevron:true,cls:'dsaction'});
-  return dsGroup(dsText('Körper','Body'),rows);
+  return dsGroup(dsText('Körper','Body'),rows,'','dscat dscatbody');
 }
 /* Verlaufsdiagramm: frühere Pastelltöne durch die Systemfarben des aktuellen Schemas ersetzen. */
 function dsSeriesColors(html){
@@ -268,7 +268,13 @@ const dsRenderBase=render;render=function(...args){let result=dsRenderBase.apply
 function dsDecorateSheet(){
   let body=$('mb');if(!body)return;
   let close=document.querySelector('#modal .modalhead button.quiet');
-  if(close&&!close.querySelector('.pulsicon')){close.innerHTML=phIcon('x');if(!close.getAttribute('aria-label'))close.setAttribute('aria-label',dsText('Schließen','Close'))}
+  // Erststart: derselbe Knopf (flows.js fängt den Klick ab und ruft skipOnboarding) zeigt „Skip“ statt X.
+  let skip=typeof setupPending!=='undefined'&&!!setupPending;
+  if(close){
+    close.classList.toggle('dsskip',skip);
+    if(skip){if(close.textContent!=='Skip'){close.textContent='Skip';close.setAttribute('aria-label','Skip')}}
+    else if(!close.querySelector('.pulsicon')){close.innerHTML=phIcon('x');close.setAttribute('aria-label',dsText('Schließen','Close'))}
+  }
   if($('cloud-email'))body.querySelector('form')?.classList.add('dsauth');
   dsDecoratePasswords(body);dsDecorateFileInputs(body);dsDecorateDecimals(body);
 }

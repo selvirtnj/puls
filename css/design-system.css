@@ -158,8 +158,12 @@ main > header { min-height: 0 !important; margin: 0 !important; padding: 0 !impo
 html body main .titleline { display: flex !important; flex-wrap: wrap !important; align-items: center !important; justify-content: space-between !important; column-gap: 8px !important; }
 html body main .titleline > div:first-child { flex: 1 1 0 !important; min-width: 0 !important; }
 html body main .titleline #title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Kleinstes iPhone (320 pt): Large Title etwas kleiner, damit „Übersicht“ neben der Datumsauswahl ganz sichtbar bleibt (UI-4). */
-@media (max-width: 359px) { html body main .titleline #title { font-size: 28px !important; line-height: 34px !important; letter-spacing: 0 !important; } }
+/* v89: Alle Tabs tragen ihren Titel einheitlich oben links in einer 44-px-Kopfzeile (wie der Essen-Tab, .fdhead
+   in food-diary.css): Title 1 (28 px) statt Large Title, damit „Essen“ neben dem mittigen Datum Platz hat. */
+html body main .titleline { min-height: 44px !important; margin-top: -4px !important; }
+html body main .titleline #title { font-size: 28px !important; line-height: 34px !important; letter-spacing: 0 !important; }
+/* Kleinstes iPhone (320 pt): Titel etwas kleiner, damit „Übersicht“ neben der Datumsauswahl ganz sichtbar bleibt (UI-4). */
+@media (max-width: 359px) { html body main .titleline #title { font-size: 24px !important; line-height: 30px !important; } }
 html body main .titleline .datebar { position: static !important; display: flex !important; align-items: center !important; justify-content: flex-end !important; flex: 0 0 auto !important; gap: 0 !important; width: auto !important; max-width: none !important; height: 44px !important; min-height: 44px !important; margin: 0 -8px 0 0 !important; padding: 0 !important; background: transparent !important; border: 0 !important; }
 html body main .datebar[hidden] { display: none !important; }
 html body main .titleline .datebar .quiet { display: grid !important; place-items: center !important; width: 36px !important; height: 44px !important; min-width: 36px !important; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-accent) !important; }
@@ -311,6 +315,8 @@ dialog::backdrop { background: var(--ds-scrim) !important; }
 #modal .modalhead h2 { font-size: 20px !important; font-weight: 600 !important; letter-spacing: normal !important; color: var(--ds-label) !important; }
 #modal .modalhead button.quiet { display: grid !important; place-items: center !important; width: 44px !important; height: 44px !important; min-width: 44px !important; padding: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-label-2) !important; font-size: 0 !important; }
 #modal .modalhead button.quiet svg { width: 22px; height: 22px; }
+/* Erststart: „Skip“ als Textknopf an der Stelle des Schließen-Symbols. */
+html body #modal .modalhead button.quiet.dsskip { width: auto !important; padding: 0 8px !important; margin-right: -8px !important; color: var(--ds-accent-text) !important; font-size: 17px !important; font-weight: 400 !important; line-height: 22px !important; white-space: nowrap !important; }
 #modal label { display: block; color: var(--ds-label-2); font-size: 13px; font-weight: 500; }
 #modal label > input:not([type=checkbox]):not([type=radio]), #modal label > select, #modal label > textarea { display: block; width: 100%; margin-top: 6px; }
 #modal .searchitem { background: var(--ds-surface) !important; color: var(--ds-label) !important; border: 0 !important; border-radius: 12px !important; }
@@ -918,3 +924,88 @@ html body .puls-splash.splashout { opacity: 0 !important; transition: opacity .2
 
 /* Textlinks im Fließtext: unsichtbar auf 44 px Tipphöhe erweitert, Layout bleibt gleich (UI-7). */
 .firstrunbanner a, .firstrunnotice a, a[href*="openfoodfacts.org"], a[href*="opendatacommons.org"] { padding-block: 14px; margin-block: -14px; }
+
+/* ---------- Übersicht: Kategoriefarben (v89, Selvirs Wunsch „mehr Farbe“) ----------
+   Warme, sportliche Volltöne statt nur Blau, ohne Verlauf/Neon/Lila: Energie Koralle, Protein Tiefblau,
+   Kohlenhydrate Bernstein, Fett Salbei, Training Sportgrün, Körper Tiefblau. Linien/Flächen erreichen mindestens 3:1
+   zur Kartenfläche, Text 4.5:1; weiße Symbole auf den Farbquadraten mindestens 3:1. Nur in .dshome; Orange bleibt
+   „Ziel überschritten“. */
+:root, :root[data-scheme=light] {
+  --ds-cat-energy: #E0533A; --ds-cat-protein: #2457C5; --ds-cat-carbs: #B7790A; --ds-cat-fat: #5B8A5E; --ds-cat-training: #23854A; --ds-cat-body: #2457C5;
+  --ds-cat-training-text: #1D7340; --ds-cat-body-text: #2457C5;
+  --ds-cat-training-fill: #23854A; --ds-cat-body-fill: #2457C5;
+}
+:root[data-scheme=dark] {
+  --ds-cat-energy: #FF7A5C; --ds-cat-protein: #6E9BFF; --ds-cat-carbs: #F2B544; --ds-cat-fat: #8DBF8F; --ds-cat-training: #3DC46E; --ds-cat-body: #6E9BFF;
+  --ds-cat-training-text: #3DC46E; --ds-cat-body-text: #8AAEFF;
+  --ds-cat-training-fill: #23854A; --ds-cat-body-fill: #2F63D6;
+}
+html body .dshome .dscatenergy .dsring .dsringvalue { stroke: var(--ds-cat-energy); }
+html body .dshome .dscatenergy .dsring.dsover .dsringvalue { stroke: var(--ds-orange); }
+/* Spuren in der Kategoriefarbe getönt (ältere Browser: neutrale Fläche). */
+html body .dshome .dscatenergy .dsring .dsringtrack { stroke: var(--ds-fill); stroke: color-mix(in srgb, var(--ds-cat-energy) 20%, var(--ds-surface)); }
+html body .dshome .dsmacro .dsmeter { background: var(--ds-fill); background: color-mix(in srgb, var(--ds-cat-macro, var(--ds-accent)) 18%, var(--ds-surface)); }
+html body .dshome .dsmacro > span { display: inline-flex; align-items: center; gap: 8px; }
+html body .dshome .dsmacro > span::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ds-cat-macro, var(--ds-accent)); flex-shrink: 0; }
+html body .dshome .dsmacro[data-macro=p] { --ds-cat-macro: var(--ds-cat-protein); }
+html body .dshome .dsmacro[data-macro=c] { --ds-cat-macro: var(--ds-cat-carbs); }
+html body .dshome .dsmacro[data-macro=f] { --ds-cat-macro: var(--ds-cat-fat); }
+html body .dshome .dsmacro .dsmeter { height: 8px; border-radius: 4px; }html body .dshome .dsmacro .dsmeter i { border-radius: 4px; background: var(--ds-cat-macro, var(--ds-accent)); }
+html body .dshome .dsmacro .dsmeter i.dsover { background: var(--ds-orange); }
+/* Farbquadrate mit weißem Symbol wie in den iOS-Einstellungen. */
+html body .dshome .dscattraining { --ds-cat-fill: var(--ds-cat-training-fill); --ds-cat-text: var(--ds-cat-training-text); }
+html body .dshome .dscatbody { --ds-cat-fill: var(--ds-cat-body-fill); --ds-cat-text: var(--ds-cat-body-text); }
+html body .dshome .dscat .dsrowicon { width: 28px; height: 28px; border-radius: 7px; background: var(--ds-cat-fill, var(--ds-accent-fill)); color: #FFFFFF; }
+html body .dshome .dscat .dsrowicon svg { width: 18px; height: 18px; }
+html body .dshome .dscattraining .dsrow.dsaction, html body .dshome .dscatbody .dsrow.dsaction { color: var(--ds-cat-text); }
+/* Gruppentitel mit Farbpunkt der Kategorie. */
+html body .dshome .dsgrouptitle { display: flex; align-items: center; gap: 6px; }
+html body .dshome .dsgrouptitle:has(+ .dscat)::before { content: ""; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+html body .dshome .dsgrouptitle:has(+ .dscatfood)::before { background: var(--ds-cat-energy); }
+html body .dshome .dsgrouptitle:has(+ .dscattraining)::before { background: var(--ds-cat-training); }
+html body .dshome .dsgrouptitle:has(+ .dscatbody)::before { background: var(--ds-cat-body); }
+
+/* ---------- Kategoriefarben in allen Tabs (v89) ----------
+   Gleiche Bedeutung, gleiche Farbe: Training/Workout immer Sportgrün (Akzent im Workout-Tab, im laufenden Workout
+   und in der Pausen-Anzeige), Körper Tiefblau, Ziele/Energie Koralle. Bedienfarben bleiben sonst Apple-Blau. */
+html body[data-current-page=workout] main, html body #session-root, html body #rest-popup {
+  --ds-accent: var(--ds-cat-training); --ds-accent-text: var(--ds-cat-training-text); --ds-accent-fill: var(--ds-cat-training-fill);
+  --lime: var(--ds-cat-training-text); --blue: var(--ds-cat-training-text);
+}
+:root, :root[data-scheme=light] { --ds-cat-energy-fill: #C9452E; --ds-cat-carbs-fill: #946106; }
+:root[data-scheme=dark] { --ds-cat-energy-fill: #C9452E; --ds-cat-carbs-fill: #946106; }
+/* Konto: Farbquadrate mit weißem Symbol je Bereich. */
+html body .qamore .dsiconrow .dsrowicon { width: 28px; height: 28px; border-radius: 7px; background: var(--ds-accent-fill); color: #FFFFFF; }
+html body .qamore .dsiconrow .dsrowicon svg { width: 18px; height: 18px; }
+html body .qamore [onclick*="qaOpen('profile')"] .dsrowicon, html body .qamore [onclick*="qaSection('body')"] .dsrowicon { background: var(--ds-cat-body-fill); }
+html body .qamore [onclick*="qaOpen('targets')"] .dsrowicon { background: var(--ds-cat-energy-fill); }
+html body .qamore [onclick*="qaOpen('display')"] .dsrowicon { background: var(--ds-cat-carbs-fill); }
+html body .qamore [onclick*="riend"] .dsrowicon, html body .qamore [onclick*="workout"] .dsrowicon, html body .qamore [onclick*="training"] .dsrowicon { background: var(--ds-cat-training-fill); }
+/* Freunde: Trainingsfortschritt Sportgrün, Serie in Koralle; Rang-/Medaillenfarben bleiben. */
+:root:root, :root:root[data-scheme=dark] { --fb-flame: var(--ds-cat-energy); }
+html body .fb-meter i { background: var(--ds-cat-training); }
+
+/* ---------- Zusätzliche Farbstile (v89): „Frisch“ (hell) und „Mitternacht“ (dunkel) ----------
+   color-scheme.js setzt data-scheme=light/dark wie bisher und zusätzlich data-palette; hier werden nur Tokens
+   überschrieben, damit alle Tabs ohne eigene Regeln funktionieren. Keine Verläufe, kein Lila. */
+:root[data-scheme=light][data-palette=fresh] {
+  --ds-bg: #F3F6F2; --ds-surface: #FDFEFC; --ds-surface-2: #EEF3EC; --ds-field: #E8EEE6; --ds-fill: #DFE7DC; --ds-selected: #FDFEFC;
+  --ds-sheet: #F3F6F2; --ds-bar: #F8FAF7; --ds-separator: #C9D3C6; --ds-label: #121812; --ds-label-2: #56625A; --ds-label-3: #7E8A82; --ds-placeholder: #5F6B63;
+  --ds-accent: #1E8E4E; --ds-accent-text: #187A42; --ds-accent-fill: #1A7F45; --ds-button-2: #DFE7DC;
+  --ds-cat-energy: #D9640F; --ds-cat-energy-fill: #C2570C; --ds-cat-training: #1E8E4E; --ds-cat-training-text: #187A42; --ds-cat-training-fill: #1A7F45;
+}
+:root[data-scheme=light][data-palette=fresh] dialog { --ds-surface: #FDFEFC; --ds-field: #E8EEE6; }
+:root[data-scheme=dark][data-palette=midnight] {
+  --ds-bg: #0B1120; --ds-surface: #151D2E; --ds-surface-2: #1E2840; --ds-field: #1E2840; --ds-fill: #2A3550; --ds-selected: #3A4766;
+  --ds-sheet: #151D2E; --ds-bar: #0E1526; --ds-separator: #2C3852; --ds-label: #F2F5FA; --ds-label-2: #A9B4C8; --ds-label-3: #8591A8; --ds-placeholder: #97A2B6;
+  --ds-accent: #3D8BFF; --ds-accent-text: #6AA6FF; --ds-accent-fill: #1F6FEB; --ds-button-2: #1E2840;
+  --ds-cat-energy: #FF8A4C; --ds-cat-carbs: #FFB547; --ds-cat-protein: #6EA2FF; --ds-cat-body: #6EA2FF; --ds-cat-body-text: #8AB4FF; --ds-cat-body-fill: #1F6FEB;
+}
+:root[data-scheme=dark][data-palette=midnight] dialog { --ds-surface: #1E2840; --ds-field: #2A3550; --ds-fill: #2A3550; }
+/* Vorschau-Farbfelder in Konto → Darstellung. */
+html body .qapalettes .qaswatch { width: 28px; height: 28px; border-radius: 7px; border: .5px solid var(--ds-separator); }
+html body .qapalettes .qaswatch-fresh { background: #F3F6F2; border-right: 10px solid #1E8E4E; border-bottom: 10px solid #D9640F; }
+html body .qapalettes .qaswatch-midnight { background: #0B1120; border-right: 10px solid #3D8BFF; border-bottom: 10px solid #FF8A4C; }
+html body .qapalettes { margin-top: 8px; }
+html body .qapalettecheck { color: var(--ds-accent); }
+html body .qapalettecheck svg { width: 20px; height: 20px; }

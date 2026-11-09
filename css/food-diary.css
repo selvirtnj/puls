@@ -1,14 +1,11 @@
-/* PULS v87 · Essen-Tab (Tagebuch). Nur Tokens aus design-system.css; keine Schatten, Verläufe oder Pillen. */
-:root, :root[data-scheme=light] {
-  --fd-p: #248A9D;   /* Systemtürkis, abgedunkelt für 3:1 auf Hell */
-  --fd-c: #5856D6;   /* Systemindigo */
-  --fd-f: #AF52DE;   /* Systemlila */
+/* PULS v87 · Essen-Tab (Tagebuch). Nur Tokens aus design-system.css; keine Schatten, Verläufe oder Pillen.
+   v89: Makro-/Energiefarben wie auf der Übersicht (Kategoriefarben --ds-cat-* in design-system.css). */
+:root, :root[data-scheme=light], :root[data-scheme=dark] {
+  --fd-k: var(--ds-cat-energy);
+  --fd-p: var(--ds-cat-protein);
+  --fd-c: var(--ds-cat-carbs);
+  --fd-f: var(--ds-cat-fat);
   --fd-water: var(--ds-accent);
-}
-:root[data-scheme=dark] {
-  --fd-p: #40C8E0;
-  --fd-c: #5E5CE6;
-  --fd-f: #BF5AF2;
 }
 
 /* Die globale Datumsleiste wird auf der Essen-Seite durch die eigene Kopfzeile ersetzt. */
@@ -26,6 +23,10 @@ html body.fdpage main .titleline { display: none !important; }
 
 /* ---------- Kopf ---------- */
 .fdhead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; margin-top: -4px; }
+/* v89: Seitentitel links in der linken Spalte; darf in den freien Rand neben dem mittigen Datum ragen,
+   Raster und Lage von Datum/Plus bleiben unverändert. Größe wie #title in design-system.css. */
+html body .fdhead .fdtitle { grid-column: 1; grid-row: 1; margin: 0 !important; padding: 0 !important; font-size: 28px !important; font-weight: 700 !important; line-height: 34px !important; letter-spacing: 0 !important; color: var(--ds-label) !important; white-space: nowrap; overflow: visible; pointer-events: none; }
+@media (max-width: 359px) { html body .fdhead .fdtitle { font-size: 24px !important; line-height: 30px !important; } }
 .fddate { display: flex; align-items: center; justify-content: center; min-width: 0; }
 .fddaylabel { min-height: 44px; min-width: 0; padding: 0 10px !important; border: 0 !important; background: transparent !important; color: var(--ds-label) !important; font-size: 17px !important; font-weight: 600 !important; }
 .fddaylabel span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -68,6 +69,7 @@ html body.fdpage main .titleline { display: none !important; }
 .fdbarline strong { flex-shrink: 0; font-size: 13px; font-weight: 500; color: var(--ds-label-2); font-variant-numeric: tabular-nums; }
 .fdmeter { height: 5px; border-radius: 4px; background: var(--ds-fill); overflow: hidden; }
 .fdmeter i { display: block; height: 100%; width: var(--w, 0%); border-radius: 4px; background: var(--ds-accent); transform-origin: left center; }
+.fdbar.fdkcal .fdmeter i { background: var(--fd-k); }
 .fdbar.fdp .fdmeter i { background: var(--fd-p); }
 .fdbar.fdc .fdmeter i { background: var(--fd-c); }
 .fdbar.fdf .fdmeter i { background: var(--fd-f); }
@@ -81,6 +83,8 @@ html body.fdpage main .titleline { display: none !important; }
 .fdringcell > small { font-size: 12px; line-height: 16px; }
 .fdringwrap { position: relative; width: 76px; max-width: 100%; aspect-ratio: 1; }
 .fdringwrap .dsring { width: 100%; height: 100%; }
+html body .fdringwrap .dsring .dsringvalue { stroke: var(--fd-k); }
+html body .fdringwrap .dsring.dsover .dsringvalue { stroke: var(--ds-orange); }
 .fdringval { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .fdringval strong { font-size: 17px; font-weight: 600; line-height: 1.1; color: var(--ds-label); font-variant-numeric: tabular-nums; }
 .fdringval small { font-size: 11px; }
@@ -104,6 +108,8 @@ html body.fdpage main .titleline { display: none !important; }
 .fdglass.fdnext { color: var(--ds-accent-text) !important; }
 .fdglassplus { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
 .fdglassplus svg { width: 14px; height: 14px; }
+/* v89: letztes volles Glas zeigt ein Minus (Tippen entfernt das letzte Glas). */
+.fdglassminus { padding-top: 6px; color: #FFFFFF; }
 .fdtotalwater { margin: 0; }
 .fdtotalwater .fdbarline span { font-size: 13px; color: var(--ds-label-2); }
 

@@ -1,8 +1,12 @@
-/* Device preference, loaded synchronously before styles. Never changes the synced profile. */
+/* Device preference, loaded synchronously before styles. Never changes the synced profile.
+   v89: two extra palettes on top of light/dark: 'fresh' (light) and 'midnight' (dark). They keep data-scheme
+   light/dark for all existing CSS and add data-palette for the token overrides in design-system.css. */
+const pulsSchemeModes=['system','light','dark','fresh','midnight'],pulsSchemePalettes={fresh:'light',midnight:'dark'};
 function colorSchemePreference(profile){
   return ['terra','blueprint'].includes(profile?.appDesign)?'light':'system';
 }
 function resolveColorScheme(mode,systemDark){
+  if(pulsSchemePalettes[mode])return pulsSchemePalettes[mode];
   return mode==='light'||mode==='dark'?mode:systemDark?'dark':'light';
 }
 const pulsSchemeMedia=typeof matchMedia==='function'?matchMedia('(prefers-color-scheme: dark)'):null;
@@ -12,13 +16,15 @@ function getColorScheme(){return pulsSchemeMode}
 function applyColorScheme(){
   let resolved=resolveColorScheme(getColorScheme(),!!pulsSchemeMedia?.matches),root=document.documentElement;
   root.setAttribute('data-scheme',resolved);
+  let palette=pulsSchemePalettes[getColorScheme()]?getColorScheme():'';
+  if(palette)root.setAttribute('data-palette',palette);else root.removeAttribute?.('data-palette');
   root.style.colorScheme=resolved;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',resolved==='dark'?'#000000':'#f2f2f7');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',palette==='midnight'?'#0B1120':palette==='fresh'?'#F3F6F2':resolved==='dark'?'#000000':'#f2f2f7');
   if(typeof applyAppIcon==='function')applyAppIcon();
   return resolved;
 }
 function setColorScheme(mode){
-  if(!['system','light','dark'].includes(mode))return false;
+  if(!pulsSchemeModes.includes(mode))return false;
   pulsSchemeMode=mode;
   try{if(!pulsSchemePreview)localStorage.setItem(pulsSchemeKey,mode)}catch{}
   applyColorScheme();if(typeof render==='function')render();return true;
@@ -26,7 +32,7 @@ function setColorScheme(mode){
 try{
   if(!pulsSchemePreview){
     let stored=localStorage.getItem(pulsSchemeKey);
-    if(['system','light','dark'].includes(stored))pulsSchemeMode=stored;
+    if(pulsSchemeModes.includes(stored))pulsSchemeMode=stored;
     else{
       pulsSchemeMode=colorSchemePreference(JSON.parse(localStorage.getItem('puls-v1')));
       localStorage.setItem(pulsSchemeKey,pulsSchemeMode);

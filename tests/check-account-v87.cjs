@@ -32,10 +32,11 @@ const run=code=>vm.runInContext(code,c);
 // Plus-Menü: Kacheln und Liste, keine Sprachnotiz, keine Notiz, kein Fasten; fremde Einträge bleiben.
 run('quickAddMenu()');
 assert.equal(modal.title,'Schnell hinzufügen');assert(bodyClasses.has('quickaddopen'));assert.equal(sounds.at(-1),'sheetOpen');
-for(const key of ['search','barcode','training','water','weight','ruler','run','meal','recipe','custom','extra'])assert(modal.html.includes(`data-qa-quick="${key}"`),key);
+for(const key of ['search','barcode','photo','training','weight','ruler','run','meal','recipe','custom','extra'])assert(modal.html.includes(`data-qa-quick="${key}"`),key);
 assert(modal.html.includes('class="dsgroup dsactionlist'),'app-polish erkennt das Menü weiter');
-assert(!modal.html.includes('data-qa-quick="photo"'));
-assert.deepEqual(Array.from(run('qaQuickTiles().map(x=>x[0])')),['search','barcode','run','water','training']);
+assert(!modal.html.includes('data-qa-quick="water"'),'v89: KI-Foto ersetzt Wasser');
+assert.deepEqual(Array.from(run('qaQuickTiles().map(x=>x[0])')),['search','barcode','photo','run','training']);
+{let tabs=[];c.foodTab=t=>tabs.push(t);c.foodPhotoOpen=()=>tabs.push('ai');run('qaQuickPhoto()');assert.deepEqual(tabs,['photo','ai']);c.foodTab=()=>{};delete c.foodPhotoOpen}
 assert.equal(run('qaQuickRows().at(-1)[0]'),'ruler');
 assert(!run('qaQuickRows().some(x=>x[0]==="water"||x[0]==="run")'));
 c.addWaterGlass=ml=>calls.push('water:'+ml);run('qaQuickWater()');assert.equal(calls.at(-1),'water:300');
