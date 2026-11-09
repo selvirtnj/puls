@@ -1,5 +1,15 @@
 # PULS â€” aktueller Stand und Ãœbergabe
 
+### v92 Import — lokal vorbereitet (09.11.2026, ohne Versionswechsel)
+
+- `js/workout-import.js`: optionaler DE/EN-Liftoff-Schritt nach den Profil-/Zielangaben, vor dem bisherigen Onboarding-Abschluss. Bestehende Dateivorschau und Routinen-Schalter; Zurück kehrt zur Auswahl zurück, Weiter und der bestehende Skip beenden ohne Import. Skip sperrt auch verzögerte Bestätigung während der Schließanimation.
+- Einheitenwahl entfernt: explizite kg-/lb-/lbs-Kopfzeilen haben Vorrang, sonst Vergleich positiver Gewichte mit Viertel-kg-Raster vor/nach Division durch 2.20462262185 (Toleranz 1e-4); Gleichstand folgt dem Format (Liftoff lbs, sonst kg). Bestehende kg-Rundung, rohe CSV-basierte IDs, alte Imports und lokale Änderungen bleiben erhalten; keine Profil-/Auth-/Sync-Migration.
+- Synthetische Import- und Onboarding-Tests erweitert (Einheiten, Kopfzeilen, Rundung, Restore/Dubletten, Abbruch/Skip/Bestätigung, DE/EN); `node scripts/check.cjs` und `git diff --check` bestanden. Privater Export ausschließlich im Speicher geprüft: lbs-Erkennung und erwartete kg-Umrechnung bestanden; keine Inhalte übernommen oder protokolliert.
+- Integration beim Claude-Koordinator: unabhängiges Review, zentrale Release-Versionierung und Browser-/iPhone-Prüfung 390 × 844 in Hell/Dunkel. Lokale UI-Prüfung blockiert: Computer-Use meldet fehlende native Pipe. Kein Commit/Push und keine Live-Backend-Änderung.
+- Folgeauftrag: Bestätigter Import zeigt im Konto und Onboarding den Gesamtrang mit `pulsFriendsBoard.emblem` und bis zu fünf beste Übungsränge über `pulsStrength.all()/overall()`, DE/EN und escaped. Ohne verfügbares Körpergewicht erscheint „Gewicht eintragen“ über den bestehenden Gewichtsdialog. Onboarding wird mit „Weiter“ abgeschlossen; Ergebnisaktionen sind an Profil und Konto gebunden. Importfelder waren bereits rangfähig, keine IDs-/Schemaänderung nötig.
+- Bei aktivem Freunde-Snapshot einmal `pulsFriends.refresh(true)` nach dem Speichern; der vorhandene Mechanismus veröffentlicht erst nach sauberem Sync und sperrt weiter bei Offline-/Revisionskonflikten. Kein neuer Backendpfad. Regressionen ergänzen echte Rangprojektion aus Imports, Top-5, DE/EN, Gewichtseinstieg, Escaping, Restore, Doppelbestätigung und Opt-in. Privater Export nur im Speicher geprüft, keine Inhalte oder persönlichen Rangwerte im Repository. Browserzugriff erneut nicht verfügbar (native Pipe und Browserhost fehlen); unabhängiges Review und 390 × 844 bleiben bei Integration.
+- Folgeauftrag lokal geprüft: `node scripts/check.cjs` vollständig bestanden (einschließlich Import-, Freunde-, Onboarding-, Rang- und CAS-/Offline-Konflikttests), `git diff --check` sauber. Keine Live-RLS-Prüfung, keine Release-Versionierung oder Veröffentlichung.
+
 ### Version 91 (09.11.2026, veröffentlicht)
 
 - Makro-Folie im Essen-Tab wieder mit neutraler grauer Kartenfläche statt oranger Tönung.

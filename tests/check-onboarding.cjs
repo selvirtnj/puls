@@ -16,11 +16,13 @@ run('render=function(){};dismissSheet=function(){};var navSymbols={workout:""};'
 ctx.localStorage.removeItem=()=>{};
 ctx.document.createElement=()=>({content:{querySelector:()=>null}});
 for(let file of ['js/cloud.js','js/account-guide.js'])run(fs.readFileSync(file,'utf8'));
+run('var accountManageBody=()=>"";var accountListRow=()=>""');
+run(fs.readFileSync('js/workout-import.js','utf8'));
 return {run,el,saved:()=>storage};
 })(require,fixture)`,{require,fixture:fixture&&JSON.stringify(fixture),console},{filename:'onboarding-vm.cjs'})}
 const submit='({preventDefault(){}})';
 function continueName(test,name=''){test.run('nameProfile()');assert.equal(test.el('profile-name').required,false);test.el('profile-name').value=name;test.run('saveNameProfile('+submit+')');assert.equal(test.el('planner-form').noValidate,true);assert(!test.el('planner-form').innerHTML.includes('Alle Angaben sind optional'));assert(!test.el('plan-preview').innerHTML.includes('NaN'))}
-function complete(test){test.run('commitProfile('+submit+')');assert.equal(test.run('setupPending'),false);assert.equal(test.run('state.onboardingComplete'),true);assert.equal(test.run('state.setupPending'),false);assert.equal(test.run('page'),'home');assert.equal(test.run('modal.open'),false);assert(test.run('validData(state)'));assert(!test.run('home()').match(/NaN|undefined/));assert(!test.run('accountPage()').match(/NaN|undefined/));return JSON.parse(test.run('JSON.stringify(state)'))}
+function complete(test){test.run('commitProfile('+submit+')');assert.equal(test.run('setupPending'),true);assert(test.el('mb').innerHTML.includes('Aus Liftoff importieren'));assert(test.el('mb').innerHTML.includes('finishWorkoutImportOnboarding()'));test.run('window.finishWorkoutImportOnboarding()');assert.equal(test.run('setupPending'),false);assert.equal(test.run('state.onboardingComplete'),true);assert.equal(test.run('state.setupPending'),false);assert.equal(test.run('page'),'home');assert.equal(test.run('modal.open'),false);assert(test.run('validData(state)'));assert(!test.run('home()').match(/NaN|undefined/));assert(!test.run('accountPage()').match(/NaN|undefined/));return JSON.parse(test.run('JSON.stringify(state)'))}
 function fill(test,fields){for(let [id,value] of Object.entries(fields))test.el(id).value=String(value)}
 const profile={age:30,height:180,weight:80,target:75,sex:'male',activity:1.375,method:'mifflin',special:false};
 const form={'pr-age':30,'pr-height':180,'pr-weight':80,'pr-target':75,'pr-sex':'male','pr-activity':1.375,'pr-method':'mifflin'};

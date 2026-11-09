@@ -76,12 +76,24 @@ function duration(value){
  if(total>1e10)fail();return total;
 }
 async function digest(value){let bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('')}
+function weightUnit(header,sessions,liftoff){
+ if(header==='weight kg')return 'kg';
+ if(header==='weight lbs'||header==='weight lb')return 'lbs';
+ // Ignore blanks/bodyweight zeros. Converted Liftoff pounds retain the original kg grid.
+ let values=sessions.flatMap(s=>s.rows.map(r=>r.weight)).filter(n=>typeof n==='number'&&n>0);
+ const onGrid=n=>Math.abs(n-Math.round(n*4)/4)<1e-4;
+ let metric=values.filter(onGrid).length,pounds=values.filter(n=>onGrid(n/2.20462262185)).length;
+ if(metric>pounds)return 'kg';
+ if(pounds>metric)return 'lbs';
+ return liftoff?'lbs':'kg';
+}
 async function parse(text){
  let rows=csvRows(text),headers=rows.shift().map(key);if(new Set(headers).size!==headers.length)fail();
  const column=(...names)=>headers.findIndex(x=>names.includes(x));
- let cols={date:column('date','start time'),end:column('end time'),name:column('workout name','title'),exercise:column('exercise name','exercise title'),order:column('set order','set index'),weight:column('weight','weight lbs','weight kg'),reps:column('reps'),duration:column('duration','workout duration')};
+ let explicitWeight=column('weight lbs','weight lb','weight kg');
+ let cols={date:column('date','start time'),end:column('end time'),name:column('workout name','title'),exercise:column('exercise name','exercise title'),order:column('set order','set index'),weight:explicitWeight>=0?explicitWeight:column('weight'),reps:column('reps'),duration:column('duration','workout duration')};
  if(cols.date<0||cols.exercise<0||cols.weight<0||cols.reps<0)fail();
- let liftoff=headers.includes('set order')&&headers.includes('seconds')&&headers.includes('workout name'),unit=headers[cols.weight]==='weight kg'?'kg':headers[cols.weight]==='weight lbs'||liftoff?'lbs':'kg',groups=new Map(),omitted=false,skippedRows=0;
+ let liftoff=headers.includes('set order')&&headers.includes('seconds')&&headers.includes('workout name'),groups=new Map(),omitted=false,skippedRows=0;
  for(let row of rows){
   if(row.length!==headers.length)fail();let get=k=>cols[k]<0?'':row[cols[k]].trim(),dt=localDate(get('date')),name=get('name'),exercise=get('exercise');if(exercise.length>200||name.length>200)fail();
   let groupKey=JSON.stringify([dt.stamp,name]),g=groups.get(groupKey),seconds=duration(get('duration'));
@@ -111,7 +123,7 @@ async function parse(text){
  }
  for(let group of routineGroups)group.id='wi_r_'+await digest(group.name?'name:'+group.name:group.sessions[0]);
  let familyIds={};for(let family of ['push','pull','legs','core','upper','full'])familyIds[family]='wi_r_'+await digest('family:'+family);
- return {sessions,unit,omitted,skippedRows,routineGroups,familyIds,liftoff};
+ return {sessions,unit:weightUnit(headers[cols.weight],sessions,liftoff),omitted,skippedRows,routineGroups,familyIds,liftoff};
 }
 function kg(value,unit){if(value==='')return '';let n=unit==='lbs'?value/2.20462262185:value,q=Math.round(n*4)/4;return Math.abs(n-q)<0.00001?q:Math.round(n*10)/10}
 function plan(parsed,unit,profile,includeRoutines=true){
@@ -213,12 +225,28 @@ workoutAwards=function(...args){let awards=baseAwards.apply(this,args);for(let w
 // Only this new feature wraps account rendering; existing controls and handlers remain intact.
 const baseManage=accountManageBody;
 accountManageBody=function(...args){let html=baseManage.apply(this,args),row=accountListRow({label:tr('Workout-CSV importieren','Import workout CSV'),action:'workoutImportForm()',cls:'dsaction',chevron:true});return html.replace(/(<h2 class="dsgrouptitle">(?:Daten|Data)<\/h2><section class="dsgroup[^\"]*">)/,'$1'+row)};
-let pending=null,serial=0;
+let pending=null,importResult=null,serial=0;
 const owner=()=>typeof cloudSession!=='undefined'?cloudSession?.user?.id||'local':'local';
-function current(p){return pending===p&&p.profile===state&&p.owner===owner()&&modal.open&&!!$('workout-import-preview')}
-window.workoutImportForm=function(){
- let p=pending={profile:state,owner:owner(),serial:++serial,parsed:null,routines:true};
- openModal(tr('Workout-CSV importieren','Import workout CSV'),`<div data-no-translate><label>${tr('CSV-Datei','CSV file')}<input type="file" accept=".csv,text/csv" onchange="workoutImportFile(this.files[0])"></label><div id="workout-import-preview" aria-live="polite"></div></div>`);return p;
+function current(p){return pending===p&&p.profile===state&&p.owner===owner()&&(!p.onboarding||setupPending&&onboardingImport?.profile===state&&onboardingImport.owner===owner())&&modal.open&&!!$('workout-import-preview')}
+// flows.js finishes only after committing optional profile/weight inputs. Later wrappers
+// retain that entry point; Skip continues to use the original skipOnboarding handler.
+const baseFinishOnboarding=finishOnboarding;
+let onboardingImport=null;
+finishOnboarding=function(){
+ if(!setupPending)return baseFinishOnboarding();
+ pending=null;onboardingImport={profile:state,owner:owner()};
+ openModal(tr('Training','Training'),`<div data-no-translate><button type="button" class="btn full" onclick="workoutImportForm(true)">${tr('Aus Liftoff importieren','Import from Liftoff')}</button><button type="button" class="btn secondary full" onclick="finishWorkoutImportOnboarding()">${tr('Weiter','Continue')}</button></div>`);
+};
+window.finishWorkoutImportOnboarding=function(){
+ if(!setupPending||onboardingImport?.profile!==state||onboardingImport.owner!==owner())return;
+ pending=null;onboardingImport=null;baseFinishOnboarding();
+};
+window.cancelWorkoutImport=function(){let p=pending;pending=null;if(p?.onboarding&&setupPending&&p.profile===state&&p.owner===owner())finishOnboarding();else modal.close()};
+window.workoutImportForm=function(onboarding=false){
+ importResult=null;
+ onboarding=onboarding===true&&setupPending&&onboardingImport?.profile===state&&onboardingImport.owner===owner();
+ let p=pending={profile:state,owner:owner(),serial:++serial,parsed:null,routines:true,onboarding};
+ openModal(tr('Workout-CSV importieren','Import workout CSV'),`<div data-no-translate><label>${tr('CSV-Datei','CSV file')}<input type="file" accept=".csv,text/csv" onchange="workoutImportFile(this.files[0])"></label><div id="workout-import-preview" aria-live="polite"></div><button type="button" class="btn secondary full" onclick="cancelWorkoutImport()">${tr('Zurück','Back')}</button></div>`);return p;
 };
 window.workoutImportFile=async function(file){
  let p=pending;if(!p||!file)return;let request=++serial;p.serial=request;p.parsed=null;
@@ -227,17 +255,35 @@ window.workoutImportFile=async function(file){
  catch(e){if(current(p)&&request===p.serial)$('workout-import-preview').textContent=e.message}
 };
 function preview(){let p=pending;if(!current(p)||!p.parsed)return;let result=plan(p.parsed,p.unit,state,p.routines),days=p.parsed.sessions.map(s=>s.day).sort();
- $('workout-import-preview').innerHTML=`<div data-no-translate><label>${tr('Gewichte in der Datei','Weights in file')}<select onchange="workoutImportUnit(this.value)"><option value="lbs" ${p.unit==='lbs'?'selected':''}>lbs</option><option value="kg" ${p.unit==='kg'?'selected':''}>kg</option></select></label><p>${result.workouts.length} ${tr('neue Sessions','new sessions')} · ${result.sets} ${tr('Sätze','sets')}<br>${result.mapped} ${tr('zugeordnete','matched')} / ${result.fresh} ${tr('neue Übungen','new exercises')}<br>${esc(days[0])} – ${esc(days.at(-1))}<br>${result.duplicates} ${tr('bereits importiert','already imported')}</p><label><input type="checkbox" ${p.routines?'checked':''} onchange="workoutImportRoutines(this.checked)"> ${tr('Routinen übernehmen','Import routines')}</label>${(p.routines?result.routines:[]).map(r=>`<div>${esc(r.name)} · ${r.exercises.length} ${tr('Übungen','exercises')}</div>`).join('')}${p.parsed.skippedRows?`<p>${p.parsed.skippedRows} ${tr('Zeilen ohne Übung','rows without exercise')}</p>`:''}<button type="button" class="btn full" onclick="confirmWorkoutImport()" ${result.workouts.length||p.routines&&result.routines.length?'':'disabled'}>${tr('Import bestätigen','Confirm import')}</button><button type="button" class="btn secondary full" onclick="modal.close()">${tr('Abbrechen','Cancel')}</button></div>`;
+ $('workout-import-preview').innerHTML=`<div data-no-translate><p>${result.workouts.length} ${tr('neue Sessions','new sessions')} · ${result.sets} ${tr('Sätze','sets')}<br>${result.mapped} ${tr('zugeordnete','matched')} / ${result.fresh} ${tr('neue Übungen','new exercises')}<br>${esc(days[0])} – ${esc(days.at(-1))}<br>${result.duplicates} ${tr('bereits importiert','already imported')}</p><label><input type="checkbox" ${p.routines?'checked':''} onchange="workoutImportRoutines(this.checked)"> ${tr('Routinen übernehmen','Import routines')}</label>${(p.routines?result.routines:[]).map(r=>`<div>${esc(r.name)} · ${r.exercises.length} ${tr('Übungen','exercises')}</div>`).join('')}${p.parsed.skippedRows?`<p>${p.parsed.skippedRows} ${tr('Zeilen ohne Übung','rows without exercise')}</p>`:''}<button type="button" class="btn full" onclick="confirmWorkoutImport()" ${result.workouts.length||p.routines&&result.routines.length?'':'disabled'}>${tr('Import bestätigen','Confirm import')}</button></div>`;
 }
-window.workoutImportUnit=function(unit){if(!pending||!['kg','lbs'].includes(unit))return;pending.unit=unit;preview()};
 window.workoutImportRoutines=function(value){if(pending){pending.routines=!!value;preview()}};
+function showImportResult(p){
+ importResult={profile:state,owner:owner(),onboarding:p.onboarding};
+ const strength=window.pulsStrength,all=strength?.all(state)||[],rank=strength?.overall(state);
+ const hasWeight=!!strength&&state.workouts.some(w=>w.finished&&strength.weightAt(state,w.date)!=null);
+ const badge=r=>window.pulsFriendsBoard?.emblem(r.index,r.stage,56,{label:r.name})||'';
+ const ranks=hasWeight&&rank?`<div style="text-align:center">${badge(rank)}<h3>${esc(rank.name)}</h3></div><div class="dsgroup">${all.slice(0,5).map(r=>`<div class="dsrow"><div class="dsrowtext"><span>${esc(r.exerciseName)}</span><small>${esc(r.name)}</small></div></div>`).join('')}</div>`:'';
+ openModal(tr('Import abgeschlossen','Import complete'),`<div data-no-translate>${ranks}${!hasWeight?`<button type="button" class="btn full" onclick="finishWorkoutImportResult(true)">${tr('Gewicht eintragen','Enter weight')}</button>`:''}<button type="button" class="btn ${hasWeight?'':'secondary '}full" onclick="finishWorkoutImportResult()">${p.onboarding?tr('Weiter','Continue'):tr('Fertig','Done')}</button></div>`);
+}
+window.finishWorkoutImportResult=function(enterWeight=false){
+ const p=importResult;if(!p||p.profile!==state||p.owner!==owner()||p.onboarding&&(!setupPending||onboardingImport?.profile!==state||onboardingImport.owner!==owner()))return;
+ importResult=null;
+ if(p.onboarding)window.finishWorkoutImportOnboarding();else{modal.close();render()}
+ if(enterWeight===true)weightForm();
+};
 window.confirmWorkoutImport=function(){
  let p=pending;if(!p?.parsed||!current(p)){toast(tr('Profil geändert. Bitte Datei erneut auswählen.','Profile changed. Please select the file again.'));return}
  try{let result=plan(p.parsed,p.unit,state,p.routines);if(!result.workouts.length&&(!p.routines||!result.routines.length)){preview();return}
   let next={...state,exerciseBook:[...(state.exerciseBook||[]),...result.added],workouts:[...state.workouts,...result.workouts],routines:[...(state.routines||[]),...(p.routines?result.routines:[])]};
   if(!validData(next)||new TextEncoder().encode(JSON.stringify(next)).length>MAX_BYTES)fail();
   // Append to the latest profile only after explicit confirmation, with one ordinary save.
-  state.exerciseBook=next.exerciseBook;state.workouts=next.workouts;state.routines=next.routines;pending=null;save();modal.close();render();toast(tr('Workouts importiert','Workouts imported'));
+  state.exerciseBook=next.exerciseBook;state.workouts=next.workouts;state.routines=next.routines;pending=null;save();
+  // refresh uses the existing opt-in, dirty/revision/conflict gates; sync completion
+  // already schedules another pass when the newly imported profile is uploaded.
+  if(window.pulsFriendsData87?.getSnapshot()?.self){try{Promise.resolve(window.pulsFriends?.refresh(true)).catch(()=>{})}catch{}}
+  showImportResult(p);
+  toast(tr('Workouts importiert','Workouts imported'));
  }catch(e){toast(e.message)}
 };
 // Pure parsing/planning hooks also used by synthetic local regression tests.
