@@ -1,4 +1,4 @@
-﻿# PULS â€” aktueller Stand und Ãœbergabe
+# PULS â€” aktueller Stand und Ãœbergabe
 
 ### Version 91 (09.11.2026, veröffentlicht)
 
