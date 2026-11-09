@@ -139,3 +139,27 @@ body[data-current-page=workout]::before {
   z-index: 3;
   pointer-events: none;
 }
+
+/* v93: Favoritenstern an jeder Routinenkarte (Workout- und Routinen-Tab). */
+html body #content .routinepreview > .cardhead { align-items: center; }
+html body #content .routinepreview > .cardhead > div { flex: 1 1 auto; min-width: 0; }
+html body #content .routinefav {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+html body #content .routinefav svg { width: 22px; height: 22px; }
+html body #content .routinefav.on { color: var(--ds-cat-training, var(--blue)); }
+html body #content .routinefav:focus-visible { outline: 2px solid var(--ds-cat-training, var(--blue)); outline-offset: 2px; }
+html body #content .routinefav:active svg { transform: scale(.88); }
