@@ -1,5 +1,7 @@
 # Nährstoff-Sidecars v1
 
+Prüfsummen des Basiskatalogs werden nach CRLF-zu-LF-Normalisierung berechnet und entsprechen den ausgelieferten LF-Dateien. Damit liefern Windows- und LF-Checkouts denselben `BASE_DIGEST` und dieselben `baseFiles`-Metadaten. Rohdateien und die per `.gitattributes` auf LF festgelegten Sidecars behalten ihre exakten Byte-Prüfsummen.
+
 Datenstand für Basiscommit ad92acf, erstellt und nach unabhängiger Prüfung korrigiert am 12.11.2026. Registry und Resolver werden nach `flows.js` geladen. Die Sidecars enthalten vier Basis-Makros und 63 neue Schlüssel. Die neun Altschlüssel water, fiber, vitc, calcium, iron, b12, potassium, magnesium und folate stammen ausschließlich aus Basiskatalog oder gespeicherten Snapshots. Die 39 bestehenden Katalogdateien bleiben byteidentisch.
 
 ## Reproduzieren

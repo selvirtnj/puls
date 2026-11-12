@@ -22,8 +22,17 @@ for (const [index,def] of defs.entries()) {
 const context = {};vm.runInNewContext(fs.readFileSync('js/nutrient-definitions.js','utf8'),context);
 assert.equal(context.PULS_NUTRIENT_DEFS.length,76);
 assert(/nutrient-definitions\.js\?v=\d+/.test(fs.readFileSync('index.html','utf8')),'Registry is integrated with an asset version');
-assert.equal(sha256(JSON.stringify(baseFiles())),BASE_DIGEST,'Original catalogue remains byteidentical');
+assert.equal(sha256(JSON.stringify(baseFiles())),BASE_DIGEST,'Original catalogue retains deployed LF bytes');
 assert.deepEqual(meta.baseFiles,Object.fromEntries(baseFiles()));
+const readBase = fs.readFileSync, normalizedBase = baseFiles();
+try {
+  for (const ending of ['\n','\r\n']) {
+    fs.readFileSync = (file,encoding) => readBase(file,'utf8').replace(/\r\n/g,'\n').replace(/\n/g,ending);
+    assert.deepEqual(baseFiles(),normalizedBase,'Base hashes are independent of checkout line endings');
+  }
+  fs.readFileSync = file => readBase(file,'utf8') + ' ';
+  assert.notEqual(sha256(JSON.stringify(baseFiles())),BASE_DIGEST,'Content changes still fail the pinned digest');
+} finally { fs.readFileSync = readBase; }
 assert.equal(meta.schemaVersion,1);assert.equal(meta.shardCount,64);assert.deepEqual(meta.keys,keys);
 assert.deepEqual(meta.hash,{algorithm:'FNV-1a-32',encoding:'UTF-8',offsetBasis:'811c9dc5',prime:'01000193',modulus:64});
 assert.equal(meta.shards.length,64);
