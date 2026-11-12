@@ -4,11 +4,11 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const {readXlsx, csvRows, numeric, formatNumber, shardFor} = require('./lib/nutrient-readers.cjs');
 const {BLS, USDA, CIQUAL, LEGACY_BLS, LEGACY_USDA, LEGACY_CIQUAL, sidecarKeys, roundSr, formulaDependencies, blsValue, ciqualValues} = require('./lib/nutrient-mapping.cjs');
-const {EXTRA_SOURCES,KNOWN_BASE_DIFFERENCES,readCnf,readCofid,readFndds} = require('./lib/nutrient-new-sources.cjs');
+const {EXTRA_SOURCES,readCnf,readCofid,readFndds} = require('./lib/nutrient-new-sources.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const BASE_DIGEST = 'b628e42785483adeae717bfdc15c9026306445f3ca37fb39da463937fc884a2d';
-const EXTENSION_DIGEST = 'fae7254c725265e7365180af445cc613dac8a724db4cb30e1b260479e88ec206';
+const EXTENSION_DIGEST = '6214fff77c679a8a502002efa481197f2028d7a6f26ecd1c7c070ffb16894587';
 const BLS_DIR = 'bls-4.0/BLS_4_0_2025_DE_extracted/BLS_4_0_2025_DE/';
 const SR_DIR = 'usda-sr-legacy-2018/FoodData_Central_sr_legacy_food_csv_2018-04_extracted/FoodData_Central_sr_legacy_food_csv_2018-04/';
 const SOURCES = [
@@ -209,7 +209,6 @@ function compareLegacy(row, raw, report) {
     if (existing === value) continue;
     const issue = {catalogKey:row[7] + ':' + row[0], key, catalog:existing, raw:value};
     if (row[7] === 'USDA Foundation 2026' && row[0] === '2747669' && key === 'b12' && existing === 1.57 && value === 1.63) report.expectedDifferences.push(issue);
-    else if (row[7] === 'CoFID 2021' && KNOWN_BASE_DIFFERENCES.some(([id,k,old,current]) => row[0] === id && key === k && existing === old && value === current)) report.expectedDifferences.push(issue);
     else report.unexpectedDifferences.push(issue);
   }
 }
@@ -227,7 +226,7 @@ function plausibility(values) {
 function main(rawRoot = path.join(ROOT, 'catalog-raw')) {
   if (Number(process.versions.node.split('.')[0]) < 24) throw Error('Node 24+ required');
   const baseline = verifyBase(), extension = extensionBaseFiles();
-  if (sha256(JSON.stringify(extension)) !== EXTENSION_DIGEST) throw Error('Extension catalogue differs from pinned 7a01611 LF bytes');
+  if (sha256(JSON.stringify(extension)) !== EXTENSION_DIGEST) throw Error('Extension catalogue differs from pinned corrected v96 LF bytes');
   const rawPath = path.resolve(rawRoot); verifyRaw(rawPath);
   const keys = sidecarKeys();
   const readers = [readBls(rawPath),readSr(rawPath),readFoundation(rawPath),readCiqual(rawPath),readCnf(rawPath),readCofid(rawPath),readFndds(rawPath)];

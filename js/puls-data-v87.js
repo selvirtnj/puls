@@ -45,7 +45,7 @@ function cleanObject(source,key,rules){
 function cleanOptions(s){
  cleanObject(s,'water',{mode:x=>['auto','manual'].includes(x),glassMl:x=>integer(x,100,1000)});
  cleanObject(s,'display',displayRules);
- cleanObject(s,'foodSearch',{sort:x=>['best','az','za','recent','frequent'].includes(x),sources:x=>subset(x,sources),catalogueSourcesVersion:x=>x===1});
+ cleanObject(s,'foodSearch',{sort:x=>['best','az','za','recent','frequent'].includes(x),sources:x=>Array.isArray(x)&&x.length<=32&&new Set(x).size===x.length&&x.every(k=>typeof k==='string'&&/^[a-z][a-z0-9]{1,15}$/.test(k)),catalogueSourcesVersion:x=>integer(x,1,Infinity)});
  if(object(s.plan)){
   if(s.plan.macroInput!==undefined&&!['grams','ratio'].includes(s.plan.macroInput))delete s.plan.macroInput;
   if(s.plan.ratio!==undefined&&!ratioOK(s.plan.ratio))delete s.plan.ratio;
@@ -105,7 +105,7 @@ function migrate87(s=state){
  if(object(s.plan))s.plan.macroInput??='grams';
  s.foodSearch??={};s.foodSearch.sort??='best';s.foodSearch.sources??=[...sources];
  // One-time addition, preserving previous exclusions and future explicit deselection.
- if(s.foodSearch.catalogueSourcesVersion!==1){s.foodSearch.sources=[...new Set([...s.foodSearch.sources,'cnf','cofid','fndds'])];s.foodSearch.catalogueSourcesVersion=1;}
+ if(!integer(s.foodSearch.catalogueSourcesVersion,1,Infinity)){s.foodSearch.sources=[...new Set([...s.foodSearch.sources,'cnf','cofid','fndds'])].slice(0,32);s.foodSearch.catalogueSourcesVersion=1;}
  return s;
 }
 const baseMigrate=migrate;

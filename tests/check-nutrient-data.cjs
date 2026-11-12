@@ -108,18 +108,14 @@ for (const [i,source] of meta.sources.entries()) {
   assert.deepEqual(source.coverage,coverage.get(source.name));
   assert.equal(source.imported,[...seen.keys()].filter(k => k.startsWith(source.name + ':')).length);
   assert.deepEqual(source.selfCheck.unexpectedDifferences,[]);
-  assert.equal(source.selfCheck.expectedDifferences.length,i === 2 ? 1 : i === 5 ? 7 : 0);
+  assert.equal(source.selfCheck.expectedDifferences.length,i === 2 ? 1 : 0);
 }
-assert.deepEqual(meta.sources.slice(4).map(s=>[s.imported,s.selfCheck.comparisons,s.selfCheck.presentComparisons]),[[2573,33449,32315],[2624,34268,31209],[5431,70603,70603]]);
+assert.deepEqual(meta.sources.slice(4).map(s=>[s.imported,s.selfCheck.comparisons,s.selfCheck.presentComparisons]),[[2573,33449,32315],[2624,34268,31210],[5431,70603,70603]]);
 assert.equal(meta.sources[5].diagnostics.mlRowsExcluded,12);
-const cofidDifferences = [
-  ['COFID_13-669','vitc',62,3],['COFID_13-669','calcium',138,24],['COFID_13-669','iron',0.72,0.49],
-  ['COFID_13-669','potassium',300,389],['COFID_13-669','magnesium',16,27],['COFID_13-669','folate',43,20],['COFID_14-377','iron',null,0.07]
-].map(([id,key,catalog,raw])=>({catalogKey:'CoFID 2021:'+id,key,catalog,raw}));
-assert.deepEqual(meta.sources[5].selfCheck.expectedDifferences,cofidDifferences);
-// A nearby value is NOT covered by the narrow historical anomaly exception.
+assert.deepEqual(meta.sources[5].selfCheck.expectedDifferences,[]);
+// Every differing CoFID value must now fail, including the former exceptions.
 const report={comparisons:0,presentComparisons:0,expectedDifferences:[],unexpectedDifferences:[]};
-compareLegacy(['COFID_13-669','','',62,2.1,5.2,3.8,'CoFID 2021',{vitc:61}],{macros:[62,2.1,5.2,3.8],legacy:{vitc:3}},report);
+compareLegacy(['COFID_13-669','','',62,2.1,5.2,3.8,'CoFID 2021',{vitc:62}],{macros:[62,2.1,5.2,3.8],legacy:{vitc:3}},report);
 assert.equal(report.unexpectedDifferences.length,1);
 for(const source of ['CNF 2026','USDA FNDDS 2021-2023'])for(const [key,value]of seen)if(key.startsWith(source+':')) {
   if(source.startsWith('USDA'))for(const k of ['ala','linoleic','arachidonic'])assert.equal(value[k],null,'Undifferentiated fatty acids stay unknown');
@@ -133,7 +129,7 @@ for(const [catalogKey,values]of [
   ['CoFID 2021:COFID_13-145',{sugars:0.8,satfat:null,mufat:null,pufat:null,omega3:0.07,omega6:0.52,beta_carotene:0,vite:null,linoleic:0.57,ala:0.07,arachidonic:0,epa:0,dha:0}],
   ['USDA FNDDS 2021-2023:FNDDS_11111000',{sugars:4.81,vite:0.05,vitd:1.1,folic_acid:0,folate_dfe:0,epa:0.001,dha:0,linoleic:null,ala:null,arachidonic:null}]
 ])for(const [key,value]of Object.entries(values))assert.equal(seen.get(catalogKey)[key],value,catalogKey+'/'+key);
-console.log('PASS: 64 v2 shards, 28,827 rows, old v1 row strings identical, 59 unchanged LF base chunks, seven-source coverage, 12 ml exclusions, narrow legacy anomalies and 49 pinned plausibility cases');
+console.log('PASS: 64 v2 shards, 28,827 rows, old v1 row strings identical, 59 LF-verified base chunks, seven-source coverage, 12 ml exclusions, zero additional-source deviations and 49 pinned plausibility cases');
 
 for (const missing of [undefined,null,'',' ','-','<LOD','<LOQ','<LOD or <LOQ','TR','Tr','traces','< 0,2','N','(0.11)',-1,'-0.2',Infinity,NaN]) assert.equal(numeric(missing),null);
 const cnfDictionary = new Map(Object.values(CNF).map(([id,Nutrient_Unit,Nutrient_Name_EN,Tagname])=>[String(id),{Nutrient_Unit,Nutrient_Name_EN,Tagname}]));

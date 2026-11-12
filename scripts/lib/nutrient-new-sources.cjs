@@ -20,14 +20,6 @@ const EXTRA_SOURCES = [
     ['usda-fndds/FoodData_Central_survey_food_json_2024-10-31_extracted/surveyDownload.json','2e7eb9fda92adf1d4d784dba5eaa3a7fd4418cd86ccff383c7c9294d79e9b808']
   ]}
 ];
-// Existing 7a01611 catalogue anomalies established by the stopped first audit.
-// Preserve those snapshots; additional fields are joined to the correct raw food.
-const KNOWN_BASE_DIFFERENCES = [
-  ['COFID_13-669','vitc',62,3], ['COFID_13-669','calcium',138,24],
-  ['COFID_13-669','iron',0.72,0.49], ['COFID_13-669','potassium',300,389],
-  ['COFID_13-669','magnesium',16,27], ['COFID_13-669','folate',43,20],
-  ['COFID_14-377','iron',null,0.07]
-];
 function csvObjects(file) {
   const rows = [...csvRows(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''))], header = rows.shift();
   return rows.filter(r => r.some(v => v.trim())).map(r => Object.fromEntries(header.map((k,i) => [k,r[i] ?? ''])));
@@ -116,4 +108,4 @@ function readFndds(root) {
     return split(Object.fromEntries(Object.entries(FNDDS).map(([key,[code]])=>[key,amounts.get(id).get(code) ?? null])));
   }};
 }
-module.exports = {EXTRA_SOURCES,CNF_DIR,KNOWN_BASE_DIFFERENCES,csvObjects,auditCnf,auditFndds,auditCofid,readCnf,readCofid,readFndds};
+module.exports = {EXTRA_SOURCES,CNF_DIR,csvObjects,auditCnf,auditFndds,auditCofid,readCnf,readCofid,readFndds};

@@ -46,8 +46,11 @@ function resolve(ref){
   if(!validRef(ref))return null;
   if(ref.recipeId){const r=(state.recipes||[]).find(x=>x.id===ref.recipeId);return r?{raw:r,food:{id:r.id,recipeId:r.id,name:r.name,unit:'g',...recipeNutrients(r)},ref}:null}
   const saved=ref.id?[...state.custom,...foods].find(x=>x.id===ref.id):state.custom.find(x=>x.catalogKey===ref.catalogKey);
-  if(saved)return {raw:saved,food:!saved.portions&&portionReferences[saved.catalogKey]?{...saved,portions:portionReferences[saved.catalogKey]}:saved,ref};
-  const row=ref.catalogKey&&localCatalogue.find(x=>x.source+':'+x.record===ref.catalogKey);
+  const row=localCatalogue.find(x=>x.source+':'+x.record===(ref.catalogKey||saved?.catalogKey));
+  if(saved){
+    const food=!saved.portions&&portionReferences[saved.catalogKey]?{...saved,portions:portionReferences[saved.catalogKey]}:saved;
+    return {raw:saved,food:row?{...food,unit:row.unit||'g'}:food,ref};
+  }
   // Exact synchronous chooseCatalogueFood mutation, without its async portion refresh/save/UI side effects.
   return row?{raw:row,food:{catalogKey:ref.catalogKey,name:row.name.slice(0,100),unit:row.unit||'g',source:row.source,
     ...Object.fromEntries(keys.map(k=>[k,row[k]])),nutrients:{...row.nutrients},...(portionReferences[ref.catalogKey]?{portions:portionReferences[ref.catalogKey]}:{})},ref,catalog:true}:null;
@@ -85,8 +88,8 @@ const ops={
   'food.add':{
     check(a){if(!fields(a,['id','product','productId','amount','unit','portion','meal','date','expect'])||!id(a.id)||!day(a.date)||!meals.includes(a.meal)||!validRef(a.product)||!plain(a.expect))return fail('invalid','ID, Datum, Mahlzeit und vollständiges Produkt-expect erforderlich');
       const expected=expectedProduct(a),old=entry(a.id);
-      if(old){const grams=a.product.recipeId&&a.unit==='whole'&&validRecipe(a.expect)?
-          (finite(a.amount*a.expect.yield,.1,10000)?Number((a.amount*a.expect.yield).toFixed(6)):null):addQuantity(expected,a,true),target=grams===null?null:addSnapshot(expected,a,grams);
+      if(old){const replayFood=expected.catalogKey&&old.foodRef===expected.id?{...expected,unit:old.unit||'g'}:expected;const grams=a.product.recipeId&&a.unit==='whole'&&validRecipe(a.expect)?
+          (finite(a.amount*a.expect.yield,.1,10000)?Number((a.amount*a.expect.yield).toFixed(6)):null):addQuantity(replayFood,a,true),target=grams===null?null:addSnapshot(replayFood,a,grams);
         return target&&matchEntry(old,target)?{noop:true,target,result:entryResult(old)}:fail('conflict','Eintrags-ID bereits belegt')}
       const p=resolve(a.product);if(!p)return missingProduct(a.product,'Lebensmittel fehlt');
       // A changed source is a conflict even when its new macros/unit would reject the old quantity.
@@ -98,7 +101,7 @@ const ops={
       const target=addSnapshot(p.food,a,grams);
       return busy({...p,grams,target});
     },
-    run(a,p){return perform(()=>{foodSelection=p.food;const count=state.foods.length;
+    run(a,p){return perform(()=>{if(p.raw.catalogKey&&p.raw.unit!==p.food.unit)p.raw.unit=p.food.unit;foodSelection=p.food;const count=state.foods.length;
       inputs({grams:value(p.grams),meal:value(a.meal),'food-quantity':null},()=>addFood(event));
       if(state.foods.length!==count+1)throw Error('Essen nicht hinzugefügt');state.foods.at(-1).id=a.id;
       if(!matchEntry(state.foods.at(-1),p.target))throw Error('Web-Snapshot weicht ab');return entryResult(state.foods.at(-1));

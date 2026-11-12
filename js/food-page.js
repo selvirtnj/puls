@@ -180,9 +180,14 @@ function fpFilterSheet(){
   $('mb').append(sheet);fdSound('sheetOpen');sheet.querySelector('.fpoption')?.focus({preventScroll:true});
 }
 function fpSheetClose(){let sheet=$('fp-sheet');if(!sheet)return;fdSound('sheetClose');if(fdReduced()){sheet.remove();return}sheet.classList.add('fpclosing');setTimeout(()=>sheet.remove(),180)}
-function fpStoreSearch(sort,sources){let s=fdEnsure('foodSearch');s.sort=sort;s.sources=sources;s.catalogueSourcesVersion=1;save();fpApplyFilter()}
+function fpStoreSearch(sort,sources){
+  let s=fdEnsure('foodSearch'),unknown=(s.sources||[]).filter(k=>!fdDefaults.foodSearch.sources.includes(k));
+  s.sort=sort;s.sources=[...sources.slice(0,32-unknown.length),...unknown];
+  if(!Number.isInteger(s.catalogueSourcesVersion)||s.catalogueSourcesVersion<1)s.catalogueSourcesVersion=1;
+  save();fpApplyFilter();
+}
 function fpSetSort(key){let p=fpSearchPrefs();fpStoreSearch(key,p.sources);document.querySelectorAll('#fp-sheet [role=radio]').forEach((b,i)=>b.setAttribute('aria-checked',String(fpSorts[i][0]===key)));fdSound('toggle')}
-function fpToggleSource(key){let p=fpSearchPrefs(),list=p.sources.includes(key)?p.sources.filter(k=>k!==key):[...p.sources,key];if(!list.length){toast(fdT('Mindestens eine Datenbank wählen','Choose at least one database'));return}list=fdDefaults.foodSearch.sources.filter(k=>list.includes(k));fpStoreSearch(p.sort,list);document.querySelectorAll('#fp-sheet [role=checkbox]').forEach((b,i)=>b.setAttribute('aria-checked',String(list.includes(fpSourceNames[i][0]))));fdSound('toggle')}
+function fpToggleSource(key){if(!fdDefaults.foodSearch.sources.includes(key))return;let p=fpSearchPrefs(),list=p.sources.includes(key)?p.sources.filter(k=>k!==key):[...p.sources,key];if(!list.length){toast(fdT('Mindestens eine Datenbank wählen','Choose at least one database'));return}list=fdDefaults.foodSearch.sources.filter(k=>list.includes(k));fpStoreSearch(p.sort,list);list=fpSearchPrefs().sources;document.querySelectorAll('#fp-sheet [role=checkbox]').forEach((b,i)=>b.setAttribute('aria-checked',String(list.includes(fpSourceNames[i][0]))));fdSound('toggle')}
 function fpResetFilter(){fpStoreSearch('best',[...fdDefaults.foodSearch.sources]);fpFilterSheet()}
 function fpApplyFilter(){
   let results=$('results'),q=fpQuery();

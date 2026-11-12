@@ -119,7 +119,7 @@ async function checkWorker(){
  function worker(source=read('sw.js')){
   const listeners={},ctx={URL,console,Promise,self:{registration:{scope:base},addEventListener:(type,fn)=>listeners[type]=fn,skipWaiting(){},clients:{claim(){}}},
    caches:{open:async name=>cacheApi(name),match:async value=>{for(let name of stores.keys()){let hit=await cacheApi(name).match(value);if(hit)return hit}},keys:async()=>[...stores.keys()],delete:async name=>stores.delete(name)},
-   fetch:async value=>{const path=key(value);requests.push(path);if(!online||failChunk&&path.endsWith('foods-3.json')||failNutrient&&path.endsWith('nutrients-v2-03.json'))throw Error('offline');return new Response(fs.readFileSync('.'+path.slice('/puls'.length)),{status:200})}};
+   fetch:async (value,options)=>{const path=key(value);if(path.includes('/catalog/'))assert.equal(options?.cache,'no-cache','Catalogue misses revalidate HTTP cache in preload and fetch handler');requests.push(path);if(!online||failChunk&&path.endsWith('foods-3.json')||failNutrient&&path.endsWith('nutrients-v2-03.json'))throw Error('offline');return new Response(fs.readFileSync('.'+path.slice('/puls'.length)),{status:200})}};
   vm.createContext(ctx);vm.runInContext(source,ctx);
   return {listeners,staticName:vm.runInContext('CACHE',ctx),catalogName:vm.runInContext('CATALOG_CACHE',ctx)};
  }

@@ -2,7 +2,7 @@
 
 Prüfsummen des Basiskatalogs und der Sidecars werden nach CRLF-zu-LF-Normalisierung geprüft und entsprechen den ausgelieferten LF-Dateien. Windows- und LF-Checkouts liefern dieselben Digests. Rohdatei-Prüfsummen beziehen sich immer auf exakte Originalbytes.
 
-v1 basiert auf ad92acf; v2 erweitert den Stand 7a01611 um CNF, CoFID und FNDDS (12.11.2026). Das unabhängige Integrationsreview für v2 erfolgt beim Koordinator. Registry und Resolver werden nach `flows.js` geladen. Die Sidecars enthalten vier Basis-Makros und 63 neue Schlüssel. Die neun Altschlüssel water, fiber, vitc, calcium, iron, b12, potassium, magnesium und folate stammen ausschließlich aus Basiskatalog oder gespeicherten Snapshots. Alle 59 foods-Dateien, Manifest, Portionen und sämtliche v1-Dateien bleiben unverändert.
+v1 basiert auf ad92acf; v2 erweitert den Stand 7a01611 um CNF, CoFID und FNDDS (12.11.2026). Das unabhängige Integrationsreview für v2 erfolgt beim Koordinator. Registry und Resolver werden nach `flows.js` geladen. Die Sidecars enthalten vier Basis-Makros und 63 neue Schlüssel. Die neun Altschlüssel water, fiber, vitc, calcium, iron, b12, potassium, magnesium und folate stammen ausschließlich aus Basiskatalog oder gespeicherten Snapshots. Die sieben Basiswert-Korrekturen vor Veröffentlichung betreffen foods-42 und foods-45 (siehe Selbstprüfung). foods-0…36, die übrigen Erweiterungsdateien, Manifest, Portionen und sämtliche v1-Dateien bleiben unverändert.
 
 ## Reproduzieren
 
@@ -350,23 +350,9 @@ Die Konstanten in `scripts/lib/nutrient-new-mapping.cjs` stammen aus den Rohdefi
 - FNDDS: `1269/618` (18:2), `1270/619` (18:3) und `1271/620` (20:4) sind undifferenziert: keine Ersatzwerte für `linoleic`, `ala`, `arachidonic`. Vitamin E added `1242` wird nicht addiert, Gesamtfolat `1177` und food folate `1187` ersetzen keine DFE-/Folsäurefelder. Keine Aminosäuren, Omega-Summen, Stärke oder Zuckerarten in dieser Ausgabe.
 - Alle neun Altschlüssel bleiben ausschließlich im Katalog/Snapshot. Wasserwerte werden bei der Selbstprüfung nur mit dem bestehenden Zahlenwert verglichen; keine g/ml-Umrechnung.
 
-### Selbstprüfung und bestehende Katalogabweichungen
+### Selbstprüfung und Korrektur vor Veröffentlichung
 
-Der erste Lauf stoppte wegen sieben Abweichungen. Nach Quellenabgleich sind sie als exakte Bestandsausnahmen festgehalten; nahe oder zusätzliche Werte stoppen weiterhin. Basiswerte wurden nicht korrigiert.
-
-| Lebensmittel | Feld | Katalog 7a01611 | passende XLSX-Zeile |
-|---|---|---:|---:|
-| COFID_13-669 | vitc | 62 | 3 |
-| COFID_13-669 | calcium | 138 | 24 |
-| COFID_13-669 | iron | 0.72 | 0.49 |
-| COFID_13-669 | potassium | 300 | 389 |
-| COFID_13-669 | magnesium | 16 | 27 |
-| COFID_13-669 | folate | 43 | 20 |
-| COFID_14-377 | iron | unbekannt | 0.07 |
-
-`COFID_13-669` ist im Katalog Aubergine, geröstet in Rapsöl. Die XLSX enthält denselben Code auch für „Watercress, raw“. Der alte Import verband Mineralstoff-/Vitaminblätter nur nach Food Code und übernahm die sechs obigen Brunnenkressewerte. v2 verbindet Code **und exakten Lebensmittelnamen**; die unveränderten Altwerte in Katalog/Snapshots werden nicht aus Sidecars ersetzt. Bei `COFID_14-377` (Ananas, mit Schale/Krone gewogen) enthält die XLSX Eisen 0.07 mg; im bisherigen CSV-Import fehlt der Wert. Die historische CSV-Darstellung ist nicht mehr verfügbar und wird nicht als nachgewiesene Ursache behauptet.
-
-Der P2-Basisimport meldet genau diese sieben Unterschiede, keine weiteren, und schreibt nichts (Exit 1). Alle Makros, alle übrigen Felder, Manifest und Portionen sind serialisiert inhaltsgleich. Eine Basis-Korrektur braucht einen gesonderten Koordinator-Auftrag; gespeicherte Snapshots dürfen dabei nicht überschrieben werden.
+Die sieben Bestandsabweichungen wurden vor der Veröffentlichung korrigiert. Der alte CoFID-Import verknüpfte Blätter nur über den doppelt vergebenen Code 13-669 und übernahm sechs Brunnenkresse-Mikrowerte an die Aubergine. Der Import verbindet jetzt Code und exakten Namen. Zusätzlich wurde der in der XLSX belegte Eisenwert der Ananas (COFID_14-377, 0,07 mg) ergänzt. Die historische CSV-Darstellung ist nicht mehr verfügbar. Alle übrigen Basiswerte, Manifest, Portionen und Sidecar-Nährstoffzeilen bleiben inhaltsgleich. Die Selbstprüfung der drei zusätzlichen Quellen läuft ohne Bestandsausnahmen oder Abweichungen.
 
 CNF prüft 64 Definitionen, CoFID 54 dreifache Spaltenbeschriftungen, FNDDS 217.240 gemappte Definitionen an Einzelwerten (40 je vollständigem Datensatz). Neue Quellen enthalten keine negativen Zellen in den gelesenen Bereichen. In den gemappten CoFID-Blättern wurden keine Klammerwerte gefunden; R9 wird zusätzlich synthetisch getestet. Zwölf ml-Datensätze werden gegen die Basis geprüft, dann von v2 ausgeschlossen. Alle 18.199 alten Zeilen werden beim Import und im Test vollständig als Strings gegen v1 verglichen.
 
@@ -396,7 +382,7 @@ Lokale Prüfung: Import mit fixierten Rohdaten, Daten-/Runtime-/Kompatibilitäts
 | Quelle | Katalog-IDs | v2-Zeilen | alle Vergleiche inkl. unbekannt | vorhandene Werte | bekannte Abweichungen | unerwartet |
 |---|---:|---:|---:|---:|---:|---:|
 | CNF 2026 | 2573 | 2573 | 33449 | 32315 | 0 | 0 |
-| CoFID 2021 | 2636 | 2624 | 34268 | 31209 | 7 | 0 |
+| CoFID 2021 | 2636 | 2624 | 34268 | 31210 | 0 | 0 |
 | USDA FNDDS 2021-2023 | 5431 | 5431 | 70603 | 70603 | 0 | 0 |
 
 ### Zuordnung der drei neuen Quellen

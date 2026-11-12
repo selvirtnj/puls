@@ -1,4 +1,4 @@
-/* Rebuild and compare only the CNF/CoFID/FNDDS extension, without writing files.
+/* Rebuild and verify the CNF/CoFID/FNDDS extension, accepting only the seven reviewed corrections.
  * Usage: node scripts/import-food-databases.cjs [raw-data-directory]
  * Standard-library only; deterministic, safe to rerun. See docs/FOOD-DATABASES.md.
  */
@@ -81,12 +81,15 @@ function importDatabases(rawDir=path.join(root,'catalog-raw')){
  for(const source of sources)manifest.sources[source]=stats[source].imported;
  outputs.push({file:'catalog/manifest.json',data:manifest},{file:'catalog/portions.json',data:portions});
  const differences=compareOutputs(outputs,oldExtension);
- if(differences.length){console.error(JSON.stringify({reproducible:false,differences},null,2));throw Error('Base import differs; no files written');}
- // An existing catalogue is a verification target. Do not even rewrite identical
- // files (or change checkout line endings). A separate reviewed migration is
- // required to accept different values; never rewrite foods-0...36 here.
+ if(differences.length&&!reviewedCorrections(differences)){console.error(JSON.stringify({reproducible:false,differences},null,2));throw Error('Base import differs; no files written');}
+ // Write only reviewed differences, after verifying every generated output.
+ for(const {file,data} of outputs){const target=path.join(root,file),text=JSON.stringify(data);if(fs.readFileSync(target,'utf8').replace(/\r\n/g,'\n')!==text)fs.writeFileSync(target,text)}
  console.log(JSON.stringify({count:manifest.count,stats,catalogueBytes:fs.readdirSync(path.join(root,'catalog')).reduce((n,f)=>n+fs.statSync(path.join(root,'catalog',f)).size,0)},null,2));
  return {stats,reproducible:true};
+}
+function reviewedCorrections(differences){
+ const expected=[['COFID_13-669','calcium',138,24],['COFID_13-669','iron',0.72,0.49],['COFID_13-669','magnesium',16,27],['COFID_13-669','potassium',300,389],['COFID_13-669','vitc',62,3],['COFID_13-669','folate',43,20],['COFID_14-377','iron',null,0.07]];
+ return differences.length===expected.length&&expected.every(([id,key,old,value])=>differences.some(d=>d.field?.startsWith('catalog/foods-'+(id==='COFID_13-669'?42:45)+'.json:'+id+' (')&&d.field.endsWith('.8.'+key)&&d.old===old&&d.new===value));
 }
 function compareOutputs(outputs,oldExtension){
  const differences=[];
@@ -111,5 +114,5 @@ function compareOutputs(outputs,oldExtension){
  for(const file of oldExtension)if(!outputs.some(o=>o.file===file))differences.push({file,removed:true});
  return differences;
 }
-module.exports={csv,number,record,importDatabases,compareOutputs};
+module.exports={csv,number,record,importDatabases,compareOutputs,reviewedCorrections};
 if(require.main===module){try{importDatabases(process.argv[2])}catch(error){console.error(error.message);process.exitCode=1}}

@@ -27,7 +27,7 @@ async function cacheFullCatalogue(){
   const url=new URL(path,base);
   let response=await cache.match(url,{ignoreSearch:true});
   if(!response){
-   response=await fetch(url,{credentials:'omit'});
+   response=await fetch(url,{credentials:'omit',cache:'no-cache'});
    if(!response.ok||response.redirected)throw Error('Catalogue unavailable');
    await cache.put(url,response.clone());
   }
@@ -73,7 +73,7 @@ self.addEventListener('fetch',event=>{
    return fresh;
   }
   let hit=await cache.match(request,{ignoreSearch:true});if(hit)return hit;
-  let response=await fetch(request);
+  let response=await fetch(request,catalogue?{cache:'no-cache'}:undefined);
   if(response.ok)try{await cache.put(request,response.clone())}catch{}
   return response;
  }));

@@ -72,7 +72,7 @@ for(const failure of [null,'weights','nativeExtras']){
 }
 s={...old(),display:{hapticsEnabled:'false',motion:'bad',lastRankSeen:40,rankScale:1,unknown:'discard',highlighted:['injected'],summaryViews:['week','week']},
  water:{mode:'bad',glassMl:99},foodSearch:{sort:'bad',sources:['fake']},plan:{...clone(c.plan87),macroInput:'ratio'}};
-assert(validate(s));assert.deepEqual(clone(s.display),{});assert.deepEqual(clone(s.water),{});assert.deepEqual(clone(s.foodSearch),{});assert(!Object.hasOwn(s.plan,'macroInput'));
+assert(validate(s));assert.deepEqual(clone(s.display),{});assert.deepEqual(clone(s.water),{});assert.deepEqual(clone(s.foodSearch),{sources:['fake']},'Well-formed future source survives invalid sort cleanup');assert(!Object.hasOwn(s.plan,'macroInput'));
 for(const bad of [null,{},[{}],[{id:'bad',name:'Bad',items:[]}],
  [{id:'bad',name:'Bad',items:[{...item,grams:0}]}],[{id:'bad',name:'Bad',items:[{...item,unit:'kg'}]}],
  [{id:'bad',name:'Bad',items:[{...item,p:NaN}]}],[{id:'bad',name:'Bad',items:[{...item,nutrients:{fiber:-1}}]}],

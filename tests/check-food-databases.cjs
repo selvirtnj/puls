@@ -16,6 +16,8 @@ assert.equal(lookup('CNF_2')[8].fiber,.117);assert.equal(lookup('CNF_2')[8].b12,
 assert.deepEqual(lookup('COFID_13-145').slice(3,7),[151,2.9,.8,15.2]);
 assert.equal(lookup('COFID_13-145')[8].potassium,270);assert.equal(lookup('COFID_13-145')[8].vitc,30);
 assert(!Object.hasOwn(lookup('COFID_13-145')[8],'fiber'),'blank AOACFIB / unknown NSP never becomes zero');
+assert.deepEqual(Object.fromEntries(['calcium','iron','magnesium','potassium','vitc','folate'].map(k=>[k,lookup('COFID_13-669')[8][k]])),{calcium:24,iron:0.49,magnesium:27,potassium:389,vitc:3,folate:20});
+assert.equal(lookup('COFID_14-377')[8].iron,0.07);
 assert.deepEqual(lookup('COFID_17-793').slice(3,7),[98,4,9.6,2.3]);assert.equal(lookup('COFID_17-793')[9],'ml');
 assert.deepEqual(lookup('FNDDS_11111000').slice(3,7),[61,3.27,4.63,3.2]);assert.equal(lookup('FNDDS_11111000')[8].b12,.54);
 assert(!lookup('FNDDS_11000000'),'no invented human milk profile');
@@ -44,6 +46,21 @@ s.foodSearch.sources=['bls'];const once=JSON.stringify(s);assert(c.validData(s))
 const restored=clone(s);assert(c.validData(restored));api.migrate(restored);assert.deepEqual(clone(restored.foodSearch.sources),['bls']);
 const oldBackup={foodSearch:{sources:[]}};assert(c.validData(oldBackup));api.migrate(oldBackup);assert.deepEqual(clone(oldBackup.foodSearch.sources),['cnf','cofid','fndds']);
 const shared={foodSearch:{sources:['bls'],catalogueSourcesVersion:1}},before=JSON.stringify(shared);assert(!c.validData({...shared,accept:false}));assert.equal(JSON.stringify(shared),before);
+// Future sources/versions survive validation, migration, storage and known-source controls.
+const future={foodSearch:{sort:'az',sources:['bls','fineli'],catalogueSourcesVersion:2}};
+assert(c.validData(future));api.migrate(future);const futurePrefs=JSON.stringify(future.foodSearch);api.migrate(future);
+assert.equal(JSON.stringify(future.foodSearch),futurePrefs);assert.equal(JSON.stringify(api.foodSearch(future)),futurePrefs);
+for(const sources of [['x'],['Fineli'],['fi-neli'],['fineli','fineli'],Array.from({length:33},(_,i)=>'s'+i)]){
+ const bad={foodSearch:{sources,catalogueSourcesVersion:2}};assert(c.validData(bad));assert(!Object.hasOwn(bad.foodSearch,'sources'),'Malformed optional sources are cleaned');
+}
+const prefsContext={fdField:()=>future.foodSearch,fdEnsure:()=>future.foodSearch,fdDefaults:{foodSearch:{sources:['bls','usda','ciqual','cnf','cofid','fndds','off','own','puls']}},save(){},fpApplyFilter(){},fpFilterSheet(){},document:{querySelectorAll:()=>[]},fdSound(){},toast(){},fdT:x=>x};
+vm.createContext(prefsContext);
+vm.runInContext(read('js/food-page.js').split('\n').filter(l=>l.startsWith('const fpSorts=')||l.startsWith('function fpSearchPrefs(')||l.startsWith('function fpToggleSource(')||l.startsWith('function fpResetFilter(')).join('\n')+'\n'+read('js/food-page.js').match(/function fpStoreSearch\(sort,sources\)\{[\s\S]*?\n\}/)[0],prefsContext);
+assert.deepEqual(clone(prefsContext.fpSearchPrefs().sources),['bls']);
+prefsContext.fpToggleSource('bls');assert.deepEqual(future.foodSearch.sources,['bls','fineli'],'Unknown keys do not satisfy the minimum-known-source rule');
+prefsContext.fpToggleSource('cnf');assert.deepEqual(clone(future.foodSearch.sources),['bls','cnf','fineli']);
+prefsContext.fpToggleSource('fineli');assert(future.foodSearch.sources.includes('fineli'));
+prefsContext.fpResetFilter();assert.equal(future.foodSearch.catalogueSourcesVersion,2);assert.equal(future.foodSearch.sources.at(-1),'fineli');assert.equal(prefsContext.fpSearchPrefs().sources.length,9);
 // Product-detail attribution also covers the three added sources.
 Object.assign(c,{fdT:de=>de,fpAllKey:food=>food.catalogKey});
 vm.runInContext(read('js/food-page.js').match(/function fpSourceCredit\(food\)\{[\s\S]*?\n\}/)[0],c);
@@ -74,10 +91,29 @@ async function loaderTest(){
  const food=items.find(x=>x.record==='FNDDS_11111000');assert(food.search.includes('milk whole'),'English name searchable in German UI');
  Object.assign(loader,{state:{custom:[]},uid:()=> 'saved-drink',save(){},selectFood(){},$:()=>({insertAdjacentHTML(){}}),esc:String});
  vm.runInContext(read('js/catalog-search.js').split('\n').find(line=>line.startsWith('function chooseCatalogueFood(')),loader);
+ const wrong=items.find(x=>x.record==='COFID_17-752');
+ loader.state.custom.push({id:'existing',catalogKey:wrong.source+':'+wrong.record,unit:'g',name:wrong.name});
+ loader.state.foods=[{id:'old-entry',foodRef:'existing',unit:'g',grams:100}];loader.state.meals=[{items:[{unit:'g',amount:100}]}];const snapshots=JSON.stringify([loader.state.foods,loader.state.meals]);
+ loader.chooseCatalogueFood(wrong.id);assert.equal(loader.state.custom.find(x=>x.id==='existing').unit,'ml');assert.equal(JSON.stringify([loader.state.foods,loader.state.meals]),snapshots);
+ loader.state.custom.shift();
  loader.chooseCatalogueFood(drink.id);assert.equal(loader.state.custom[0].unit,'ml');assert.equal(loader.state.custom[0].catalogKey,'CoFID 2021:COFID_17-793');
  Object.assign(loader,{fpSourceKeys:c.fpSourceKeys,fpSearchPrefs:()=>({sources:['fndds']}),catalogueAlternatives:()=>[['milk']],foodPriority:()=>0,foodRelevance:()=>0,catalogueQuerySerial:1,setTimeout:fn=>setImmediate(fn)});
  vm.runInContext(read('js/food-upgrade.js').split('\n').find(line=>line.startsWith('fallbackCatalogueSearch=')),loader);
- const fallback=await loader.fallbackCatalogueSearch('milk',1);assert(fallback.count>60);assert(fallback.indices.every(i=>items[i].source==='USDA FNDDS 2021-2023'),'fallback source filter before cap');
+ const fallback=await loader.fallbackCatalogueSearch('milk',1,['fndds']);assert(fallback.count>60);assert(fallback.indices.every(i=>items[i].source==='USDA FNDDS 2021-2023'),'fallback source filter before cap');
+ // Exercise actual worker dispatch and final fallback for food page, recipes and native callers.
+ vm.runInContext('var searchSerial=1;var wait=()=>Promise.resolve();'+read('js/native-nutrition.js').match(/async function nativeCatalogueFallback\(query,serial,current\)\{[\s\S]*?\n\}/)[0],loader);
+ const nativeFallback=await loader.nativeCatalogueFallback('milk',1,()=>true);
+ const query=read('js/lifecycle.js').split('\n').find(l=>l.startsWith('async function queryCatalogueAsync('));
+ Object.assign(loader,{fpActive:()=>true,startCatalogueWorker:async()=>true,catalogueResponses:new Map(),clearTimeout,fpSearchPrefs:()=>({sources:['fndds']})});
+ loader.setTimeout=setTimeout;
+ loader.catalogueWorker={postMessage:message=>{worker.onmessage({data:message});loader.catalogueResponses.get(message.id)(replies.at(-1))}};
+ vm.runInContext(query,loader);
+ let filtered=await loader.queryCatalogueAsync('milk',1);assert(filtered.indices.every(i=>items[i].source==='USDA FNDDS 2021-2023'));
+ let native=await loader.queryCatalogueAsync('milk','nativeNutrition:1');assert.equal(native.count,nativeFallback.count);assert(native.indices.some(i=>items[i].source!=='USDA FNDDS 2021-2023'));
+ loader.fpActive=()=>false;let recipe=await loader.queryCatalogueAsync('milk',1);assert.deepEqual(clone(recipe.indices),clone(native.indices));
+ loader.startCatalogueWorker=async()=>false;loader.setTimeout=fn=>setImmediate(fn);
+ let recipeFallback=await loader.queryCatalogueAsync('milk',1);assert.equal(recipeFallback.count,recipe.count);
+ loader.fpActive=()=>true;let foodFallback=await loader.queryCatalogueAsync('milk',1);assert.equal(foodFallback.count,filtered.count);assert(foodFallback.indices.every(i=>items[i].source==='USDA FNDDS 2021-2023'));
  console.log('PASS: real catalogue loader uses <=4 downloads, English names and ml persist through selection; final fallback filters before 60-result cap');
 }
 loaderTest().catch(error=>{console.error(error);process.exitCode=1});
@@ -85,7 +121,10 @@ loaderTest().catch(error=>{console.error(error);process.exitCode=1});
 // The new raw-input importer must report differences before any write. This
 // comparison uses only synthetic catalogue data and needs neither raw files nor Git.
 {
- const {compareOutputs}=require('../scripts/import-food-databases.cjs');
+ const {compareOutputs,reviewedCorrections}=require('../scripts/import-food-databases.cjs');
+ const corrections=[['COFID_13-669','calcium',138,24],['COFID_13-669','iron',0.72,0.49],['COFID_13-669','magnesium',16,27],['COFID_13-669','potassium',300,389],['COFID_13-669','vitc',62,3],['COFID_13-669','folate',43,20],['COFID_14-377','iron',null,0.07]].map(([id,key,old,value])=>({field:'catalog/foods-'+(id==='COFID_13-669'?42:45)+'.json:'+id+' (Food).8.'+key,old,new:value}));
+ assert(reviewedCorrections(corrections));assert(!reviewedCorrections(corrections.slice(1)));assert(!reviewedCorrections([...corrections,{field:'extra',old:0,new:1}]));
+ assert(!reviewedCorrections(corrections.map((d,i)=>i?d:{...d,new:25})));
  const readFile=fs.readFileSync,exists=fs.existsSync,write=fs.writeFileSync;
  try {
   fs.existsSync=()=>true;fs.writeFileSync=()=>{throw Error('Unexpected write')};
@@ -96,4 +135,22 @@ loaderTest().catch(error=>{console.error(error);process.exitCode=1});
   fs.readFileSync=()=>JSON.stringify(output[0].data).replace(/,/g,', ');
   assert.equal(compareOutputs(output,[])[0].field,'serialization/order','Even equal data with different serialized output fails LF reproduction');
  } finally {fs.readFileSync=readFile;fs.existsSync=exists;fs.writeFileSync=write;}
+}
+
+// Native saved-catalogue resolution uses the current unit without mutating read/conflict state.
+{
+ const saved={id:'existing',catalogKey:'CoFID 2021:COFID_17-752',unit:'g',name:'Drink'},row={source:'CoFID 2021',record:'COFID_17-752',unit:'ml'};
+ const n={state:{custom:[saved],foods:[{id:'historic',unit:'g'}]},foods:[],localCatalogue:[row],portionReferences:{},validRef:()=>true};vm.createContext(n);
+ vm.runInContext(read('js/native-nutrition.js').match(/function resolve\(ref\)\{[\s\S]*?\n\}/)[0],n);
+ const resolved=n.resolve({catalogKey:saved.catalogKey});assert.equal(resolved.food.unit,'ml');assert.equal(resolved.raw.unit,'g');assert.equal(saved.unit,'g','Reads leave conflict baseline unchanged');
+ Object.assign(n,{perform:fn=>fn(),inputs:(values,fn)=>fn(),value:x=>x,event:{},matchEntry:()=>true,entryResult:x=>x,addFood:()=>n.state.foods.push({id:'new',unit:n.foodSelection.unit})});
+ const body=read('js/native-nutrition.js').match(/run\(a,p\)\{return perform\(\(\)=>\{if\(p.raw.catalogKey[\s\S]*?\},a.date\)\}/)[0];
+ vm.runInContext('var add={'+body+'}',n);n.add.run({id:'new',meal:'Snacks',date:'2026-11-12'},{...resolved,grams:100,target:{}});
+ assert.equal(saved.unit,'ml');assert.equal(n.state.foods[0].unit,'g');assert.equal(n.state.foods[1].unit,'ml');
+ // Replaying the original g-based product expectation after repair uses the recorded snapshot unit, also without a loaded catalogue.
+ const old={id:'new',foodRef:'existing',unit:'ml'};
+ Object.assign(n,{fields:()=>true,id:()=>true,day:()=>true,meals:['Snacks'],validRef:()=>true,plain:()=>true,expectedProduct:()=>({...saved,unit:'g'}),entry:()=>old,fail:code=>({code}),addQuantity:food=>{assert.equal(food.unit,'ml');return 100},addSnapshot:food=>({unit:food.unit}),matchEntry:(entry,target)=>entry.unit===target.unit});
+ const check=read('js/native-nutrition.js').match(/'food.add':\{([\s\S]*?)\n    run\(a,p\)/)[1];
+ vm.runInContext('var nativeAdd={'+check+'}',n);n.localCatalogue=[];
+ assert.equal(n.nativeAdd.check({id:'new',date:'2026-11-12',meal:'Snacks',product:{id:'existing'},expect:{},amount:100,unit:'ml'}).noop,true);
 }
