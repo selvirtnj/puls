@@ -10,11 +10,11 @@ const portions=JSON.parse(read('catalog/portions.json'));
 // App catalogue IDs are positional: preserve the exact original prefix, including order.
 assert.equal(crypto.createHash('sha256').update(JSON.stringify(rows.slice(0,18200))).digest('hex'),
  '640030e29f67300c3748011972a324fb328f5a18172e52ff52dd6d6ff03fc4a2');
-assert.equal(rows.length,18200+addedCount);
+assert.equal(rows.length,28893);
 assert.equal(manifest.count,rows.length);
 assert.equal(Object.values(manifest.sources).reduce((a,b)=>a+b,0),rows.length);
 assert.equal(new Set(rows.map(r=>r[7]+':'+r[0])).size,rows.length);
-const added=rows.slice(18200);
+const added=rows.slice(18200,18200+addedCount);
 assert.equal(new Set(added.map(r=>r[0])).size,addedCount);
 for(const [group,refs,source] of groups){
  assert.equal(manifest.sources[source],refs.length);

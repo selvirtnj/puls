@@ -28,7 +28,7 @@ s.waterGoal=0;assert.equal(api.water(s).mode,'auto');
 const item={name:'Fixture',grams:50,unit:'g',kcal:120,p:4,c:20,f:3,nutrients:{fiber:2},source:'Fixture',foodRef:'food-1'};
 const optional={water:{mode:'auto',glassMl:400},meals:[{id:'combo-1',name:'Kombi',items:[item]}],
  display:{summaryViews:['week','energy'],showRemaining:true,highlighted:['fiber','iron'],hapticsEnabled:false,motion:'reduced',lastRankSeen:9,rankScale:2},
- foodSearch:{sort:'frequent',sources:['own','bls']}};
+ foodSearch:{sort:'frequent',sources:['own','bls'],catalogueSourcesVersion:1}};
 s={...old(),...clone(optional)};
 s.waterGoal=1900;s.displayName='Fixture identity';
 run('var plan87=JSON.parse(JSON.stringify(state.plan))');

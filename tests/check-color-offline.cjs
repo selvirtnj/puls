@@ -124,7 +124,7 @@ async function checkWorker(){
   return {listeners,staticName:vm.runInContext('CACHE',ctx),catalogName:vm.runInContext('CATALOG_CACHE',ctx)};
  }
  let current=worker();
- assert.equal(current.catalogName,'puls-catalog-v2','Regional catalogue update uses a fresh cache');
+ assert.equal(current.catalogName,'puls-catalog-v3','Regional catalogue update uses a fresh cache');
  async function lifecycle(type){let work;current.listeners[type]({waitUntil:p=>work=p});await work}
  async function preload(){let work;current.listeners.message({data:{type:'puls:cache-catalogue'},waitUntil:p=>work=p});await work}
  const responseFor=async(path,mode='cors')=>{let response;current.listeners.fetch({request:{method:'GET',url:new URL(path,base).href,mode},respondWith:p=>response=p,waitUntil(){}});return response&&await response};
@@ -156,6 +156,6 @@ async function checkWorker(){
  const oldCatalogueName=current.catalogName;
  current=worker(read('sw.js').replace(/puls-catalog-v\d+/, 'puls-catalog-v99999'));
  await lifecycle('activate');assert(!stores.has(oldCatalogueName),'Only a catalogue version change removes its predecessor');
- console.log('PASS: 39 catalogue files cached separately, interrupted retry, cache survives app-version activation without re-download, catalogue-version cleanup, offline shell/JS/catalogue, put-failure fallback and auth/API/photo exclusions (mock SW/cache)');
+ console.log('PASS: '+catalogueFiles.length+' catalogue files cached separately, interrupted retry, cache survives app-version activation without re-download, catalogue-version cleanup, offline shell/JS/catalogue, put-failure fallback and auth/API/photo exclusions (mock SW/cache)');
 }
 (async()=>{await checkSchemeAndConnectivity();await checkCleanStartup();await checkWorker()})().catch(error=>{console.error(error);process.exitCode=1});

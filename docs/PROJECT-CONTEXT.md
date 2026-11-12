@@ -27,7 +27,7 @@ Kreis/Makrobalken, Tagesnavigation, Essenvorschau, Trainingsaktionen und Gesamtf
 ## Ernährung
 
 - Manuelle Kalorien-/Makroziele oder profilbasierte Planung, Zieltempo und geschätzter Zieltermin. Gewichtsänderungen sollen den Bedarf nachführen. Optionale Verlaufskalibrierung benötigt vollständige Daten, siehe `adaptation.js`.
-- 18.200 gebündelte Lebensmittel aus BLS 4.0, USDA SR Legacy/Foundation und Ciqual 2025; ergänzende Open-Food-Facts-Produkte und Barcode-Suche. Quellen offen anzeigen; Community-Daten nicht pauschal „verifiziert“ nennen.
+- 28.893 gebündelte Lebensmittel aus BLS 4.0, USDA SR Legacy/Foundation, Ciqual 2025, CNF 2026, CoFID 2021 und USDA FNDDS 2021–2023; ergänzende Open-Food-Facts-Produkte und Barcode-Suche. Quellen offen anzeigen; Community-Daten nicht pauschal „verifiziert“ nennen. Importkonventionen: [FOOD-DATABASES.md](FOOD-DATABASES.md).
 - Nährwerttabelle per Foto/OCR mit vorausgefülltem Kontrollformular. Erst nach Bestätigung speichern. Fehlende Angaben bleiben unbekannt; Plausibilität prüfen.
 - Deutsche/tolerante Suche, Quellenkennzeichnung, sichere Dublettenerkennung, Favoriten, zuletzt gegessen und Offline-Nutzung bereits gespeicherter Produkte.
 - Gramm, kg, ounces, ml, Liter sowie tatsächlich bekannte oder manuell definierte Portionen. Keine fiktiven Stückgewichte. Keine g/ml-Umrechnung ohne Dichte.

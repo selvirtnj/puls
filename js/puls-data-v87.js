@@ -25,7 +25,7 @@ const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const finite=(x,min=0,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=min&&x<=max;
 const integer=(x,min,max)=>Number.isInteger(x)&&finite(x,min,max);
 const text=(x,max,min=0)=>typeof x==='string'&&x.length<=max&&x.trim().length>=min;
-const views=['energy','micros','week'],sources=['bls','usda','ciqual','off','own','puls'];
+const views=['energy','micros','week'],sources=['bls','usda','ciqual','off','own','puls','cnf','cofid','fndds'];
 const highlighted=['fiber','vitc','iron','calcium','b12','folate','potassium','magnesium'];
 const subset=(x,keys,max=keys.length)=>Array.isArray(x)&&x.length<=max&&new Set(x).size===x.length&&x.every(k=>keys.includes(k));
 const ratioOK=x=>object(x)&&['p','c','f'].every(k=>integer(x[k],5,80))&&x.p+x.c+x.f===100;
@@ -45,7 +45,7 @@ function cleanObject(source,key,rules){
 function cleanOptions(s){
  cleanObject(s,'water',{mode:x=>['auto','manual'].includes(x),glassMl:x=>integer(x,100,1000)});
  cleanObject(s,'display',displayRules);
- cleanObject(s,'foodSearch',{sort:x=>['best','az','za','recent','frequent'].includes(x),sources:x=>subset(x,sources)});
+ cleanObject(s,'foodSearch',{sort:x=>['best','az','za','recent','frequent'].includes(x),sources:x=>subset(x,sources),catalogueSourcesVersion:x=>x===1});
  if(object(s.plan)){
   if(s.plan.macroInput!==undefined&&!['grams','ratio'].includes(s.plan.macroInput))delete s.plan.macroInput;
   if(s.plan.ratio!==undefined&&!ratioOK(s.plan.ratio))delete s.plan.ratio;
@@ -104,6 +104,8 @@ function migrate87(s=state){
  migrateRankScale(s);
  if(object(s.plan))s.plan.macroInput??='grams';
  s.foodSearch??={};s.foodSearch.sort??='best';s.foodSearch.sources??=[...sources];
+ // One-time addition, preserving previous exclusions and future explicit deselection.
+ if(s.foodSearch.catalogueSourcesVersion!==1){s.foodSearch.sources=[...new Set([...s.foodSearch.sources,'cnf','cofid','fndds'])];s.foodSearch.catalogueSourcesVersion=1;}
  return s;
 }
 const baseMigrate=migrate;
