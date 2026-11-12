@@ -66,9 +66,9 @@ docs/archive/                             Historische Unterlagen (u. a. Gesamt-A
 ## Dokumentation
 
 - [docs/README.md](docs/README.md): Übersicht aller Dokumente
-- [docs/START-HERE.md](docs/START-HERE.md) · [docs/PROJECT-CONTEXT.md](docs/PROJECT-CONTEXT.md) · [docs/CURRENT-STATE.md](docs/CURRENT-STATE.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/START-HERE.md](docs/START-HERE.md) · [docs/PROGRESS.md](docs/PROGRESS.md) · [docs/DECISIONS.md](docs/DECISIONS.md) · [docs/ISSUES.md](docs/ISSUES.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) · [docs/STRENGTH-RANKS.md](docs/STRENGTH-RANKS.md) · [docs/ACTIVITY-DATA.md](docs/ACTIVITY-DATA.md)
-- [docs/AI-TEAM.md](docs/AI-TEAM.md), [docs/TEAM-WORKFLOW.md](docs/TEAM-WORKFLOW.md), [AGENTS.md](AGENTS.md): Zusammenarbeit
+- [docs/AI-TEAM.md](docs/AI-TEAM.md), [AGENTS.md](AGENTS.md): Zusammenarbeit
 - [docs/archive/](docs/archive/): historische Unterlagen, darunter das [Funktionsinventar des Gesamt-Audits](docs/archive/audit/FEATURE-INVENTORY.md) (Stand 26.10.2026)
 
 Lebensmitteldaten stammen aus BLS, USDA, Ciqual und Open Food Facts (Details in `catalog/manifest.json`); Übungsnamen aus der Free Exercise DB, Lizenz in [EXERCISE-LICENSE.txt](EXERCISE-LICENSE.txt).

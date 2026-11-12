@@ -1,65 +1,51 @@
-# PULS — Claude, Codex und Gemini als ein Team
+# PULS — das KI-Team
 
-Selvir spricht nur mit **einem Hauptchat**: „PULS · Hauptchat“ in Claude Code im PULS-Ordner. Claude ist Koordinator, verteilt Aufgaben an sich selbst, an Claude-Subagenten, an Codex oder an Gemini und gibt am Ende einen einzigen Bericht. Selvir muss nichts weiterleiten.
+Selvir spricht mit einem Hauptchat: Claude Code im PULS-Ordner. Der Hauptchat plant, verteilt, prüft und berichtet. Arbeitet Selvir direkt in Codex, ist Codex der Koordinator und nutzt dieselben Skills.
 
-Wenn Selvir stattdessen direkt in Codex arbeitet, gilt dieselbe Aufteilung; Codex ist dann Koordinator und nutzt seine eigenen Rollen aus `.codex/agents/`.
+## Aufbau
 
-## Grundregeln
+```
+CLAUDE.md, AGENTS.md      liest der Hauptchat zuerst
+docs/                     PROGRESS · DECISIONS · ISSUES
+.claude/settings.json     Modell, Aufwand, Kompaktierung, Prüf-Hook
+.claude/agents/           builder · specialist · reviewer · scout
+.claude/skills/           frontend · backend · test-runner · code-review · reflect
+.codex/agents/            puls_builder · puls_reviewer (verweisen auf die Skills)
+scripts/*-bridge.ps1      Codex und Gemini aufrufen (laden dieselben Skills)
+```
 
-- **Web-App plus WebView-Hülle (08.11.2026).** Die SwiftUI-Umstellung ist gestoppt, archiviert unter Tag `native-swiftui-archiv`; nicht löschen oder fortsetzen. Die Hülle von `main` (Basis `ios-build-9`) lädt die Live-Web-App; Web bleibt Daten-, Auth- und Sync-Besitzer. Neue native Extras (Barcode, Health schreiben nach Opt-in, lokale Erinnerungen) gehören in die bestehende Hülle/`pulsNative`-Brücke. `docs/native/` bewahrt ausschließlich den historischen Umstellungsstand.
-- **Wer schreibt, prüft nicht selbst.** Jede größere Änderung sieht mindestens eine andere KI.
-- **Höchstens zwei schreibende Agenten gleichzeitig**, nur in getrennten Dateien oder Worktrees.
-- **Nur der Koordinator** integriert, committet und veröffentlicht. Ein Push auf `main` geht sofort live.
+Die Skills sind die einzige Quelle für Arbeitsanweisungen. Wer eine Regel ändern will, ändert den Skill; das gilt dann für Claude, Codex und Gemini. Zusätzlich installierte Fremd-Skills liegen ebenfalls in `.claude/skills/` und tragen den Herkunftsnamen als Präfix.
 
-## Rollen: eine Quelle für alle drei KIs
+Skills liegen in `.claude/skills/` und nicht unter `.claude/agents/skills/`, weil Claude Code sie nur dort findet. Die Web-App bleibt im Stamm statt in `src/`, weil GitHub Pages den Stamm von `main` ausliefert.
 
-Die Rollen `frontend`, `backend`, `reviewer` stehen nur einmal in `.codex/agents/puls_*.toml` (`general` = ohne Rolle). Alle KIs bekommen dieselbe Anweisung:
+## Wer macht was
 
-| KI | Wie die Rolle ankommt |
-|---|---|
-| Claude | Subagenten `puls-frontend`, `puls-backend`, `puls-reviewer` (`.claude/agents/`) lesen die TOML-Datei |
-| Codex | `scripts/codex-bridge.ps1 -Role …` lädt sie in den Auftrag; Codex-App nutzt sie direkt |
-| Gemini | `scripts/gemini-bridge.ps1 -Role …` lädt sie in den Auftrag (Antigravity kennt Projekt-Agenten nur als globales Plugin, daher keine Doppelpflege) |
-
-Regeln ändern = TOML-Datei ändern; das gilt sofort für alle.
-
-## Wer macht was (Startregel, vom Koordinator anpassbar)
-
-| Aufgabe | Schreibt | Prüft | Ersatz bei Limit |
+| Aufgabe | Wer | Modell | Kosten |
 |---|---|---|---|
-| UI, CSS, iPhone-Layout, Designs, Texte | Claude `puls-frontend` (Opus, medium) | Codex `reviewer` (medium); Gemini als zweite Meinung bei größeren Umbauten | Gemini `frontend` |
-| Auth, Sync, SQL, Datenmodell, Migration, `validData()` | Codex `backend` (medium; high bei Sync/RLS/Migration) | Claude `puls-reviewer` (Opus, high); bei Daten-/Profilverträglichkeit zusätzlich Gemini `reviewer` (high) | Claude `puls-backend` |
-| Übergreifend (UI + Daten) | Codex zuerst Daten/Schnittstelle, dann Claude UI — nacheinander | jeweils eine andere KI | — |
-| Überblick über das ganze Projekt, Wrapper-Ketten, „wo wird X überall benutzt“ | Gemini `general` (lesend) | Koordinator prüft Stichproben | Claude Explore |
-| Fehlersuche mit unklarer Ursache | zwei KIs lesend parallel, Koordinator entscheidet | — | — |
-| Kleinigkeit (Text, eine Zeile, Doku) | Koordinator selbst, kein Agent | keine | — |
-| Schnelle Frage zur Vorgeschichte | Codex `general` (low) | — | Gemini `general` |
+| Planen, Aufträge, Integration, Bericht | Hauptchat | Fable 5.2 bis 16.11.2026, danach Opus 5.5, Aufwand `xhigh` | hoch, deshalb delegieren |
+| Suchen, „wo wird X benutzt“, Dateien zusammenfassen | `scout` | Haiku, low | sehr niedrig |
+| Oberfläche, CSS, Texte, Tests, klar umrissene Logik | `builder` | Haiku, medium | niedrig |
+| Daten, `validData()`, Migration, Sync, SQL, Wrapper-Ketten | `specialist` oder Codex `backend` | Sonnet, high / gpt-6.1-sol | mittel |
+| Prüfung größerer oder riskanter Diffs | `reviewer`, bei Claude-Code Codex `reviewer` | Sonnet, medium / gpt-6.1-sol | mittel |
+| Zweite Meinung, Gesamtüberblick, Ersatz bei Limit | Gemini | gemini-3.8-flash | im Google-Konto enthalten |
+| Kleinigkeit (Text, eine Zeile, Doku) | Hauptchat selbst | — | am billigsten |
 
-Gemini ist vor allem **Prüfer, zweite Meinung, Ersatz und Gesamtüberblick**, kein dritter paralleler Entwickler. Stärken werden nach Erfahrung angepasst, nicht vorausgesetzt.
+Faustregel: so billig wie möglich anfangen und nur bei Bedarf hochstufen. Scheitert `builder` zweimal, geht die Aufgabe an `specialist`. Wer schreibt, prüft nicht selbst; bei Daten und Sync prüft eine KI eines anderen Anbieters.
 
-### Modell- und Denkaufwand
+## Prüfschleife
 
-Der Koordinator wählt selbst; Selvir hat dies ausdrücklich freigegeben. Keine Agentenverbünde für Kleinigkeiten — jeder Aufruf verbraucht Nutzung.
+1. Der Auftrag nennt Ziel, erlaubte Dateien und woran „fertig“ zu erkennen ist.
+2. Der Agent arbeitet nach `test-runner`: ändern, `node scripts/check.cjs`, Ursache beheben, wiederholen.
+3. Der Hook `SubagentStop` in `.claude/settings.json` lässt `builder` und `specialist` erst aufhören, wenn der Testlauf grün ist. Nach acht Runden bricht Claude Code von selbst ab.
+4. Bei größeren Änderungen liest `reviewer` oder Codex den Diff. Befunde behebt der Entwickler, der Prüfer sieht die Korrektur noch einmal an.
+5. Der Hauptchat sieht den Diff selbst an, lässt die Tests laufen und veröffentlicht.
+6. Hat eine Anweisung gefehlt, schärft der Hauptchat mit `reflect` den passenden Skill nach.
 
-| Stufe | Wofür | Claude | Codex | Gemini |
-|---|---|---|---|---|
-| low | Fragen, Suchen, Mini-Änderungen | Opus low | gpt-6.1-sol low | gemini-3.8-flash-low |
-| medium | normale Feature-Arbeit (Standard) | Opus medium | gpt-6.1-sol medium | gemini-3.8-flash-medium |
-| high | Sync, Migration, Sicherheit, große Reviews | Opus high | gpt-6.1-sol high | gemini-3.8-flash-high |
-| xhigh | nur bei wiederholt gescheiterten oder sehr heiklen Aufgaben | Opus xhigh | gpt-6.1-sol xhigh | flash-high, effort xhigh |
+## Sitzungen
 
-Verfügbare Gemini-Modelle: `agy models`.
-
-### Sparsam arbeiten (Nutzung schonen)
-
-- **Standard ist `low`/`medium`.** `high` nur für Sync, Migration, Sicherheit und große Reviews; `xhigh` nur nach wiederholtem Scheitern.
-- **Kleinigkeiten macht der Koordinator selbst:** Texte, CSS-Abstände und Ein-Zeilen-Fixes ohne Agent und ohne Review.
-- **Reviews nur bei größeren oder riskanten Änderungen**, und dann mit einem gezielten Auftrag: Diff plus „worauf achten“, nicht „prüfe alles“.
-- **Codex-Aufträge eng fassen:** erlaubte Dateien, maximale Anzahl Korrekturen, „kein Browser-Test“, wenn er nicht nötig ist. `-Resume` nur für Rückfragen zum selben Thema; ein neues Thema bekommt einen neuen Thread, damit der alte Kontext nicht jedes Mal mitbezahlt wird.
-- **Browser-Prüfung:** Text mit `get_page_text`/`read_page` oder per JavaScript lesen, Screenshots nur für echte Layoutfragen und klein (`scale` 0.5).
-- **Veröffentlichen:** `node scripts/bump-version.cjs` erhöht die Version überall, danach `node scripts/check.cjs`, Commit, Push und ein kurzer Live-Check. Keine Einzel-Edits pro Versionsstelle.
-- **Lange Chats** kosten bei jeder Nachricht mehr. Pro größerem Thema einen neuen Chat beginnen; die Übergabe steht in `docs/CURRENT-STATE.md`.
-- **Selvir bündelt Wünsche** möglichst in einer Nachricht; der Koordinator setzt sie gesammelt um und veröffentlicht einmal statt mehrmals.
+- Claude-Sitzungen können einander ohne Einrichtung schreiben (`ListAgents`, `SendMessage`). Der Hauptchat darf für eine eigenständige Aufgabe eine eigene Sitzung starten, zum Beispiel für einen Worktree.
+- Auto-Kompaktierung greift bei 40 % (`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`). Pro größerem Thema lohnt trotzdem ein neuer Chat; der Stand steht in `docs/PROGRESS.md`.
+- Das Modell des Hauptchats steht in `.claude/settings.json` (Opus 5.5). Bis 16.11.2026 überschreibt `.claude/settings.local.json` es mit Fable 5.2; `scripts/agent-hooks.cjs` entfernt diese Vorgabe danach beim nächsten Sitzungsstart.
 
 ## Codex und Gemini aufrufen
 
@@ -68,27 +54,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-bridge.ps1  -R
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gemini-bridge.ps1 -Role reviewer -Effort high -Task "..."
 ```
 
-- Ohne `-Write` arbeiten beide nur lesend; `reviewer` ist immer lesend. Gemini hat in der Brücke keine Terminal-Befehle: Diffs und Testergebnisse in den Auftrag legen.
-- Ausgabe beginnt mit `CODEX_THREAD=<id>` bzw. `GEMINI_THREAD=<id>`. Rückfrage im selben Gespräch: `-Resume <id> -Task "..."`.
-- Lange Aufträge als Datei im Temp-Ordner schreiben und mit `-TaskFile` übergeben.
-- Exit 2 / `*_UNAVAILABLE` (z. B. Nutzungslimit): Ersatz laut Tabelle einsetzen und im Bericht erwähnen. Nicht wiederholt versuchen.
+- Rollen: `frontend`, `backend`, `reviewer`, `general`. Die Brücke hängt den passenden Skill und `test-runner` an den Auftrag.
+- Ohne `-Write` wird nur gelesen; `reviewer` liest immer nur. Gemini hat in der Brücke keine Terminal-Befehle, also Diffs und Testergebnisse in den Auftrag legen.
+- Die Ausgabe beginnt mit `CODEX_THREAD=<id>` oder `GEMINI_THREAD=<id>`. Rückfrage im selben Gespräch: `-Resume <id> -Task "..."`. Ein neues Thema bekommt einen neuen Thread.
+- Lange Aufträge als Datei im Temp-Ordner mit `-TaskFile` übergeben.
+- Exit 2 oder `*_UNAVAILABLE` heißt Limit oder fehlende Anmeldung: Ersatz aus der Tabelle nehmen und im Bericht erwähnen.
 - Protokolle: `%TEMP%\puls-codex\`, `%TEMP%\puls-gemini\`.
 
-## Absprache
+## Auftrag schreiben
 
-1. Koordinator schreibt den Auftrag nach Vorlage in `docs/TEAM-WORKFLOW.md` (Ziel, Basiscommit, erlaubte Dateien, was erhalten bleibt).
-2. Rückfragen kommen unter `RÜCKFRAGEN:` zurück. Der Koordinator beantwortet sie selbst per `-Resume`; nur echte Produktentscheidungen gehen an Selvir.
-3. Bei Widerspruch: eine Runde Gegenargument per `-Resume`, danach entscheidet der Koordinator und begründet kurz im Bericht. Bei Datenrisiken kann Gemini als dritte Stimme entscheiden helfen.
-4. Paralleles Schreiben nur in getrennten Worktrees (`node scripts/new-worktree.cjs`).
-5. Ergebnisse anderer KIs sind Hinweise: Koordinator sieht den Diff selbst an und lässt `node scripts/check.cjs` laufen.
+> Ziel: [konkretes Verhalten]. Ausgangscommit: [SHA]. Dateien: [Liste]. Erhalten bleibt: [Funktionen]. Fertig, wenn: [Prüfung]. Kein Commit. Bericht: geänderte Dateien, Prüfergebnis, offene Punkte.
+
+Für den Prüfer: Diff seit [SHA], Schwerpunkt [Funktion], nur belegte Befunde mit Datei und Zeile.
 
 ## Werkzeuge auf diesem PC
 
-Git und Node liegen nicht im PATH:
-
-- Git: `%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\git\cmd\git.exe`
-- Node: `%LOCALAPPDATA%\OpenAI\Codex\runtimes\cua_node\*\bin\node.exe` (zusätzlich installiert: `C:\Program Files\nodejs`)
-- Codex-CLI: `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe` (die Brücke findet sie automatisch)
-- Gemini: Antigravity CLI `%LOCALAPPDATA%\agy\bin\agy.exe`, angemeldet mit Selvirs Google-Konto. Die alte Gemini CLI (npm) ist von Google eingestellt und wird nicht benutzt.
-
-Die Ordnernamen mit Hash können sich nach Codex-Updates ändern; dann per Wildcard suchen.
+- Node: `C:\Program Files\nodejs` (im PATH). Git für Windows mit Credential Manager (im PATH); damit wird gepusht.
+- Codex-CLI: `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`; die Brücke findet sie selbst.
+- Gemini: Antigravity CLI `%LOCALAPPDATA%\agy\bin\agy.exe`, angemeldet mit Selvirs Google-Konto. Modelle: `agy models`.

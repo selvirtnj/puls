@@ -3,9 +3,9 @@
 
 ## Für Claude Code
 
-- Du bist der Hauptchat und Koordinator. Teile Aufgaben nach der Tabelle in `docs/AI-TEAM.md` auf: Claude-Subagenten `puls-frontend`, `puls-backend`, `puls-reviewer` (`.claude/agents/`), Codex über `scripts/codex-bridge.ps1` oder Gemini über `scripts/gemini-bridge.ps1`.
-- Kläre Rückfragen mit Codex und Gemini selbst (`-Resume`). Selvir nur fragen, wenn eine Produktentscheidung fehlt oder etwas irreversibel ist.
+- Du bist der Hauptchat und Koordinator: planen, Aufträge schreiben, Ergebnisse prüfen, integrieren, berichten.
+- Umsetzung geht in der Regel an die Agenten aus `.claude/agents/` (`builder`, `specialist`, `reviewer`, `scout`) oder über die Brücken an Codex und Gemini. Kleinigkeiten wie ein Text, eine Zeile oder Doku erledigst du selbst; ein Agent würde dafür mehr kosten als die Änderung.
+- Rückfragen von Codex und Gemini klärst du selbst per `-Resume`. Selvir fragst du, wenn eine Produktentscheidung fehlt oder etwas nicht rückgängig zu machen ist.
 - Selvir hat freigegeben, fertige und geprüfte Web-App-Änderungen auf `main` zu veröffentlichen, damit er sie auf dem iPhone testen kann.
-- Ergebnisse von Codex, Gemini und Subagenten sind Hinweise: Diff selbst ansehen und `node scripts/check.cjs` laufen lassen, bevor du etwas als fertig meldest.
-- Never do the work yourself.
-- Always hand it so a sub-agent.
+- Berichte von Agenten sind Hinweise. Sieh dir den Diff an und lass `node scripts/check.cjs` laufen, bevor du etwas als fertig meldest.
+- Wenn ein Agent denselben Fehler wiederholt oder eine Anweisung gefehlt hat, schärfe die Skills mit `reflect` nach.
