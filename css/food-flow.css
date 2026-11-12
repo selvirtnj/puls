@@ -505,3 +505,8 @@ body dialog.ffsheet .ffdanger { color: var(--ds-red-text); }
   body dialog.ffsheet .ffstep { width: 44px; }
   body dialog.ffsheet .ffkcal strong { font-size: 27px; }
 }
+
+/* Etikett-Reihenfolge: Energie über volle Breite, „davon“-Werte rechts neben ihrem Hauptwert. */
+body dialog.ffsheet .fflabelgrid .ffnutrientwide { grid-column: 1 / -1; }
+body dialog.ffsheet .fflabelgrid .ffnutrientsub > span:first-child { color: var(--ff-muted); font-weight: 500; }
+body dialog.ffsheet .fflabelgrid .ffnutrientopt input::placeholder { color: var(--ds-label-3, var(--ff-muted)); font-weight: 400; }

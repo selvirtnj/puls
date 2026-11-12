@@ -28,6 +28,8 @@ Kreis/Makrobalken, Tagesnavigation, Essenvorschau, Trainingsaktionen und Gesamtf
 
 - Manuelle Kalorien-/Makroziele oder profilbasierte Planung, Zieltempo und geschätzter Zieltermin. Gewichtsänderungen sollen den Bedarf nachführen. Optionale Verlaufskalibrierung benötigt vollständige Daten, siehe `adaptation.js`.
 - 18.200 gebündelte Lebensmittel aus BLS 4.0, USDA SR Legacy/Foundation und Ciqual 2025; ergänzende Open-Food-Facts-Produkte und Barcode-Suche. Quellen offen anzeigen; Community-Daten nicht pauschal „verifiziert“ nennen.
+- Seit Version 95 je Katalog-Lebensmittel zusätzlich bis zu 63 Nährwerte aus denselben Quellen (Zucker und Zuckerarten, Stärke, Fettsäuren, Omega-3/6, Cholesterin, Aminosäuren, Vitamine, Mineralstoffe, Alkohol, Koffein). Ziel ist die bestmögliche frei nutzbare Lebensmitteldatenbank; lizenzpflichtige Datenbanken wie NCCDB (Cronometer) scheiden aus. Unbekannte Werte, Spuren und Werte unter der Nachweisgrenze bleiben unbekannt. Verpackte und eigene Produkte führen Zucker, gesättigte Fettsäuren und Salz vom Etikett.
+- Referenzwerte für die zusätzlichen Nährstoffe nur von der DGE und nur mit belegter Quelle; für Zucker, gesättigte Fettsäuren und Salz keine Zielbalken.
 - Nährwerttabelle per Foto/OCR mit vorausgefülltem Kontrollformular. Erst nach Bestätigung speichern. Fehlende Angaben bleiben unbekannt; Plausibilität prüfen.
 - Deutsche/tolerante Suche, Quellenkennzeichnung, sichere Dublettenerkennung, Favoriten, zuletzt gegessen und Offline-Nutzung bereits gespeicherter Produkte.
 - Gramm, kg, ounces, ml, Liter sowie tatsächlich bekannte oder manuell definierte Portionen. Keine fiktiven Stückgewichte. Keine g/ml-Umrechnung ohne Dichte.

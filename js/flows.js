@@ -21,7 +21,17 @@ nutrition=function(){return `<div class="dashboardstack"><div class="actionrow">
 /* Snapshot nutrients into diary records so edits to products never alter old entries. */
 const flowSelectFood=selectFood;selectFood=function(id){flowSelectFood(id);if(foodSelection?.unit==='ml'&&$('grams')){$('foodbody').insertAdjacentHTML('beforeend',`<label>Wasseranteil · ml je 100 ml (optional)<input id="drink-water" type="number" min="0" max="100" step="0.1" value="${foodSelection.nutrients?.water??''}" placeholder="Unbekannt" oninput="setDrinkWater(this.value)"></label>`)} };
 function setDrinkWater(value){if(!foodSelection)return;if(value===''){if(foodSelection.nutrients)delete foodSelection.nutrients.water;save();return}let v=+value;if(Number.isFinite(v)&&v>=0&&v<=100){foodSelection.nutrients??={};foodSelection.nutrients.water=v;save()}}
-const flowAddFood=addFood;addFood=function(event){let count=state.foods.length,selection=foodSelection,amount=Number($('grams')?.value),snapshot={};for(let [key,value] of Object.entries(selection?.nutrients||{}))if(Number.isFinite(value))snapshot[key]=value*amount/100;flowAddFood(event);if(state.foods.length>count&&Object.keys(snapshot).length){state.foods.at(-1).nutrients=snapshot;save();render()}};
+const flowAddFood=addFood;addFood=function(event){
+ let count=state.foods.length,selection=foodSelection,amount=Number($('grams')?.value),snapshot={};
+ for(let [key,value] of Object.entries(selection?.nutrients||{}))if(Number.isFinite(value))snapshot[key]=value*amount/100;
+ flowAddFood(event);
+ if(state.foods.length>count){
+  let entry=state.foods.at(-1);
+  if(Object.keys(snapshot).length)entry.nutrients=snapshot;
+  window.pulsNutrients?.capture(selection,entry);
+  if(Object.keys(snapshot).length||entry.ck!==undefined||entry.nx!==undefined){save();render()}
+ }
+};
 const flowSaveAmount=saveDiaryAmount;saveDiaryAmount=function(event,id){let x=state.foods.find(x=>x.id===id),before=x?.grams,amount=+$('diary-amount').value;flowSaveAmount(event,id);if(x&&before>0&&x.grams===amount&&x.nutrients){for(let k of Object.keys(x.nutrients))x.nutrients[k]*=amount/before;save();render()}};
 const flowEditDiary=editDiaryFood;editDiaryFood=function(id){flowEditDiary(id);$('mb').insertAdjacentHTML('beforeend',`<button class="textbtn full" onclick="removeEntry('foods','${id}')">Eintrag löschen</button>`)};
 /* All entry dialogs become sheets on phones; a fresh open resets scroll. */

@@ -1,0 +1,1039 @@
+{
+  "schemaVersion": 1,
+  "keys": [
+    "kcal",
+    "p",
+    "c",
+    "f",
+    "sugars",
+    "starch",
+    "polyols",
+    "glucose",
+    "fructose",
+    "galactose",
+    "sucrose",
+    "lactose",
+    "maltose",
+    "fiber_sol",
+    "fiber_insol",
+    "satfat",
+    "mufat",
+    "pufat",
+    "transfat",
+    "omega3",
+    "omega6",
+    "ala",
+    "epa",
+    "dha",
+    "linoleic",
+    "arachidonic",
+    "cholesterol",
+    "histidine",
+    "isoleucine",
+    "leucine",
+    "lysine",
+    "methionine",
+    "phenylalanine",
+    "threonine",
+    "tryptophan",
+    "valine",
+    "cysteine",
+    "tyrosine",
+    "vita_rae",
+    "retinol",
+    "beta_carotene",
+    "vitd",
+    "vite",
+    "vitk",
+    "b1",
+    "b2",
+    "niacin",
+    "niacin_ne",
+    "b5",
+    "b6",
+    "biotin",
+    "folate_dfe",
+    "folic_acid",
+    "choline",
+    "sodium",
+    "chloride",
+    "phosphorus",
+    "zinc",
+    "copper",
+    "manganese",
+    "selenium",
+    "iodine",
+    "fluoride",
+    "chromium",
+    "molybdenum",
+    "alcohol",
+    "caffeine"
+  ],
+  "shardCount": 64,
+  "hash": {
+    "algorithm": "FNV-1a-32",
+    "encoding": "UTF-8",
+    "offsetBasis": "811c9dc5",
+    "prime": "01000193",
+    "modulus": 64
+  },
+  "precision": {
+    "extendedSignificantDigits": 5,
+    "baseMacros": "Exact catalogue values, including six values with more than five significant digits"
+  },
+  "baseFiles": {
+    "foods-0.json": "af794e3cc7356823d932b23f4cdfed232534abe9693bda91425539f8a9f16a9a",
+    "foods-1.json": "82d974e28941811d02ecb70cbd87c373921068985a2e28e994d1d1e0ba0c8de8",
+    "foods-10.json": "43c09c74047bbac25330cb700cdb67cce0fe142d58ca2867e071cb3a290730ad",
+    "foods-11.json": "10d7e3c9643e3182686286efebf2410f63771aeeeca773ef3769681decef1e56",
+    "foods-12.json": "ab9e205df57cf9cb03159be796717e38d7d522f65d2727e9dd65d6a63550f795",
+    "foods-13.json": "2d8470c581e0ce6b7e01efb85627f4c715334a9e12b1f45bc25fea8736dfeaf4",
+    "foods-14.json": "20035af8951747829fb1cb84f3f5958490a2dda77f3f3a5ecccf81bcbf9aca1f",
+    "foods-15.json": "eb5ef4931dc2cb93d980f83d72a9bee44847499d64b07dd53e7b2d8b65f6fd13",
+    "foods-16.json": "2ea7d064588786dad001a3f0edca22ddfedd25b97b8099956ecd5b164a6f197b",
+    "foods-17.json": "eabd8efad839762c562728804e337cff103c2455cd8a5c32bb78aca5e556ea2b",
+    "foods-18.json": "9e0d819a28b41410a0c72c582158a21d362dbad9d772ebf13a38af264f61ee4e",
+    "foods-19.json": "ed3e1e794e9da985898058abd642ceecde8def3f2ba339a523d4e4bd2f0ace11",
+    "foods-2.json": "5f78523788130834a39098c330b6fcc3d4f8416d9e9a32a5b1fd453f702c40f8",
+    "foods-20.json": "ac235bdd0ba7f528670d80b2e6ac2ef09945ba1ec5ee55bb72fe20a89403d666",
+    "foods-21.json": "bf8ba2e6351b66f9b4769bc537a89daeeb1cbb7f5b0741b4832771bbd6eb8d50",
+    "foods-22.json": "7748da2bb05ba71bf6e503f3fd83d5f20638130afcbdda5fd815b17613d1e387",
+    "foods-23.json": "a0915e368e1af661a9e797415bc9299714c685244eba8da2fc8634381d5f1705",
+    "foods-24.json": "1683fb1f7094cbc582d3fce1d2b719a8a3f5c230151f1c8bce74dda7f0dffe12",
+    "foods-25.json": "627562c54c70b3c9def56ebffad8ae3ead51658a3d15a700be155cb4d4ee222a",
+    "foods-26.json": "a8a7033f3e7dbed04411fb43c4be87e4994620f4aedeb71e37d3d9054ddb1f99",
+    "foods-27.json": "2030a85379345aaa4e622377fe7125e2656c833176ab06d4e154c687638374f3",
+    "foods-28.json": "5a47dd753536d7459467e8f784ff02da1be63afb58081d0078c98e320608f902",
+    "foods-29.json": "5a964b0e76ae8bf09373bc10b882aadae10a60bf1276ef2af9544832102692e8",
+    "foods-3.json": "1f466f8951010bd86dcaaa5691e1a10428e74084b1c40afcef49f4e5e997708b",
+    "foods-30.json": "56dff6005ce0114f1d7eb6d291dd444c58b1f8da87e2dd660735ef0512141e6b",
+    "foods-31.json": "939070de5d2eafeab1af6da2680bf1042f3aec4bdfea436aaf05f7b420cdda4f",
+    "foods-32.json": "485e46d42a295f8167384832f4e17f3cf10059324f6d9e2cd699b10eb26a4149",
+    "foods-33.json": "e3b8d7d519fba4a087ad044cef5380fd47f0da070d8a2b839d50b77bdac9ca1e",
+    "foods-34.json": "6632d4565e201366b7301dd8f4e8dca43d31ad604cabae47859d95761d191300",
+    "foods-35.json": "3de372e48f4fcdd2b3f65542c940224cd71218fc1d77d3cc90ee2bed3278d139",
+    "foods-36.json": "8e1833a626d5b60c535d2fb91443da7c5492083591bae6884792685d28148154",
+    "foods-4.json": "ceca0f91b11eba66fa9eb993cbf9be5c463fe64d6e8094ccb1ab3494f130a797",
+    "foods-5.json": "6f2d2385a54a92cd49ac2a6c43b8c03cd8835754f02e4a592bf4889d1abbb571",
+    "foods-6.json": "a91cec6163eaee714435ddded58972eb6006647baa9b1a6935a937a3f4cc5115",
+    "foods-7.json": "334825b2b49f573411787ac8302e77b45807d871925db71fe62c32abfbe71c9e",
+    "foods-8.json": "fe747475c73e29d88384ccf870e3bbc07c35fa0a4ae6a763bac09fde84529f83",
+    "foods-9.json": "80f8db4f5df137d4d99f7f62a00f7d97a48ab3209c6944077bfd90fef42e6059",
+    "manifest.json": "0ce9448233a1e8c0542963960b1bbab3ed0da9fb4b99e3f5fb38d3d011b8e203",
+    "portions.json": "660225e8d101664b4469d71dbdfc14ee016f4f542e3e8bca1d05b177f8bc8956"
+  },
+  "shards": [
+    {
+      "file": "catalog/nutrients-v1-00.json",
+      "rows": 281,
+      "sha256": "4b6b13fd9b78aae7441015e643e02cf3410440dccdc64f27c9a5b07ce49536eb"
+    },
+    {
+      "file": "catalog/nutrients-v1-01.json",
+      "rows": 305,
+      "sha256": "3c8bd8e4508642ac47fb0bbdc6bc9f30fdefea5daeed4818db24a8a0cce9538e"
+    },
+    {
+      "file": "catalog/nutrients-v1-02.json",
+      "rows": 270,
+      "sha256": "71d1c8fc01a7e702c408cc0e8964b4a1fd7314f29831e96040d014e115834e20"
+    },
+    {
+      "file": "catalog/nutrients-v1-03.json",
+      "rows": 278,
+      "sha256": "e87a7bcec01f7d83a3a07ea03c015dd001d495b5a62ada37498ff4c46d4cab1d"
+    },
+    {
+      "file": "catalog/nutrients-v1-04.json",
+      "rows": 293,
+      "sha256": "336544a327e3bd3fdff9a81defd0c7d917c5efd39e7ac2834c4008d97983679f"
+    },
+    {
+      "file": "catalog/nutrients-v1-05.json",
+      "rows": 272,
+      "sha256": "810780fbb1fe90f1e0501356d6a811fc32d8d9303544ed00b2b653c73ef5530a"
+    },
+    {
+      "file": "catalog/nutrients-v1-06.json",
+      "rows": 278,
+      "sha256": "f7e6cb53033aeee89aa66fceebe4a1b91f129bcac66b827aa37ddbf3a16d3e33"
+    },
+    {
+      "file": "catalog/nutrients-v1-07.json",
+      "rows": 293,
+      "sha256": "8aa6dc89771bef782d0bb8581bb741148e73bc419b0676df3ad5214638b4f574"
+    },
+    {
+      "file": "catalog/nutrients-v1-08.json",
+      "rows": 303,
+      "sha256": "7b9e0e51dfa42f18bc84514a34ea752cfe26a5d34c1b30987db755793e714167"
+    },
+    {
+      "file": "catalog/nutrients-v1-09.json",
+      "rows": 277,
+      "sha256": "3b31b5efdae50c0eded521dc163a53860eb277115fa6ab0020aca65bd2c18925"
+    },
+    {
+      "file": "catalog/nutrients-v1-10.json",
+      "rows": 301,
+      "sha256": "31b2e18e6b91970d3d62f9c26366ceb493866a173dfbe034307076e8c7ba7126"
+    },
+    {
+      "file": "catalog/nutrients-v1-11.json",
+      "rows": 284,
+      "sha256": "c8f86c881bce966712af244660a83c7116835f3257da617d8f1c3b7cbb7a0c4e"
+    },
+    {
+      "file": "catalog/nutrients-v1-12.json",
+      "rows": 261,
+      "sha256": "c86a524e4b48e543fc7c49c471f52dd5ac85c81aa741e9f38e0da99fdda023c2"
+    },
+    {
+      "file": "catalog/nutrients-v1-13.json",
+      "rows": 296,
+      "sha256": "6fabad2cc5521c831d50ecf545a5d51efb9a129d9af63bce6bb8d20b9d8762bf"
+    },
+    {
+      "file": "catalog/nutrients-v1-14.json",
+      "rows": 277,
+      "sha256": "33bfedaddbf58506bc878cec5d1957dd046656015462d8193aa94ad0d7826d8c"
+    },
+    {
+      "file": "catalog/nutrients-v1-15.json",
+      "rows": 298,
+      "sha256": "e3d643f742d0cfe95a4c83ad92230cffabb519d3a57f4772e1ae44b604b52e57"
+    },
+    {
+      "file": "catalog/nutrients-v1-16.json",
+      "rows": 289,
+      "sha256": "7e09b88d9dbcea5de7be1e2c2aadeb6e8a8697f1d083fb2ba8acf1a4436bb49f"
+    },
+    {
+      "file": "catalog/nutrients-v1-17.json",
+      "rows": 282,
+      "sha256": "959174f0d240b46df616fffa6851f23962b0da57ce647ee65eec436e57662e8b"
+    },
+    {
+      "file": "catalog/nutrients-v1-18.json",
+      "rows": 282,
+      "sha256": "062b5dde5c40759d890ee24cf9815e9bce7bdf36991f5d3066790a8d42661323"
+    },
+    {
+      "file": "catalog/nutrients-v1-19.json",
+      "rows": 280,
+      "sha256": "8065e17f68f5b3be51ca2accc5211eb58d066a6387bced8ac03e67073337e3dd"
+    },
+    {
+      "file": "catalog/nutrients-v1-20.json",
+      "rows": 288,
+      "sha256": "bd365eba49c89569781ceeaf4218bcfa278aa5094abcc013d1c7f15237351124"
+    },
+    {
+      "file": "catalog/nutrients-v1-21.json",
+      "rows": 278,
+      "sha256": "710805bd14bfbca03ceda523cdcc00ea91e577d6f93a1f11f383b25bdca66275"
+    },
+    {
+      "file": "catalog/nutrients-v1-22.json",
+      "rows": 284,
+      "sha256": "d3e6c31cb636df4e84d9e1445e30a10cfd55532e886010dacc47dfcdcd3a910b"
+    },
+    {
+      "file": "catalog/nutrients-v1-23.json",
+      "rows": 289,
+      "sha256": "9ec1c66dcfd3df3b6437bba0cf0fe5089be5a6f3ae22ba034c1e4170ec1a7a5d"
+    },
+    {
+      "file": "catalog/nutrients-v1-24.json",
+      "rows": 299,
+      "sha256": "ad924bb9d409e8dfe2ac430d0019bff05aec8545221c762d79cca16137ea04b3"
+    },
+    {
+      "file": "catalog/nutrients-v1-25.json",
+      "rows": 281,
+      "sha256": "fcc34e19fcf6ba3dd5088644e7908fc3a29feaae4436a9c9838762d7468987a8"
+    },
+    {
+      "file": "catalog/nutrients-v1-26.json",
+      "rows": 290,
+      "sha256": "e1389002779448badc17393b15838823dee1ae46c90bad63a5a7ad2517454c4a"
+    },
+    {
+      "file": "catalog/nutrients-v1-27.json",
+      "rows": 291,
+      "sha256": "6e47e069a989acc5df53deefc4e05c07b36428453681cd32a9849fac32264475"
+    },
+    {
+      "file": "catalog/nutrients-v1-28.json",
+      "rows": 305,
+      "sha256": "4100f1cf87404b6a650c1889eee76fd1f24ea15c47d38312b1aa54182e40313f"
+    },
+    {
+      "file": "catalog/nutrients-v1-29.json",
+      "rows": 295,
+      "sha256": "b6f9a5646e01db597236c3c48719dee09e22c979a9b18424632edb4b70e6499b"
+    },
+    {
+      "file": "catalog/nutrients-v1-30.json",
+      "rows": 287,
+      "sha256": "a0677984d8b02caf35578854137d485e6040b67207376ebbfd528290eb59b304"
+    },
+    {
+      "file": "catalog/nutrients-v1-31.json",
+      "rows": 287,
+      "sha256": "abdc22449e7db1edb922fd88d0bce1822abcb05363474c6b2929bfc4ac98ebda"
+    },
+    {
+      "file": "catalog/nutrients-v1-32.json",
+      "rows": 288,
+      "sha256": "7d5c503ae3cb8840e4a7a3021ab0ea5d2f263ba0942ede276020703820f0efb9"
+    },
+    {
+      "file": "catalog/nutrients-v1-33.json",
+      "rows": 310,
+      "sha256": "906c9144beeb9b734f4009f9bf74062052ec19f97bbaa8b0e2f112be20144db7"
+    },
+    {
+      "file": "catalog/nutrients-v1-34.json",
+      "rows": 295,
+      "sha256": "cc7f6aaaf5bdc6728b1fc3f90e91fd247ccd3959461f35cd3461e919334ff54b"
+    },
+    {
+      "file": "catalog/nutrients-v1-35.json",
+      "rows": 277,
+      "sha256": "e0513e70293cfa8eed33c267f10e8deb4791a2d633dc5dc29cb139a350eee352"
+    },
+    {
+      "file": "catalog/nutrients-v1-36.json",
+      "rows": 294,
+      "sha256": "3d6942cbcb169f90228a74f53772edd54172425fd618429f1a11e5d450b00936"
+    },
+    {
+      "file": "catalog/nutrients-v1-37.json",
+      "rows": 272,
+      "sha256": "264c27950f235773f2d8b7a002a99a6ed921f17487f3f7788b2a65831888aa58"
+    },
+    {
+      "file": "catalog/nutrients-v1-38.json",
+      "rows": 278,
+      "sha256": "725cc705f089c016deab4e3f44939fb2c483fbb1fbe153ff7e43111b4eb9094a"
+    },
+    {
+      "file": "catalog/nutrients-v1-39.json",
+      "rows": 292,
+      "sha256": "07644dd9f3c3eecb549b27773d43176cd044c1bc43d2a211ab0c7f2734a5b6be"
+    },
+    {
+      "file": "catalog/nutrients-v1-40.json",
+      "rows": 285,
+      "sha256": "10ab748c92e9a385a7a9a246c40c108d0da383303224ffa5159e1e77395f67f7"
+    },
+    {
+      "file": "catalog/nutrients-v1-41.json",
+      "rows": 268,
+      "sha256": "ff4dbf1a567e134e9cf1ea5244168064c38ab0e5f59b28b9fc40ef5414cdf2cd"
+    },
+    {
+      "file": "catalog/nutrients-v1-42.json",
+      "rows": 262,
+      "sha256": "2e51dc0d2ff59d6d432cd28616ef3290f7d9a0ff0518ee0e323aab50225a6e9a"
+    },
+    {
+      "file": "catalog/nutrients-v1-43.json",
+      "rows": 268,
+      "sha256": "929f4c9bad510dee7c871659fedac2acd85cee5544e3c756c2851017cf207be5"
+    },
+    {
+      "file": "catalog/nutrients-v1-44.json",
+      "rows": 275,
+      "sha256": "502e3c072fbdf02dd7a5f5dbb7e9c382a6a4f06fc569fed4e904510174057b58"
+    },
+    {
+      "file": "catalog/nutrients-v1-45.json",
+      "rows": 277,
+      "sha256": "8789ed621b07be90a7db9299b9115d3b868abda8366d5198edddc0e7b725ff9a"
+    },
+    {
+      "file": "catalog/nutrients-v1-46.json",
+      "rows": 276,
+      "sha256": "e28fcea5b4643e614141bfd0d0e5ea08d723e7df14ba2bad8035c813c7865c15"
+    },
+    {
+      "file": "catalog/nutrients-v1-47.json",
+      "rows": 265,
+      "sha256": "f540408a4c57268b1aa9ec80c76cb3a55c7e402bc98336220c7afede43a49017"
+    },
+    {
+      "file": "catalog/nutrients-v1-48.json",
+      "rows": 285,
+      "sha256": "77002d4190d6b4aa07628b2e7df42663a6b441abc293c5b12916403a72e4f436"
+    },
+    {
+      "file": "catalog/nutrients-v1-49.json",
+      "rows": 288,
+      "sha256": "679146caad9e4d4b2a0130d3da4ed99f97fd94a58ac4d25ac175f7d15b18a683"
+    },
+    {
+      "file": "catalog/nutrients-v1-50.json",
+      "rows": 292,
+      "sha256": "bf752031deb831c1c316b360a5084f81d9a5fce6b9dba060ee03157c7767600d"
+    },
+    {
+      "file": "catalog/nutrients-v1-51.json",
+      "rows": 277,
+      "sha256": "32e476078188f1c0f6297a260010f8882592d31e7514feef6543390ff1b0c8bf"
+    },
+    {
+      "file": "catalog/nutrients-v1-52.json",
+      "rows": 278,
+      "sha256": "895f7c137a29433ad62c4f0df3d77a383ff2432d78b646a13829c3e65e7379b3"
+    },
+    {
+      "file": "catalog/nutrients-v1-53.json",
+      "rows": 272,
+      "sha256": "229dc982fc85f0150c26052086e44b630b61211354f5b6e4fa483ed9ee863ce9"
+    },
+    {
+      "file": "catalog/nutrients-v1-54.json",
+      "rows": 274,
+      "sha256": "bdec27124d5b1f88b51a93b83822dd0a30328963f234014ba5814a58c864fc31"
+    },
+    {
+      "file": "catalog/nutrients-v1-55.json",
+      "rows": 296,
+      "sha256": "4222d2d0f8555285a9b07eb331db7027015aff384c40df37153aed412e9d0dde"
+    },
+    {
+      "file": "catalog/nutrients-v1-56.json",
+      "rows": 297,
+      "sha256": "454ab6b29a3b8ae7fab796ffaaa4b710ac79871644b97b25867f622ca44bb0f5"
+    },
+    {
+      "file": "catalog/nutrients-v1-57.json",
+      "rows": 282,
+      "sha256": "35ef0db6c3d0db638e80978dfbafdec2094411c901b21dce273b44658cca6c8b"
+    },
+    {
+      "file": "catalog/nutrients-v1-58.json",
+      "rows": 297,
+      "sha256": "a087fef577dd43fa86b43c98ba351ddc0ab682c5d38d7cd5a1bc8738ee0b836f"
+    },
+    {
+      "file": "catalog/nutrients-v1-59.json",
+      "rows": 299,
+      "sha256": "16ca00f21b2caf44dc614ff92ac8bab7d74cc94443502fb2ed517c27b5eff2b5"
+    },
+    {
+      "file": "catalog/nutrients-v1-60.json",
+      "rows": 283,
+      "sha256": "f6d08b63f9a2b074694e1aebb869ccb3284f1f792f45d7d3529cc5fe3a78b8d6"
+    },
+    {
+      "file": "catalog/nutrients-v1-61.json",
+      "rows": 279,
+      "sha256": "bee53abd3e9a4c5fde243c51186c8991fed8f035993ce61d1b71804c843f781d"
+    },
+    {
+      "file": "catalog/nutrients-v1-62.json",
+      "rows": 270,
+      "sha256": "c241c28aded69dd6b25cefaaf2b89a319f80d94278434e78574e7be4c0565c48"
+    },
+    {
+      "file": "catalog/nutrients-v1-63.json",
+      "rows": 274,
+      "sha256": "5ff1a689fb08cd06a023fc26ba0a5563c96744eb309e406b824c9b5d9fc93970"
+    }
+  ],
+  "sources": [
+    {
+      "name": "BLS 4.0",
+      "edition": "BLS 4.0, 2025 DE",
+      "rawFiles": [
+        {
+          "file": "bls-4.0/BLS_4_0_2025_DE_extracted/BLS_4_0_2025_DE/BLS_4_0_Daten_2025_DE.xlsx",
+          "sha256": "524bbefe25b691f5cb3de7a9f3e27fa2967aebfeabf217d99414ba7806e78c60"
+        },
+        {
+          "file": "bls-4.0/BLS_4_0_2025_DE_extracted/BLS_4_0_2025_DE/BLS_4_0_Components_DE_EN.xlsx",
+          "sha256": "359aefcd2086f45e62ff3dbd0c8536306e594a5806ac325d8bf86f484561bdf4"
+        }
+      ],
+      "matched": 7090,
+      "imported": 7090,
+      "coverage": {
+        "kcal": 7090,
+        "p": 7090,
+        "c": 7090,
+        "f": 7090,
+        "sugars": 7024,
+        "starch": 6876,
+        "polyols": 6490,
+        "glucose": 6919,
+        "fructose": 6909,
+        "galactose": 6168,
+        "sucrose": 6939,
+        "lactose": 6954,
+        "maltose": 6614,
+        "fiber_sol": 3229,
+        "fiber_insol": 3232,
+        "satfat": 7024,
+        "mufat": 6779,
+        "pufat": 6890,
+        "transfat": 0,
+        "omega3": 6643,
+        "omega6": 6843,
+        "ala": 6685,
+        "epa": 6450,
+        "dha": 6486,
+        "linoleic": 6872,
+        "arachidonic": 5574,
+        "cholesterol": 7011,
+        "histidine": 7034,
+        "isoleucine": 7018,
+        "leucine": 7021,
+        "lysine": 7049,
+        "methionine": 7032,
+        "phenylalanine": 7046,
+        "threonine": 7029,
+        "tryptophan": 7004,
+        "valine": 7046,
+        "cysteine": 6830,
+        "tyrosine": 6941,
+        "vita_rae": 6515,
+        "retinol": 7045,
+        "beta_carotene": 6305,
+        "vitd": 6745,
+        "vite": 6931,
+        "vitk": 6498,
+        "b1": 7037,
+        "b2": 7035,
+        "niacin": 7033,
+        "niacin_ne": 7072,
+        "b5": 6980,
+        "b6": 7001,
+        "biotin": 6597,
+        "folate_dfe": 6851,
+        "folic_acid": 7044,
+        "choline": 0,
+        "sodium": 7053,
+        "chloride": 6266,
+        "phosphorus": 7068,
+        "zinc": 7040,
+        "copper": 6994,
+        "manganese": 7008,
+        "selenium": 0,
+        "iodine": 6206,
+        "fluoride": 6024,
+        "chromium": 6073,
+        "molybdenum": 5770,
+        "alcohol": 6923,
+        "caffeine": 0
+      },
+      "selfCheck": {
+        "comparisons": 92170,
+        "presentComparisons": 91198,
+        "expectedDifferences": [],
+        "unexpectedDifferences": []
+      },
+      "diagnostics": {
+        "negativeCells": 0,
+        "suppressedFormulaZeros": 2331,
+        "previousSuppressedFormulaZeros": 2549,
+        "suppressedBeforeByOrigin": {
+          "Rezeptberechnung": 208,
+          "Formelberechnung": 2331,
+          "Analyse": 0,
+          "Logische Null": 0,
+          "Übernommener Wert": 4,
+          "Musterberechnung": 0,
+          "Reskalierung": 6,
+          "Nährstoffdatenbank": 0,
+          "Aggregation": 0,
+          "Literatur": 0,
+          "Labelangabe": 0
+        },
+        "suppressedAfterByOrigin": {
+          "Rezeptberechnung": 0,
+          "Formelberechnung": 2331,
+          "Analyse": 0,
+          "Logische Null": 0,
+          "Übernommener Wert": 0,
+          "Musterberechnung": 0,
+          "Reskalierung": 0,
+          "Nährstoffdatenbank": 0,
+          "Aggregation": 0,
+          "Literatur": 0,
+          "Labelangabe": 0
+        },
+        "unparsedFormulas": []
+      }
+    },
+    {
+      "name": "USDA SR Legacy 2018",
+      "edition": "SR Legacy April 2018",
+      "rawFiles": [
+        {
+          "file": "usda-sr-legacy-2018/FoodData_Central_sr_legacy_food_csv_2018-04_extracted/FoodData_Central_sr_legacy_food_csv_2018-04/food.csv",
+          "sha256": "de8b0390058db4f102368c9fbdfde144790b480ff4cb0507c0e060ef99805dee"
+        },
+        {
+          "file": "usda-sr-legacy-2018/FoodData_Central_sr_legacy_food_csv_2018-04_extracted/FoodData_Central_sr_legacy_food_csv_2018-04/food_nutrient.csv",
+          "sha256": "6d07e6fc062b09750c4d95112be5a5cdb56a2346efcfd0c96b7a7d705812d4bd"
+        },
+        {
+          "file": "usda-sr-legacy-2018/FoodData_Central_sr_legacy_food_csv_2018-04_extracted/FoodData_Central_sr_legacy_food_csv_2018-04/nutrient.csv",
+          "sha256": "466ab9d011094cc1ad8d939b246693988b56817c42d0e40a98820723695c6084"
+        }
+      ],
+      "matched": 7793,
+      "imported": 7792,
+      "coverage": {
+        "kcal": 7792,
+        "p": 7792,
+        "c": 7792,
+        "f": 7792,
+        "sugars": 6007,
+        "starch": 1167,
+        "polyols": 0,
+        "glucose": 1740,
+        "fructose": 1745,
+        "galactose": 1579,
+        "sucrose": 1733,
+        "lactose": 1712,
+        "maltose": 1711,
+        "fiber_sol": 0,
+        "fiber_insol": 0,
+        "satfat": 7450,
+        "mufat": 7277,
+        "pufat": 7279,
+        "transfat": 4179,
+        "omega3": 0,
+        "omega6": 0,
+        "ala": 1967,
+        "epa": 5800,
+        "dha": 5772,
+        "linoleic": 1842,
+        "arachidonic": 165,
+        "cholesterol": 7394,
+        "histidine": 5076,
+        "isoleucine": 5084,
+        "leucine": 5083,
+        "lysine": 5097,
+        "methionine": 5096,
+        "phenylalanine": 5079,
+        "threonine": 5080,
+        "tryptophan": 5030,
+        "valine": 5083,
+        "cysteine": 4930,
+        "tyrosine": 5049,
+        "vita_rae": 6918,
+        "retinol": 6788,
+        "beta_carotene": 5440,
+        "vitd": 5185,
+        "vite": 5580,
+        "vitk": 5054,
+        "b1": 7402,
+        "b2": 7421,
+        "niacin": 7402,
+        "niacin_ne": 0,
+        "b5": 6376,
+        "b6": 7262,
+        "biotin": 0,
+        "folate_dfe": 6482,
+        "folic_acid": 6500,
+        "choline": 4611,
+        "sodium": 7709,
+        "chloride": 0,
+        "phosphorus": 7467,
+        "zinc": 7406,
+        "copper": 7284,
+        "manganese": 6492,
+        "selenium": 6865,
+        "iodine": 0,
+        "fluoride": 538,
+        "chromium": 0,
+        "molybdenum": 0,
+        "alcohol": 5399,
+        "caffeine": 5215
+      },
+      "selfCheck": {
+        "comparisons": 101309,
+        "presentComparisons": 97850,
+        "expectedDifferences": [],
+        "unexpectedDifferences": []
+      },
+      "diagnostics": {
+        "negativeCells": 0
+      }
+    },
+    {
+      "name": "USDA Foundation 2026",
+      "edition": "Foundation JSON 2026-10-29",
+      "rawFiles": [
+        {
+          "file": "usda-foundation-2026-10-json/FoodData_Central_foundation_food_json_2026-10-29_extracted/FoodData_Central_foundation_food_json_2026-10-29.json",
+          "sha256": "990e7731dcec30cecbbb212896a0fe4333f38c65ce7f525e2b679f0dc27658a1"
+        },
+        {
+          "file": "usda-foundation/FoodData_Central_foundation_food_csv_2026-10-29_extracted/FoodData_Central_foundation_food_csv_2026-10-29/nutrient.csv",
+          "sha256": "226ba937d1a73e8c87bd7fdcdd577524699bef4025c9232ee474b7d3083498ff"
+        }
+      ],
+      "matched": 311,
+      "imported": 311,
+      "coverage": {
+        "kcal": 311,
+        "p": 311,
+        "c": 311,
+        "f": 311,
+        "sugars": 121,
+        "starch": 71,
+        "polyols": 0,
+        "glucose": 124,
+        "fructose": 124,
+        "galactose": 78,
+        "sucrose": 124,
+        "lactose": 124,
+        "maltose": 124,
+        "fiber_sol": 10,
+        "fiber_insol": 10,
+        "satfat": 108,
+        "mufat": 108,
+        "pufat": 93,
+        "transfat": 75,
+        "omega3": 0,
+        "omega6": 0,
+        "ala": 57,
+        "epa": 57,
+        "dha": 57,
+        "linoleic": 69,
+        "arachidonic": 0,
+        "cholesterol": 78,
+        "histidine": 63,
+        "isoleucine": 63,
+        "leucine": 63,
+        "lysine": 63,
+        "methionine": 63,
+        "phenylalanine": 63,
+        "threonine": 63,
+        "tryptophan": 63,
+        "valine": 63,
+        "cysteine": 17,
+        "tyrosine": 52,
+        "vita_rae": 50,
+        "retinol": 52,
+        "beta_carotene": 36,
+        "vitd": 52,
+        "vite": 55,
+        "vitk": 81,
+        "b1": 169,
+        "b2": 132,
+        "niacin": 175,
+        "niacin_ne": 0,
+        "b5": 52,
+        "b6": 190,
+        "biotin": 102,
+        "folate_dfe": 0,
+        "folic_acid": 0,
+        "choline": 27,
+        "sodium": 306,
+        "chloride": 0,
+        "phosphorus": 307,
+        "zinc": 307,
+        "copper": 307,
+        "manganese": 307,
+        "selenium": 149,
+        "iodine": 43,
+        "fluoride": 0,
+        "chromium": 0,
+        "molybdenum": 51,
+        "alcohol": 0,
+        "caffeine": 0
+      },
+      "selfCheck": {
+        "comparisons": 4043,
+        "presentComparisons": 3218,
+        "expectedDifferences": [
+          {
+            "catalogKey": "USDA Foundation 2026:2747669",
+            "key": "b12",
+            "catalog": 1.57,
+            "raw": 1.63
+          }
+        ],
+        "unexpectedDifferences": []
+      },
+      "diagnostics": {
+        "negativeCells": 10,
+        "duplicateIds": 0,
+        "sugarDefinitionConflicts": 1,
+        "cysteine1232Omitted": 89,
+        "numberAudit": {
+          "comparedIds": 71,
+          "jsonChecked": 66,
+          "numbers": {
+            "1003": "203",
+            "1004": "204",
+            "1005": "205",
+            "1008": "208",
+            "1009": "209",
+            "1010": "210",
+            "1011": "211",
+            "1012": "212",
+            "1013": "213",
+            "1014": "214",
+            "1018": "221",
+            "1051": "255",
+            "1057": "262",
+            "1063": "269.3",
+            "1075": "287",
+            "1079": "291",
+            "1082": "295",
+            "1084": "297",
+            "1087": "301",
+            "1089": "303",
+            "1090": "304",
+            "1091": "305",
+            "1092": "306",
+            "1093": "307",
+            "1095": "309",
+            "1098": "312",
+            "1099": "313",
+            "1100": "314",
+            "1101": "315",
+            "1102": "316",
+            "1103": "317",
+            "1105": "319",
+            "1106": "320",
+            "1107": "321",
+            "1109": "323",
+            "1114": "328",
+            "1162": "401",
+            "1165": "404",
+            "1166": "405",
+            "1167": "406",
+            "1170": "410",
+            "1175": "415",
+            "1176": "416",
+            "1177": "417",
+            "1178": "418",
+            "1180": "421",
+            "1185": "430",
+            "1186": "431",
+            "1190": "435",
+            "1210": "501",
+            "1211": "502",
+            "1212": "503",
+            "1213": "504",
+            "1214": "505",
+            "1215": "506",
+            "1216": "507",
+            "1217": "508",
+            "1218": "509",
+            "1219": "510",
+            "1221": "512",
+            "1253": "601",
+            "1257": "605",
+            "1258": "606",
+            "1272": "621",
+            "1278": "629",
+            "1292": "645",
+            "1293": "646",
+            "1316": "675",
+            "1404": "851",
+            "1408": "855",
+            "2000": "269"
+          }
+        }
+      }
+    },
+    {
+      "name": "Ciqual 2025",
+      "edition": "Ciqual 2025, FR 2025-11-03",
+      "rawFiles": [
+        {
+          "file": "ciqual-2025/Table_Ciqual_2025_FR_2025_11_03.xlsx",
+          "sha256": "5555c572fa3735991298d832d0427788fa69a11b4fd20a5d580d58942369fbb0"
+        }
+      ],
+      "matched": 3006,
+      "imported": 3006,
+      "coverage": {
+        "kcal": 3006,
+        "p": 3006,
+        "c": 3006,
+        "f": 3006,
+        "sugars": 2700,
+        "starch": 1859,
+        "polyols": 2150,
+        "glucose": 1194,
+        "fructose": 1027,
+        "galactose": 269,
+        "sucrose": 1145,
+        "lactose": 725,
+        "maltose": 827,
+        "fiber_sol": 0,
+        "fiber_insol": 0,
+        "satfat": 2882,
+        "mufat": 2372,
+        "pufat": 2358,
+        "transfat": 0,
+        "omega3": 0,
+        "omega6": 0,
+        "ala": 1758,
+        "epa": 1399,
+        "dha": 1341,
+        "linoleic": 1767,
+        "arachidonic": 886,
+        "cholesterol": 2077,
+        "histidine": 0,
+        "isoleucine": 0,
+        "leucine": 0,
+        "lysine": 0,
+        "methionine": 0,
+        "phenylalanine": 0,
+        "threonine": 0,
+        "tryptophan": 0,
+        "valine": 0,
+        "cysteine": 0,
+        "tyrosine": 0,
+        "vita_rae": 1177,
+        "retinol": 1836,
+        "beta_carotene": 1412,
+        "vitd": 1283,
+        "vite": 1385,
+        "vitk": 1159,
+        "b1": 1965,
+        "b2": 1912,
+        "niacin": 1943,
+        "niacin_ne": 0,
+        "b5": 1971,
+        "b6": 2058,
+        "biotin": 0,
+        "folate_dfe": 722,
+        "folic_acid": 1127,
+        "choline": 0,
+        "sodium": 2636,
+        "chloride": 1194,
+        "phosphorus": 2151,
+        "zinc": 2057,
+        "copper": 1842,
+        "manganese": 1797,
+        "selenium": 1020,
+        "iodine": 1162,
+        "fluoride": 0,
+        "chromium": 0,
+        "molybdenum": 0,
+        "alcohol": 2991,
+        "caffeine": 0
+      },
+      "selfCheck": {
+        "comparisons": 39078,
+        "presentComparisons": 30957,
+        "expectedDifferences": [],
+        "unexpectedDifferences": []
+      },
+      "diagnostics": {
+        "negativeCells": 0
+      }
+    }
+  ],
+  "plausibilityWarnings": [
+    {
+      "catalogKey": "BLS 4.0:G212100",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:G212152",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:G212182",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:M2R9300",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:T121702",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:T306100",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:T306132",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:T306152",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:T306182",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:T306200",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:T306252",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:T306282",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:T800100",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:W161000",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "BLS 4.0:Y637422",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "USDA Foundation 2026:749420",
+      "rule": "sugars"
+    },
+    {
+      "catalogKey": "USDA SR Legacy 2018:168246",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "USDA SR Legacy 2018:168314",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "USDA SR Legacy 2018:169016",
+      "rule": "sugars"
+    },
+    {
+      "catalogKey": "USDA SR Legacy 2018:169191",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "USDA SR Legacy 2018:170603",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "USDA SR Legacy 2018:171627",
+      "rule": "sugars"
+    },
+    {
+      "catalogKey": "USDA SR Legacy 2018:174513",
+      "rule": "fatFractions"
+    },
+    {
+      "catalogKey": "USDA SR Legacy 2018:174935",
+      "rule": "fatFractions"
+    }
+  ]
+}

@@ -17,3 +17,6 @@ ios/PULS/Assets.xcassets/AppIcon-*.appiconset/
 
 # Claude Code
 .claude/scheduled_tasks.lock
+
+# Rohdaten der Lebensmittelquellen (siehe docs/CATALOG-SOURCES.md)
+catalog-raw/

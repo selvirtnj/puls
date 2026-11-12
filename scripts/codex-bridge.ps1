@@ -81,7 +81,9 @@ $thread = ($log | Select-String '"thread_id":"([^"]+)"' | Select-Object -First 1
 if ($thread) { Write-Output "CODEX_THREAD=$thread" } elseif ($Resume) { Write-Output "CODEX_THREAD=$Resume" }
 
 $err = $log | Select-String '"type":"(turn\.failed|error)"' | Select-Object -Last 1
-if ($err -and -not (Test-Path $lastMsg)) {
+# Eine leere Antwortdatei ist keine Antwort (z. B. Abbruch durch das Nutzungslimit mitten im Lauf).
+$hasAnswer = (Test-Path $lastMsg) -and ((Get-Item $lastMsg).Length -gt 0)
+if ($err -and -not $hasAnswer) {
   $msg = if ($err.Line -match '"message":"([^"]+)"') { $Matches[1] } else { $err.Line }
   $unavailable = $msg -match 'usage limit|rate limit|log ?in|auth|quota'
   Write-Output "$(if ($unavailable) { 'CODEX_UNAVAILABLE' } else { 'CODEX_ERROR' }): $msg"
@@ -89,7 +91,7 @@ if ($err -and -not (Test-Path $lastMsg)) {
   if ($unavailable) { exit 2 } else { exit 1 }
 }
 
-if (Test-Path $lastMsg) {
+if ($hasAnswer) {
   Get-Content $lastMsg -Encoding utf8
   exit 0
 }

@@ -622,5 +622,15 @@ Object.assign(englishUI,{
  "Hier kannst du auch Etiketttext einfügen.": "You can also paste label text here.",
  "z. B. Scheibe, EL, Stück": "e.g. slice, tbsp, piece",
  "Geschätztes 1RM über deine Trainingseinheiten": "Estimated 1RM across your workouts",
- "Lebensmittel hinzufügen": "Add food"
+ "Lebensmittel hinzufügen": "Add food",
+ "Zucker (optional)": "Sugars (optional)",
+ "Gesättigte Fettsäuren (optional)": "Saturated fat (optional)",
+ "Salz (optional)": "Salt (optional)",
+ "Bitte optionale Werte prüfen.": "Please check the optional values.",
+ "davon gesättigte": "of which saturates",
+ "davon Zucker": "of which sugars",
+ "Eiweiß": "Protein",
+ "Salz": "Salt",
+ "Alle Nährwerte": "All nutrients",
+ "Alle Nährstoffe": "All nutrients"
 });

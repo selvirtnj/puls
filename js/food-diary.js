@@ -89,8 +89,71 @@ function fdSlideMicros(){
   let nt=nutrientTotals(),keys=fdHighlighted();
   let cells=keys.map(k=>{let [label,unit]=nutrientLabels[k],goal=fdMicroGoal(k),has=(nt.coverage?.[k]||0)>0,value=nt.totals?.[k]||0,pct=goal>0?value/goal*100:0;
     return `<div class="fdmicro${has?'':' fdunknown'}"><div class="fdbarline"><span>${label}</span><strong>${has?(goal>0?Math.round(pct)+' %':fdNum(value,1)+' '+unit):fdT('keine Angabe','no data')}</strong></div><div class="fdmeter"><i style="--w:${has&&goal>0?Math.min(100,pct):0}%"></i></div></div>`}).join('');
-  return `<div class="fdslidehead"><h2>${fdT('Hervorgehobene Nährstoffe','Highlighted nutrients')}</h2><button type="button" class="textbtn" onclick="microTargetForm()">${fdT('Ziele','Targets')}</button></div><div class="fdmicros">${cells}</div>`;
+  return `<div class="fdslidehead"><h2>${fdT('Hervorgehobene Nährstoffe','Highlighted nutrients')}</h2><button type="button" class="textbtn" onclick="microTargetForm()">${fdT('Ziele','Targets')}</button></div><div class="fdmicros">${cells}</div>${fdAllButton()}`;
 }
+
+/* ---------- Alle Nährstoffe (nur lesend; nichts Neues wird gespeichert) ---------- */
+// Gruppen der Anzeige; der erste Schlüssel einer Makrogruppe ist die Hauptzeile, die übrigen sind „davon“-Zeilen.
+const fdAllGroups=[
+  ['Kohlenhydrate','Carbohydrates',['c','sugars','glucose','fructose','galactose','sucrose','lactose','maltose','starch','polyols','fiber','fiber_sol','fiber_insol'],true],
+  ['Fette','Fats',['f','satfat','mufat','pufat','omega3','omega6','ala','epa','dha','linoleic','arachidonic','transfat','cholesterol'],true],
+  ['Eiweiß und Aminosäuren','Protein and amino acids',['p','histidine','isoleucine','leucine','lysine','methionine','phenylalanine','threonine','tryptophan','valine','cysteine','tyrosine'],true],
+  ['Vitamine','Vitamins',['vita_rae','retinol','beta_carotene','vitd','vite','vitk','b1','b2','niacin','niacin_ne','b5','b6','biotin','folate','folate_dfe','folic_acid','b12','vitc','choline'],false],
+  ['Mineralstoffe','Minerals',['sodium','salt','chloride','potassium','calcium','magnesium','phosphorus','iron','zinc','copper','manganese','selenium','iodine','fluoride','chromium','molybdenum'],false],
+  ['Sonstiges','Other',['alcohol','caffeine'],false]
+];
+// Ohne Zielbalken (Vorgabe): Zucker, gesättigte Fettsäuren, Natrium und Salz.
+const fdNoBar=new Set(['sugars','satfat','sodium','salt']);
+function fdNutrientDef(key){
+  if(key==='salt')return {key,unit:'g',nameDe:'Salz',nameEn:'Salt'};
+  return (window.pulsNutrients?.definitions()||[]).find(d=>d.key===key)||null;
+}
+// Bis zu zwei signifikante Nachkommastellen für kleine Werte, ganze Zahlen ab 100. Unbekannt nie als 0.
+function fdNutrientAmount(value){
+  if(!Number.isFinite(value))return '–';
+  let digits=value===0||value>=100?0:value>=1?1:value>=.1?2:3,shown=Math.round(value*10**digits)/10**digits;
+  let fmt=x=>typeof appLocale==='function'?new Intl.NumberFormat(appLocale(),{maximumFractionDigits:digits}).format(x):String(x);
+  return value===0||shown>0?fmt(shown):'< '+fmt(10**-digits);
+}
+// Liefert die Zeilen einer Gruppe: [{key,label,unit,value,known,total,sub}] nur für bekannte Werte.
+function fdNutrientRows(get){
+  return fdAllGroups.map(([de,en,keys,macro])=>{
+    let rows=keys.map((key,i)=>{let def=fdNutrientDef(key),v=get(key==='salt'?'sodium':key);if(!def||!v||!Number.isFinite(v.value))return null;
+      return {key,label:fdT(def.nameDe,def.nameEn),unit:def.unit,value:key==='salt'?v.value*.0025:v.value,known:v.known,total:v.total,sub:macro&&i>0}}).filter(Boolean);
+    return {title:fdT(de,en),rows};
+  }).filter(g=>g.rows.length);
+}
+function fdNutrientGoal(key){
+  if(fdNoBar.has(key)||key==='water')return 0;
+  if(typeof nutrientLabels==='object'&&nutrientLabels[key])return fdMicroGoal(key);
+  return Number(window.pulsNutrientRefs?.reference(key,state.profile))||0;
+}
+function fdAllButton(){return `<button type="button" class="fdallbtn" onclick="fdAllNutrients()"><span>${fdT('Alle Nährstoffe','All nutrients')}</span>${phIcon('caret-right')}</button>`}
+function fdAllDayEntries(){return fdDayFoods().filter(x=>!fdIsWater(x))}
+function fdAllNutrients(){
+  let api=window.pulsNutrients;if(!api)return;
+  fdSound('sheetOpen');
+  let token=String(++fdAllOpenCount),day=date,profile=state;
+  openModal(fdT('Alle Nährstoffe','All nutrients'),`<div class="fdall" id="fd-all" data-day="${esc(date)}" data-open="${token}"></div>`);
+  fdAllRender();
+  // Bei jedem Öffnen nachladen: geladene Dateien kehren sofort zurück, fehlgeschlagene werden erneut versucht.
+  // Neu gezeichnet wird nur dasselbe offene Sheet für denselben Tag und dasselbe Profil.
+  Promise.resolve(api.ensureForEntries(fdAllDayEntries())).catch(()=>{}).then(()=>{let box=$('fd-all');if(box&&box.dataset.open===token&&date===day&&state===profile)fdAllRender()});
+}
+let fdAllOpenCount=0;
+function fdAllRender(){
+  let box=$('fd-all'),api=window.pulsNutrients;if(!box||!api)return;
+  let entries=fdAllDayEntries(),t=api.totals(entries);
+  let groups=fdNutrientRows(key=>{let x=t.nutrients[key];return x&&x.known>0?{value:x.value,known:x.known,total:x.total}:null});
+  let row=r=>{let goal=fdNutrientGoal(r.key),pct=goal>0?r.value/goal*100:0,partial=r.known<r.total;
+    return `<div class="fdallrow${r.sub?' fdsub':''}${goal>0?' fdhasgoal':''}"><div class="fdbarline"><span>${esc(r.label)}</span><strong>${fdNutrientAmount(r.value)} ${r.unit}${goal>0?`<small class="fdpct">· ${Math.round(pct)} %</small>`:''}${partial?`<small class="fdcover" title="${r.known}/${r.total} ${fdT('Einträge mit Wert','entries with data')}" >${r.known}/${r.total}</small>`:''}</strong></div>${goal>0?`<div class="fdmeter"><i style="--w:${Math.min(100,pct)}%"></i></div>`:''}</div>`};
+  let body=groups.map(g=>`<section class="fdallgroup"><h4>${esc(g.title)}</h4><div class="fdallrows">${g.rows.map(row).join('')}</div></section>`).join('');
+  box.innerHTML=body||(t.pending?fdAllPlaceholder():`<p class="fdempty">${fdT('Keine Angaben','No data')}</p>`);
+  if(body&&t.pending)box.insertAdjacentHTML('beforeend',fdAllPlaceholder());
+}
+function fdAllPlaceholder(){return `<div class="fdallwait" aria-busy="true" aria-label="${fdT('Wird geladen','Loading')}"><i></i><i></i><i></i></div>`}
+// Übersicht: dieselbe Zeile unter den Mikronährstoffen (microBars in flows.js/design-system.js).
+if(typeof microBars==='function'){const fdMicroBarsBase=microBars;microBars=function(...args){return fdMicroBarsBase.apply(this,args)+fdAllButton()}}
 function fdWeekStats(endDay=date){
   let sums={kcal:0,p:0,c:0,f:0},days=0,end=new Date(endDay+'T12:00:00');
   for(let i=0;i<7;i++){let d=new Date(end);d.setDate(d.getDate()-i);let key=localISO(d),items=fdDayFoods(key).filter(x=>!fdIsWater(x));if(!items.length)continue;days++;for(let x of items)for(let k of Object.keys(sums))sums[k]+=Number(x[k])||0}

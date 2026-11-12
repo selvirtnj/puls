@@ -209,10 +209,11 @@ function fpDecorateDetail(){
   let known=['kcal','p','c','f'].filter(k=>Number.isFinite(food[k])).length+Object.values(food.nutrients||{}).filter(Number.isFinite).length;
   let submit=form.querySelector('.ffsubmit');
   let info=document.createElement('div');info.className='fpinfo';
-  info.innerHTML=`<p class="fpsource" data-no-translate>${esc([food.recipeId?fdT('Eigenes Rezept','Own recipe'):ffSourceShort(food),known+' '+fdT('Nährwerte bekannt','nutrient values known'),fdT('Werte je 100 ','Values per 100 ')+base].join(' · '))}</p><section class="fpsection" id="fp-energy" aria-live="polite"></section><section class="fpsection" id="fp-targets"></section><section class="fpsection" id="fp-highlights"></section>`;
+  info.innerHTML=`<p class="fpsource" data-no-translate>${esc([food.recipeId?fdT('Eigenes Rezept','Own recipe'):ffSourceShort(food),known+' '+fdT('Nährwerte bekannt','nutrient values known'),fdT('Werte je 100 ','Values per 100 ')+base].join(' · '))}</p><section class="fpsection" id="fp-energy" aria-live="polite"></section><section class="fpsection" id="fp-targets"></section><section class="fpsection" id="fp-highlights"></section><details class="fpsection fpall" id="fp-all" hidden><summary><h4>${fdT('Alle Nährwerte','All nutrients')}</h4>${phIcon('caret-down')}</summary><div id="fp-all-body"></div></details>`;
   form.insertBefore(info,submit);
   if(submit&&fpPick)submit.textContent=fdT('Zur Kombi hinzufügen','Add to combo');
   fpDetailUpdate();
+  fpAllEnsure(food);
 }
 function fpUnitOptions(food,select){
   let base=ffBase(food),units=ffUnits(food),value=select.value,option=u=>`<option value="${esc(u.key)}">${esc(u.label)}${/^p\d+$/.test(u.key)?' · '+n(u.factor)+' '+base:''}</option>`;
@@ -239,6 +240,39 @@ function fpDetailUpdate(){
   $('fp-targets').innerHTML=`<h4>${fdT('Makro-Ziele heute','Macro targets today')}</h4>${bar(fdT('Energie','Energy'),'kcal',kcal,'kcal','fdkcal')}${bar('Protein','p',p,'g','fdp')}${bar(fdT('Kohlenhydrate','Carbohydrates'),'c',c,'g','fdc')}${bar(fdT('Fett','Fat'),'f',fat,'g','fdf')}`;
   let keys=fdHighlighted();
   $('fp-highlights').innerHTML=keys.length?`<h4>${fdT('Hervorgehobene Nährstoffe','Highlighted nutrients')}</h4><div class="fdmicros">${keys.map(k=>{let [label,unit]=nutrientLabels[k],v=Number.isFinite(food.nutrients?.[k])?food.nutrients[k]*f:null,goal=fdMicroGoal(k),pct=v!==null&&goal>0?v/goal*100:0;return `<div class="fdmicro${v===null?' fdunknown':''}"><div class="fdbarline"><span>${label}</span><strong>${v===null?fdT('keine Angabe','no data'):goal>0?Math.round(pct)+' %':fdNum(v,1)+' '+unit}</strong></div><div class="fdmeter"><i style="--w:${Math.min(100,pct)}%"></i></div></div>`}).join('')}</div>`:'';
+  fpAllUpdate();
+}
+/* „Alle Nährwerte“: eingeklappt, folgt der gewählten Menge. Katalogwerte werden bei Bedarf nachgeladen;
+   offline bleiben nur gespeicherte Etikett- und Snapshotwerte, sonst entfällt der Abschnitt. */
+function fpAllKey(food){let api=window.pulsNutrients;return typeof api?.keyFor==='function'?api.keyFor(food):(food?.catalogKey||(food?.record!==undefined&&food?.source?food.source+':'+food.record:null))}
+// Bei jedem Öffnen eines Produktdetails nachladen (auch nach einem früheren Fehlschlag). Neu gezeichnet wird
+// nur genau dieser Abschnitt für dasselbe Produkt und dasselbe Profil; ein späteres Öffnen ersetzt ihn.
+function fpAllEnsure(food){
+  let api=window.pulsNutrients,box=$('fp-all'),key=fpAllKey(food),profile=state;if(!api||!box||!key||food.recipeId)return;
+  Promise.resolve(api.ensure([key])).catch(()=>{}).then(()=>{if($('fp-all')===box&&box.isConnected&&foodSelection===food&&state===profile)fpAllUpdate()});
+}
+function fpAllUpdate(){
+  let box=$('fp-all'),body=$('fp-all-body'),food=foodSelection,api=window.pulsNutrients;if(!box||!body||!food)return;
+  if(!api||food.recipeId){box.hidden=true;return}
+  let raw=$('grams')?.value,amount=Number(raw),valid=raw!==''&&Number.isFinite(amount)&&amount>0;
+  let r=api.resolveProduct(food,{amount:valid?amount:100,unit:ffBase(food)});
+  let groups=fdNutrientRows(key=>Number.isFinite(r.values[key])?{value:r.values[key],known:1,total:1}:null);
+  let extra=groups.some(g=>g.rows.some(x=>!['c','f','p'].includes(x.key)));
+  if(!extra&&!r.pending){box.hidden=true;body.innerHTML='';return}
+  box.hidden=false;
+  if(!valid){body.innerHTML=`<p class="fpempty">${fdT('Menge prüfen','Check amount')}</p>`;return}
+  body.innerHTML=extra?groups.map(g=>`<div class="fpallgroup"><h5>${esc(g.title)}</h5>${g.rows.map(x=>`<div class="fpallrow${x.sub?' fdsub':''}"><span>${esc(x.label)}</span><strong>${fdNutrientAmount(x.value)} ${x.unit}</strong></div>`).join('')}</div>`).join(''):'';
+  if(r.pending)body.insertAdjacentHTML('beforeend',fdAllPlaceholder());
+  let credit=fpSourceCredit(food);if(credit)body.insertAdjacentHTML('beforeend',`<p class="fpallsource" data-no-translate>${esc(credit)}</p>`);
+}
+// Quellenangabe (Lizenzpflicht BLS/Ciqual, USDA gemeinfrei) nur für Katalog-Lebensmittel; Barcode-, eigene Produkte und Rezepte ohne.
+function fpSourceCredit(food){
+  if(!food||food.recipeId||food.barcode)return '';
+  let source=String(fpAllKey(food)||'').split(':')[0],label=fdT('Quelle: ','Source: ');
+  if(source==='BLS 4.0')return label+'Max Rubner-Institut (2025), Bundeslebensmittelschlüssel (BLS) 4.0 · CC BY 4.0';
+  if(source==='USDA SR Legacy 2018'||source==='USDA Foundation 2026')return label+'U.S. Department of Agriculture, Agricultural Research Service, FoodData Central · '+fdT('gemeinfrei (CC0)','public domain (CC0)');
+  if(source==='Ciqual 2025')return label+'ANSES, Table de composition nutritionnelle des aliments Ciqual 2025 · Licence Ouverte 2.0';
+  return '';
 }
 
 /* ---------- Produkt prüfen und eigene Werte: Einheit vorausgewählt, andere optional ---------- */
@@ -278,7 +312,7 @@ function fpMealTotals(meal){return (meal.items||[]).reduce((a,x)=>{for(let k of 
 document.addEventListener('click',event=>{let el=event.target.closest?.('[data-fp-meal]');if(el)fpMealView(el.dataset.fpMeal)});
 let fpViewMealId=null;
 function fpMealRow(meal,i){let t=fpMealTotals(meal);return `<div class="fprow ffrow"><button type="button" class="fprowmain" data-fp-meal="${esc(meal.id)}"><span class="fprowtext"><strong data-no-translate>${esc(meal.name)}</strong><small>${meal.items.length} ${meal.items.length===1?fdT('Position','item'):fdT('Positionen','items')} · ${fdNum(t.kcal)} kcal</small></span><span class="fprowsrc">${fdT('Kombi','Combo')}</span></button><button type="button" class="fprowadd" aria-label="${esc(meal.name)} ${fdT('eintragen','log')}" data-fp-meal="${esc(meal.id)}">${phIcon('plus')}</button></div>`}
-function fpScaled(item,amount){let f=amount/item.grams,out={};for(let k of ['kcal','p','c','f'])out[k]=round(item[k]*f);let nutrients={};for(let [k,v] of Object.entries(item.nutrients||{}))if(Number.isFinite(v))nutrients[k]=v*f;return {...out,nutrients}}
+function fpScaled(item,amount){let f=amount/item.grams,out={};for(let k of ['kcal','p','c','f'])out[k]=round(item[k]*f);let nutrients={};for(let [k,v] of Object.entries(item.nutrients||{}))if(Number.isFinite(v))nutrients[k]=v*f;return window.pulsNutrients?.copyFields(item,{...out,nutrients})||{...out,nutrients}}
 function fpMealView(id){
   let meal=fdField('meals').find(m=>m.id===id);if(!meal||!$('foodbody'))return;fpViewMealId=meal.id;
   $('foodbody').innerHTML=`<div class="fpview">${fpBar(meal.name,"fpBackTo('meals')",`<button type="button" class="fdicon" aria-label="${fdT('Kombi bearbeiten','Edit combo')}" onclick="fpMealEdit(fpViewMealId)">${phIcon('pencil-simple')}</button>`)}<form class="ffform" onsubmit="fpLogMeal(event,fpViewMealId)"><div class="dsgroup fpitems">${meal.items.map((x,i)=>`<div class="fpitem"><div class="fpitemname"><strong data-no-translate>${esc(x.name)}</strong><small id="fp-item-kcal-${i}">${fdNum(x.kcal)} kcal</small></div><span class="ffunitinput fpitemamount"><input id="fp-item-${i}" type="text" inputmode="decimal" autocomplete="off" aria-label="${fdT('Menge','Amount')} ${esc(x.name)}" value="${esc(ffNum(x.grams))}" oninput="fpMealPreview(fpViewMealId)"><span>${x.unit}</span></span></div>`).join('')}</div><p class="fpmealtotal" id="fp-meal-total"></p><button class="btn full ffsubmit">${fdT('Alle eintragen','Log all')}</button></form></div>`;
@@ -296,7 +330,7 @@ function fpLogMeal(event,id){
   fdUndoToast(`${meal.name} ${fdT('eingetragen','logged')} · ${added.length}`,()=>{state.foods=state.foods.filter(x=>!ids.includes(x.id));save();render()});
 }
 // Gleiche Regeln wie der validData-Wrapper in puls-data-v87.js; prüft nur die Kombis, nicht den übrigen Zustand.
-function fpMealsOK(list){let text=(x,max)=>typeof x==='string'&&x.trim().length>=1&&x.length<=max,num=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;return Array.isArray(list)&&list.length<=200&&list.every(m=>text(m.id,60)&&text(m.name,100)&&Array.isArray(m.items)&&m.items.length>=1&&m.items.length<=50&&m.items.every(x=>text(x.name,120)&&num(x.grams)&&x.grams>0&&x.grams<=5000&&['g','ml'].includes(x.unit)&&['kcal','p','c','f'].every(k=>num(x[k]))&&(x.nutrients===undefined||x.nutrients&&typeof x.nutrients==='object'&&Object.values(x.nutrients).every(num))&&fpProvenanceText.every(k=>x[k]===undefined||typeof x[k]==='string')&&(x.aiEstimate===undefined||typeof x.aiEstimate==='boolean')))}
+function fpMealsOK(list){let text=(x,max)=>typeof x==='string'&&x.trim().length>=1&&x.length<=max,num=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;return Array.isArray(list)&&list.length<=200&&list.every(m=>text(m.id,60)&&text(m.name,100)&&Array.isArray(m.items)&&m.items.length>=1&&m.items.length<=50&&m.items.every(x=>(!window.pulsNutrients||window.pulsNutrients.validFields(x))&&text(x.name,120)&&num(x.grams)&&x.grams>0&&x.grams<=5000&&['g','ml'].includes(x.unit)&&['kcal','p','c','f'].every(k=>num(x[k]))&&(x.nutrients===undefined||x.nutrients&&typeof x.nutrients==='object'&&Object.values(x.nutrients).every(num))&&fpProvenanceText.every(k=>x[k]===undefined||typeof x[k]==='string')&&(x.aiEstimate===undefined||typeof x.aiEstimate==='boolean')))}
 function fpBackTo(pane){fpPane=pane;foodTab('search')}
 function fpMealEdit(id,fromToday=false){
   if(!$('foodbody'))return;let meal=id?fdField('meals').find(m=>m.id===id):null;
@@ -312,7 +346,7 @@ function fpMealLeave(){fpMealDraft=null;fpPick=null;fpBackTo('meals')}
 function fpMealAmount(i,raw){let x=fpMealDraft?.items[i],a=ffParse(raw);if(!x)return;if(!(a>=.1&&a<=5000)){toast(fdT('Menge 0,1 bis 5.000','Amount 0.1 to 5,000'));fpMealRender();return}let v=fpScaled(x,a);Object.assign(x,{grams:a,kcal:x.kcal*a/x.grams,p:x.p*a/x.grams,c:x.c*a/x.grams,f:x.f*a/x.grams});if(x.nutrients)x.nutrients=v.nutrients;fpMealRender()}
 // Herkunft bleibt vollständig erhalten (Quelle, Barcode, Lebensmittel-/Rezeptbezug, KI-Schätzung).
 const fpProvenanceText=['source','barcode','foodRef','recipeId'];
-function fpCopyProvenance(src,out){for(let k of fpProvenanceText)if(typeof src[k]==='string'&&src[k])out[k]=src[k].slice(0,150);if(src.aiEstimate===true)out.aiEstimate=true;return out}
+function fpCopyProvenance(src,out){for(let k of fpProvenanceText)if(typeof src[k]==='string'&&src[k])out[k]=src[k].slice(0,150);if(src.aiEstimate===true)out.aiEstimate=true;window.pulsNutrients?.copyFields(src,out);return out}
 function fpSnapshot(src,amount){
   let item={name:String(src.name||'').slice(0,120),grams:amount,unit:src.unit==='ml'?'ml':'g'};
   for(let k of ['kcal','p','c','f'])item[k]=src[k];
@@ -332,7 +366,7 @@ const fpAddFoodBase=addFood;addFood=function(event,...rest){
     for(let k of ['kcal','p','c','f'])per[k]=food[k]*amount/100;
     for(let [k,v] of Object.entries(food.nutrients||{}))if(Number.isFinite(v))per.nutrients[k]=v*amount/100;
     if(food.barcode)per.barcode=String(food.barcode);
-    fpMealDraft.items.push(fpSnapshot(per,amount));fpPick=null;fpMealRender();fdSound('save');return;
+    window.pulsNutrients?.capture(food,per);fpMealDraft.items.push(fpSnapshot(per,amount));fpPick=null;fpMealRender();fdSound('save');return;
   }
   return fpAddFoodBase.call(this,event,...rest);
 };

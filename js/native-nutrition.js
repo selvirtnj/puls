@@ -68,6 +68,7 @@ function addSnapshot(food,a,grams){const x={id:a.id,name:food.name,grams,date:a.
   ...Object.fromEntries(keys.map(k=>[k,round(food[k]*grams/100)])),unit:ffBase(food),foodRef:food.id};
   if(food.source)x.source=String(food.source).slice(0,150);if(food.barcode)x.barcode=food.barcode;if(food.recipeId)x.recipeId=food.recipeId;
   const n=Object.fromEntries(Object.entries(nutrients(food.nutrients)).map(([k,v])=>[k,v*grams/100]));if(Object.keys(n).length)x.nutrients=n;
+  window.pulsNutrients?.capture(food,x);
   return x;
 }
 const matchEntry=(x,target)=>!!x&&Object.keys(target).every(k=>same(x[k],target[k]));
@@ -178,7 +179,8 @@ function reviewInputs(prefix,p,checked){const check={querySelector:()=>({checked
 function labelInputs(a){return {...reviewInputs('label-',a.product,a.confirmWarnings),'label-name':value(a.product.name),'label-basis':value(a.label.basis),
   'label-basis-amount':value(a.label.amount),'label-fiber':value(a.product.fiber??''),'label-confirm':{checked:a.label.confirmed}}}
 // A persisted native outbox must survive an empty offDrafts cache after reload. Accept only the Web mapper's draft schema.
-function validReviewDraft(d,barcode){return fields(d,['barcode','name','brand',...keys,'unit','source','sourceUrl','prepared','fetched','packageAmount','packageUnit','packageChecked','nutrients','portions'])&&
+function validReviewDraft(d,barcode){return fields(d,['barcode','name','brand',...keys,'unit','source','sourceUrl','prepared','fetched','packageAmount','packageUnit','packageChecked','nutrients','portions','nx'])&&
+  (d.nx===undefined||window.pulsNutrients?.validLabelValues(d.nx)===true)&&
   d.barcode===barcode&&typeof d.name==='string'&&d.name.length<=100&&typeof d.brand==='string'&&d.brand.length<=100&&d.unit===''&&
   // Value bounds follow the Web mapper, not the form: kcal/p/c/f are replaced by the checked product values anyway
   // (kJ conversion can exceed 1000), micros are any finite raw*factor >= 0, portions any amount > 0 up to 10000.
@@ -224,6 +226,12 @@ function checkedProduct(a){
   if(p.brand!==undefined)target.brand=p.brand;
   if(a.kind==='review'||p.packageAmount!==undefined){if(p.packageAmount>0&&(!target.packageUnit||target.packageUnit===p.unit)){
     target.packageAmount=p.packageAmount;target.packageUnit=p.unit}else{delete target.packageAmount;delete target.packageUnit}}
+  if(target.nx!==undefined){
+    const labels=productLabelValues(target);
+    const confirmed=a.kind==='review'&&target.source==='Open Food Facts'
+      ?Object.fromEntries(Object.entries(labels).filter(([key])=>['sugars','satfat','sodium'].includes(key))):labels;
+    setProductLabelValues(target,confirmed);
+  }
   if(!validData({...state,custom:[target]}))return fail('invalid','Produkt verletzt Web-Datenregeln');
   if(old&&same(stampFree(old),stampFree(target)))return {noop:true,target:old,result:storedProduct(old)};
   if(!same(old??null,a.expect))return fail('conflict','Produkt inzwischen geändert');
@@ -232,6 +240,8 @@ function checkedProduct(a){
 }
 function saveProduct(a,p){return perform(()=>{
   const v=a.product,common=reviewInputs(a.kind==='review'?'off-':'custom-',v,a.confirmWarnings),before=state.custom.length;
+  const prefix=a.kind==='review'?'off-':'custom-',labels=productLabelValues(p.target);
+  Object.assign(common,{[prefix+'sugars']:value(labels.sugars??''),[prefix+'satfat']:value(labels.satfat??''),[prefix+'salt']:value(labels.sodium===undefined?'':labels.sodium*.0025)});
   if(a.kind==='review'){
     productDraft={...(a.draft||{}),...(a.expect||{}),id:v.id,barcode:v.barcode,...(v.brand!==undefined?{brand:v.brand}:{})};
     inputs({...common,'off-name':value(v.name),'off-unit':value(v.unit),'off-package':value(p.target.packageAmount||''),'ff-off-unit':null},()=>confirmProduct(event));

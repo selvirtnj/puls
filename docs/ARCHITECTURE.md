@@ -22,7 +22,7 @@ docs/                   Produktwissen, Stand, Team-Ablauf; docs/archive/ = histo
 | Bereich | Dateien |
 |---|---|
 | Grundlage und Daten | app.js, enhancements.js, personal.js, experience.js, adaptation.js, i18n.js |
-| Ernährung | products.js, recipes.js, portions.js, food-search.js, catalog-search.js, catalog-worker.js, food-upgrade.js, quick-units.js, nutrition-input.js |
+| Ernährung | products.js, recipes.js, portions.js, food-search.js, catalog-search.js, catalog-worker.js, food-upgrade.js, quick-units.js, nutrition-input.js, nutrient-definitions.js (Nährstoffliste), nutrient-references.js (DGE-Referenzwerte), nutrient-resolver.js (`window.pulsNutrients`) |
 | Training | exercise-catalog.js, machine-library.js, training.js, insights.js, finish.js, workout-polish.js, tracker-tools.js, progress-metrics.js |
 | Darstellung und Abläufe | navigation.js, flows.js, interactions.js, polish.js, compact.js, lifecycle.js, comfort.js, refinement.js, designs-extra.js, preview-mode.js |
 | Konto und Sync | cloud.js, cloud-config.js, account-guide.js, account-refresh.js |
@@ -43,5 +43,13 @@ Die Reihenfolge in `index.html` ist absichtlich festgelegt. Erweiterungen nutzen
 Die VM-Tests simulieren DOM und Netzwerk; Layout, Wischgesten, Kamera und Audio zusätzlich im Browser prüfen.
 
 ## Daten
+
+Katalog-Antworten werden cache-first geladen. Jede inhaltliche Änderung an bereits veröffentlichten Nährstoffdateien benötigt neue Dateinamen wie `nutrients-v2-…` oder eine Erhöhung von `CATALOG_CACHE` in `sw.js`, damit gespeicherte Antworten ersetzt werden.
+
+`js/nutrient-definitions.js` und `js/nutrient-resolver.js` werden nach `flows.js` geladen. Die Registry beschreibt alle Nährstoffe. `window.pulsNutrients` liest zusätzliche Katalogwerte bei Bedarf aus den 64 `catalog/nutrients-v1-NN.json`-Sidecars. Die bestehenden Katalogdateien bilden die Basis für Suche und Produktauswahl. Der Katalog-Cache enthält zusätzlich die neuen Sidecars und ihre Metadatei.
+
+Die Sidecars erzeugt `node scripts/import-nutrients.cjs` reproduzierbar aus den offiziellen Rohdaten in `catalog-raw/` (nicht versioniert). Quellen, Lizenzen, Download-Adressen und Prüfsummen stehen in [CATALOG-SOURCES.md](CATALOG-SOURCES.md), die Zuordnung der Rohfelder in [NUTRIENT-MAPPING.md](NUTRIENT-MAPPING.md).
+
+Erfasste Lebensmittel können `ck` als direkten Katalogschlüssel und `nx` als eingefrorene Etikettwerte je 100 der gespeicherten Produktbasis enthalten. Beide Felder sind optional. Alte `nutrients`-Snapshots, Mikroziele und die acht hervorgehobenen Nährstoffe behalten ihr bisheriges Schema. Der Resolver liest zuerst gespeicherte Werte und prüft Katalogbezug, Einheit und Nährwertkonsistenz vor der Ergänzung. Detailregeln und öffentliche API stehen in [NUTRIENT-MAPPING.md](NUTRIENT-MAPPING.md).
 
 Das Profil liegt lokal in `puls-v1`. Supabase Auth und revisionsgeprüfte Speicherung synchronisieren dasselbe Profil. Der öffentliche Publishable Key darf im Client stehen; `service_role`, Passwörter oder andere geheime Schlüssel gehören niemals ins Repository. RLS beschränkt den Zugriff auf die eigene Nutzer-ID. SQL-Dateien werden nicht automatisch ausgeführt.

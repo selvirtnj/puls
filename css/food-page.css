@@ -205,3 +205,21 @@ body dialog.ffsheet.fpage .fpscanner .ffscanframe { border-color: #FFFFFF; }
   .fpamountslot, .fpunitslot { flex-basis: 180px; }
   .fpring { width: 96px; height: 96px; }
 }
+
+/* „Alle Nährwerte“ in der Detailseite: eingeklappt, kompakt */
+.fpall[hidden] { display: none !important; }
+.fpall > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; list-style: none; cursor: pointer; }
+.fpall > summary::-webkit-details-marker { display: none; }
+.fpall > summary::before, .fpall > summary::after { content: none !important; display: none !important; }
+.fpall > summary h4 { margin: 0 !important; }
+.fpall > summary svg { width: 18px; height: 18px; color: var(--ds-label-2); transition: transform 180ms ease; }
+.fpall[open] > summary svg { transform: rotate(180deg); }
+.fpall[open] > summary { margin-bottom: 10px; }
+.fpallgroup + .fpallgroup { margin-top: 12px; }
+.fpallrow { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-height: 26px; font-size: 15px; border-top: .5px solid var(--ds-separator); padding-top: 3px; }
+.fpallgroup h5 + .fpallrow { border-top: 0; }
+.fpallrow span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-label); }
+.fpallrow strong { flex: none; font-weight: 500; color: var(--ds-label-2); font-variant-numeric: tabular-nums; }
+.fpall .fdallwait { padding: 4px 0 0; background: transparent; }
+@media (prefers-reduced-motion: reduce) { .fpall > summary svg { transition: none; } }
+.fpallsource { margin: 12px 0 0; font-size: 12px; line-height: 1.4; color: var(--ds-label-2); overflow-wrap: anywhere; white-space: normal; }

@@ -110,7 +110,7 @@ async function checkCleanStartup(){
  console.log('PASS: old profile + clean meta baseline stays clean, no upload/stale-revision conflict, newer cloud revision pulls normally, schema changes stay local and survive reload');
 }
 async function checkWorker(){
- const stores=new Map(),base='https://fixture.invalid/puls/';let online=true,failChunk=false,failPut=false,requests=[];
+ const stores=new Map(),base='https://fixture.invalid/puls/';let online=true,failChunk=false,failNutrient=false,failPut=false,requests=[];
  const key=value=>new URL(typeof value==='string'?value:value.url||value.href,base).pathname;
  function cacheApi(name){
   if(!stores.has(name))stores.set(name,new Map());const entries=stores.get(name);
@@ -119,7 +119,7 @@ async function checkWorker(){
  function worker(source=read('sw.js')){
   const listeners={},ctx={URL,console,Promise,self:{registration:{scope:base},addEventListener:(type,fn)=>listeners[type]=fn,skipWaiting(){},clients:{claim(){}}},
    caches:{open:async name=>cacheApi(name),match:async value=>{for(let name of stores.keys()){let hit=await cacheApi(name).match(value);if(hit)return hit}},keys:async()=>[...stores.keys()],delete:async name=>stores.delete(name)},
-   fetch:async value=>{const path=key(value);requests.push(path);if(!online||failChunk&&path.endsWith('foods-3.json'))throw Error('offline');return new Response(fs.readFileSync('.'+path.slice('/puls'.length)),{status:200})}};
+   fetch:async value=>{const path=key(value);requests.push(path);if(!online||failChunk&&path.endsWith('foods-3.json')||failNutrient&&path.endsWith('nutrients-v1-03.json'))throw Error('offline');return new Response(fs.readFileSync('.'+path.slice('/puls'.length)),{status:200})}};
   vm.createContext(ctx);vm.runInContext(source,ctx);
   return {listeners,staticName:vm.runInContext('CACHE',ctx),catalogName:vm.runInContext('CATALOG_CACHE',ctx)};
  }
@@ -128,9 +128,10 @@ async function checkWorker(){
  async function lifecycle(type){let work;current.listeners[type]({waitUntil:p=>work=p});await work}
  async function preload(){let work;current.listeners.message({data:{type:'puls:cache-catalogue'},waitUntil:p=>work=p});await work}
  const responseFor=async(path,mode='cors')=>{let response;current.listeners.fetch({request:{method:'GET',url:new URL(path,base).href,mode},respondWith:p=>response=p,waitUntil(){}});return response&&await response};
- failChunk=true;await preload();let catalogue=stores.get(current.catalogName);
+ failChunk=true;failNutrient=true;await preload();let catalogue=stores.get(current.catalogName);
  assert(catalogue.has('/puls/catalog/foods-0.json'));assert(!catalogue.has('/puls/catalog/foods-3.json'));
- failChunk=false;requests=[];await preload();assert(requests.includes('/puls/catalog/foods-3.json'));assert(!requests.includes('/puls/catalog/foods-0.json'),'Completed chunks are reused');
+ failChunk=false;failNutrient=false;requests=[];await preload();assert(requests.includes('/puls/catalog/foods-3.json'));assert(!requests.includes('/puls/catalog/foods-0.json'),'Completed chunks are reused');
+ assert(requests.includes('/puls/catalog/nutrients-v1-03.json'),'Missing nutrient shard retries');
  const catalogueFiles=fs.readdirSync('catalog');for(let file of catalogueFiles)assert(catalogue.has('/puls/catalog/'+file),'Cached '+file);
  assert.equal(catalogue.size,catalogueFiles.length,'Only catalogue files cached by preload');
  await lifecycle('install');const oldStatic=current.staticName;
@@ -156,6 +157,6 @@ async function checkWorker(){
  const oldCatalogueName=current.catalogName;
  current=worker(read('sw.js').replace(/puls-catalog-v\d+/, 'puls-catalog-v99999'));
  await lifecycle('activate');assert(!stores.has(oldCatalogueName),'Only a catalogue version change removes its predecessor');
- console.log('PASS: 39 catalogue files cached separately, interrupted retry, cache survives app-version activation without re-download, catalogue-version cleanup, offline shell/JS/catalogue, put-failure fallback and auth/API/photo exclusions (mock SW/cache)');
+ console.log('PASS: 104 catalogue/nutrient files cached separately, interrupted retry, cache survives app-version activation without re-download, catalogue-version cleanup, offline shell/JS/catalogue, put-failure fallback and auth/API/photo exclusions (mock SW/cache)');
 }
 (async()=>{await checkSchemeAndConnectivity();await checkCleanStartup();await checkWorker()})().catch(error=>{console.error(error);process.exitCode=1});

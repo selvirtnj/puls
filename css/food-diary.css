@@ -173,3 +173,26 @@ dialog[open] #fd-undo { bottom: calc(16px + env(safe-area-inset-bottom)); }
 .fdglass { flex: 1; min-width: 44px; }
 .fdwater { padding-left: 4px; padding-right: 4px; }
 .fdwater .fdcardhead, .fdwater .fdtotalwater { margin-left: 8px; margin-right: 8px; }
+
+/* ---------- Alle Nährstoffe (Tagessummen, Sheet) ---------- */
+.fdallbtn { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; margin: 8px 0 0; padding: 0 2px !important; border: 0 !important; border-top: .5px solid var(--ds-separator) !important; border-radius: 0 !important; background: transparent !important; color: var(--ds-accent-text, var(--ds-accent)) !important; font-size: 15px !important; font-weight: 500 !important; box-shadow: none !important; }
+.fdallbtn svg { width: 16px; height: 16px; flex: none; }
+.fdall { display: grid; gap: 12px; padding-bottom: 8px; }
+.fdallgroup { padding: 12px 16px; border-radius: 12px; background: var(--ds-surface); }
+.fdallgroup h4, .fpallgroup h5 { margin: 0 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--ds-label-2); }
+.fdallrows { display: grid; gap: 8px; }
+.fdallrow .fdbarline { margin-bottom: 0; }
+.fdallrow.fdhasgoal .fdbarline { margin-bottom: 4px; }
+.fdallrow .fdmeter { height: 5px; }
+.fdallrow .fdmeter i { background: var(--ds-green); }
+.fdallrow strong small { font-size: 12px; font-weight: 400; color: var(--ds-label-2); }
+.fdallrow .fdcover { margin-left: 6px; padding: 0 5px; border-radius: 6px; background: var(--ds-fill); color: var(--ds-label-3) !important; }
+.fdsub > .fdbarline span, .fpallrow.fdsub span { padding-left: 12px; color: var(--ds-label-2); }
+.fdallwait { display: grid; gap: 8px; padding: 12px 16px; border-radius: 12px; background: var(--ds-surface); }
+.fdallwait i { display: block; height: 12px; border-radius: 6px; background: var(--ds-fill); }
+.fdallwait i:nth-child(2) { width: 70%; } .fdallwait i:nth-child(3) { width: 45%; }
+.fdall .fdempty { margin: 0; color: var(--ds-label-2); }
+#modal .fdallrow .fdbarline strong { display: inline-flex; align-items: baseline; gap: 0; white-space: nowrap; }
+#modal .fdallrow .fdbarline strong small { display: inline; margin-top: 0; }
+#modal .fdallrow .fdbarline strong small.fdcover { margin-left: 6px; }
+#modal .fdallrow .fdbarline strong small.fdpct { margin-left: 4px; }

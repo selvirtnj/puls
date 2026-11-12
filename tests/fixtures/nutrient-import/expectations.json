@@ -1,0 +1,38 @@
+{
+  "description": "Pinned source values plus independent coordinator-provided reference cases for egg, carrot, almonds, salmon, lamb liver, oats and honey. Arachidonic follows nutrient number 855 despite corrupt SR labels. Null means unknown, including R3 suppression.",
+  "samples": [
+    {"catalogKey":"BLS 4.0:C131000","values":{"b6":0.96,"sodium":8,"copper":0.484,"manganese":6.16,"sugars":1.08,"alcohol":0,"vita_rae":null}},
+    {"catalogKey":"BLS 4.0:C133000","values":{"b6":0.098,"copper":0.40961,"manganese":4.9344,"beta_carotene":null,"vita_rae":null}},
+    {"catalogKey":"BLS 4.0:S120000","values":{"b6":0.1577,"copper":0.018,"manganese":0.22,"folate_dfe":null,"folic_acid":0}},
+    {"catalogKey":"BLS 4.0:Q400000","values":{"c":0.163578,"b6":0,"copper":0.0032,"manganese":0.0039,"vita_rae":157,"folate_dfe":null}},
+    {"catalogKey":"USDA SR Legacy 2018:167512","values":{"sugars":5.88}},
+    {"catalogKey":"USDA SR Legacy 2018:167529","values":{"sugars":2.35,"copper":0.155,"manganese":0.625,"ala":0.038,"epa":0.002,"dha":0,"linoleic":1.435,"arachidonic":null}},
+    {"catalogKey":"USDA SR Legacy 2018:171642","values":{"sugars":44.32,"vite":0.62,"b6":2.138,"folic_acid":1536,"folate_dfe":2630}},
+    {"catalogKey":"USDA Foundation 2026:321358","values":{"sugars":0.34,"ala":0.637,"linoleic":6.81,"epa":0,"dha":0,"b6":0.143,"vite":1.74}},
+    {"catalogKey":"USDA Foundation 2026:321360","values":{"copper":0.058,"manganese":0.121,"b6":0.06,"vite":0.98,"ala":null,"epa":null,"dha":null}},
+    {"catalogKey":"USDA Foundation 2026:2747669","values":{"manganese":0,"copper":0.019,"epa":null,"dha":null}},
+    {"catalogKey":"Ciqual 2025:24999","values":{"sugars":21.3,"polyols":0.34,"sodium":130,"vita_rae":53.45,"vite":1.43,"b6":0.044,"vitk":null}},
+    {"catalogKey":"Ciqual 2025:8406","values":{"sugars":0.64,"polyols":0,"sodium":700,"copper":null,"vita_rae":null}},
+    {"catalogKey":"Ciqual 2025:25600","values":{"sugars":1.8,"polyols":null,"sodium":469,"vita_rae":null,"vitk":10.5,"folate_dfe":null}},
+    {"catalogKey":"USDA SR Legacy 2018:171287","values":{"cholesterol":372,"choline":293.8,"selenium":30.7,"vitd":2}},
+    {"catalogKey":"USDA SR Legacy 2018:170393","values":{"vita_rae":835,"beta_carotene":8285,"vitk":13.2}},
+    {"catalogKey":"USDA SR Legacy 2018:170567","values":{"vite":25.63}},
+    {"catalogKey":"USDA SR Legacy 2018:173686","values":{"epa":0.321,"dha":1.115,"selenium":36.5}},
+    {"catalogKey":"USDA SR Legacy 2018:172614","values":{"arachidonic":0.156}}
+  ],
+  "plausibilityExceptions": [
+    ["BLS 4.0:G212100","fatFractions"], ["BLS 4.0:G212152","fatFractions"],
+    ["BLS 4.0:G212182","fatFractions"], ["BLS 4.0:M2R9300","fatFractions"],
+    ["BLS 4.0:T121702","fatFractions"], ["BLS 4.0:T306100","fatFractions"],
+    ["BLS 4.0:T306132","fatFractions"], ["BLS 4.0:T306152","fatFractions"],
+    ["BLS 4.0:T306182","fatFractions"], ["BLS 4.0:T306200","fatFractions"],
+    ["BLS 4.0:T306252","fatFractions"], ["BLS 4.0:T306282","fatFractions"],
+    ["BLS 4.0:T800100","fatFractions"], ["BLS 4.0:W161000","fatFractions"],
+    ["BLS 4.0:Y637422","fatFractions"], ["USDA Foundation 2026:749420","sugars"],
+    ["USDA SR Legacy 2018:168246","fatFractions"], ["USDA SR Legacy 2018:168314","fatFractions"],
+    ["USDA SR Legacy 2018:169016","sugars"], ["USDA SR Legacy 2018:169191","fatFractions"],
+    ["USDA SR Legacy 2018:170603","fatFractions"], ["USDA SR Legacy 2018:171627","sugars"],
+    ["USDA SR Legacy 2018:174513","fatFractions"], ["USDA SR Legacy 2018:174935","fatFractions"]
+  ],
+  "exceptionReason": "Public source fractions and totals are independently reported or calculated. The importer preserves them. See NUTRIENT-MAPPING.md for each food, sum and threshold. These are explicit regression exceptions, not corrections."
+}
