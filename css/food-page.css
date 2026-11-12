@@ -11,7 +11,7 @@ html body dialog#modal.fpage::backdrop { background: var(--ds-bg) !important; }
 #modal.fpage .modalhead { display: none !important; }
 #modal.fpage #mb { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 0 !important; padding: 0 !important; overflow: hidden; }
 #modal.fpage #mb > .foodtabs, #modal.fpage #mb > label[hidden] { display: none !important; }
-#modal.fpage #foodbody { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; margin: 0 !important; padding: calc(env(safe-area-inset-top) + 6px) 16px calc(28px + env(safe-area-inset-bottom)) !important; }
+#modal.fpage #foodbody { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; margin: 0 !important; padding: calc(env(safe-area-inset-top) + 6px) 16px calc(28px + env(safe-area-inset-bottom)) !important; }
 #modal.fpage #foodbody:has(> .fpsearch), #modal.fpage #foodbody:has(> .ffbarcode.fpscanner) { display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; }
 #modal.fpage svg { flex-shrink: 0; }
 
