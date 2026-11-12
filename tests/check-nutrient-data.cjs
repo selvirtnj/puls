@@ -23,7 +23,8 @@ const context = {};vm.runInNewContext(fs.readFileSync('js/nutrient-definitions.j
 assert.equal(context.PULS_NUTRIENT_DEFS.length,76);
 assert(/nutrient-definitions\.js\?v=\d+/.test(fs.readFileSync('index.html','utf8')),'Registry is integrated with an asset version');
 assert.equal(sha256(JSON.stringify(baseFiles())),BASE_DIGEST,'Original catalogue retains deployed LF bytes');
-assert.deepEqual(meta.baseFiles,Object.fromEntries(baseFiles()));
+assert.equal(baseFiles().length,37);
+assert.deepEqual(Object.fromEntries(baseFiles()),Object.fromEntries(Object.entries(meta.baseFiles).filter(([file])=>/^foods-\d+\.json$/.test(file))),'All original food chunks match the unchanged sidecar metadata');
 const readBase = fs.readFileSync, normalizedBase = baseFiles();
 try {
   for (const ending of ['\n','\r\n']) {

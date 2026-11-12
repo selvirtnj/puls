@@ -49,7 +49,7 @@ function resolve(ref){
   if(saved)return {raw:saved,food:!saved.portions&&portionReferences[saved.catalogKey]?{...saved,portions:portionReferences[saved.catalogKey]}:saved,ref};
   const row=ref.catalogKey&&localCatalogue.find(x=>x.source+':'+x.record===ref.catalogKey);
   // Exact synchronous chooseCatalogueFood mutation, without its async portion refresh/save/UI side effects.
-  return row?{raw:row,food:{catalogKey:ref.catalogKey,name:row.name.slice(0,100),unit:'g',source:row.source,
+  return row?{raw:row,food:{catalogKey:ref.catalogKey,name:row.name.slice(0,100),unit:row.unit||'g',source:row.source,
     ...Object.fromEntries(keys.map(k=>[k,row[k]])),nutrients:{...row.nutrients},...(portionReferences[ref.catalogKey]?{portions:portionReferences[ref.catalogKey]}:{})},ref,catalog:true}:null;
 }
 function refOf(x){return x.recipeId?{recipeId:x.recipeId}:x.record?{catalogKey:x.source+':'+x.record}:id(x.id)?{id:x.id}:{catalogKey:x.catalogKey}}
@@ -77,7 +77,7 @@ function entryResult(x){return {entryId:x.id,effect:Object.fromEntries(['grams',
 function expectedProduct(a){
   if(a.product?.recipeId&&validRecipe(a.expect)&&a.expect.id===a.product.recipeId)return {id:a.expect.id,recipeId:a.expect.id,name:a.expect.name,unit:'g',...recipeNutrients(a.expect)};
   if(a.product?.catalogKey&&a.expect.source+':'+a.expect.record===a.product.catalogKey&&id(a.productId))return {
-    id:a.productId,catalogKey:a.product.catalogKey,name:String(a.expect.name).slice(0,100),unit:'g',source:a.expect.source,
+    id:a.productId,catalogKey:a.product.catalogKey,name:String(a.expect.name).slice(0,100),unit:a.expect.unit||'g',source:a.expect.source,
     ...Object.fromEntries(keys.map(k=>[k,a.expect[k]])),nutrients:{...a.expect.nutrients}};
   return a.expect;
 }
@@ -535,7 +535,7 @@ async function search(r,current,emit){
   const answer=result('search',{q,filter,items:[],total:rows.length,omitted:0,
     phase:'local',cataloguePending:!!q&&filter==='all',offline:navigator.onLine===false,catalogueError:text(catalogueError),
     online:{supported:true,status:onlineEnabled?'pending':navigator.onLine===false?'offline':r.online===false?'disabled':'skipped',items:[],attribution:offAttribution},
-    attribution:'BLS 4.0 (2025), CC BY 4.0 · USDA SR Legacy/Foundation, Public Domain · Ciqual 2025, CC BY 4.0'});
+    attribution:'BLS 4.0 (2025), CC BY 4.0 · USDA SR Legacy/Foundation, Public Domain · Ciqual 2025, CC BY 4.0 · Health Canada, Canadian Nutrient File 2026. Contains information licensed under the Open Government Licence – Canada. · Public Health England, McCance and Widdowson\'s Composition of Foods Integrated Dataset 2021. Contains public sector information licensed under the Open Government Licence v3.0. · U.S. Department of Agriculture, Agricultural Research Service. 2024. USDA Food and Nutrient Database for Dietary Studies 2021-2023. (Public Domain)'});
   const localItems=()=>{answer.result.items=rows.slice(0,limit).filter(x=>validRef(refOf(x))).map(compactProduct);answer.result.total=rows.length;answer.result.omitted=rows.length-answer.result.items.length};
   const onlineItems=()=>{if(!offRaw)return;const online=answer.result.online,nameKey=x=>normalizeSearch(x.name)+'|'+normalizeSearch(x.brand||''),seenCodes=new Set(),seenNames=new Set();online.items=[];delete online.omitted;
     for(const x of [...state.custom,...foods,...rows]){if(x.barcode)seenCodes.add(String(x.barcode));seenNames.add(nameKey(x))}

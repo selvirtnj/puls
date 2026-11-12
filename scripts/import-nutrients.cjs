@@ -6,7 +6,7 @@ const {readXlsx, csvRows, numeric, formatNumber, shardFor} = require('./lib/nutr
 const {BLS, USDA, CIQUAL, LEGACY_BLS, LEGACY_USDA, LEGACY_CIQUAL, sidecarKeys, roundSr, formulaDependencies, blsValue, ciqualValues} = require('./lib/nutrient-mapping.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
-const BASE_DIGEST = 'cf2a5694f9ed484bb530f06bdbf34f7a77f4e8648fc439164a7a869c816e8c03';
+const BASE_DIGEST = 'b628e42785483adeae717bfdc15c9026306445f3ca37fb39da463937fc884a2d';
 const BLS_DIR = 'bls-4.0/BLS_4_0_2025_DE_extracted/BLS_4_0_2025_DE/';
 const SR_DIR = 'usda-sr-legacy-2018/FoodData_Central_sr_legacy_food_csv_2018-04_extracted/FoodData_Central_sr_legacy_food_csv_2018-04/';
 const SOURCES = [
@@ -29,13 +29,14 @@ const SOURCES = [
 ];
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 function baseFiles() {
-  return fs.readdirSync(path.join(ROOT, 'catalog')).filter(f => /^(?:foods-\d+|manifest|portions)\.json$/.test(f)).sort()
+  // Only the original 37 food chunks underpin nutrients-v1; manifest/portions may grow.
+  return Array.from({length:37}, (_, i) => 'foods-' + i + '.json').sort()
     // Git may check these text files out as CRLF. Pin the deployed LF bytes.
     .map(f => [f, sha256(fs.readFileSync(path.join(ROOT, 'catalog', f), 'utf8').replace(/\r\n/g, '\n'))]);
 }
 function verifyBase() {
   const files = baseFiles();
-  if (sha256(JSON.stringify(files)) !== BASE_DIGEST) throw Error('Base catalogue differs from pinned ad92acf LF bytes');
+  if (sha256(JSON.stringify(files)) !== BASE_DIGEST) throw Error('Base catalogue differs from pinned original 37 food chunks (ad92acf LF bytes)');
   return Object.fromEntries(files);
 }
 function verifyRaw(root) {

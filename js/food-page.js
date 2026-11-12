@@ -7,7 +7,7 @@
 
 let fpPane='all',fpLists={},fpPick=null,fpMealDraft=null,fpPaneFrame=0,fpRefreshTimer=null;
 const fpPanes=[['all','Alle','All'],['frequent','Häufig','Frequent'],['recent','Zuletzt','Recent'],['favorites','Favoriten','Favourites'],['own','Eigene','Custom'],['recipes','Rezepte','Recipes'],['meals','Kombis','Combos'],['products','Produkte','Products'],['drinks','Getränke','Drinks']];
-const fpSourceNames=[['bls','BLS 4.0'],['usda','USDA'],['ciqual','Ciqual'],['off','Open Food Facts'],['own',['Eigene','Custom']],['puls',['PULS-Richtwerte','PULS reference values']]];
+const fpSourceNames=[['bls','BLS 4.0'],['usda','USDA'],['ciqual','Ciqual'],['cnf','CNF 2026'],['cofid','CoFID 2021'],['fndds','USDA FNDDS 2021-2023'],['off','Open Food Facts'],['own',['Eigene','Custom']],['puls',['PULS-Richtwerte','PULS reference values']]];
 const fpSorts=[['best',['Beste Treffer','Best match']],['az',['A bis Z','A to Z']],['za',['Z bis A','Z to A']],['recent',['Zuletzt','Most recent']],['frequent',['Häufigste','Most frequent']]];
 function fpActive(){return typeof modal!=='undefined'&&modal.classList.contains('fpage')&&modal.open}
 function fpL(x){return Array.isArray(x)?fdT(x[0],x[1]):x}
@@ -83,7 +83,7 @@ function fpUsage(days=90){
 }
 function fpSourceKeys(x){
   let keys=new Set();if(x.kind==='recipe'||x.kind==='meal'||x.recipeId)keys.add('own');
-  for(let s of (x.combinedSources||[x.source]).map(v=>String(v||''))){if(/^BLS/i.test(s))keys.add('bls');else if(/^USDA/i.test(s))keys.add('usda');else if(/^Ciqual/i.test(s))keys.add('ciqual');else if(/Open Food Facts/i.test(s))keys.add('off');else if(/Richtwert|PULS Basis/i.test(s))keys.add('puls')}
+  for(let s of (x.combinedSources||[x.source]).map(v=>String(v||''))){if(/^BLS/i.test(s))keys.add('bls');else if(/^CNF/i.test(s))keys.add('cnf');else if(/^CoFID/i.test(s))keys.add('cofid');else if(/^USDA FNDDS/i.test(s))keys.add('fndds');else if(/^USDA/i.test(s))keys.add('usda');else if(/^Ciqual/i.test(s))keys.add('ciqual');else if(/Open Food Facts/i.test(s))keys.add('off');else if(/Richtwert|PULS Basis/i.test(s))keys.add('puls')}
   if(x.barcode)keys.add('off');if(!keys.size)keys.add(String(x.id||'').startsWith('base')?'puls':'own');
   return keys;
 }
@@ -176,11 +176,11 @@ function fpQuickAdd(open,item){
 function fpFilterSheet(){
   $('fp-sheet')?.remove();let prefs=fpSearchPrefs();
   let sheet=document.createElement('div');sheet.id='fp-sheet';sheet.className='fpsheetwrap';
-  sheet.innerHTML=`<button type="button" class="fpscrim" aria-label="${fdT('Schließen','Close')}" onclick="fpSheetClose()"></button><div class="fpsheet" role="dialog" aria-modal="true" aria-label="${fdT('Filter','Filter')}"><div class="fpsheethead"><h3>${fdT('Suchoptionen','Search options')}</h3><button type="button" class="textbtn" onclick="fpSheetClose()">${fdT('Fertig','Done')}</button></div><h4>${fdT('Sortierung','Sort')}</h4><div class="dsgroup fpoptions">${fpSorts.map(([k,l])=>`<button type="button" class="fpoption" role="radio" aria-checked="${prefs.sort===k}" onclick="fpSetSort('${k}')"><span>${fpL(l)}</span>${phIcon('check')}</button>`).join('')}</div><h4>${fdT('Datenbanken','Databases')}</h4><div class="dsgroup fpoptions">${fpSourceNames.map(([k,l])=>`<button type="button" class="fpoption" role="checkbox" aria-checked="${prefs.sources.includes(k)}" onclick="fpToggleSource('${k}')"><span>${fpL(l)}</span>${phIcon('check')}</button>`).join('')}</div><button type="button" class="textbtn fpreset" onclick="fpResetFilter()">${fdT('Zurücksetzen','Reset')}</button></div>`;
+  sheet.innerHTML=`<button type="button" class="fpscrim" aria-label="${fdT('Schließen','Close')}" onclick="fpSheetClose()"></button><div class="fpsheet" role="dialog" aria-modal="true" aria-label="${fdT('Filter','Filter')}"><div class="fpsheethead"><h3>${fdT('Suchoptionen','Search options')}</h3><button type="button" class="textbtn" onclick="fpSheetClose()">${fdT('Fertig','Done')}</button></div><h4>${fdT('Sortierung','Sort')}</h4><div class="dsgroup fpoptions">${fpSorts.map(([k,l])=>`<button type="button" class="fpoption" role="radio" aria-checked="${prefs.sort===k}" onclick="fpSetSort('${k}')"><span>${fpL(l)}</span>${phIcon('check')}</button>`).join('')}</div><h4>${fdT('Datenbanken','Databases')}</h4><div class="dsgroup fpoptions">${fpSourceNames.map(([k,l])=>`<button type="button" class="fpoption" role="checkbox" aria-checked="${prefs.sources.includes(k)}" onclick="fpToggleSource('${k}')"><span>${fpL(l)}</span>${phIcon('check')}</button>`).join('')}</div>${typeof foodCatalogueAttribution==='string'?`<details class="note"><summary>${fdT('Quellen','Sources')}</summary>${esc(foodCatalogueAttribution)}</details>`:''}<button type="button" class="textbtn fpreset" onclick="fpResetFilter()">${fdT('Zurücksetzen','Reset')}</button></div>`;
   $('mb').append(sheet);fdSound('sheetOpen');sheet.querySelector('.fpoption')?.focus({preventScroll:true});
 }
 function fpSheetClose(){let sheet=$('fp-sheet');if(!sheet)return;fdSound('sheetClose');if(fdReduced()){sheet.remove();return}sheet.classList.add('fpclosing');setTimeout(()=>sheet.remove(),180)}
-function fpStoreSearch(sort,sources){let s=fdEnsure('foodSearch');s.sort=sort;s.sources=sources;save();fpApplyFilter()}
+function fpStoreSearch(sort,sources){let s=fdEnsure('foodSearch');s.sort=sort;s.sources=sources;s.catalogueSourcesVersion=1;save();fpApplyFilter()}
 function fpSetSort(key){let p=fpSearchPrefs();fpStoreSearch(key,p.sources);document.querySelectorAll('#fp-sheet [role=radio]').forEach((b,i)=>b.setAttribute('aria-checked',String(fpSorts[i][0]===key)));fdSound('toggle')}
 function fpToggleSource(key){let p=fpSearchPrefs(),list=p.sources.includes(key)?p.sources.filter(k=>k!==key):[...p.sources,key];if(!list.length){toast(fdT('Mindestens eine Datenbank wählen','Choose at least one database'));return}list=fdDefaults.foodSearch.sources.filter(k=>list.includes(k));fpStoreSearch(p.sort,list);document.querySelectorAll('#fp-sheet [role=checkbox]').forEach((b,i)=>b.setAttribute('aria-checked',String(list.includes(fpSourceNames[i][0]))));fdSound('toggle')}
 function fpResetFilter(){fpStoreSearch('best',[...fdDefaults.foodSearch.sources]);fpFilterSheet()}
@@ -265,13 +265,16 @@ function fpAllUpdate(){
   if(r.pending)body.insertAdjacentHTML('beforeend',fdAllPlaceholder());
   let credit=fpSourceCredit(food);if(credit)body.insertAdjacentHTML('beforeend',`<p class="fpallsource" data-no-translate>${esc(credit)}</p>`);
 }
-// Quellenangabe (Lizenzpflicht BLS/Ciqual, USDA gemeinfrei) nur für Katalog-Lebensmittel; Barcode-, eigene Produkte und Rezepte ohne.
+// Quellenangabe für alle sieben Katalogquellen nur für Katalog-Lebensmittel; Barcode-, eigene Produkte und Rezepte ohne.
 function fpSourceCredit(food){
   if(!food||food.recipeId||food.barcode)return '';
   let source=String(fpAllKey(food)||'').split(':')[0],label=fdT('Quelle: ','Source: ');
   if(source==='BLS 4.0')return label+'Max Rubner-Institut (2025), Bundeslebensmittelschlüssel (BLS) 4.0 · CC BY 4.0';
   if(source==='USDA SR Legacy 2018'||source==='USDA Foundation 2026')return label+'U.S. Department of Agriculture, Agricultural Research Service, FoodData Central · '+fdT('gemeinfrei (CC0)','public domain (CC0)');
   if(source==='Ciqual 2025')return label+'ANSES, Table de composition nutritionnelle des aliments Ciqual 2025 · Licence Ouverte 2.0';
+  if(source==='CNF 2026')return label+'Health Canada, Canadian Nutrient File 2026. Contains information licensed under the Open Government Licence – Canada.';
+  if(source==='CoFID 2021')return label+"Public Health England, McCance and Widdowson's Composition of Foods Integrated Dataset 2021. Contains public sector information licensed under the Open Government Licence v3.0.";
+  if(source==='USDA FNDDS 2021-2023')return label+'U.S. Department of Agriculture, Agricultural Research Service. 2024. USDA Food and Nutrient Database for Dietary Studies 2021-2023. (Public Domain)';
   return '';
 }
 
