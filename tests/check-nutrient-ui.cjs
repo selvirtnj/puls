@@ -59,7 +59,7 @@ assert.strictEqual(fmt.fdNutrientAmount(1234.5), '1235');
 // Echte Resolver-, Tagebuch- und Detailfunktionen in einer VM; DOM, Modal und Netz sind Attrappen.
 (async () => {
   // Spaltenliste wie in den ausgelieferten Dateien (ohne Altschlüssel, falls der Import sie ausnimmt).
-  const key = 'BLS 4.0:FIXTURE', keys = JSON.parse(read('catalog/nutrients-v1-00.json')).keys;
+  const key = 'BLS 4.0:FIXTURE', keys = JSON.parse(read('catalog/nutrients-v2-00.json')).keys;
   const per100 = {kcal: 100, p: 10, c: 12.4, f: 1, sugars: 2, sodium: 400, b1: 0.6};
   const shardOf = k => { let h = 0x811c9dc5; for (const b of Buffer.from(k, 'utf8')) h = Math.imul(h ^ b, 0x01000193) >>> 0; return h % 64; };
   let online = false; const requests = [];

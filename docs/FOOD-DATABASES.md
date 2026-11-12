@@ -3,10 +3,29 @@
 Der Katalog enthält 28.893 Lebensmittel (vorher 18.253). Reproduzierbarer Import:
 
 ```powershell
-node scripts/import-food-databases.cjs [Rohdatenordner]
+node scripts/import-food-databases.cjs C:/Users/selvir/Documents/Projekte/puls/catalog-raw
+node scripts/import-nutrients.cjs C:/Users/selvir/Documents/Projekte/puls/catalog-raw
 ```
 
-Ohne Argument verwendet das Skript `C:\Users\selvir\AppData\Local\Temp\puls-fooddb`. Es benötigt ausschließlich Node-Standardbibliotheken. CSV wird als UTF-8/BOM mit mehrzeiligen, zitierten Feldern gelesen. Rohdateien werden weder ausgeführt noch kopiert. Die vorhandenen Basis-Chunks `foods-0.json` bis `foods-36.json` bleiben bytegleich. Wiederholungen erzeugen dieselben Erweiterungsdateien ab `foods-37.json`; IDs und vorhandene Portionswerte bleiben erhalten.
+Ohne Argument gilt `catalog-raw/` im Repository. Im Worktree liegen die Rohdateien außerhalb unter `C:/Users/selvir/Documents/Projekte/puls/catalog-raw` und werden nur gelesen. Beide Skripte benötigen ausschließlich Node-Standardbibliotheken. CNF wird direkt aus CSV, CoFID direkt aus der XLSX mit dem vorhandenen ZIP/XML-Leser und FNDDS direkt aus JSON gelesen. Sämtliche verwendeten Rohdateien werden vor Verarbeitung per SHA-256 geprüft; genaue Pfade und Hashes stehen in [NUTRIENT-MAPPING.md](NUTRIENT-MAPPING.md). Inventare, entpackte XML-Dateien und frühere CSV-Exporte der CoFID-Blätter sind keine Eingaben.
+
+Der Basisimport berechnet `foods-37…58`, Manifest und Portionen im Speicher und vergleicht die vollständige Serialisierung nach LF-Normalisierung mit dem Bestand. Bei Abweichungen meldet er Lebensmittel, Feld, alt/neu, endet mit Exit 1 und schreibt nichts. Auch bei Gleichheit werden bestehende Dateien nicht unnötig neu geschrieben. `foods-0…36` werden niemals geschrieben. Der Sidecar-Import schreibt nur `nutrients-v2*.json`; v1 bleibt unverändert.
+
+### Reproduktionsprüfung gegen 7a01611 (12.11.2026)
+
+**Nicht vollständig inhaltsgleich:** sieben CoFID-Felder weichen ab. CNF, FNDDS, sämtliche Makros, alle übrigen Felder, Manifest und Portionen sind inhaltsgleich. Keine Katalogdatei wurde überschrieben.
+
+| Datei / Lebensmittel | Feld | Bestand | direkte XLSX |
+|---|---|---:|---:|
+| foods-42 / COFID_13-669 Aubergine | calcium | 138 | 24 |
+| foods-42 / COFID_13-669 Aubergine | iron | 0.72 | 0.49 |
+| foods-42 / COFID_13-669 Aubergine | magnesium | 16 | 27 |
+| foods-42 / COFID_13-669 Aubergine | potassium | 300 | 389 |
+| foods-42 / COFID_13-669 Aubergine | vitc | 62 | 3 |
+| foods-42 / COFID_13-669 Aubergine | folate | 43 | 20 |
+| foods-45 / COFID_14-377 Ananas | iron | unbekannt | 0.07 |
+
+Die XLSX hat den Code `13-669` doppelt: Aubergine und Brunnenkresse. Der bisherige Basisimport verknüpfte die Mikro-Blätter nur nach Code; sechs Brunnenkressewerte stehen dadurch an der Aubergine. Der neue Import verknüpft Code und exakten Lebensmittelnamen und meldet die resultierenden Unterschiede. Der fehlende Ananas-Eisenwert ist ebenfalls belegt; die konkrete alte CSV-Darstellung ist nicht mehr verfügbar. Eine Korrektur des Basiskatalogs ist ein eigener Integrationsschritt des Koordinators, einschließlich neuer Dateinamen oder Cache-Invalidierung. Gespeicherte Nutzer-Snapshots bleiben erhalten. Die v2-Sidecars enthalten keine dieser neun Alt-Nährstoffspalten und korrigieren sie daher nicht stillschweigend.
 
 | Quelle | Importiert | Ausgelassen | Grund | Übernommene Portionen |
 |---|---:|---:|---|---:|

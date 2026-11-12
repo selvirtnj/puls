@@ -15,7 +15,7 @@ const plain = x => {
 };
 const finite = x => typeof x === 'number' && Number.isFinite(x) && x >= 0 && x <= 1e9;
 const validKey = key => typeof key === 'string' && key.length >= 3 && key.length <= 140 && !/[\u0000-\u001f\u007f-\u009f]/.test(key) && key.indexOf(':') > 0 && key.indexOf(':') < key.length - 1;
-const knownKey = key => validKey(key) && /^(?:BLS 4\.0|USDA SR Legacy 2018|USDA Foundation 2026|Ciqual 2025):[A-Za-z0-9_-]{1,60}$/.test(key);
+const knownKey = key => validKey(key) && /^(?:(?:BLS 4\.0|USDA SR Legacy 2018|USDA Foundation 2026|Ciqual 2025):[A-Za-z0-9_-]{1,60}|CNF 2026:CNF_\d+|CoFID 2021:COFID_[A-Za-z0-9_-]{1,54}|USDA FNDDS 2021-2023:FNDDS_\d+)$/.test(key);
 const excluded = x => !!(x?.recipeId || x?.aiEstimate || /^KI-Schätzung/.test(x?.source || ''));
 const baseUnit = x => x?.unit === undefined ? 'g' : x.unit;
 const products = () => typeof state === 'object' && Array.isArray(state.custom) ? state.custom : [];
@@ -75,7 +75,7 @@ async function loadShard(index) {
   if (loading.has(index)) return loading.get(index);
   const work = Promise.resolve().then(async () => {
     try {
-      const response = await fetch('catalog/nutrients-v1-' + String(index).padStart(2,'0') + '.json', {credentials:'omit'});
+      const response = await fetch('catalog/nutrients-v2-' + String(index).padStart(2,'0') + '.json', {credentials:'omit'});
       if (!response.ok || response.redirected) throw Error('Unavailable nutrient shard');
       const decoded = decodeShard(await response.json());
       if ([...decoded.keys()].some(key => shardFor(key) !== index)) throw Error('Wrong nutrient shard');

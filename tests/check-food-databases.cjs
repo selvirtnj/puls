@@ -81,3 +81,19 @@ async function loaderTest(){
  console.log('PASS: real catalogue loader uses <=4 downloads, English names and ml persist through selection; final fallback filters before 60-result cap');
 }
 loaderTest().catch(error=>{console.error(error);process.exitCode=1});
+
+// The new raw-input importer must report differences before any write. This
+// comparison uses only synthetic catalogue data and needs neither raw files nor Git.
+{
+ const {compareOutputs}=require('../scripts/import-food-databases.cjs');
+ const readFile=fs.readFileSync,exists=fs.existsSync,write=fs.writeFileSync;
+ try {
+  fs.existsSync=()=>true;fs.writeFileSync=()=>{throw Error('Unexpected write')};
+  fs.readFileSync=()=>JSON.stringify([['same-id','Food','Food',10,1,2,3,'Source',{iron:1}]]);
+  const output=[{file:'catalog/foods-37.json',data:[['same-id','Food','Food',10,1,2,3,'Source',{iron:2}]]}];
+  assert.deepEqual(compareOutputs(output,[]),[{field:'catalog/foods-37.json:same-id (Food).8.iron',old:1,new:2}]);
+  output[0].data[0][8].iron=1;assert.deepEqual(compareOutputs(output,[]),[]);
+  fs.readFileSync=()=>JSON.stringify(output[0].data).replace(/,/g,', ');
+  assert.equal(compareOutputs(output,[])[0].field,'serialization/order','Even equal data with different serialized output fails LF reproduction');
+ } finally {fs.readFileSync=readFile;fs.existsSync=exists;fs.writeFileSync=write;}
+}

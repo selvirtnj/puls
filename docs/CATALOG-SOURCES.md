@@ -46,7 +46,16 @@ Abrufdatum aller Dateien: **12.11.2026**.
 - Ordner: `catalog-raw/ciqual-2025/`
 - Datei: `Table_Ciqual_2025_FR_2025_11_03.xlsx` – 1 541 998 Byte – SHA-256 `5555c572fa3735991298d832d0427788fa69a11b4fd20a5d580d58942369fbb0` (MD5 `0d9758ce23f3f13dd63a005bc1bb4f2c`, stimmt mit der Datensatzseite überein)
 
-## Teil B – mögliche Erweiterungen
+### CNF 2026 – Canadian Nutrient File
+- Herausgeber: Health Canada
+- Ausgabe: 2026, abgerufen am 12.11.2026
+- Lizenz: Open Government Licence – Canada, Version 2.0 – https://open.canada.ca/en/open-government-licence-canada
+- Vorgeschriebener Hinweis: „Contains information licensed under the Open Government Licence – Canada.“
+- Datensatzseite: https://open.canada.ca/data/en/dataset/1b6139bd-ed7e-4043-bc28-ff00e10f3109
+- Download: https://open.canada.ca/data/dataset/1b6139bd-ed7e-4043-bc28-ff00e10f3109/resource/019f2a90-e3a9-489d-b6e1-f74f4ba1d006/download/cnf_fcen_all-files-data_2026.zip
+- Ordner: `catalog-raw/cnf-2026/`, entpackt in `cnf_fcen_all-files-data_2026_extracted/`
+- Datei: `cnf_fcen_all-files-data_2026.zip` – 26.656.195 Byte – SHA-256 `f5faad8977ee6bbdd9d69c8649077cacd87d8658ad200509a4047db1e29edcdd`
+- Einzeldatei-Hashes und verwendete Definitionen: [NUTRIENT-MAPPING.md](NUTRIENT-MAPPING.md).
 
 ### USDA FNDDS 2021–2023 (Survey Foods, 10/2024)
 - Herausgeber: USDA ARS (FoodData Central)
@@ -54,14 +63,17 @@ Abrufdatum aller Dateien: **12.11.2026**.
 - Download: https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_survey_food_json_2024-10-31.zip
 - Ordner: `catalog-raw/usda-fndds/`
 - Datei: `FoodData_Central_survey_food_json_2024-10-31.zip` – 3 835 292 Byte – `dfb06ae7ddc397ccd570b91c14b75438ab2ba39f64f22d321f61d4a52a77f3eb`
+- Verwendete Rohdatei: `FoodData_Central_survey_food_json_2024-10-31_extracted/surveyDownload.json`, SHA-256 `2e7eb9fda92adf1d4d784dba5eaa3a7fd4418cd86ccff383c7c9294d79e9b808`.
 
 ### UK CoFID 2021 (McCance and Widdowson's Composition of Foods Integrated Dataset)
-- Herausgeber: UK-Regierung, veröffentlicht auf https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid (genaue Behörde ungeprüft)
+- Herausgeber: Public Health England; veröffentlicht am 25.03.2015, zuletzt aktualisiert am 19.03.2021 (vom Koordinator am 12.11.2026 auf https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid gelesen)
 - Lizenz: Open Government Licence v3.0 – https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/ (Seite: „All content is available under the Open Government Licence v3.0, except where otherwise stated.“)
-- Verlangte Quellenangabe: ungeprüft (auf der Seite nicht genannt; Footer „© Crown copyright“)
+- Quellenhinweis: „Contains public sector information licensed under the Open Government Licence v3.0.“
 - Download: https://assets.publishing.service.gov.uk/media/60538b91e90e07527df82ae4/McCance_Widdowsons_Composition_of_Foods_Integrated_Dataset_2021..xlsx
 - Ordner: `catalog-raw/cofid-2021/`
 - Datei: `McCance_Widdowsons_Composition_of_Foods_Integrated_Dataset_2021..xlsx` – 4 629 542 Byte – `436e9445ef2adb2a75f3d7edd51302de3adad25385f9795fc94ba58bd030e97d`
+
+## Teil B – mögliche Erweiterungen
 
 ### Fineli (Finnland)
 - Status: **nicht geladen**. https://fineli.fi/fineli/en/avoin-data lieferte HTTP 403 mit einer Browser-Prüfung („Enable JavaScript and cookies to continue“). Lizenz deshalb nicht selbst gelesen.

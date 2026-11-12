@@ -3,6 +3,21 @@ const fs = require('node:fs'), vm = require('node:vm'), assert = require('node:a
 const {sidecarKeys} = require('../scripts/lib/nutrient-mapping.cjs');
 const {shardFor} = require('../scripts/lib/nutrient-readers.cjs');
 const frozenV94 = require('./fixtures/nutrient-runtime/v94-validation.cjs');
+
+// Frozen original rules, captured during development; no Git or raw data at test time.
+const frozenOlderRules = {
+  "v94": {
+    "commit": "ad92acf",
+    "sha256": "15709bdcf010cd524ecea10f5eaa64c6a5e85f71be122248a4beabc1f707e860",
+    "code": "const productValidData=validData;validData=function(s){return productValidData(s)&&s.custom.every(x=>(x.unit===undefined||['g','ml'].includes(x.unit))&&(x.barcode===undefined||validBarcode(x.barcode))&&(x.sourceUrl===undefined||x.sourceUrl==='https://world.openfoodfacts.org/product/'+x.barcode))&&s.foods.every(x=>x.unit===undefined||['g','ml'].includes(x.unit))};\n(function(){\n'use strict';\nconst object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);\nconst finite=(x,min=0,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=min&&x<=max;\nconst integer=(x,min,max)=>Number.isInteger(x)&&finite(x,min,max);\nconst text=(x,max,min=0)=>typeof x==='string'&&x.length<=max&&x.trim().length>=min;\nconst views=['energy','micros','week'],sources=['bls','usda','ciqual','off','own','puls'];\nconst highlighted=['fiber','vitc','iron','calcium','b12','folate','potassium','magnesium'];\nconst subset=(x,keys,max=keys.length)=>Array.isArray(x)&&x.length<=max&&new Set(x).size===x.length&&x.every(k=>keys.includes(k));\nconst ratioOK=x=>object(x)&&['p','c','f'].every(k=>integer(x[k],5,80))&&x.p+x.c+x.f===100;\nconst copy=x=>Array.isArray(x)?x.map(copy):object(x)?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,copy(v)])):x;\nconst optionKeys=['water','display','foodSearch','plan'];\nfunction optionCopy(s){const draft={...s};for(const key of optionKeys)if(s[key]!==undefined)draft[key]=copy(s[key]);return draft}\nconst displayDefaults=()=>({summaryViews:[...views],showRemaining:false,highlighted:[...highlighted],hapticsEnabled:true,motion:'system'});\nconst displayRules={summaryViews:x=>subset(x,views),showRemaining:x=>typeof x==='boolean',\n highlighted:x=>subset(x,typeof nutrientLabels==='object'?Object.keys(nutrientLabels):highlighted,8),\n // lastRankSeen 0..39 covers scale 2 and old backups (0..24 plus legacy 25/26); migrate87 maps unmarked values.\n hapticsEnabled:x=>typeof x==='boolean',motion:x=>['system','reduced'].includes(x),lastRankSeen:x=>integer(x,0,39),rankScale:x=>x===2};\nfunction cleanObject(source,key,rules){\n if(source[key]===undefined)return;\n if(!object(source[key])){delete source[key];return}\n for(const field of Object.keys(source[key]))if(!Object.hasOwn(rules,field)||!rules[field](source[key][field]))delete source[key][field];\n}\nfunction cleanOptions(s){\n cleanObject(s,'water',{mode:x=>['auto','manual'].includes(x),glassMl:x=>integer(x,100,1000)});\n cleanObject(s,'display',displayRules);\n cleanObject(s,'foodSearch',{sort:x=>['best','az','za','recent','frequent'].includes(x),sources:x=>subset(x,sources)});\n if(object(s.plan)){\n  if(s.plan.macroInput!==undefined&&!['grams','ratio'].includes(s.plan.macroInput))delete s.plan.macroInput;\n  if(s.plan.ratio!==undefined&&!ratioOK(s.plan.ratio))delete s.plan.ratio;\n  if(s.plan.macroInput==='ratio'&&!ratioOK(s.plan.ratio))delete s.plan.macroInput;\n }\n}\nfunction mealsOK(value){\n return Array.isArray(value)&&value.length<=200&&value.every(m=>object(m)&&text(m.id,60,1)&&text(m.name,100,1)&&\n  Array.isArray(m.items)&&m.items.length>=1&&m.items.length<=50&&m.items.every(x=>object(x)&&text(x.name,120,1)&&\n   finite(x.grams,0,5000)&&x.grams>0&&['g','ml'].includes(x.unit)&&['kcal','p','c','f'].every(k=>finite(x[k]))&&\n   (x.nutrients===undefined||object(x.nutrients)&&Object.values(x.nutrients).every(v=>finite(v)))&&\n   ['source','barcode','foodRef','recipeId'].every(k=>x[k]===undefined||typeof x[k]==='string')&&\n   (x.aiEstimate===undefined||typeof x.aiEstimate==='boolean')));\n}\nconst baseValid=validData;\nvalidData=function(s){\n if(!object(s))return false;\n // Native commands validate {...state,...}; never clean their shared subobjects.\n const draft=optionCopy(s);cleanOptions(draft);\n if(s.meals!==undefined&&!mealsOK(s.meals))return false;\n if(!baseValid(draft))return false;\n for(const key of optionKeys)if(draft[key]===undefined)delete s[key];else s[key]=draft[key];\n return true;\n};\n})();\n"
+  },
+  "v95": {
+    "commit": "2ad15cb",
+    "sha256": "e6a95906d391a54c88647e9052dde2a65abf800fc729e4bb1da8d6b45debd098",
+    "code": "const productValidData=validData;validData=function(s){return productValidData(s)&&s.custom.every(x=>(x.unit===undefined||['g','ml'].includes(x.unit))&&(x.barcode===undefined||validBarcode(x.barcode))&&(x.sourceUrl===undefined||x.sourceUrl==='https://world.openfoodfacts.org/product/'+x.barcode))&&s.foods.every(x=>x.unit===undefined||['g','ml'].includes(x.unit))};\n(function(){\n'use strict';\nconst object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);\nconst finite=(x,min=0,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=min&&x<=max;\nconst integer=(x,min,max)=>Number.isInteger(x)&&finite(x,min,max);\nconst text=(x,max,min=0)=>typeof x==='string'&&x.length<=max&&x.trim().length>=min;\nconst views=['energy','micros','week'],sources=['bls','usda','ciqual','off','own','puls'];\nconst highlighted=['fiber','vitc','iron','calcium','b12','folate','potassium','magnesium'];\nconst subset=(x,keys,max=keys.length)=>Array.isArray(x)&&x.length<=max&&new Set(x).size===x.length&&x.every(k=>keys.includes(k));\nconst ratioOK=x=>object(x)&&['p','c','f'].every(k=>integer(x[k],5,80))&&x.p+x.c+x.f===100;\nconst copy=x=>Array.isArray(x)?x.map(copy):object(x)?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,copy(v)])):x;\nconst optionKeys=['water','display','foodSearch','plan'];\nfunction optionCopy(s){const draft={...s};for(const key of optionKeys)if(s[key]!==undefined)draft[key]=copy(s[key]);return draft}\nconst displayDefaults=()=>({summaryViews:[...views],showRemaining:false,highlighted:[...highlighted],hapticsEnabled:true,motion:'system'});\nconst displayRules={summaryViews:x=>subset(x,views),showRemaining:x=>typeof x==='boolean',\n highlighted:x=>subset(x,typeof nutrientLabels==='object'?Object.keys(nutrientLabels):highlighted,8),\n // lastRankSeen 0..39 covers scale 2 and old backups (0..24 plus legacy 25/26); migrate87 maps unmarked values.\n hapticsEnabled:x=>typeof x==='boolean',motion:x=>['system','reduced'].includes(x),lastRankSeen:x=>integer(x,0,39),rankScale:x=>x===2};\nfunction cleanObject(source,key,rules){\n if(source[key]===undefined)return;\n if(!object(source[key])){delete source[key];return}\n for(const field of Object.keys(source[key]))if(!Object.hasOwn(rules,field)||!rules[field](source[key][field]))delete source[key][field];\n}\nfunction cleanOptions(s){\n cleanObject(s,'water',{mode:x=>['auto','manual'].includes(x),glassMl:x=>integer(x,100,1000)});\n cleanObject(s,'display',displayRules);\n cleanObject(s,'foodSearch',{sort:x=>['best','az','za','recent','frequent'].includes(x),sources:x=>subset(x,sources)});\n if(object(s.plan)){\n  if(s.plan.macroInput!==undefined&&!['grams','ratio'].includes(s.plan.macroInput))delete s.plan.macroInput;\n  if(s.plan.ratio!==undefined&&!ratioOK(s.plan.ratio))delete s.plan.ratio;\n  if(s.plan.macroInput==='ratio'&&!ratioOK(s.plan.ratio))delete s.plan.macroInput;\n }\n}\nfunction mealsOK(value){\n return Array.isArray(value)&&value.length<=200&&value.every(m=>object(m)&&text(m.id,60,1)&&text(m.name,100,1)&&\n  Array.isArray(m.items)&&m.items.length>=1&&m.items.length<=50&&m.items.every(x=>object(x)&&(!window.pulsNutrients||window.pulsNutrients.validFields(x))&&text(x.name,120,1)&&\n   finite(x.grams,0,5000)&&x.grams>0&&['g','ml'].includes(x.unit)&&['kcal','p','c','f'].every(k=>finite(x[k]))&&\n   (x.nutrients===undefined||object(x.nutrients)&&Object.values(x.nutrients).every(v=>finite(v)))&&\n   ['source','barcode','foodRef','recipeId'].every(k=>x[k]===undefined||typeof x[k]==='string')&&\n   (x.aiEstimate===undefined||typeof x.aiEstimate==='boolean')));\n}\nconst baseValid=validData;\nvalidData=function(s){\n if(!object(s))return false;\n // Native commands validate {...state,...}; never clean their shared subobjects.\n const draft=optionCopy(s);cleanOptions(draft);\n if(s.meals!==undefined&&!mealsOK(s.meals))return false;\n if(!baseValid(draft))return false;\n for(const key of optionKeys)if(draft[key]===undefined)delete s[key];else s[key]=draft[key];\n return true;\n};\n})();\n(function(){\nconst plain = x => {\n  if (x === null || typeof x !== 'object' || Array.isArray(x)) return false;\n  const prototype = Object.getPrototypeOf(x);\n  return prototype === null || Object.getPrototypeOf(prototype) === null;\n};\nconst finite = x => typeof x === 'number' && Number.isFinite(x) && x >= 0 && x <= 1e9;\nconst validKey = key => typeof key === 'string' && key.length >= 3 && key.length <= 140 && !/[\\u0000-\\u001f\\u007f-\\u009f]/.test(key) && key.indexOf(':') > 0 && key.indexOf(':') < key.length - 1;\nfunction validLabelValues(values) {\n  return plain(values) && Object.keys(values).length <= 40 && Object.entries(values).every(([key,value]) => /^[a-z][a-z0-9_]{0,31}$/.test(key) && finite(value));\n}\nfunction validFields(item) {\n  return plain(item) && (item.ck === undefined || validKey(item.ck)) && (item.nx === undefined || validLabelValues(item.nx));\n}\nconst baseValid = validData;\nvalidData = function (source) {\n  return plain(source) && ['foods','custom'].every(key => Array.isArray(source[key]) && source[key].every(validFields)) &&\n    (source.meals === undefined || Array.isArray(source.meals) && source.meals.every(meal => Array.isArray(meal?.items) && meal.items.every(validFields))) && baseValid(source);\n};\n\nwindow.pulsNutrients={validFields};})();"
+  }
+};
+
 const keys = sidecarKeys();
 const clone = x => JSON.parse(JSON.stringify(x));
 const sourceKey = 'BLS 4.0:FIXTURE';
@@ -52,6 +67,7 @@ function fullApp() {
   const [first,second] = await Promise.all([api.ensure([sourceKey]),api.ensureForEntries([entry()])]);
   assert.deepEqual(clone(first),{ready:[sourceKey],unavailable:[]});assert.deepEqual(clone(first),clone(second));assert.equal(t.requests.length,1);
   assert.equal(JSON.stringify(t.c.state),before,'Loading does not mutate profile');
+  assert(t.requests.every(url=>/^catalog\/nutrients-v2-\d{2}\.json$/.test(url)),'Only immutable v2 URLs are loaded');
   let result = api.resolveEntry(entry());assert.equal(result.pending,false);
   assertValue(result,'sugars',3,'catalog');assertValue(result,'satfat',0,'catalog');assertValue(result,'fiber',7.5,'snapshot');
   assertValue(result,'selenium',null,'unknown');assertValue(result,'c',18.5,'snapshot');
@@ -133,6 +149,24 @@ function fullApp() {
   assertValue(api.resolveEntry(entry({grams:undefined,nx:{sugars:2}})),'sugars',null,'unknown');
   console.log('PASS: resolver priority, per100 scaling, 0/unknown coverage, rounding boundary, old foodRef/record links, altered/ml/recipe/AI exclusions, coalescing and offline retry');
 
+  // Real v2 shards for each new source, plus the volume-basis exclusion.
+  const manifest=JSON.parse(fs.readFileSync('catalog/manifest.json','utf8'));
+  const catalogue=manifest.files.flatMap(file=>JSON.parse(fs.readFileSync(file,'utf8')));
+  const selected=['CNF_2','COFID_13-145','COFID_17-793','FNDDS_11111000'].map(id=>catalogue.find(r=>r[0]===id));
+  const newFoods=selected.map((r,i)=>({id:'compat-'+i,name:r[1],catalogKey:r[7]+':'+r[0],source:r[7],record:r[0],unit:r[9]||'g',kcal:r[3],p:r[4],c:r[5],f:r[6],nutrients:r[8]}));
+  const real=fixture({fetch:async url=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(url,'utf8'))})});
+  await real.api.ensure(newFoods.map(p=>p.catalogKey));
+  for(const p of newFoods) {
+    const result=real.api.resolveProduct(p);
+    if(p.unit==='ml') {assertValue(result,'sugars',null);assert.equal(result.pending,false);}
+    else {assert.equal(result.origin.sugars,'catalog');assert.equal(result.pending,false);}
+  }
+  for(const key of ['CNF 2026:123','CoFID 2021:123','USDA FNDDS 2021-2023:123']) {
+    const count=real.requests.length;assert.equal((await real.api.ensure([key])).unavailable.length,1);assert.equal(real.requests.length,count,'Malformed new record prefix does not trigger a fetch');
+  }
+  const wrongShape=fixture({fetch:async()=>({ok:true,json:async()=>({schemaVersion:1,keys,rows:[]})})});
+  assert.equal((await wrongShape.api.ensure([newFoods[0].catalogKey])).unavailable.length,1);
+
   const full = fullApp();const run = full.run, c = full.ctx;
   const sourceRow = {id:'catalog_0',record:'FIXTURE',source:'BLS 4.0',name:'Fixture',...base,unit:'g',nutrients:{fiber:5}};
   run('localCatalogue='+JSON.stringify([sourceRow]));
@@ -161,6 +195,24 @@ function fullApp() {
   // Frozen ad92acf core and nutrient rules, explicitly a subset of its wrappers.
   const oldProfile=clone(valid);assert(frozenV94(oldProfile));assert.deepEqual(oldProfile,valid);
   const badOld=clone(valid);badOld.foods[0].nutrients={sugars:1};assert.equal(frozenV94(badOld),false);
+  const compatProfile={...clone(valid),foodSearch:{sort:'az',sources:['bls','cnf','cofid','fndds'],catalogueSourcesVersion:1},custom:clone(newFoods),meals:[],foods:newFoods.map((p,i)=>({...entry({id:'compat-entry-'+i,ck:p.catalogKey,foodRef:p.id,unit:p.unit,grams:100}),name:p.name,kcal:p.kcal,p:p.p,c:p.c,f:p.f,nutrients:clone(p.nutrients)}))};
+  const compatBefore=clone(compatProfile);
+  c.compatProfile=clone(compatProfile);assert(run('validData(compatProfile)'),'Current full validator accepts v96 fixture');
+  for(const [version,rules]of Object.entries(frozenOlderRules)) {
+    assert.equal(require('node:crypto').createHash('sha256').update(rules.code).digest('hex'),rules.sha256);
+    const legacy={window:{},validData:frozenV94};vm.createContext(legacy);vm.runInContext(rules.code,legacy);
+    const old=clone(compatProfile);assert(legacy.validData(old),rules.commit+' accepts new source records and ml');
+    const expected=clone(compatProfile);delete expected.foodSearch.sources;delete expected.foodSearch.catalogueSourcesVersion;
+    assert.deepEqual(clone(old),expected,version+' only discards the unknown source options');
+    assert.deepEqual(old.custom,compatBefore.custom);assert.deepEqual(old.foods,compatBefore.foods);
+    // Simulate old-device upload, then the actual current import/migration path.
+    c.compatReturn=clone(old);run('compatReturn=prepareImportedData(compatReturn)');
+    const restored=clone(run('compatReturn'));
+    assert.deepEqual(restored.custom,compatBefore.custom);assert.deepEqual(restored.foods,compatBefore.foods);
+    assert.equal(restored.foodSearch.catalogueSourcesVersion,1);
+    assert.deepEqual(restored.foodSearch.sources,['bls','usda','ciqual','off','own','puls','cnf','cofid','fndds'],'Source preferences reset to defaults after older-device sync');
+  }
+  console.log('PASS: frozen ad92acf / 2ad15cb core, nutrient, unit and option rules accept v96 sources/g/ml/ck; older sync loses source preferences, retains all food IDs and snapshots');
   run('state='+JSON.stringify(valid));run('var roundTrip=prepareImportedData(JSON.parse(JSON.stringify(state)))');assert.equal(run('roundTrip.foods[1].nx.sugars'),2);
   let exported;
   c.Blob=class {constructor(parts){exported=parts.join('');}};

@@ -7,8 +7,17 @@ const CACHE='puls-static-95',ASSETS=[
 "js/workout-import.js","js/strength-ranks.js", "js/puls-data-v87.js","js/sound-engine.js","js/motion.js","css/motion.css","js/friends.js","css/friends.css","js/color-scheme.js","js/edge-back.js","css/edge-back.css","js/connectivity.js","js/running.js","js/run-metrics.js","js/run-session.js","js/run-map.js","js/activity-overview.js","js/vendor/leaflet.js","css/vendor/leaflet.css","css/running.css","js/exercise-muscles.js","css/exercise-muscles.css","js/food-flow.js","js/food-photo.js","css/food-flow.css","js/training-polish.js","css/training-polish.css","js/app-polish.js","css/app-polish.css","js/haptics.js","js/page-slide.js","css/page-slide.css","js/workout-controls.js","css/workout-controls.css","js/rest-popup.js","css/rest-popup.css","js/training-tabs.js","css/training-tabs.css","js/profile-refresh.js","css/profile-refresh.css","css/food-refresh.css","js/session-focus.js","css/session-focus.css","js/native-bridge.js","js/native-extras.js","js/native-state.js","js/native-projection.js","js/native-training.js","js/native-progress.js","js/native-activity.js","js/native-nutrition.js","js/native-account.js","css/native-shell.css","css/training-refresh.css","css/overview-refresh.css","js/account-refresh.js","css/account-refresh.css","js/machine-library.js","js/refinement.js","css/refinement.css","js/progress-metrics.js","css/progress-metrics.css","css/design-system.css","js/icons.js","js/design-system.js","js/quick-units.js","css/quick-units.css","js/account-guide.js","css/account-guide.css","./","index.html","js/adaptation.js","js/app.js","js/catalog-search.js","js/catalog-worker.js","js/cloud-config.js","js/cloud.js","css/comfort.css","js/comfort.js","css/compact.css","js/compact.js","js/enhancements.js","js/exercise-catalog.js","js/experience.js","css/finish.css","js/finish.js","css/flows.css","js/flows.js","js/food-search.js","css/food-upgrade.css","js/food-upgrade.js","js/i18n.js","icon.svg","icon-install.html","icons/light-180.png","icons/light-512.png","icons/light.svg","icons/light.webmanifest","icons/dark-180.png","icons/dark-512.png","icons/dark.svg","icons/dark.webmanifest","js/insights.js","css/interactions.css","js/interactions.js","css/lifecycle.css","js/lifecycle.js","manifest.webmanifest","css/navigation.css","js/navigation.js","js/nutrition-input.js","css/personal.css","js/personal.js","css/polish.css","js/polish.js","js/portions.js","js/preview-mode.js","js/products.js","js/recipes.js","css/style.css","js/tracker-tools.js","js/training.js","css/workout-polish.css","js/workout-polish.js","js/food-diary.js","css/food-diary.css","js/food-page.js","css/food-page.css","js/friends-board.js","css/friends-board.css","js/quick-account-v87.js","css/quick-account-v87.css"];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 // Independent of app releases. Bump only when bundled catalogue content changes.
-const CATALOG_CACHE='puls-catalog-v3',CATALOG_PATH=/^catalog\/(foods-\d+|manifest|portions|nutrients-v1(?:-\d{2})?)\.json$/;
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('puls-static-')&&k!==CACHE||k.startsWith('puls-catalog-')&&k!==CATALOG_CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+const CATALOG_CACHE='puls-catalog-v3',CATALOG_PATH=/^catalog\/(foods-\d+|manifest|portions|nutrients-v2(?:-\d{2})?)\.json$/;
+self.addEventListener('activate',event=>event.waitUntil((async()=>{
+ const keys=await caches.keys();
+ await Promise.all(keys.filter(k=>k.startsWith('puls-static-')&&k!==CACHE||k.startsWith('puls-catalog-')&&k!==CATALOG_CACHE).map(k=>caches.delete(k)));
+ const cache=await caches.open(CATALOG_CACHE),base=new URL(self.registration.scope);
+ // Keep the shared catalogue generation, remove only superseded sidecars.
+ await Promise.all((await cache.keys()).filter(request=>{
+  const url=new URL(request.url);return url.origin===base.origin&&url.pathname.startsWith(base.pathname)&&/^catalog\/nutrients-v1(?:-\d{2})?\.json$/.test(url.pathname.slice(base.pathname.length));
+ }).map(request=>cache.delete(request)));
+ await self.clients.claim();
+})()));
 // Optional background work after a successful app load. A partial download can resume
 // on the next start/online event; catalogue availability never blocks shell installation.
 let cataloguePreload=null;
@@ -26,8 +35,8 @@ async function cacheFullCatalogue(){
  }
  const manifest=await (await ensure('catalog/manifest.json')).json();
  if(!Array.isArray(manifest.files)||manifest.files.length>1000||!manifest.files.every(path=>typeof path==='string'&&/^catalog\/foods-\d+\.json$/.test(path)))throw Error('Invalid catalogue manifest');
- const nutrientFiles=Array.from({length:64},(_,i)=>'catalog/nutrients-v1-'+String(i).padStart(2,'0')+'.json');
- const files=[...new Set([...manifest.files,'catalog/portions.json','catalog/nutrients-v1.json',...nutrientFiles])];
+ const nutrientFiles=Array.from({length:64},(_,i)=>'catalog/nutrients-v2-'+String(i).padStart(2,'0')+'.json');
+ const files=[...new Set([...manifest.files,'catalog/portions.json','catalog/nutrients-v2.json',...nutrientFiles])];
  // Limit concurrent downloads, especially on phones. Keep successful chunks on failure.
  let cursor=0;
  await Promise.allSettled(Array.from({length:3},async()=>{while(cursor<files.length)await ensure(files[cursor++])}));

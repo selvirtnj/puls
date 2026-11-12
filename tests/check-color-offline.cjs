@@ -114,12 +114,12 @@ async function checkWorker(){
  const key=value=>new URL(typeof value==='string'?value:value.url||value.href,base).pathname;
  function cacheApi(name){
   if(!stores.has(name))stores.set(name,new Map());const entries=stores.get(name);
-  return {match:async value=>entries.get(key(value))?.clone(),put:async(value,response)=>{if(failPut)throw Error('Quota exceeded');entries.set(key(value),response.clone())},addAll:async files=>{for(let file of files){let url=new URL(file,base),local=file==='./'?'index.html':file;entries.set(key(url),new Response(fs.readFileSync(local),{status:200}))}}};
+  return {keys:async()=>[...entries.keys()].map(path=>({url:new URL(path,base).href})),delete:async value=>entries.delete(key(value)),match:async value=>entries.get(key(value))?.clone(),put:async(value,response)=>{if(failPut)throw Error('Quota exceeded');entries.set(key(value),response.clone())},addAll:async files=>{for(let file of files){let url=new URL(file,base),local=file==='./'?'index.html':file;entries.set(key(url),new Response(fs.readFileSync(local),{status:200}))}}};
  }
  function worker(source=read('sw.js')){
   const listeners={},ctx={URL,console,Promise,self:{registration:{scope:base},addEventListener:(type,fn)=>listeners[type]=fn,skipWaiting(){},clients:{claim(){}}},
    caches:{open:async name=>cacheApi(name),match:async value=>{for(let name of stores.keys()){let hit=await cacheApi(name).match(value);if(hit)return hit}},keys:async()=>[...stores.keys()],delete:async name=>stores.delete(name)},
-   fetch:async value=>{const path=key(value);requests.push(path);if(!online||failChunk&&path.endsWith('foods-3.json')||failNutrient&&path.endsWith('nutrients-v1-03.json'))throw Error('offline');return new Response(fs.readFileSync('.'+path.slice('/puls'.length)),{status:200})}};
+   fetch:async value=>{const path=key(value);requests.push(path);if(!online||failChunk&&path.endsWith('foods-3.json')||failNutrient&&path.endsWith('nutrients-v2-03.json'))throw Error('offline');return new Response(fs.readFileSync('.'+path.slice('/puls'.length)),{status:200})}};
   vm.createContext(ctx);vm.runInContext(source,ctx);
   return {listeners,staticName:vm.runInContext('CACHE',ctx),catalogName:vm.runInContext('CATALOG_CACHE',ctx)};
  }
@@ -131,10 +131,16 @@ async function checkWorker(){
  failChunk=true;failNutrient=true;await preload();let catalogue=stores.get(current.catalogName);
  assert(catalogue.has('/puls/catalog/foods-0.json'));assert(!catalogue.has('/puls/catalog/foods-3.json'));
  failChunk=false;failNutrient=false;requests=[];await preload();assert(requests.includes('/puls/catalog/foods-3.json'));assert(!requests.includes('/puls/catalog/foods-0.json'),'Completed chunks are reused');
- assert(requests.includes('/puls/catalog/nutrients-v1-03.json'),'Missing nutrient shard retries');
- const catalogueFiles=fs.readdirSync('catalog');for(let file of catalogueFiles)assert(catalogue.has('/puls/catalog/'+file),'Cached '+file);
+ assert(requests.includes('/puls/catalog/nutrients-v2-03.json'),'Missing nutrient shard retries');
+ const catalogueFiles=fs.readdirSync('catalog').filter(file=>!/^nutrients-v1(?:-\d{2})?\.json$/.test(file));for(let file of catalogueFiles)assert(catalogue.has('/puls/catalog/'+file),'Cached '+file);
  assert.equal(catalogue.size,catalogueFiles.length,'Only catalogue files cached by preload');
  await lifecycle('install');const oldStatic=current.staticName;
+ await cacheApi(current.catalogName).put('catalog/nutrients-v1-03.json?legacy=1',new Response('{}'));
+ await cacheApi(current.catalogName).put('catalog/nutrients-v1.json',new Response('{}'));
+ await lifecycle('activate');
+ assert(![...catalogue.keys()].some(path=>path.includes('nutrients-v1')),'Activation removes old v1 entries from the retained v3 catalogue cache');
+ assert(!requests.some(path=>path.includes('nutrients-v1')),'v1 is never preloaded');
+ assert.equal(await responseFor('catalog/nutrients-v1-03.json'),undefined,'Old v95 tabs use normal network delivery, never the v96 catalogue cache');
  assert(![...stores.get(oldStatic).keys()].some(path=>path.includes('/catalog/')),'Catalogue is separate from static assets');
  // Simulate bump-version without changing source files or the precache list.
  current=worker(read('sw.js').replace(/puls-static-\d+/, 'puls-static-99999'));

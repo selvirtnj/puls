@@ -4,9 +4,11 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const {readXlsx, csvRows, numeric, formatNumber, shardFor} = require('./lib/nutrient-readers.cjs');
 const {BLS, USDA, CIQUAL, LEGACY_BLS, LEGACY_USDA, LEGACY_CIQUAL, sidecarKeys, roundSr, formulaDependencies, blsValue, ciqualValues} = require('./lib/nutrient-mapping.cjs');
+const {EXTRA_SOURCES,KNOWN_BASE_DIFFERENCES,readCnf,readCofid,readFndds} = require('./lib/nutrient-new-sources.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const BASE_DIGEST = 'b628e42785483adeae717bfdc15c9026306445f3ca37fb39da463937fc884a2d';
+const EXTENSION_DIGEST = 'fae7254c725265e7365180af445cc613dac8a724db4cb30e1b260479e88ec206';
 const BLS_DIR = 'bls-4.0/BLS_4_0_2025_DE_extracted/BLS_4_0_2025_DE/';
 const SR_DIR = 'usda-sr-legacy-2018/FoodData_Central_sr_legacy_food_csv_2018-04_extracted/FoodData_Central_sr_legacy_food_csv_2018-04/';
 const SOURCES = [
@@ -25,7 +27,7 @@ const SOURCES = [
   ]},
   {name:'Ciqual 2025', edition:'Ciqual 2025, FR 2025-11-03', count:3006, files:[
     ['ciqual-2025/Table_Ciqual_2025_FR_2025_11_03.xlsx', '5555c572fa3735991298d832d0427788fa69a11b4fd20a5d580d58942369fbb0']
-  ]}
+  ]}, ...EXTRA_SOURCES
 ];
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 function baseFiles() {
@@ -38,6 +40,10 @@ function verifyBase() {
   const files = baseFiles();
   if (sha256(JSON.stringify(files)) !== BASE_DIGEST) throw Error('Base catalogue differs from pinned original 37 food chunks (ad92acf LF bytes)');
   return Object.fromEntries(files);
+}
+function extensionBaseFiles() {
+  return Array.from({length:22},(_,i) => 'foods-'+(37+i)+'.json').sort()
+    .map(f => [f,sha256(fs.readFileSync(path.join(ROOT,'catalog',f),'utf8').replace(/\r\n/g,'\n'))]);
 }
 function verifyRaw(root) {
   for (const source of SOURCES) for (const [file, expected] of source.files) {
@@ -203,6 +209,7 @@ function compareLegacy(row, raw, report) {
     if (existing === value) continue;
     const issue = {catalogKey:row[7] + ':' + row[0], key, catalog:existing, raw:value};
     if (row[7] === 'USDA Foundation 2026' && row[0] === '2747669' && key === 'b12' && existing === 1.57 && value === 1.63) report.expectedDifferences.push(issue);
+    else if (row[7] === 'CoFID 2021' && KNOWN_BASE_DIFFERENCES.some(([id,k,old,current]) => row[0] === id && key === k && existing === old && value === current)) report.expectedDifferences.push(issue);
     else report.unexpectedDifferences.push(issue);
   }
 }
@@ -219,10 +226,11 @@ function plausibility(values) {
 
 function main(rawRoot = path.join(ROOT, 'catalog-raw')) {
   if (Number(process.versions.node.split('.')[0]) < 24) throw Error('Node 24+ required');
-  const baseline = verifyBase();
+  const baseline = verifyBase(), extension = extensionBaseFiles();
+  if (sha256(JSON.stringify(extension)) !== EXTENSION_DIGEST) throw Error('Extension catalogue differs from pinned 7a01611 LF bytes');
   const rawPath = path.resolve(rawRoot); verifyRaw(rawPath);
   const keys = sidecarKeys();
-  const readers = [readBls(rawPath),readSr(rawPath),readFoundation(rawPath),readCiqual(rawPath)];
+  const readers = [readBls(rawPath),readSr(rawPath),readFoundation(rawPath),readCiqual(rawPath),readCnf(rawPath),readCofid(rawPath),readFndds(rawPath)];
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'catalog/manifest.json'), 'utf8'));
   const rows = manifest.files.flatMap(file => JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8')));
   const shards = Array.from({length:64}, () => ({schemaVersion:1,keys,rows:{}}));
@@ -234,9 +242,10 @@ function main(rawRoot = path.join(ROOT, 'catalog-raw')) {
   for (const row of [...rows].sort((a,b) => (a[7] + ':' + a[0]) < (b[7] + ':' + b[0]) ? -1 : 1)) {
     const index = SOURCES.findIndex(source => source.name === row[7]);
     if (index < 0) continue;
-    const report = sourceReports[index], raw = readers[index].get(String(row[0]));
+    const report = sourceReports[index], raw = readers[index].get(String(row[0]),row[1]);
     if (!raw) throw Error('Raw record missing: ' + row[7] + ':' + row[0]);
     report.matched++; compareLegacy(row,raw,report.selfCheck);
+    if (row[9] === 'ml') { report.diagnostics = readers[index].diagnostics; report.diagnostics.mlRowsExcluded++; continue; }
     const values = Object.fromEntries(keys.map(key => [key,null]));
     keys.slice(0,4).forEach((key,i) => { values[key] = row[i + 3]; });
     for (const [key,value] of Object.entries(raw.values)) if (keys.includes(key)) values[key] = value;
@@ -256,16 +265,23 @@ function main(rawRoot = path.join(ROOT, 'catalog-raw')) {
     }
   });
   verifyBase();
+  // v1 remains deployable for still-open v95 pages. Old source rows in v2 must
+  // be byte-for-byte equal strings; never silently regenerate changed history.
+  for(let i=0;i<64;i++) {
+    const previous = JSON.parse(fs.readFileSync(path.join(ROOT,'catalog/nutrients-v1-'+String(i).padStart(2,'0')+'.json'),'utf8'));
+    for(const [key,text] of Object.entries(previous.rows)) if(shards[i].rows[key] !== text)throw Error('v1 row changed: '+key);
+    for(const key of Object.keys(shards[i].rows)) if(SOURCES.slice(0,4).some(s=>key.startsWith(s.name+':')) && previous.rows[key] !== shards[i].rows[key])throw Error('Old source row added: '+key);
+  }
   const files = shards.map((shard,i) => {
-    const file = 'catalog/nutrients-v1-' + String(i).padStart(2,'0') + '.json', text = JSON.stringify(shard) + '\n';
+    const file = 'catalog/nutrients-v2-' + String(i).padStart(2,'0') + '.json', text = JSON.stringify(shard) + '\n';
     return {file, text, rows:Object.keys(shard.rows).length, sha256:sha256(text)};
   });
   const meta = {schemaVersion:1,keys,shardCount:64,hash:{algorithm:'FNV-1a-32',encoding:'UTF-8',offsetBasis:'811c9dc5',prime:'01000193',modulus:64},
-    precision:{extendedSignificantDigits:5,baseMacros:'Exact catalogue values, including six values with more than five significant digits'},
-    baseFiles:baseline,shards:files.map(({file,rows,sha256}) => ({file,rows,sha256})),sources:sourceReports,plausibilityWarnings:warnings};
+    precision:{extendedSignificantDigits:5,baseMacros:'Exact catalogue values, including 838 values with more than five significant digits (BLS 6, CNF 830, CoFID 2)'},
+    baseFiles:{...baseline,...Object.fromEntries(extension)},shards:files.map(({file,rows,sha256}) => ({file,rows,sha256})),sources:sourceReports,plausibilityWarnings:warnings};
   // All raw hashes, identity checks and legacy comparisons finish before writes.
   for (const file of files) fs.writeFileSync(path.join(ROOT,file.file),file.text);
-  fs.writeFileSync(path.join(ROOT,'catalog/nutrients-v1.json'),JSON.stringify(meta,null,2) + '\n');
+  fs.writeFileSync(path.join(ROOT,'catalog/nutrients-v2.json'),JSON.stringify(meta,null,2) + '\n');
   verifyBase();
   console.log(JSON.stringify({sources:sourceReports,plausibilityWarnings:warnings.length,bytes:files.reduce((sum,file) => sum + Buffer.byteLength(file.text),0)},null,2));
   return meta;
@@ -274,4 +290,4 @@ function main(rawRoot = path.join(ROOT, 'catalog-raw')) {
 if (require.main === module) {
   try { main(process.argv[2]); } catch (error) { console.error(error.message); process.exitCode = 1; }
 }
-module.exports = {main, SOURCES, BASE_DIGEST, sha256, baseFiles, verifyRaw, compareLegacy, plausibility};
+module.exports = {main, SOURCES, BASE_DIGEST, EXTENSION_DIGEST, sha256, baseFiles, extensionBaseFiles, verifyRaw, compareLegacy, plausibility};

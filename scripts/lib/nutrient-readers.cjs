@@ -39,11 +39,21 @@ function textRuns(xml) {
   return [...xml.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map(m => xmlText(m[1])).join('');
 }
 
-function readXlsx(file) {
+function readXlsx(file, sheetName) {
   const entries = zipEntries(fs.readFileSync(file));
   const shared = entries.has('xl/sharedStrings.xml')
     ? [...entries.get('xl/sharedStrings.xml')().matchAll(/<si(?:\s[^>]*)?>([\s\S]*?)<\/si>/g)].map(m => textRuns(m[1])) : [];
-  const sheet = entries.get('xl/worksheets/sheet1.xml');
+  let sheetPath = 'xl/worksheets/sheet1.xml';
+  if (sheetName !== undefined) {
+    const workbook = entries.get('xl/workbook.xml')?.(), relations = entries.get('xl/_rels/workbook.xml.rels')?.();
+    const sheets = [...(workbook || '').matchAll(/<sheet\b([^>]*?)\/?\s*>/g)];
+    const attributes = text => Object.fromEntries([...text.matchAll(/([\w:]+)="([^"]*)"/g)].map(m => [m[1],xmlText(m[2])]));
+    const selected = sheets.map(m => attributes(m[1])).find(a => a.name === sheetName);
+    const relation = [...(relations || '').matchAll(/<Relationship\b([^>]*?)\/?\s*>/g)].map(m => attributes(m[1])).find(a => a.Id === selected?.['r:id']);
+    if (!selected || !relation || !/^\/?(?:xl\/)?worksheets\/sheet\d+\.xml$/.test(relation.Target)) throw Error('XLSX worksheet missing: ' + sheetName);
+    sheetPath = relation.Target.replace(/^\/?(?:xl\/)?/, 'xl/');
+  }
+  const sheet = entries.get(sheetPath);
   if (!sheet) throw Error('First XLSX worksheet missing: ' + file);
   const rows = [];
   for (const row of sheet().matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
