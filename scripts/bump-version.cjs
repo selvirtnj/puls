@@ -10,7 +10,7 @@ const edits = [
   ['sw.js', `puls-static-${old}`, `puls-static-${next}`],
   ['sw.js', `?v=${old}`, `?v=${next}`, true],
   ['package.json', `"version": "${old}.0.0"`, `"version": "${next}.0.0"`],
-  ['js/account-refresh.js', `'Version ${old}'`, `'Version ${next}'`],
+  ['js/account-refresh.js', `const APP_VERSION=${old};`, `const APP_VERSION=${next};`],
   ['docs/PROGRESS.md', `Version ${old}`, `Version ${next}`, true]
 ];
 for (const [name, from, to, optional] of edits) {

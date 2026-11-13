@@ -19,7 +19,7 @@ vm34.runInNewContext(harness34+'\n'+tests34,{require,console,__dirname:process.c
 // v90: Versionsanzeige nur noch zentral in account-refresh.js; keine tote Kette, keine feste Vorschau-Version, designs-extra.js entfernt.
 {
  const version=JSON.parse(fs34.readFileSync('package.json','utf8')).version.split('.')[0];
- if(!fs34.readFileSync('js/account-refresh.js','utf8').includes(".replace(/Version \\d+/g,'Version "+version+"')"))throw new Error('account-refresh must set the version robustly');
+ {const src=fs34.readFileSync('js/account-refresh.js','utf8');if(!src.includes('const APP_VERSION='+version+';')||!src.includes(".replace(/Version \\d+/g,'Version '+APP_VERSION)"))throw new Error('account-refresh must set the version robustly')}
  for(const file of fs34.readdirSync('js').filter(x=>x.endsWith('.js'))){const src=fs34.readFileSync('js/'+file,'utf8');if(/\.replace\('Version \d+','Version \d+'\)/.test(src))throw new Error(file+' keeps a dead version replace chain')}
  if(/\?v=\d/.test(fs34.readFileSync('js/preview-mode.js','utf8')))throw new Error('preview links must not pin a version');
  if(fs34.existsSync('js/designs-extra.js')||/designs-extra/.test(fs34.readFileSync('index.html','utf8')+fs34.readFileSync('sw.js','utf8')))throw new Error('designs-extra.js must stay removed');
