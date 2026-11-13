@@ -225,6 +225,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   }
   console.log('PASS: Review 3/4 utf8-byte-limit at 4,000,000 bytes (ASCII, umlaut and supplementary Unicode)');
   checkDownloadEntries();
+  await checkLostUploadResponse();
   await checkNavigationFallback();
   console.log('PASS: corrupt local backup, persisted upload lock, import unlock, login/logout backup failures, storage quota, non-JSON responses, recipes version (local mocks only)');
 })().catch(error=>{console.error(error);process.exitCode=1});
@@ -368,4 +369,40 @@ function checkAccountCopyCleanup(){
     for(let [key,value] of entries){const accountCopy=['puls-cloud-conflict-remote-backup','puls-cloud-conflict-backup','puls-cloud-pending-self','puls-cloud-meta-self','puls-progress-photos-self'].includes(key);assert.equal(fixture.disk.get(key),accountCopy&&!preview?undefined:value,key)}
   }
   console.log('PASS: N2 account cleanup removes remote conflict backup, preserves unscoped import/raw device backups and other users, preview stays read-only');
+}
+
+// Audit 13.11.2026 Punkt 1: Upload kam an, Antwort ging verloren -> kein falscher Konflikt.
+async function checkLostUploadResponse(){
+  const reorder=v=>Array.isArray(v)?v.map(reorder):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).reverse().map(k=>[k,reorder(v[k])])):v;
+  const server=()=>{const s={stored:reorder(remote),rev:3,drop:true,uploads:0,fetchImpl:async(url,options)=>{
+    if(url.includes('/rpc/')){s.uploads++;const body=JSON.parse(options.body);if(body.p_expected_revision!==s.rev)return json(null);s.stored=reorder(body.p_payload);s.rev++;if(s.drop){s.drop=false;throw Error('response lost')}return json({revision:s.rev})}
+    if(url.includes('select=revision&'))return json([{revision:s.rev}]);
+    return json([{payload:s.stored,revision:s.rev}])}};return s};
+  const start=(s,disk=new Map())=>{const h=harness({disk,fetchImpl:s.fetchImpl});h.run(`cloudSession=${session};cloudRevision=3;cloudBaseline=JSON.stringify(state);modal.close();state.goals.kcal=2111;save()`);return h};
+  // Gleicher Stand: nur die Revision wird übernommen.
+  let s=server(),h=start(s);await h.run('syncCloud()');
+  assert.equal(s.stored.goals.kcal,2111);assert.equal(h.run('cloudRevision'),3);assert(h.run('cloudDirty'));assert(!h.run('cloudConflict'));
+  assert.equal(JSON.parse(h.disk.get('puls-cloud-meta-user-1')).attempts.length,1,'Versuch wird vor dem Upload gemerkt');
+  await h.run('syncCloud()');
+  assert(!h.run('cloudConflict'),'verlorene Antwort ist kein Konflikt');assert.equal(h.run('cloudRevision'),4);assert(!h.run('cloudDirty'));assert.match(h.run('cloudMessage'),/^Synchronisiert/);assert.equal(h.run('cloudAttempts.length'),0);
+  // Weiter bearbeitet: Revision übernehmen, neuer Stand geht danach hoch.
+  s=server();h=start(s);await h.run('syncCloud()');h.run('state.goals.kcal=2222;save()');await h.run('syncCloud()');
+  assert(!h.run('cloudConflict'));assert.equal(h.run('cloudRevision'),4);assert(h.run('cloudDirty'));assert.equal(s.stored.goals.kcal,2111);
+  await h.run('syncCloud()');assert.equal(s.stored.goals.kcal,2222);assert.equal(h.run('cloudRevision'),5);assert(!h.run('cloudDirty'));assert(!h.run('cloudConflict'));
+  // Nach Neustart der App gilt der gemerkte Versuch weiter.
+  s=server();h=start(s);await h.run('syncCloud()');
+  const again=harness({disk:h.disk,fetchImpl:s.fetchImpl});await tick();await tick();await tick();
+  assert(!again.run('cloudConflict'),'gemerkter Versuch überlebt den Neustart');assert.equal(again.run('cloudRevision'),4);assert(!again.run('cloudDirty'));
+  // Echter Konflikt bleibt ein Konflikt: fremder Stand, oder eigener Stand mit späterer Revision.
+  s=server();h=start(s);await h.run('syncCloud()');s.stored=reorder({...remote,goals:{...remote.goals,kcal:1800}});await h.run('syncCloud()');
+  assert(h.run('cloudConflict'),'fremder Stand bleibt Konflikt');assert.equal(h.run('cloudRevision'),3);assert.equal(s.stored.goals.kcal,1800);
+  s=server();h=start(s);await h.run('syncCloud()');s.rev=5;await h.run('syncCloud()');assert(h.run('cloudConflict'),'andere Revision bleibt Konflikt');
+  s=server();s.drop=false;s.rev=4;h=start(s);await h.run('syncCloud()');assert(h.run('cloudConflict'),'Konflikt ohne eigenen Upload bleibt');assert.equal(s.uploads,1);
+  // Zwei Stände mit gleichem cloudFingerprint (FNV-32 plus Länge) dürfen nicht als derselbe Upload gelten.
+  const twin=name=>({...remote,custom:[{id:'fixture',name,kcal:60,p:1,c:1,f:1}]});
+  s=server();s.drop=false;s.rev=4;s.stored=reorder(twin('hlyglvfusvrv'));h=harness({fetchImpl:s.fetchImpl});
+  h.run(`cloudSession=${session};cloudRevision=3;modal.close();state=${JSON.stringify(twin('iygwbionoadv'))};cloudBaseline='';save()`);
+  assert.equal(h.run('cloudFingerprint(cloudCanonical(state))'),h.run(`cloudFingerprint(cloudCanonical(${JSON.stringify(s.stored)}))`),'Fixture kollidiert');
+  await h.run('syncCloud()');assert(h.run('cloudConflict'),'Hash-Kollision bleibt Konflikt');assert.equal(h.run('cloudRevision'),3);assert.equal(s.stored.custom[0].name,'hlyglvfusvrv');
+  console.log('PASS: lost upload response adopts the revision (same state, edited state, after restart); real conflicts stay conflicts');
 }

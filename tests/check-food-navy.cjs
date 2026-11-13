@@ -4,9 +4,9 @@ async function searchCases(){
  const nodes=Object.fromEntries(['results','search','ff-online','food-online-status','food-online-results','ff-clear','ff-shortcuts','foodbody'].map(id=>[id,node()]));
  let timers=new Map(),seq=0,calls=[],listeners={},now=Date.now();
  const c={console,URLSearchParams,AbortController,Date:class extends Date{static now(){return now}},Map,Set,navigator:{onLine:true},englishUI:{},
-  state:{custom:[{id:'saved',name:'Skyr',brand:'Brand',barcode:'123',kcal:60}],foods:[]},foods:[],localCatalogue:[],foodResultList:[],
+  state:{custom:[{id:'saved',name:'Skyr',brand:'Brand',barcode:'12345670',kcal:60}],foods:[]},foods:[],localCatalogue:[],foodResultList:[],
   foodTypingTimer:null,catalogueQuerySerial:0,foodSearchRequest:null,foodSearchResults:[],foodSearchCache:new Map(),foodSearchTimes:[],
-  quickActionPaths:{},modal:{addEventListener:(name,fn)=>listeners[name]=fn},document:{querySelectorAll:()=>[]},$:(id)=>nodes[id]||null,
+  validBarcode:Function(fs.readFileSync('js/products.js','utf8').match(/function validBarcode\(code\)\{.*\}/)[0]+';return validBarcode')(),quickActionPaths:{},modal:{addEventListener:(name,fn)=>listeners[name]=fn},document:{querySelectorAll:()=>[]},$:(id)=>nodes[id]||null,
   setTimeout(fn,ms){timers.set(++seq,{fn,ms});return seq},clearTimeout:id=>timers.delete(id),
   normalizeSearch:s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(),esc:String,n:String,
   savedFoodMatches:()=>c.state.custom,foodPriority:()=>0,foodRelevance:()=>0,catalogueAlternatives:()=>[],uniqueFoods:x=>x,
@@ -21,12 +21,12 @@ async function searchCases(){
  let first=[...timers].find(([,t])=>t.ms===450);timers.delete(first[0]);const pending=first[1].fn();await Promise.resolve();assert.equal(calls.length,1);
  c.ffSearchNow();c.showSearch();c.searchFoods('Skyr');assert(!calls[0].opts.signal.aborted);assert.equal(calls.length,1,'Enter, showSearch and catalogue refresh reuse the current query');
  assert.match(calls[0].url,/app_name=PULS/);assert.match(calls[0].url,/fields=/);assert.equal(calls[0].opts.credentials,'omit');
- search('Skyrs');assert(calls[0].opts.signal.aborted);await reply(0,[{code:'stale',product_name:'Stale'}]);await pending;assert.doesNotMatch(nodes['food-online-results'].innerHTML,/Stale/);
+ search('Skyrs');assert(calls[0].opts.signal.aborted);await reply(0,[{code:'55500005',product_name:'Stale'}]);await pending;assert.doesNotMatch(nodes['food-online-results'].innerHTML,/Stale/);
  let second=[...timers].find(([,t])=>t.ms===450);timers.delete(second[0]);const pending2=second[1].fn();await Promise.resolve();
- await reply(1,[{code:'123',product_name:'Different barcode duplicate'},{code:'456',product_name:'Skyr',brands:'Brand'},
-  {code:'789',product_name:'Unique',brands:'Other'},{code:'790',product_name:'Unique',brands:'Other'},
-  {code:'789',product_name:'Same code'},{code:'999',product_name:'No nutrients'}]);await pending2;
- const html=nodes['food-online-results'].innerHTML;assert.doesNotMatch(html,/Different|Same code|>Skyr</);assert.equal((html.match(/>Unique</g)||[]).length,1);assert.match(html,/No nutrients/);assert.match(html,/Werte unvollständig/);assert.equal(nodes['ff-online'].hidden,false);
+ await reply(1,[{code:'12345670',product_name:'Different barcode duplicate'},{code:'45600005',product_name:'Skyr',brands:'Brand'},
+  {code:'78900004',product_name:'Unique',brands:'Other'},{code:'79000000',product_name:'Unique',brands:'Other'},
+  {code:'78900004',product_name:'Same code'},{code:'99900007',product_name:'No nutrients'},{code:'12345',product_name:'Invalid code'},{product_name:'Missing code'}]);await pending2;
+ const html=nodes['food-online-results'].innerHTML;assert.doesNotMatch(html,/Different|Same code|>Skyr<|Invalid code|Missing code/,'ungültige Barcodes kommen nicht in die Trefferliste');assert(c.foodSearchResults.every(p=>c.validBarcode(String(p.code))));assert.equal((html.match(/>Unique</g)||[]).length,1);assert.match(html,/No nutrients/);assert.match(html,/Werte unvollständig/);assert.equal(nodes['ff-online'].hidden,false);
  c.navigator.onLine=false;search('Offline');await tick(450);assert.equal(calls.length,2);assert.equal(nodes['ff-online'].hidden,true);
  c.navigator.onLine=true;search('Closed');listeners.close();await tick(450);assert.equal(calls.length,2);
  search('Failure');let failure=[...timers].find(([,t])=>t.ms===450);timers.delete(failure[0]);const failed=failure[1].fn();await Promise.resolve();calls[2].resolve({ok:false});await failed;assert.equal(nodes['food-online-status'].textContent,'Gerade nicht verfügbar');assert.equal(timers.size,0);

@@ -4,12 +4,13 @@ Stand 13.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Live
 
-- **Version 106** auf `main` (Commit „Version 106: home und go als je eine Funktion, tote Helfer und native Zustandsbrücke entfernt“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
+- **Version 107** auf `main` (Commit „Version 107: ungültige Barcodes aus der Online-Suche und falscher Sync-Konflikt behoben“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
-- Der Refactor nach [ISSUES.md](ISSUES.md) ist mit den Phasen 0 bis 5 abgeschlossen (Versionen 99 bis 105); Version 106 hat die Reste aufgeräumt. Das Audit vom 13.11.2026 steht in ISSUES.md und ist noch nicht abgearbeitet. Es gibt nur den Branch `main`.
+- Der Refactor nach [ISSUES.md](ISSUES.md) ist mit den Phasen 0 bis 5 abgeschlossen (Versionen 99 bis 105); Version 106 hat die Reste aufgeräumt. Vom Audit vom 13.11.2026 (ISSUES.md) sind die Punkte 1 und 3 behoben (Version 107), der Rest ist offen. Es gibt nur den Branch `main`.
 
 ## Letzte Versionen
 
+- **107** (13.11.): Zwei Audit-Punkte behoben. Die Open-Food-Facts-Suche (`js/food-flow.js`, `js/food-search.js`) zeigt nur noch Treffer mit gültigem Barcode; ein ungültiger Code konnte vorher gespeichert werden und ließ danach Sync, Export und Import scheitern. `syncCloud` in `js/cloud.js` erkennt den eigenen Upload wieder, wenn nur die Antwort verloren ging: Vor jedem Upload wird ein SHA-256-Fingerabdruck des Stands gemerkt (`cloudAttempts`, auch in den Konto-Metadaten); meldet der Server danach einen Konflikt und liegt genau dieser Stand als nächste Revision vor, wird nur die Revision übernommen. Echte Konflikte bleiben Konflikte. Tests in `tests/check-cloud-robustness.cjs` und `tests/check-food-navy.cjs`. Von Codex gegengeprüft; nicht gegen den echten Server getestet.
 - **106** (13.11.): Aufräumen ohne sichtbare Änderung, rund 12.400 Zeilen weniger. `go` ist eine Funktion in `js/app.js` (Kern `goBase`, sechs Glieder) statt 7 Wrappern, `home` ruft nur noch `homeDesign()`; die älteren `home`-Definitionen und 32 Hilfsfunktionen ohne Aufrufer sind gelöscht. Die sieben untätigen `js/native-*.js` (Zustandsbrücke), `css/native-shell.css`, ihre Tests und Fixtures sind entfernt; `native-bridge.js` und `native-extras.js` bleiben. Neue Tests `tests/check-home-order.cjs` und `tests/check-go-order.cjs`, gemeinsames Test-Harness `tests/app-harness.cjs`. Einzige Verhaltensänderung: Während des Ladens, bevor `design-system.js` da ist, liefert `home()` einen leeren Text statt Zwischenständen. Von Codex gegengeprüft. Dazu ein Audit des ganzen Repositorys (nur Bericht, 14 Punkte in [ISSUES.md](ISSUES.md)).
 - **105** (13.11.): Refactor Phase 5, ohne sichtbare Änderung. Umbenannt: `js/puls-data-v87.js` → `js/puls-data.js`, `js/quick-account-v87.js` → `js/quick-account.js`, `css/quick-account-v87.css` → `css/quick-account.css`, `css/v90-ui.css` → `css/ui-layer.css`; `index.html`, `sw.js`, Tests und Doku nachgezogen. Globale Namen wie `pulsData87` und die Testdateinamen bleiben.
 - **104** (13.11.): Refactor Phase 4, letzter Teil, ohne sichtbare Änderung. `nutrition` ist die eine Funktion in `js/food-diary.js`; die 13 älteren Definitionen liefen nie und sind gelöscht. `profileForm` ist eine Funktion in `js/enhancements.js` (Kern `profileFormBase`, 9 Glieder `profileFormAfter…`) statt 10 Wrappern. Neue Tests `tests/check-nutrition-order.cjs` (108 Zustände) und `tests/check-profileform-order.cjs` (91 Zustände) gegen den alten Stand; `check-premium` und `check-refinement34` prüfen die Ernährungsseite jetzt an der vollständig geladenen App statt an der nie wirksamen alten Kette. Browser-Vergleich alt gegen neu ohne Unterschied, von Codex gegengeprüft.
@@ -29,7 +30,7 @@ Stand 13.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Nächste Schritte
 
-1. Audit-Punkte vom 13.11.2026 in [ISSUES.md](ISSUES.md) nach Selvirs Auswahl beheben (zuerst Barcode aus der Online-Suche und falscher Sync-Konflikt).
+1. Audit-Punkte vom 13.11.2026 in [ISSUES.md](ISSUES.md) nach Selvirs Auswahl beheben; 1 und 3 sind erledigt, offen sind 2 und 4 bis 14.
 2. Weitere freie Datenbanken nur mit geklärter Lizenz (Fineli CC BY 4.0 ist nicht geladen; Schweizer Datenbank nur nach schriftlicher Klärung; NCCDB, NEVO, NZ FOODfiles, BDA, BEDCA, ÖNWT scheiden aus Lizenzgründen aus).
 3. iPhone-Test (auch Ladezeit des größeren Katalogs), Freunde mit zwei echten Konten und echte RLS-Prüfung sind weiter offen.
 

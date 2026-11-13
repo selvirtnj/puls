@@ -12,13 +12,13 @@ Stand 13.11.2026. Audits vom 12.11. und 13.11.2026: Tests grün, keine kritische
 
 ## Audit vom 13.11.2026 (ganzes Repository, nur Bericht)
 
-Kein Befund der Stufe „muss“. Nichts davon ist behoben; Selvir entscheidet, was gemacht wird.
+Kein Befund der Stufe „muss“. Die Punkte 1 und 3 sind seit Version 107 behoben; über den Rest entscheidet Selvir.
 
 Sollte:
 
-1. **Falscher Sync-Konflikt nach verlorener Antwort** (`js/cloud.js:11`, `:19`): Kommt der Upload an, die Antwort aber nicht (Funkloch, 15-s-Timeout), bleibt `cloudRevision` alt und der nächste Versuch meldet einen Konflikt, obwohl beide Stände gleich sind. Lösung: im Konfliktzweig den Serverstand holen und bei gleichen Nutzdaten nur die Revision übernehmen; Test fehlt.
+1. ✓ behoben in Version 107. **Falscher Sync-Konflikt nach verlorener Antwort** (`js/cloud.js:11`, `:19`): Kommt der Upload an, die Antwort aber nicht (Funkloch, 15-s-Timeout), bleibt `cloudRevision` alt und der nächste Versuch meldet einen Konflikt, obwohl beide Stände gleich sind. Lösung: im Konfliktzweig den Serverstand holen und bei gleichen Nutzdaten nur die Revision übernehmen; Test fehlt.
 2. **Anmeldung ersetzt lokale Daten ohne Rückfrage** (`js/cloud.js:23`, `:25`): Hat das Konto schon Daten, werden die lokalen ersetzt. Die Kopie `puls-cloud-local-before-login` ist in der Oberfläche nicht abrufbar und wird beim nächsten Login überschrieben. Produktentscheidung.
-3. **Ungültiger Barcode aus der Open-Food-Facts-Suche** (`js/food-flow.js:104`, `js/food-search.js:7`, `js/products.js:53`): Der Code eines Suchtreffers wird ungeprüft gespeichert; `validData` lehnt den Stand danach ab, Sync, Export und Import scheitern. Lösung: Treffer mit `validBarcode` filtern oder den Code weglassen.
+3. ✓ behoben in Version 107. **Ungültiger Barcode aus der Open-Food-Facts-Suche** (`js/food-flow.js:104`, `js/food-search.js:7`, `js/products.js:53`): Der Code eines Suchtreffers wird ungeprüft gespeichert; `validData` lehnt den Stand danach ab, Sync, Export und Import scheitern. Lösung: Treffer mit `validBarcode` filtern oder den Code weglassen.
 4. **Service Worker:** `scripts/check.cjs` prüft die `ASSETS`-Liste in `sw.js` nicht gegen vorhandene Dateien; ein falscher Eintrag lässt die Offline-Installation still scheitern. `.js`/`.css` mit Fehlerantwort fallen nicht auf den Cache zurück (`sw.js:67`).
 5. **iOS-Hülle** (`ios/PULS/WebViewController.swift:68`, `:97`, `:196`): Pfadprüfung `hasPrefix("/puls")` lässt auch `/pulsX/` zu; Nachrichten und `sendRunGps` werden nur nach Host geprüft. Geringes Risiko, weil der Host GitHub Pages des eigenen Kontos ist.
 6. **Tests außerhalb des Sammellaufs:** `check-shell-extras.cjs`, `check-premium.cjs` und `check-regional-foods.cjs` laufen einzeln grün, stehen aber nicht in `scripts/check.cjs`.

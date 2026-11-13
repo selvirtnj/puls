@@ -101,7 +101,7 @@ searchFoodDatabase=async function(event,pageNumber=1){
    foodSearchCache.set(key,data);if(foodSearchCache.size>30)foodSearchCache.delete(foodSearchCache.keys().next().value)
   }
   if(!current()||controller.signal.aborted)return;
-  foodSearchResults=data.products.filter(p=>p.code&&(p.product_name_de||p.product_name));ffRenderOnline();
+  foodSearchResults=data.products.filter(p=>validBarcode(String(p.code||''))&&(p.product_name_de||p.product_name));ffRenderOnline();
  }catch(error){if(current()&&(timedOut||error.name!=='AbortError')){ffOnlineHint(timedOut?'Suche dauert zu lange. Bitte erneut versuchen.':'Gerade nicht verfügbar');$('food-online-results').innerHTML=''}}finally{clearTimeout(timer);if(ffOffPending?.controller===controller)ffOffPending=null}
 };
 function ffRenderOnline(){
