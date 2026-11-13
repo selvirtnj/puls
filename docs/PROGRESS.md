@@ -6,7 +6,7 @@ Stand 13.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 - **Version 96** auf `main` (Commit „Version 96: CNF 2026, CoFID 2021 und USDA FNDDS im Katalog“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
-- Nichts in Arbeit. Der Worktree `../puls-worktrees/backend-v96-food-db` und die Branches `agent/backend-v96-food-db`, `agent/food-databases` und `sicherung/alt-klon-stash` sind in `main` aufgegangen bzw. nur noch Sicherung; Löschen nur nach Rückfrage.
+- Nichts in Arbeit. Worktree und Arbeitsbranches von Version 96 sind gelöscht; es gibt nur noch `main`.
 
 ## Letzte Versionen
 
