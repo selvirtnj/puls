@@ -11,8 +11,6 @@ const basePhoto=photoFoodPanel;
 photoFoodPanel=function(...args){clear();basePhoto.apply(this,args);$('foodbody')?.insertAdjacentHTML('afterbegin',`<button type="button" class="btn secondary full ffsubmit" onclick="foodPhotoOpen()">${text('Foto schätzen (KI)','Estimate photo (AI)')}</button>`)};
 const baseTab=foodTab;
 foodTab=function(...args){clear();return baseTab.apply(this,args)};
-const baseValid=validData;
-validData=function(s){return baseValid(s)&&['foods','custom'].every(key=>s[key].every(x=>x.aiEstimate===undefined||x.aiEstimate===true&&typeof x.source==='string'&&x.source.startsWith('KI-Schätzung')&&(!x.nutrients||Object.keys(x.nutrients).length===0)))};
 // Keep the final existing snapshot/provenance/custom-product chain, including later reuse.
 const baseAdd=addFood;
 addFood=function(event){let selected=foodSelection,before=state.foods.length;baseAdd(event);if(selected?.aiEstimate===true&&state.foods.length>before){state.foods.at(-1).aiEstimate=true;save()}};

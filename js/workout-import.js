@@ -233,13 +233,6 @@ prefillExerciseSets=function(w,e){
  }
  return basePrefill(w,e);
 };
-const baseValid=validData;
-validData=function(s){
- const fieldsOK=value=>value===undefined||value&&typeof value==='object'&&!Array.isArray(value)&&Object.entries(value).every(([k,v])=>k.length<=200&&typeof v==='string'&&v.length<=MAX_BYTES);
- return baseValid(s)&&(s.routines||[]).every(r=>r.importWorkoutId===undefined||typeof r.importWorkoutId==='string'&&/^wi_[a-f0-9]{64}$/.test(r.importWorkoutId))&&s.workouts.every(w=>
-  (w.importSource===undefined||w.importSource==='workout-csv'&&/^wi_[a-f0-9]{64}$/.test(w.id))&&
-  (w.csvRows===undefined||Array.isArray(w.csvRows)&&w.csvRows.every(fieldsOK))&&w.exercises.every(e=>e.sets.every(set=>(set.setOrder===undefined||typeof set.setOrder==='string'&&set.setOrder.length<=200)&&fieldsOK(set.csvFields))));
-};
 const baseAwards=workoutAwards;
 workoutAwards=function(...args){let awards=baseAwards.apply(this,args);for(let w of state.workouts)if(w.importSource==='workout-csv'&&awards[w.id])awards[w.id]={...awards[w.id],xp:0,wins:[],durationXp:0};return awards};
 // Only this new feature wraps account rendering; existing controls and handlers remain intact.

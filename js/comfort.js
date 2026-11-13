@@ -23,5 +23,4 @@ const comfortOpen=openModal;openModal=function(title,body){comfortOpen(title,bod
 document.addEventListener('click',event=>{let row=event.target.closest('.swiperevealed');if(row&&event.target.closest('.diaryrow')){event.preventDefault();event.stopImmediatePropagation();resetDiaryRow(row)}},true);
 const comfortRender=render;render=function(...args){let result=comfortRender.apply(this,args);applyAppIcon();return result};
 const comfortAccount=accountPage;accountPage=function(){return comfortAccount().replace('<section class="card compactbody">',`<section class="card preferencescard"><button class="textbtn full" onclick="appearanceSettings()">Sprache & App-Icon <span>→</span></button></section><section class="card compactbody">`).replace(/(<div class="versionstamp">PULS <span>)Version \d+/,'$1Version 32')};
-const comfortValid=validData;validData=function(s){return comfortValid(s)&&(s.language===undefined||['de','en'].includes(s.language))&&(s.iconColor===undefined||mappedAppIcon(s.iconColor)!==null)};
 let requestedIcon=/[?&]icon=([a-z]+)/.exec(location.search||'')?.[1];applyAppIcon();

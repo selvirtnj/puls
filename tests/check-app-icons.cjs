@@ -1,4 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {appValidator,baseState}=require('./validdata-env.cjs');
+// Die iconColor-Regel steht in validData (js/app.js) und wird an der echten, vollständig geladenen App geprüft.
+const fullValidData=appValidator(),validate=profile=>fullValidData({...baseState(),...profile});
 const source=fs.readFileSync('js/comfort.js','utf8');
 function fixture(value,search=''){
  const links=new Map(),profile={language:'de',...(value===undefined?{}:{iconColor:value})};let saves=0;
@@ -6,18 +9,18 @@ function fixture(value,search=''){
   validData:s=>Array.isArray(s.foods),save(){saves++},openModal(){},resolveColorScheme:(mode,dark)=>mode==='system'?(dark?'dark':'light'):mode,getColorScheme:()=>ctx.mode,pulsSchemeMedia:{matches:false},mode:'system'};
  vm.createContext(ctx);const run=s=>vm.runInContext(s,ctx);
  // Actual selection functions + actual validation/startup; unrelated diary/drag wrappers omitted.
- run(source.split('/* Pointer sorting')[0]+'\n'+source.slice(source.indexOf('const comfortValid=')));
+ run(source.split('/* Pointer sorting')[0]+'\n'+source.slice(source.indexOf('let requestedIcon=')));
  return {ctx,run,links,profile,saves:()=>saves};
 }
 for(const old of ['amber','blue','green','mint','purple','rose','light','dark',undefined]){
  const f=fixture(old),before=JSON.stringify(f.profile);
  assert.equal(f.run('currentAppIcon()'),old==='light'||old===undefined?'light':'dark');
- assert(f.run('validData({...state,foods:[]})'),'Old backups accepted');
+ assert(validate(f.profile),'Old backups accepted');
  f.run('applyAppIcon();applyAppIcon()');assert.equal(JSON.stringify(f.profile),before);assert.equal(f.saves(),0,'No startup save/sync dirtiness');
  f.run('chooseAppIcon("light")');assert.equal(f.profile.iconColor,'light');assert.equal(f.saves(),1);
  f.run('chooseAppIcon("dark")');assert.equal(f.profile.iconColor,'dark');assert.equal(f.saves(),2);
  assert.equal(f.links.get('link[rel="manifest"]').href,'icons/dark.webmanifest');
- assert(!f.run('validData({...state,foods:[],iconColor:"invalid"})'));
+ assert(!validate({...f.profile,iconColor:'invalid'}));
 }
 for(const requested of ['light','dark','purple','invalid']){
  const f=fixture('blue','?icon='+requested);assert.equal(f.run('currentAppIcon()'),requested==='light'?'light':'dark');

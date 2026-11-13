@@ -32,7 +32,7 @@ Die Originaldesign-Überarbeitungen liegen in `css/account-refresh.css`, `overvi
 
 ## Änderungen
 
-Die Reihenfolge in `index.html` ist absichtlich festgelegt. Erweiterungen nutzen den gemeinsamen Zustand und umschließen bestehende Funktionen; vor einer Änderung die letzte wirksame Definition prüfen. Neue Datenfelder müssen `validData()` ergänzen und alte Sicherungen akzeptieren.
+Die Reihenfolge in `index.html` ist absichtlich festgelegt. Erweiterungen nutzen den gemeinsamen Zustand und umschließen bestehende Funktionen; vor einer Änderung die letzte wirksame Definition prüfen. Neue Datenfelder müssen `validData()` ergänzen und alte Sicherungen akzeptieren. `validData()` ist eine einzige Funktion in `js/app.js` (kein Wrapper mehr): ein Abschnitt je Thema in fester Reihenfolge, neue Felder kommen als weiterer Abschnitt dazu (`tests/check-validdata.cjs` schaltet jeden Abschnitt einzeln ab). Beim Laden von `app.js` gilt für die Wiederherstellung nur `validCore()`.
 
 1. `npm test` (oder `node scripts/check.cjs`)
 2. `npm start` und die iPhone-Ansicht (390 × 844) unter `http://127.0.0.1:4173/?erststart=1` prüfen

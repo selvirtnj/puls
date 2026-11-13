@@ -54,7 +54,7 @@ function completionHtml(id,step){let w=state.workouts.find(x=>x.id===id),s=worko
 workoutSummary=function(id){let w=state.workouts.find(x=>x.id===id);if(!w?.finished)return;modal.close();$('toast').style.display='none';completionId=id;completionStep=0;sessionWorkoutId=null;renderWorkoutSession()};
 const flowIdentity=workoutIdentity;workoutIdentity=function(){return flowIdentity().replace('🔥 '+trainingStreak(),'🔥 '+dailyWorkoutStreak()).replace('Wochenserie','Tageserie')};
 const flowRender=render;render=function(){flowRender();let track=$('nutrition-track');if(track){track.scrollLeft=nutrientSlide*track.clientWidth;syncNutritionHeight(track)}renderWorkoutSession()};
-const flowValid=validData;validData=function(s){return flowValid(s)&&s.foods.every(x=>validNutrients(x.nutrients))&&s.custom.every(x=>validNutrients(x.nutrients))&&s.workouts.every(w=>w.bodyweight===undefined||Number.isFinite(w.bodyweight)&&w.bodyweight>=20&&w.bodyweight<=400)&&(s.microGoals===undefined||validNutrients(s.microGoals))&&(s.waterGoal===undefined||Number.isFinite(s.waterGoal)&&s.waterGoal>=0&&s.waterGoal<=10000)};render();
+render();
 
 
 const flowQuickTraining=quickTraining;quickTraining=function(){let w=activeWorkout(),html=flowQuickTraining();return w?html.replace("trainTab='current';go('workout')",`openWorkoutSession('${w.id}')`):html};
@@ -93,7 +93,6 @@ const refinedCommit=commitProfile;commitProfile=function(e){if(!setupPending)ret
 const onboardingProfileForm=profileForm;profileForm=function(){onboardingProfileForm();if(setupPending){let form=$('planner-form'),mode=$('pl-mode');form.noValidate=true;form.querySelector('button.btn.full').textContent='Weiter zur Übersicht';if(mode){mode.value=onboardingPlanMode==='manual'?'manual':'auto';mode.addEventListener('change',()=>{onboardingPlanMode=mode.value})}updatePlanPreview()}};
 const onboardingPlanPreview=updatePlanPreview;updatePlanPreview=function(){onboardingPlanPreview();if(setupPending&&$('pl-mode')&&onboardingKeepsGoals(collectProfile(),collectPlan())){$('plan-error').textContent='';$('plan-preview').innerHTML=''}};
 const refinedRender=render;render=function(){refinedRender();let top=$('workout-identity'),bar=document.querySelector('.datebar');if(top){top.hidden=page==='account';top.innerHTML=page==='account'?'':workoutIdentity()}if(bar)bar.hidden=page==='account'};
-const refinedValid=validData;validData=function(s){return refinedValid(s)&&(s.email===undefined||typeof s.email==='string'&&s.email.length<=254)&&(s.setupPending===undefined||typeof s.setupPending==='boolean')&&(s.onboardingComplete===undefined||typeof s.onboardingComplete==='boolean')};
 render();
 if(needsOnboarding()){setupPending=true;if(state.setupPending)settings();else nameProfile()}
 modal.addEventListener('cancel',e=>{if(setupPending)e.preventDefault()});
@@ -141,7 +140,7 @@ function chooseAppDesign(){}
 function applyAppDesign(){if(typeof applyColorScheme==='function')applyColorScheme()}
 const designAccountBase=accountPage;accountPage=function(){return designAccountBase().replace('<section class="card compactbody">',designChooser()+'<section class="card compactbody">')};
 const designRenderBase=render;render=function(){designRenderBase();applyAppDesign()};
-const designValidBase=validData;validData=function(s){return designValidBase(s)&&(s.appDesign===undefined||Object.hasOwn(appDesigns,s.appDesign))};render();
+render();
 /* PULS 21: distinct page compositions, not only palettes. */
 function currentDesign(){return 'classic'} // Legacy layout wrappers share the single layout.
 appDesigns.apple.note='iOS-Listen · schwebende Aktionen · große Typografie';appDesigns.cronometer.note='Tagebuch zuerst · kompakte Zeilen · Werkzeugleiste';appDesigns.liftoff.note='Trainingsbühne · kräftige Flächen · Spielcharakter';appDesigns.hevy.note='Routine im Fokus · Listen · klare Daten';appDesigns.aurora.note='Dashboard · Lichtflächen · offene Module';appDesigns.mono.note='Editorial · nummerierte Kapitel · Raster';

@@ -338,7 +338,7 @@ function fpLogMeal(event,id){
   let ids=added.map(x=>x.id);save();modal.close();render();fdSound('save');
   fdUndoToast(`${meal.name} ${fdT('eingetragen','logged')} · ${added.length}`,()=>{state.foods=state.foods.filter(x=>!ids.includes(x.id));save();render()});
 }
-// Gleiche Regeln wie der validData-Wrapper in puls-data-v87.js; prüft nur die Kombis, nicht den übrigen Zustand.
+// Gleiche Regeln wie mealsOK in puls-data-v87.js (von validData benutzt); prüft nur die Kombis, nicht den übrigen Zustand.
 function fpMealsOK(list){let text=(x,max)=>typeof x==='string'&&x.trim().length>=1&&x.length<=max,num=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;return Array.isArray(list)&&list.length<=200&&list.every(m=>text(m.id,60)&&text(m.name,100)&&Array.isArray(m.items)&&m.items.length>=1&&m.items.length<=50&&m.items.every(x=>(!window.pulsNutrients||window.pulsNutrients.validFields(x))&&text(x.name,120)&&num(x.grams)&&x.grams>0&&x.grams<=5000&&['g','ml'].includes(x.unit)&&['kcal','p','c','f'].every(k=>num(x[k]))&&(x.nutrients===undefined||x.nutrients&&typeof x.nutrients==='object'&&Object.values(x.nutrients).every(num))&&fpProvenanceText.every(k=>x[k]===undefined||typeof x[k]==='string')&&(x.aiEstimate===undefined||typeof x.aiEstimate==='boolean')))}
 function fpBackTo(pane){fpPane=pane;foodTab('search')}
 function fpMealEdit(id,fromToday=false){

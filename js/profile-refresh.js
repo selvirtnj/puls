@@ -86,7 +86,7 @@ if(typeof englishUI==='object')Object.assign(englishUI,{'Selbst':'Manual','Berec
 /* Body composition is derived at display time, never written as a measured value.
    US Navy circumference equations, inputs converted from cm to inches:
    https://www.corpscpc.noaa.gov/procedures/corps_directives/chapter_16/ncd_ch16.pdf */
-measurementFields.neck=['Hals','cm',15,80]; // toolsValid reads this registry dynamically, including old backups.
+measurementFields.neck=['Hals','cm',15,80]; // validData (tracker-tools section) reads this registry dynamically, including old backups.
 function navyBodyFat(profile,measure){
  const valid=(v,min,max)=>Number.isFinite(v)&&v>=min&&v<=max;
  if(!profile||!measure||profile.sex!=='male'||!valid(profile.height,100,250)||!valid(measure.neck,15,80)||!valid(measure.waist,30,250))return null;

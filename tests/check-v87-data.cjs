@@ -9,8 +9,11 @@ const {ctx:c,run}=harness.fixture87;
 run(fs.readFileSync('js/account-guide.js','utf8').split('\n').find(line=>line.startsWith('function cleanFitnessState(')));
 run(fs.readFileSync('js/workout-polish.js','utf8').split('\n').find(line=>line.startsWith('function xpProgress(')));
 run(fs.readFileSync('js/native-extras.js','utf8'));
+// validData (js/app.js) braucht toolDateValid und measurementFields aus tracker-tools.js, das dieser Teilaufbau sonst nicht lädt.
+run(fs.readFileSync('js/tracker-tools.js','utf8').split('\n').filter(line=>line.startsWith('function toolDateValid(')||line.startsWith('const measurementFields=')).join('\n'));
 let haptics=0;c.pulsHaptic=()=>++haptics;
-const oldValidator=c.validData;
+// Ohne window.pulsData87 (noch nicht geladen) prüft validData wie vor v87: keine Bereinigung der Optionen, keine Kombi-Prüfung.
+const oldValidator=s=>{const v87=c.window.pulsData87;c.window.pulsData87=undefined;try{return c.validData(s)}finally{c.window.pulsData87=v87}};
 let writes=0;c.localStorage.setItem=()=>{writes++};
 const source=fs.readFileSync('js/puls-data-v87.js','utf8');run(fs.readFileSync('js/strength-ranks.js','utf8'));run(source);
 const api=c.window.pulsData87,clone=x=>JSON.parse(JSON.stringify(x));

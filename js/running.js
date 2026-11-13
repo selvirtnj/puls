@@ -47,24 +47,7 @@ const runningWeekStreakBase=trainingStreak;trainingStreak=function(...args){
   if(!weeks.has(localISO(d)))d.setDate(d.getDate()-7);let count=0;while(weeks.has(localISO(d))){count++;d.setDate(d.getDate()-7)}return count;
 };
 
-// Persistenz: neue Felder optional und streng geprüft.
-const runningValid=validData;validData=function(s){
-  if(!runningValid(s))return false;
-  const finite=(x,min,max)=>typeof x==='number'&&Number.isFinite(x)&&x>=min&&x<=max,day=x=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x),opt=(x,ok)=>x===undefined||ok(x),typeId=x=>typeof x==='string'&&/^[a-z]{2,20}$/.test(x);
-  // laps: strictly increasing cumulative ACTIVE elapsed seconds (not epoch times),
-  // <= entry duration. Independent of GPS kilometre splits; old missing fields valid.
-  const laps=(x,max=172800)=>Array.isArray(x)&&x.length<=1000&&x.every((t,i)=>finite(t,0,max)&&t>0&&(i===0||t>x[i-1]));
-  const rounds=x=>x&&typeof x==='object'&&!Array.isArray(x)&&Number.isInteger(x.work)&&finite(x.work,10,3600)&&Number.isInteger(x.rest)&&finite(x.rest,0,1800)&&Number.isInteger(x.count)&&finite(x.count,1,100);
-  const marker=x=>x===1;
-  const profileOk=p=>!p||(opt(p.kcalMode,x=>['classic','baseline'].includes(x))&&opt(p.baselineFactor,x=>[1.2,1.3,1.4].includes(x)));
-  if(!profileOk(s.profile)||!(s.profileHistory||[]).every(profileOk)||!(s.workouts||[]).every(w=>opt(w.durationXpVersion,marker)))return false;
-  let runsOk=s.runs===undefined||(Array.isArray(s.runs)&&s.runs.every(r=>r&&typeof r.id==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(r.id)&&day(r.date)&&finite(r.distanceKm,0,1000)&&finite(r.durationSeconds,1,172800)&&opt(r.type,typeId)&&opt(r.startedAt,x=>finite(x,0,1e15))&&opt(r.pauseSeconds,x=>finite(x,0,172800))&&opt(r.kcal,x=>Number.isInteger(x)&&finite(x,0,20000))&&opt(r.feeling,x=>Number.isInteger(x)&&finite(x,1,5))&&opt(r.terrain,typeId)&&opt(r.elevationGain,x=>finite(x,0,20000))&&opt(r.elevationMax,x=>finite(x,-500,9000))&&opt(r.maxSpeed,x=>finite(x,0,150))&&(r.note===undefined||(typeof r.note==='string'&&r.note.length<=200))&&(r.createdAt===undefined||finite(r.createdAt,0,1e15))&&opt(r.source,x=>['gps','manual','watch'].includes(x))&&opt(r.avgHr,x=>finite(x,20,250))&&opt(r.maxHr,x=>finite(x,20,250))&&!(Number.isFinite(r.avgHr)&&Number.isFinite(r.maxHr)&&r.avgHr>r.maxHr)&&opt(r.laps,x=>laps(x,r.durationSeconds))&&opt(r.durationXpVersion,marker)&&(r.route===undefined||(typeof r.route==='string'&&r.route.length<=8000&&/^[-0-9.,;|]*$/.test(r.route)))&&(r.splits===undefined||(Array.isArray(r.splits)&&r.splits.length<=1000&&r.splits.every(x=>Number.isInteger(x)&&finite(x,1,86400))))&&(r.splitRest===undefined||(Array.isArray(r.splitRest)&&r.splitRest.length===2&&finite(r.splitRest[0],1,999)&&finite(r.splitRest[1],1,86400)))));
-  let a=s.activeRun,activeOk=a===undefined||a===null||(typeof a==='object'&&finite(a.startedAt,0,1e15)&&(a.pausedAt===undefined||a.pausedAt===null||finite(a.pausedAt,0,1e15))&&(a.pausedSeconds===undefined||finite(a.pausedSeconds,0,1e10))&&(a.gps===undefined||typeof a.gps==='boolean')&&(a.segment===undefined||(Number.isInteger(a.segment)&&finite(a.segment,0,10000)))&&(a.segmentStartedAt===undefined||finite(a.segmentStartedAt,0,1e15))&&(a.routeId===undefined||(typeof a.routeId==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(a.routeId)))&&opt(a.type,typeId)&&opt(a.laps,x=>laps(x))&&opt(a.rounds,rounds)&&opt(a.durationXpVersion,marker));
-  const coords=(x,max)=>typeof x==='string'&&x.length<=max&&/^[-0-9.,;]*$/.test(x);
-  let routesOk=s.runRoutes===undefined||(Array.isArray(s.runRoutes)&&s.runRoutes.length<=200&&s.runRoutes.every(r=>r&&typeof r.id==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(r.id)&&typeof r.name==='string'&&r.name.length<=60&&coords(r.line,20000)&&(r.waypoints===undefined||coords(r.waypoints,2000))&&finite(r.distanceKm,0,1000)&&(r.ascentM===undefined||finite(r.ascentM,0,100000))&&(r.createdAt===undefined||finite(r.createdAt,0,1e15))));
-  let g=s.runSettings,settingsOk=g===undefined||(g&&typeof g==='object'&&(g.weeklyGoalKm===undefined||g.weeklyGoalKm===null||finite(g.weeklyGoalKm,.1,1000))&&opt(g.lastType,typeId)&&opt(g.weekMinutesGoal,x=>finite(x,0,10080))&&opt(g.rounds,rounds));
-  return runsOk&&activeOk&&settingsOk&&routesOk;
-};
+// Persistenz: die Prüfung der Lauffelder steht in validData (js/app.js).
 
 // GPS: Punkte [Zeit, Breite, Länge, Genauigkeit m, Abschnitt] liegen nur lokal (puls-run-track), nicht im synchronisierten Profil.
 // iOS-App (pulsNativeFeatures 'runGps'): nativer CLLocationManager, auch im Hintergrund; die Web-App holt die Punkte ab.

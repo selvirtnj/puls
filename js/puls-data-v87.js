@@ -16,6 +16,8 @@
  *   display.lastRankSeen: celebration high-water mark. display.rankScale===2 marks
  *     the 40-stage scale; older values (0..24, legacy 25/26) migrate once in migrate().
  *   hapticsEnabled(source=state) -> boolean (default true); gates pulsHaptic.
+ *   optionDraft(s) -> copy with cleaned options, optionCommit(s,draft) writes them back, mealsOK(list) -> boolean;
+ *     used only by validData in js/app.js (single validator).
  * Global aliases: PULS_RANKS, pulsWaterTarget, pulsRankForLevel, pulsRankForXp,
  * pulsRankFor, pulsHapticsEnabled. No rank/XP or calculated water is persisted.
  */
@@ -60,16 +62,9 @@ function mealsOK(value){
    ['source','barcode','foodRef','recipeId'].every(k=>x[k]===undefined||typeof x[k]==='string')&&
    (x.aiEstimate===undefined||typeof x.aiEstimate==='boolean')));
 }
-const baseValid=validData;
-validData=function(s){
- if(!object(s))return false;
- // Native commands validate {...state,...}; never clean their shared subobjects.
- const draft=optionCopy(s);cleanOptions(draft);
- if(s.meals!==undefined&&!mealsOK(s.meals))return false;
- if(!baseValid(draft))return false;
- for(const key of optionKeys)if(draft[key]===undefined)delete s[key];else s[key]=draft[key];
- return true;
-};
+// Optionen werden auf einer Kopie bereinigt und erst nach bestandener Prüfung zurückgeschrieben; validData (js/app.js) ruft beides auf.
+function optionDraft(s){const draft=optionCopy(s);cleanOptions(draft);return draft}
+function optionCommit(s,draft){for(const key of optionKeys)if(draft[key]===undefined)delete s[key];else s[key]=draft[key]}
 function display(s=state){const draft=optionCopy(s||{});cleanOptions(draft);return {...displayDefaults(),...draft.display}}
 function water(s=state){
  const draft=optionCopy(s||{});cleanOptions(draft);
@@ -173,5 +168,5 @@ function waterRecommendation(s=state,day=today()){
 const waterTarget=(s=state,day=today())=>waterRecommendation(s,day).ml;
 Object.assign(window,{PULS_RANKS:ranks,pulsWaterTarget:waterTarget,pulsRankForLevel:rankForLevel,
  pulsRankForXp:rankForXp,pulsRankFor:rankForXp,pulsHapticsEnabled:hapticsEnabled,
- pulsData87:Object.freeze({migrate:migrate87,display,water,meals,foodSearch,waterTarget,waterRecommendation,rankForLevel,rankForXp,rankFor:rankForXp,ranks,hapticsEnabled})});
+ pulsData87:Object.freeze({migrate:migrate87,display,water,meals,foodSearch,waterTarget,waterRecommendation,rankForLevel,rankForXp,rankFor:rankForXp,ranks,hapticsEnabled,optionDraft,optionCommit,mealsOK})});
 })();

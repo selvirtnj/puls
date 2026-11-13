@@ -179,11 +179,6 @@ function totals(entries) {
   }
   return {nutrients,pending};
 }
-const baseValid = validData;
-validData = function (source) {
-  return plain(source) && ['foods','custom'].every(key => Array.isArray(source[key]) && source[key].every(validFields)) &&
-    (source.meals === undefined || Array.isArray(source.meals) && source.meals.every(meal => Array.isArray(meal?.items) && meal.items.every(validFields))) && baseValid(source);
-};
 window.pulsNutrients = Object.freeze({definitions:() => defs, ensure, ensureForEntries, resolveEntry, resolveProduct, totals,
   labelValues, setLabelValues, validLabelValues, validFields, copyFields, capture, keyFor:catalogKey});
 })();

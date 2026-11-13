@@ -42,8 +42,10 @@ for(const [key,list] of Object.entries(portions).filter(([k])=>k.startsWith('CNF
 assert.equal(portions['CNF 2026:CNF_2'][0].amount,40.152,'2026 measure is grams, no times-100');
 assert(!Object.keys(portions).some(k=>/^USDA FNDDS 2021-2023:/.test(k)),'No FNDDS portions');
 // Exercise the real v87 option validation/migration without persistence/network.
-const c={state:{},window:{},validData:s=>s.accept!==false,migrate(){},render(){},today:()=> '2026-11-10',console};
+const c={state:{},window:{},migrate(){},render(){},today:()=> '2026-11-10',console};
 vm.createContext(c);vm.runInContext(read('js/puls-data-v87.js'),c);const api=c.window.pulsData87;
+// validData (js/app.js) bereinigt die Optionen mit optionDraft/optionCommit und schreibt sie nur nach bestandener Prüfung zurück; hier mit einem Stand-in für die übrigen Abschnitte (accept:false lehnt ab).
+c.validData=s=>{const draft=api.optionDraft(s);if(draft.accept===false)return false;api.optionCommit(s,draft);return true};
 let s={foodSearch:{sort:'az',sources:['own','bls']},foods:[{id:'keep',nutrients:{fiber:2}}],workouts:[{id:'keep-workout'}]};
 const payload=JSON.stringify({foods:s.foods,workouts:s.workouts});assert(c.validData(s));api.migrate(s);
 assert.deepEqual(clone(s.foodSearch.sources),['own','bls','cnf']);assert.equal(s.foodSearch.catalogueSourcesVersion,1);

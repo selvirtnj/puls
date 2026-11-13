@@ -1,18 +1,6 @@
 /* Optional shell services. The existing profile remains authoritative; no Auth/Sync writes here. */
 (function(){
 'use strict';
-const baseValid=validData;
-validData=function(s){
-  if(!baseValid(s))return false;
-  if(s.nativeExtras===undefined)return true;
-  const p=s.nativeExtras,object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
-  if(!object(p)||p.healthEnabled!==undefined&&typeof p.healthEnabled!=='boolean')return false;
-  if(p.reminders===undefined)return true;
-  return object(p.reminders)&&Object.entries(p.reminders).every(([key,r])=>
-    ['training','weight'].includes(key)&&object(r)&&typeof r.enabled==='boolean'&&
-    typeof r.time==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time)&&Array.isArray(r.days)&&r.days.length<=7&&
-    r.days.every(d=>Number.isInteger(d)&&d>=1&&d<=7)&&new Set(r.days).size===r.days.length&&(!r.enabled||r.days.length>0));
-};
 const bridge=window.webkit?.messageHandlers?.pulsNative,features=window.pulsNativeFeatures||[];
 if(!bridge||!features.some(f=>['barcodeScanner','healthWrite','localReminders'].includes(f)))return;
 const has=f=>features.includes(f),pending=new Map();

@@ -4,12 +4,13 @@ Stand 14.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Live
 
-- **Version 98** auf `main` (Commit „Version 98: CoFID 2021 und USDA FNDDS aus dem Katalog entfernt“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
+- **Version 99** auf `main` (Commit „Version 99: Refactor Phase 3, validData als eine Funktion“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
-- In Arbeit: Refactor nach [ISSUES.md](ISSUES.md), Phasen 0 bis 2 sind erledigt, 3 bis 5 offen. Es gibt nur den Branch `main`.
+- In Arbeit: Refactor nach [ISSUES.md](ISSUES.md), Phasen 0 bis 3 sind erledigt, 4 und 5 offen. Es gibt nur den Branch `main`.
 
 ## Letzte Versionen
 
+- **99** (14.11.): Refactor Phase 3 ohne sichtbare Änderung. `validData` ist eine Funktion in `js/app.js` statt 30 Wrappern in 26 Dateien; neue gespeicherte Felder bekommen dort einen Abschnitt. Alt-Neu-Vergleich über 29.250 Eingaben ohne Abweichung, von Codex gegengeprüft. Einziger Unterschied: Startet die App angemeldet mit ungesicherten Änderungen, gilt beim ersten Abgleich schon die volle Prüfung.
 - **98** (14.11.): CoFID 2021 und USDA FNDDS 2021–2023 auf Selvirs Wunsch aus dem Katalog entfernt; 20.826 Lebensmittel in `catalog/foods-00…42.json`, Katalog-Cache `puls-catalog-v4`, Filter `cofid` und `fndds` entfernt. Bereits geloggte Einträge behalten Snapshot und Quellenangabe, verlieren aber die erweiterten Nährwerte. Gespeicherte Altschlüssel bleiben gültig und wirkungslos.
 - **97** (13.11.): Refactor ohne sichtbare Änderung. Tests für die `validData`-Kette und die Wrapper-Reihenfolge, Anzeigeversion als Konstante `APP_VERSION` in `js/account-refresh.js`, 30 kleine CSS-Dateien in `css/style.css` zusammengeführt (13 statt 42 Stylesheets, gleiche Regeln in gleicher Reihenfolge).
 - **96** (13.11.): CNF 2026 (2.573), CoFID 2021 (2.636) und USDA FNDDS 2021–2023 (5.431) im Katalog, zusammen 28.893 Lebensmittel in `catalog/foods-00…58.json`; Quellenfilter `cnf`, `cofid`, `fndds`; Nährstoff-Sidecars `catalog/nutrients-v2-*.json` für alle Quellen; Katalog-Cache `puls-catalog-v3`. CNF-Portionen nur aus benutzerdefinierten Maßen (Typ 6), CNF-Niacin-Äquivalent aus Code 409. Namen der neuen Einträge sind englisch. Details: [FOOD-DATABASES.md](FOOD-DATABASES.md), [NUTRIENT-MAPPING.md](NUTRIENT-MAPPING.md).

@@ -1,4 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {appValidator,baseState}=require('./validdata-env.cjs');
+// validData ist eine Funktion in js/app.js: die Lauf-Regeln werden an der echten, vollständig geladenen App geprüft (mit gültigem Mindestzustand).
+const fullValidData=appValidator(),validate=s=>fullValidData({...baseState(),...s});
 
 // Synthetic VM fixture for js/running.js: base functions are minimal stand-ins for the earlier wrapper chain.
 function load(state,now='2026-10-25',storage=new Map()){
@@ -20,22 +23,22 @@ function load(state,now='2026-10-25',storage=new Map()){
 // Persistenz: alte Sicherungen ohne Laufdaten bleiben gültig, fehlerhafte Laufdaten werden abgelehnt.
 {
   const c=load({workouts:[]});
-  assert.equal(c.validData({workouts:[]}),true);
+  assert.equal(validate({workouts:[]}),true);
   const run={id:'a',date:'2026-10-20',distanceKm:5,durationSeconds:1500};
-  assert.equal(c.validData({workouts:[],runs:[run],activeRun:null,runSettings:{weeklyGoalKm:20}}),true);
-  assert.equal(c.validData({workouts:[],runs:[{...run,note:'Park',createdAt:1}],activeRun:{startedAt:1,pausedAt:null,pausedSeconds:0},runSettings:{weeklyGoalKm:null}}),true);
+  assert.equal(validate({workouts:[],runs:[run],activeRun:null,runSettings:{weeklyGoalKm:20}}),true);
+  assert.equal(validate({workouts:[],runs:[{...run,note:'Park',createdAt:1}],activeRun:{startedAt:1,pausedAt:null,pausedSeconds:0},runSettings:{weeklyGoalKm:null}}),true);
   for(const bad of [{...run,distanceKm:-1},{...run,type:'Run!'},{...run,kcal:12.5},{...run,feeling:6},{...run,maxSpeed:200},{...run,terrain:'<b>'},{...run,distanceKm:'5'},{...run,durationSeconds:0},{...run,durationSeconds:172801},{...run,date:'20.10.2026'},{...run,id:5},{...run,note:'x'.repeat(201)}])
-    assert.equal(c.validData({workouts:[],runs:[bad]}),false);
-  assert.equal(c.validData({workouts:[],runs:[{...run,id:"');alert(1);//"}]}),false,'run ids are safe for inline handlers');
-  assert.equal(c.validData({workouts:[],runs:[{...run,source:'gps',route:'52.52000,13.40500;52.52100,13.40600|52.53000,13.41000;52.53100,13.41100'}],activeRun:{startedAt:1,gps:true,segment:2}}),true);
-  assert.equal(c.validData({workouts:[],runs:[{...run,route:'<svg>'}]}),false);
-  assert.equal(c.validData({workouts:[],runs:[{...run,source:'watch'}]}),true);
-  assert.equal(c.validData({workouts:[],activeRun:{startedAt:1,gps:'yes'}}),false);
-  assert.equal(c.validData({workouts:[],runs:[{...run,distanceKm:0,type:'tabletennis',kcal:280,feeling:4,terrain:'road',pauseSeconds:30,startedAt:1,elevationGain:12,elevationMax:470,maxSpeed:14.2}],activeRun:{startedAt:1,type:'walk'},runSettings:{lastType:'hike'}}),true,'activity without distance and summary fields');
-  assert.equal(c.validData({workouts:[],runs:{}}),false);
-  assert.equal(c.validData({workouts:[],activeRun:{startedAt:'x'}}),false);
-  assert.equal(c.validData({workouts:[],runSettings:{weeklyGoalKm:0}}),false);
-  assert.equal(c.validData({runs:[]}),false,'base validation still applies');
+    assert.equal(validate({workouts:[],runs:[bad]}),false);
+  assert.equal(validate({workouts:[],runs:[{...run,id:"');alert(1);//"}]}),false,'run ids are safe for inline handlers');
+  assert.equal(validate({workouts:[],runs:[{...run,source:'gps',route:'52.52000,13.40500;52.52100,13.40600|52.53000,13.41000;52.53100,13.41100'}],activeRun:{startedAt:1,gps:true,segment:2}}),true);
+  assert.equal(validate({workouts:[],runs:[{...run,route:'<svg>'}]}),false);
+  assert.equal(validate({workouts:[],runs:[{...run,source:'watch'}]}),true);
+  assert.equal(validate({workouts:[],activeRun:{startedAt:1,gps:'yes'}}),false);
+  assert.equal(validate({workouts:[],runs:[{...run,distanceKm:0,type:'tabletennis',kcal:280,feeling:4,terrain:'road',pauseSeconds:30,startedAt:1,elevationGain:12,elevationMax:470,maxSpeed:14.2}],activeRun:{startedAt:1,type:'walk'},runSettings:{lastType:'hike'}}),true,'activity without distance and summary fields');
+  assert.equal(validate({workouts:[],runs:{}}),false);
+  assert.equal(validate({workouts:[],activeRun:{startedAt:'x'}}),false);
+  assert.equal(validate({workouts:[],runSettings:{weeklyGoalKm:0}}),false);
+  assert.equal(fullValidData({runs:[]}),false,'base validation still applies');
 }
 console.log('PASS: running data accepted optionally, invalid runs/timer/goal rejected, old backups valid.');
 
@@ -78,7 +81,7 @@ console.log('PASS: runs extend daily and weekly streaks with the existing rest-d
   assert.ok(Math.abs(c.runTrackKm(pts)-.4)<.002,'3x100 m + 100 m after pause, outliers ignored: '+c.runTrackKm(pts));
   const route=c.runRouteString(pts);
   assert.match(route,/^[-0-9.,;|]+$/);assert.equal(route.split('|').length,2,'pause splits route');
-  assert.equal(c.validData({workouts:[],runs:[{id:'g',date:'2026-10-20',distanceKm:.4,durationSeconds:200,source:'gps',route}]}),true);
+  assert.equal(validate({workouts:[],runs:[{id:'g',date:'2026-10-20',distanceKm:.4,durationSeconds:200,source:'gps',route}]}),true);
   const many=Array.from({length:2000},(_,i)=>[i*3000,lat+i*dLat/10,13.4,5,0]);
   assert.ok(c.runRouteString(many).split(';').length<=300,'route simplified');
   const segs=Array.from({length:1000},(_,i)=>[i*60000,lat+i*dLat,13.4,5,i]),segRoute=c.runRouteString(segs.flatMap((p,i)=>[p,[p[0]+30000,p[1]+dLat/2,13.4,5,i]]));

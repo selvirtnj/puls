@@ -1,4 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {appValidator,baseState}=require('./validdata-env.cjs');
+// validData ist eine Funktion in js/app.js: die nativeExtras-Regeln werden an der echten, vollständig geladenen App geprüft.
+const fullValidData=appValidator(),validate=s=>fullValidData({...baseState(),...s});
 const source=fs.readFileSync('js/native-extras.js','utf8');
 function fixture({features=[],native=true,state,reply,preview=false}={}){
   const messages=[],timers=new Map(),nodes=new Map(),events={};let id=0,saves=0,webStarts=0,webStops=0,lookups=[],html='';
@@ -23,14 +26,14 @@ function fixture({features=[],native=true,state,reply,preview=false}={}){
     const f=fixture(options),before=JSON.stringify(f.c.state);
     assert.equal(f.c.save,f.original.save);assert.equal(f.c.render,f.original.render);
     assert.equal(f.c.startBarcodeCamera,f.original.webStart);assert.equal(f.timers.size,0);assert.equal(f.messages.length,0);
-    assert(f.c.validData({workouts:[]}));assert.equal(JSON.stringify(f.c.state),before);
-    assert(!f.c.validData({workouts:[],nativeExtras:{healthEnabled:'yes'}}));
+    assert(validate({workouts:[]}));assert.equal(JSON.stringify(f.c.state),before);
+    assert(!validate({workouts:[],nativeExtras:{healthEnabled:'yes'}}));
   }
   const f=fixture();
-  for(const value of [{},{healthEnabled:false},{reminders:{weight:{enabled:true,time:'08:15',days:[1,3,7]}}}])assert(f.c.validData({workouts:[],nativeExtras:value}));
-  for(const value of [null,[],{reminders:[]},{reminders:{bad:{enabled:false,time:'08:00',days:[]}}},{reminders:{weight:{enabled:true,time:'08:00',days:[]}}},{reminders:{weight:{enabled:true,time:'24:00',days:[2]}}},{reminders:{weight:{enabled:true,time:'08:00',days:[2,2]}}},{reminders:{weight:{enabled:true,time:'08:00',days:[8]}}}])assert(!f.c.validData({workouts:[],nativeExtras:value}));
-  assert(!f.c.validData({nativeExtras:{}}),'base validator remains authoritative');
-  assert(!f.c.validData({workouts:[],nativeExtras:{reminders:{weight:{enabled:true,time:['08:00'],days:[2]}}}}),'time must be a string');
+  for(const value of [{},{healthEnabled:false},{reminders:{weight:{enabled:true,time:'08:15',days:[1,3,7]}}}])assert(validate({workouts:[],nativeExtras:value}));
+  for(const value of [null,[],{reminders:[]},{reminders:{bad:{enabled:false,time:'08:00',days:[]}}},{reminders:{weight:{enabled:true,time:'08:00',days:[]}}},{reminders:{weight:{enabled:true,time:'24:00',days:[2]}}},{reminders:{weight:{enabled:true,time:'08:00',days:[2,2]}}},{reminders:{weight:{enabled:true,time:'08:00',days:[8]}}}])assert(!validate({workouts:[],nativeExtras:value}));
+  assert(!fullValidData({nativeExtras:{}}),'base validator remains authoritative');
+  assert(!validate({workouts:[],nativeExtras:{reminders:{weight:{enabled:true,time:['08:00'],days:[2]}}}}),'time must be a string');
   console.log('PASS extras: old backups, strict optional settings, inert Browser/old shell and no startup writes');
 
   {

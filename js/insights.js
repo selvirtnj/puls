@@ -42,7 +42,7 @@ let nativeLastPayload='';
 function syncNativeWorkout(){let handler=window.webkit?.messageHandlers?.pulsWorkout;if(!handler)return;let w=activeWorkout(),payload=w?{active:true,id:w.id,name:w.name,startedAt:w.startedAt||Date.now(),restEndAt:w.rest?.endAt||null}:{active:false},serial=JSON.stringify(payload);if(serial!==nativeLastPayload){handler.postMessage(payload);nativeLastPayload=serial}}
 const insightsTick=tickWorkoutClocks;tickWorkoutClocks=function(){insightsTick();syncNativeWorkout()};clearInterval(workoutTickHandle);workoutTickHandle=setInterval(tickWorkoutClocks,1000);
 const insightsSave=save;save=function(){insightsSave();syncNativeWorkout()};
-const insightsValid=validData;validData=function(s){return insightsValid(s)&&(s.exerciseBook||[]).every(b=>(b.repMin===undefined||Number.isInteger(b.repMin)&&b.repMin>=1&&b.repMin<=30)&&(b.repMax===undefined||Number.isInteger(b.repMax)&&b.repMax>=(b.repMin||1)&&b.repMax<=30)&&(b.loadStep===undefined||Number.isFinite(b.loadStep)&&b.loadStep>=.25&&b.loadStep<=25))};render();syncNativeWorkout();
+render();syncNativeWorkout();
 
 function showEstimatedLoad(id){let b=state.exerciseBook.find(x=>x.id===id),best=Math.max(0,...exerciseHistory(b).map(x=>x.best)),reps=+$("estimate-reps").value;$("estimated-load").textContent=best&&Number.isInteger(reps)&&reps>=1&&reps<=10?n(best/(reps===1?1:1+reps/30))+" kg für "+reps+" Reps · theoretische Epley-Umkehrung, keine Gewichtsvorgabe":"Bitte 1–10 Reps wählen; ein gültiges e1RM ist erforderlich."}
 

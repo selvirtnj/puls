@@ -1,4 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {appValidator,baseState}=require('./validdata-env.cjs');
+// validData ist eine Funktion in js/app.js: die Lauf-Regeln werden an der echten, vollständig geladenen App geprüft (mit gültigem Mindestzustand).
+const fullValidData=appValidator(),fullState=baseState('mit-profil-und-trainingsplan'),validate=s=>fullValidData({...fullState,...s});
 
 // Synthetic fixtures only; same wrapper stubs as check-running.cjs. Both files
 // share a VM lexical scope, matching classic script loading in index.html.
@@ -62,17 +65,17 @@ console.log('PASS: latest historical weight, unsorted/duplicate days, missing/fu
 
 // New optional data must round-trip, and malformed future-watch fields fail.
 const entry={id:'new',date:'2026-10-25',type:'mma',durationSeconds:3600,distanceKm:0,source:'watch',avgHr:130,maxHr:180,laps:[180,420],durationXpVersion:1,kcal:546};
-const backup={workouts:[],runs:[entry],profile:{kcalMode:'baseline',baselineFactor:1.3},runSettings:{weekMinutesGoal:150,rounds:{work:180,rest:60,count:5}},activeRun:{startedAt:1,type:'mma',laps:[180],rounds:{work:180,rest:60,count:5},durationXpVersion:1}};
-let serial=JSON.stringify(backup);assert.equal(c.validData(backup),true);assert.equal(JSON.stringify(backup),serial);
-assert.equal(c.validData({workouts:[]}),true);
-for(const patch of [{source:'import'},{avgHr:NaN},{maxHr:251},{avgHr:181,maxHr:180},{laps:[20,10]},{laps:[10,10]},{laps:[3601]},{laps:[-1]},{durationXpVersion:2}])assert.equal(c.validData({...backup,runs:[{...entry,...patch}]}),false,JSON.stringify(patch));
-for(const patch of [{weekMinutesGoal:-1},{weekMinutesGoal:Infinity},{rounds:{work:0,rest:60,count:5}},{rounds:{work:180,rest:-1,count:5}},{rounds:{work:180,rest:60,count:1.5}}])assert.equal(c.validData({...backup,runSettings:patch}),false);
-assert.equal(c.validData({...backup,activeRun:{...backup.activeRun,laps:[NaN]}}),false);
-assert.equal(c.validData({...backup,activeRun:{...backup.activeRun,rounds:{work:180,rest:60,count:0}}}),false);
-assert.equal(c.validData({...backup,profile:{kcalMode:'new'}}),false);
-assert.equal(c.validData({...backup,profile:{baselineFactor:1.5}}),false);
-assert.equal(c.validData({...backup,workouts:[{durationXpVersion:'1'}]}),false);
-for(const source of ['gps','manual','watch'])assert.equal(c.validData({...backup,runs:[{...entry,source}]}),true);
+const backup={workouts:[],runs:[entry],profile:{...fullState.profile,kcalMode:'baseline',baselineFactor:1.3},runSettings:{weekMinutesGoal:150,rounds:{work:180,rest:60,count:5}},activeRun:{startedAt:1,type:'mma',laps:[180],rounds:{work:180,rest:60,count:5},durationXpVersion:1}};
+assert.equal(validate(backup),true);{const after=fullValidData.after({...baseState(),...backup});for(const k of Object.keys(backup))assert.equal(JSON.stringify(after[k]),JSON.stringify(backup[k]),'validator must not change '+k)}
+assert.equal(validate({workouts:[]}),true);
+for(const patch of [{source:'import'},{avgHr:NaN},{maxHr:251},{avgHr:181,maxHr:180},{laps:[20,10]},{laps:[10,10]},{laps:[3601]},{laps:[-1]},{durationXpVersion:2}])assert.equal(validate({...backup,runs:[{...entry,...patch}]}),false,JSON.stringify(patch));
+for(const patch of [{weekMinutesGoal:-1},{weekMinutesGoal:Infinity},{rounds:{work:0,rest:60,count:5}},{rounds:{work:180,rest:-1,count:5}},{rounds:{work:180,rest:60,count:1.5}}])assert.equal(validate({...backup,runSettings:patch}),false);
+assert.equal(validate({...backup,activeRun:{...backup.activeRun,laps:[NaN]}}),false);
+assert.equal(validate({...backup,activeRun:{...backup.activeRun,rounds:{work:180,rest:60,count:0}}}),false);
+assert.equal(validate({...backup,profile:{...fullState.profile,kcalMode:'new'}}),false);
+assert.equal(validate({...backup,profile:{...fullState.profile,baselineFactor:1.5}}),false);
+assert.equal(validate({...backup,workouts:[{durationXpVersion:'1'}]}),false);
+for(const source of ['gps','manual','watch'])assert.equal(validate({...backup,runs:[{...entry,source}]}),true);
 console.log('PASS: optional watch/lap/round/profile fields, non-mutating legacy validation and invalid bounds.');
 
 state.weights=[{date:'2026-10-24',kg:70},{date:'2026-10-26',kg:90}];
@@ -117,10 +120,10 @@ const sessionSource=fs.readFileSync('js/run-session.js','utf8');
 vm.runInContext(sessionSource.slice(sessionSource.indexOf('function runMmaState('),sessionSource.indexOf('// Ton (WebAudio')),c);
 const markedMma={startedAt:1,type:'mma',rounds:{work:180,rest:60,count:5},laps:[10,20,30,40,50]};
 assert.equal(c.runMmaState(markedMma,20).round,3);assert.equal(c.runMmaState(markedMma,20).phase,'work');assert.equal(c.runMmaState(markedMma,50).phase,'done');
-assert.equal(c.validData({workouts:[],activeRun:markedMma}),true,'manual MMA round marks use valid cumulative active seconds');
-assert.equal(c.validData({workouts:[],runs:[{...entry,durationSeconds:50,laps:markedMma.laps}]}),true,'final MMA mark may equal duration');
-assert.equal(c.validData({workouts:[],runs:[{...entry,durationSeconds:49,laps:markedMma.laps}]}),false,'no future lap beyond saved duration');
-assert.equal(c.validData({workouts:[],activeRun:{...markedMma,laps:[10,10]}}),false,'same-second duplicate remains invalid');
+assert.equal(validate({workouts:[],activeRun:markedMma}),true,'manual MMA round marks use valid cumulative active seconds');
+assert.equal(validate({workouts:[],runs:[{...entry,durationSeconds:50,laps:markedMma.laps}]}),true,'final MMA mark may equal duration');
+assert.equal(validate({workouts:[],runs:[{...entry,durationSeconds:49,laps:markedMma.laps}]}),false,'no future lap beyond saved duration');
+assert.equal(validate({workouts:[],activeRun:{...markedMma,laps:[10,10]}}),false,'same-second duplicate remains invalid');
 vm.runInContext(sessionSource.slice(sessionSource.indexOf('function runEditForm('),sessionSource.indexOf('// Andere Vollbilder')),c);
 for(const type of ['trail','ride','inline','other','mystery']){
   state.runs=[{...entry,type,kcal:123}];c.runEditForm('new');assert.ok(editHtml.includes('value="'+type+'" selected'),type);

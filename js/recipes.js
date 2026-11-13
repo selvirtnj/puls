@@ -22,7 +22,6 @@ const recipeAddFood=addFood;addFood=function(e){let before=state.foods.length,id
 function copyRecipe(id){recipeDraft=JSON.parse(JSON.stringify(state.recipes.find(x=>x.id===id)));recipeDraft.id=uid();recipeDraft.name=(recipeDraft.name+' (Kopie)').slice(0,100);renderRecipeEditor()}
 function deleteRecipe(id){if(!confirm('Gespeichertes Rezept löschen? Erfasste Portionen bleiben im Tagebuch.'))return;state.recipes=state.recipes.filter(x=>x.id!==id);save();recipesPanel()}
 function cancelRecipe(){if(recipeDraft?.ingredients.length&&!confirm('Rezeptbearbeitung ohne Speichern verlassen?'))return;returnToRecipes()}
-const recipesValidData=validData;validData=function(s){return recipesValidData(s)&&(s.recipes===undefined||(Array.isArray(s.recipes)&&s.recipes.every(validRecipe)))};
 const recipesImportData=importData;importData=async function(file){await recipesImportData(file);state.recipes??=[];save();render()};
 const recipesNutrition=nutrition;nutrition=function(){return `<section class="card goalbanner"><div><span class="label">DEINE KÜCHE, DEINE REZEPTE</span><h2>Kochen. Wiegen. Wiederverwenden.</h2></div><button class="btn" onclick="foodForm();foodTab('recipes')">Meine Rezepte ↗</button></section>`+recipesNutrition()};
 const recipesRender=render;render=function(){state.recipes??=[];return recipesRender()};

@@ -36,6 +36,6 @@ document.addEventListener('click',event=>{if(!event.target.closest('.completionc
 const soundToast=toast;toast=function(message){soundToast(message);if(/Pause vorbei/.test(message))pulsSound('rest');else if(/gespeichert|erfasst|hinzugefügt|250 ml/.test(message))pulsSound('save')};
 const touchDesignChooser=designChooser;designChooser=function(){return touchDesignChooser().replace('<div class="designoptions">','<div class="designoptions compactdesignoptions">')};
 const touchAccountBase=accountPage;accountPage=function(){return touchAccountBase().replace('<section class="card"><h3>Deine Daten</h3>',soundSettingsCard()+'<section class="card"><h3>Deine Daten</h3>')};
-const soundValidBase=validData;validData=function(s){return soundValidBase(s)&&(s.soundEnabled===undefined||typeof s.soundEnabled==='boolean')&&(s.soundVolume===undefined||Number.isFinite(s.soundVolume)&&s.soundVolume>=0&&s.soundVolume<=70)};render();
+render();
 const soundSetValue=setValue;setValue=function(wid,eid,index,key,value){let w=state.workouts.find(x=>x.id===wid),before=w?.exercises.find(x=>x.id===eid)?.sets[index]?.done;soundSetValue(wid,eid,index,key,value);if(key==='done'&&value&&!before&&w?.exercises.find(x=>x.id===eid)?.sets[index]?.done)pulsSound('set')};
 const emptySessionFinish=finishWorkout;finishWorkout=function(id){let w=state.workouts.find(x=>x.id===id&&!x.finished);if(w&&!loggedSets(w).length){requestDiscardWorkout(id);return}emptySessionFinish(id)};

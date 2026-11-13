@@ -4,7 +4,7 @@ Stand 12.11.2026. Audit vom 12.11.2026: Tests grün, keine kritischen Defekte. D
 
 ## Audit-Befunde (Code)
 
-1. **validData-Kette:** `validData()` wird rund 30-fach umhüllt, von `js/app.js:151` bis `js/workout-import.js:237`. Ein Fehler in einem Zwischenglied macht das ganze Profil ungültig. Weitere Wrapper-Ketten: `render` 25x, `accountPage` 20x, `openModal` 18x, `workoutPage` und `nutrition` je 14x, `profileForm` 10x; Hotspot ist `js/flows.js`. Die Ladereihenfolge in `index.html` ist dabei Teil der Logik.
+1. **Wrapper-Ketten:** `validData` ist seit Refactor Phase 3 eine Funktion in `js/app.js`. Offen sind die Ketten `render` 25x, `accountPage` 20x, `openModal` 18x, `workoutPage` und `nutrition` je 14x, `profileForm` 10x; Hotspot ist `js/flows.js`. Die Ladereihenfolge in `index.html` ist dabei Teil der Logik.
 2. **Fehlende Tests:** Kein Test prüft alle gespeicherten `state`-Schlüssel gegen `validData`. Kein Migrationstest über mehrere Versionen mit alten Sicherungen.
 3. **Anzeigeversion:** erledigt (Refactor Phase 1). Eine Konstante `APP_VERSION` in `js/account-refresh.js`; `scripts/bump-version.cjs` zieht sie mit.
 4. **native-*.js** (rund 3.400 Zeilen): geklärt am 13.11.2026. `native-state`, `-projection`, `-training`, `-progress`, `-activity`, `-nutrition` und `-account` brechen in der ersten Anweisung ab, wenn `webkit.messageHandlers.pulsState` oder das Merkmal `stateBridge` fehlt. Die iOS-Hülle (`ios/PULS/WebViewController.swift`) bietet beides nicht an; im Browser und in der App werden also keine Patches auf `render`, `openModal`, `home` oder `go` gesetzt. Die Dateien werden nur geladen und geparst. Aktiv sind `native-bridge.js` (über `pulsNative`) und `native-extras.js` (dessen `validData`-Wrapper gilt immer). Ob die sieben untätigen Dateien aus `index.html` entfernt werden, ist offen.
@@ -43,7 +43,7 @@ Regeln: Kein Framework, kein Build-Schritt. Verhalten und Ladereihenfolge bleibe
 | 0 ✓ | Tests für `validData` (alle gespeicherten Schlüssel, alte Sicherungen) und für die Wrapper-Reihenfolge. Grundlage für alles Weitere. Erledigt: `tests/check-validdata.cjs` (1.117 Fälle, alle Skripte in echter Ladereihenfolge) und `tests/check-wrapper-order.cjs` (Golden-Datei, bei gewollter Änderung `--update`). |
 | 1 ✓ | Anzeigeversion als eine Konstante (statt `js/account-refresh.js:45`); `bump-version.cjs` anpassen. |
 | 2 ✓ | Kleine CSS-Dateien in gleicher Reihenfolge zusammenführen (Kaskade unverändert). 30 Dateien stecken jetzt in `css/style.css`; im Browser belegt: 3.430 Regeln mit gleichem Hash vorher und nachher. |
-| 3 | `validData`-Kette in eine Funktion zusammenführen. |
+| 3 ✓ | `validData`-Kette in eine Funktion zusammenführen. Erledigt in `js/app.js` (`validCore` plus Abschnitte in der alten Auswertungsreihenfolge); die Wiederherstellung beim Laden nutzt wie bisher nur die Kernprüfung. |
 | 4 | Übrige Wrapper (`render`, `accountPage`, `openModal`, dann `workoutPage`, `nutrition`, `profileForm`) schrittweise zusammenlegen. |
 | 5 | Altlasten-Dateinamen (`puls-data-v87.js`, `quick-account-v87.*`, `v90-ui.css`) umbenennen; `index.html`, `sw.js`, Tests mitziehen. |
 
