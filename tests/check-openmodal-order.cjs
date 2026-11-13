@@ -12,7 +12,7 @@ const {loadApp,scriptList}=require('./validdata-env.cjs');
 const FIXTURE='tests/fixtures/openmodal-order.json',OLD_COMMIT='81343a3',NOW=Date.UTC(2026,10,13,12);
 const CASES=JSON.parse(fs.readFileSync('tests/fixtures/validdata/cases.json','utf8')).states;
 
-// [Datei, Nr. des alten Wrappers in der Datei, Glied vorher, Glied nachher]. native-state.js lässt seinen Wrapper stehen (untätig ohne iOS-Brücke).
+// [Datei, Nr. des alten Wrappers in der Datei, Glied vorher, Glied nachher].
 const GLIEDER=[
  ['products',1,'openModalBeforeProducts',null],['flows',1,null,'openModalAfterFlows'],['interactions',1,'openModalBeforeInteractions',null],
  ['polish',1,null,'openModalAfterPolish'],['compact',1,'openModalBeforeCompact',null],['preview-mode',1,null,'openModalAfterPreviewMode'],
@@ -148,12 +148,12 @@ if(process.argv.includes('--record-old')){
  console.log(`Aufgezeichnet: ${FIXTURE} (${Object.keys(data.standard.faelle).length+Object.keys(data.erststart.faelle).length} Zustände, alte Kette aus ${OLD_COMMIT})`);process.exit(0);
 }
 
-// 1. Genau eine Definition: openModal ist nur in js/app.js deklariert; Zuweisungen gibt es nur im untätigen native-state.js.
+// 1. Genau eine Definition: openModal ist nur in js/app.js deklariert; Zuweisungen gibt es keine mehr.
 const code=file=>fs.readFileSync(file,'utf8').replace(/\/\*[\s\S]*?\*\//g,'').split('\n').filter(line=>!/^\s*\/\//.test(line)).join('\n');
 const jsFiles=fs.readdirSync('js').filter(f=>f.endsWith('.js')).map(f=>'js/'+f);
 assert.deepEqual(jsFiles.filter(f=>/(?<![.\w$])function\s+openModal\s*\(/.test(code(f))),['js/app.js'],'openModal darf nur in js/app.js deklariert sein');
-assert.deepEqual(jsFiles.filter(f=>/(?<![.\w$])openModal\s*=\s*(?:async\s*)?function\b/.test(code(f))),['js/native-state.js'],'openModal wird nur vom untätigen native-state.js noch umhüllt');
-assert.deepEqual(jsFiles.filter(f=>/=\s*openModal\s*;/.test(code(f))&&f!=='js/native-state.js'),[],'keine Datei hält mehr eine alte openModal-Funktion fest');
+assert.deepEqual(jsFiles.filter(f=>/(?<![.\w$])openModal\s*=\s*(?:async\s*)?function\b/.test(code(f))),[],'openModal wird von keiner Datei mehr umhüllt');
+assert.deepEqual(jsFiles.filter(f=>/=\s*openModal\s*;/.test(code(f))),[],'keine Datei hält mehr eine alte openModal-Funktion fest');
 
 // 2. Ablauf und Ergebnis wie in der alten Kette.
 const golden=JSON.parse(fs.readFileSync(FIXTURE,'utf8')),now=both('new');

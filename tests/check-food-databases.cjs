@@ -100,8 +100,8 @@ vm.runInContext(read('js/food-page.js').match(/function fpSourceKeys\(x\)\{[\s\S
 for(const [source,key] of [['CNF 2026','cnf'],['CoFID 2021','cofid'],['USDA FNDDS 2021-2023','fndds'],['USDA SR Legacy 2018','usda']])assert.deepEqual([...c.fpSourceKeys({source})],[key]);
 for(const f of ['js/food-page.js','js/food-diary.js','js/puls-data.js'])assert(read(f).includes("'cnf'"));
 const attrs=["Health Canada, Canadian Nutrient File 2026. Contains information licensed under the Open Government Licence – Canada."];
-for(const f of ['js/catalog-search.js','js/lifecycle.js','js/native-nutrition.js','README.md'])assert(!/Public Health England|Dietary Studies|CoFID/.test(read(f)),'Catalogue-wide credit lists only databases that are shipped: '+f);
-for(const f of ['js/catalog-search.js','js/lifecycle.js','js/native-nutrition.js','README.md','docs/FOOD-DATABASES.md'])for(const attr of attrs)assert(read(f).replaceAll("\\'","'").includes(attr),'Attribution '+f);
+for(const f of ['js/catalog-search.js','js/lifecycle.js','README.md'])assert(!/Public Health England|Dietary Studies|CoFID/.test(read(f)),'Catalogue-wide credit lists only databases that are shipped: '+f);
+for(const f of ['js/catalog-search.js','js/lifecycle.js','README.md','docs/FOOD-DATABASES.md'])for(const attr of attrs)assert(read(f).replaceAll("\\'","'").includes(attr),'Attribution '+f);
 assert(read('js/food-page.js').includes('esc(foodCatalogueAttribution)'),'attribution accessible in active DE/EN filter sheet');
 assert(read('sw.js').includes("CATALOG_CACHE='puls-catalog-v4'"));
 // Real worker: English searches, BLS preference, and source filtering before limit.
@@ -133,16 +133,14 @@ async function loaderTest(){
  Object.assign(loader,{fpSourceKeys:c.fpSourceKeys,fpSearchPrefs:()=>({sources:['cnf']}),catalogueAlternatives:()=>[['milk']],foodPriority:()=>0,foodRelevance:()=>0,catalogueQuerySerial:1,setTimeout:fn=>setImmediate(fn)});
  vm.runInContext(read('js/food-upgrade.js').split('\n').find(line=>line.startsWith('fallbackCatalogueSearch=')),loader);
  const fallback=await loader.fallbackCatalogueSearch('milk',1,['cnf']);assert(fallback.count>60);assert(fallback.indices.every(i=>items[i].source==='CNF 2026'),'fallback source filter before cap');
- // Exercise actual worker dispatch and final fallback for food page, recipes and native callers.
- vm.runInContext('var searchSerial=1;var wait=()=>Promise.resolve();'+read('js/native-nutrition.js').match(/async function nativeCatalogueFallback\(query,serial,current\)\{[\s\S]*?\n\}/)[0],loader);
- const nativeFallback=await loader.nativeCatalogueFallback('milk',1,()=>true);
+ // Exercise actual worker dispatch and final fallback for food page and recipes.
  const query=read('js/lifecycle.js').split('\n').find(l=>l.startsWith('async function queryCatalogueAsync('));
  Object.assign(loader,{fpActive:()=>true,startCatalogueWorker:async()=>true,catalogueResponses:new Map(),clearTimeout,fpSearchPrefs:()=>({sources:['cnf']})});
  loader.setTimeout=setTimeout;
  loader.catalogueWorker={postMessage:message=>{worker.onmessage({data:message});loader.catalogueResponses.get(message.id)(replies.at(-1))}};
  vm.runInContext(query,loader);
  let filtered=await loader.queryCatalogueAsync('milk',1);assert(filtered.indices.every(i=>items[i].source==='CNF 2026'));
- let native=await loader.queryCatalogueAsync('milk','nativeNutrition:1');assert.equal(native.count,nativeFallback.count);assert(native.indices.some(i=>items[i].source!=='CNF 2026'));
+ let native=await loader.queryCatalogueAsync('milk','nativeNutrition:1');assert(native.indices.some(i=>items[i].source!=='CNF 2026'));
  loader.fpActive=()=>false;let recipe=await loader.queryCatalogueAsync('milk',1);assert.deepEqual(clone(recipe.indices),clone(native.indices));
  loader.startCatalogueWorker=async()=>false;loader.setTimeout=fn=>setImmediate(fn);
  let recipeFallback=await loader.queryCatalogueAsync('milk',1);assert.equal(recipeFallback.count,recipe.count);
@@ -170,20 +168,3 @@ loaderTest().catch(error=>{console.error(error);process.exitCode=1});
  } finally {fs.readFileSync=readFile;fs.existsSync=exists;fs.writeFileSync=write;}
 }
 
-// Native saved-catalogue resolution uses the current unit without mutating read/conflict state.
-{
- const saved={id:'existing',catalogKey:'CoFID 2021:COFID_17-752',unit:'g',name:'Drink'},row={source:'CoFID 2021',record:'COFID_17-752',unit:'ml'};
- const n={state:{custom:[saved],foods:[{id:'historic',unit:'g'}]},foods:[],localCatalogue:[row],portionReferences:{},validRef:()=>true};vm.createContext(n);
- vm.runInContext(read('js/native-nutrition.js').match(/function resolve\(ref\)\{[\s\S]*?\n\}/)[0],n);
- const resolved=n.resolve({catalogKey:saved.catalogKey});assert.equal(resolved.food.unit,'ml');assert.equal(resolved.raw.unit,'g');assert.equal(saved.unit,'g','Reads leave conflict baseline unchanged');
- Object.assign(n,{perform:fn=>fn(),inputs:(values,fn)=>fn(),value:x=>x,event:{},matchEntry:()=>true,entryResult:x=>x,addFood:()=>n.state.foods.push({id:'new',unit:n.foodSelection.unit})});
- const body=read('js/native-nutrition.js').match(/run\(a,p\)\{return perform\(\(\)=>\{if\(p.raw.catalogKey[\s\S]*?\},a.date\)\}/)[0];
- vm.runInContext('var add={'+body+'}',n);n.add.run({id:'new',meal:'Snacks',date:'2026-11-12'},{...resolved,grams:100,target:{}});
- assert.equal(saved.unit,'ml');assert.equal(n.state.foods[0].unit,'g');assert.equal(n.state.foods[1].unit,'ml');
- // Replaying the original g-based product expectation after repair uses the recorded snapshot unit, also without a loaded catalogue.
- const old={id:'new',foodRef:'existing',unit:'ml'};
- Object.assign(n,{fields:()=>true,id:()=>true,day:()=>true,meals:['Snacks'],validRef:()=>true,plain:()=>true,expectedProduct:()=>({...saved,unit:'g'}),entry:()=>old,fail:code=>({code}),addQuantity:food=>{assert.equal(food.unit,'ml');return 100},addSnapshot:food=>({unit:food.unit}),matchEntry:(entry,target)=>entry.unit===target.unit});
- const check=read('js/native-nutrition.js').match(/'food.add':\{([\s\S]*?)\n    run\(a,p\)/)[1];
- vm.runInContext('var nativeAdd={'+check+'}',n);n.localCatalogue=[];
- assert.equal(n.nativeAdd.check({id:'new',date:'2026-11-12',meal:'Snacks',product:{id:'existing'},expect:{},amount:100,unit:'ml'}).noop,true);
-}

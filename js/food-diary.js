@@ -53,7 +53,6 @@ function fdHead(){
   return `<div class="fdhead"><h1 class="fdtitle">${fdT('Essen','Food')}</h1><div class="fddate"><button type="button" class="fdicon" aria-label="${fdT('Vorheriger Tag','Previous day')}" onclick="moveDay(-1)">${phIcon('caret-left')}</button><button type="button" class="fddaylabel" aria-label="${fdT('Datum auswählen','Choose date')}: ${label}" onclick="pickDiaryDate()"><span>${short}</span></button><button type="button" class="fdicon" aria-label="${fdT('Nächster Tag','Next day')}" onclick="moveDay(1)">${phIcon('caret-right')}</button></div><button type="button" class="fdicon fdplus" aria-label="${fdT('Lebensmittel hinzufügen','Add food')}" onclick="fdOpenAdd()">${phIcon('plus')}</button></div>`;
 }
 let fdJustChecked=false;
-function fdToggleDay(){fdJustChecked=true;setTimeout(()=>fdJustChecked=false,0);let was=(state.foodLogCompleted||[]).includes(date);markFoodDayComplete();fdSound(was?'toggle':'save')}
 function fdOpenAdd(){fdSound('sheetOpen');foodForm();if(typeof foodTab==='function')foodTab('search')}
 
 /* ---------- Deck ---------- */
@@ -152,8 +151,6 @@ function fdAllRender(){
   if(body&&t.pending)box.insertAdjacentHTML('beforeend',fdAllPlaceholder());
 }
 function fdAllPlaceholder(){return `<div class="fdallwait" aria-busy="true" aria-label="${fdT('Wird geladen','Loading')}"><i></i><i></i><i></i></div>`}
-// Übersicht: dieselbe Zeile unter den Mikronährstoffen (microBars in flows.js/design-system.js).
-if(typeof microBars==='function'){const fdMicroBarsBase=microBars;microBars=function(...args){return fdMicroBarsBase.apply(this,args)+fdAllButton()}}
 function fdWeekStats(endDay=date){
   let sums={kcal:0,p:0,c:0,f:0},days=0,end=new Date(endDay+'T12:00:00');
   for(let i=0;i<7;i++){let d=new Date(end);d.setDate(d.getDate()-i);let key=localISO(d),items=fdDayFoods(key).filter(x=>!fdIsWater(x));if(!items.length)continue;days++;for(let x of items)for(let k of Object.keys(sums))sums[k]+=Number(x[k])||0}
@@ -269,7 +266,6 @@ function fdDiaryList(){
   let done=(state.foodLogCompleted||[]).includes(date);
   return `<section class="fdcard fddiary">${head}${body}${done?`<p class="fdnote fddonenote">${phIcon('check-circle')} ${fdT('Tag vollständig erfasst','Day complete')}</p>`:''}</section>`;
 }
-function fdSaveCombo(){foodForm();if($('foodbody')&&typeof fpMealEdit==='function')fpMealEdit(null,true)}
 
 /* ---------- Seite ---------- */
 function nutrition(){

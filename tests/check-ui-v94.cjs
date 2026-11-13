@@ -2,7 +2,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const read=file=>fs.readFileSync(file,'utf8');
 const {renderSource}=require('./validdata-env.cjs');
-let harness=read('tests/check-native-training.cjs').split('const started=options=>')[0]
+let harness=fs.readFileSync('tests/app-harness.cjs','utf8')
  .replace("run('var englishUI={}');","run(fs.readFileSync('js/i18n.js','utf8'));");
 const app=vm.runInNewContext('(function(require){'+harness+';return app})(require)',{require,console});
 const t=app({handler:false,features:[],preview:true});
@@ -75,7 +75,7 @@ const friends=vm.runInNewContext('(function(require){'+friendsHarness+';return f
  assert(!read('js/page-slide.js').includes('cloneNode'),'no duplicate page snapshot');
  assert(!read('js/design-system.js').includes('dsAppearanceBase'),'one owner for colour controls');
  // Real helper resets nested scrollers immediately and after layout, preserving horizontal position.
- const helper=read('js/app.js').slice(read('js/app.js').indexOf('let scrollViewRevision='),read('js/app.js').indexOf('function go(p)'));
+ const helper=read('js/app.js').slice(read('js/app.js').indexOf('let scrollViewRevision='),read('js/app.js').indexOf('function goBase(p)'));
  const frames=[],nested={scrollTop:140,scrollLeft:25,scrollTo(options){assert.equal(options.behavior,'instant');this.scrollTop=options.top;this.scrollLeft=options.left}};
  const root={scrollTop:80,scrollLeft:0,querySelectorAll:()=>[nested]};let pageTop=60;
  const c={window:{scrollTo:options=>{pageTop=options.top}},document:{scrollingElement:{scrollTop:60}},requestAnimationFrame:fn=>frames.push(fn)};

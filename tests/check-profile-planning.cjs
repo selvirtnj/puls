@@ -126,7 +126,8 @@ test.run('settings()');assert.equal(test.el('pl-learn-tdee').disabled,true);asse
 fill(test,{'pr-baseline-factor':1.3});savedPlan=savePlan(test);assert.equal(savedPlan.profile.baselineFactor,1.3);assert.equal(savedPlan.profile.kcalMode,'baseline');
 // Day selection is pure, uses that day's entries, and never changes persisted goals.
 before=test.run('JSON.stringify(state)');let present=test.run('dayGoals(today())'),prior=test.run('dayGoals(daysBefore(today(),1))');assert.equal(present.kcal-prior.kcal,440);assert.equal(test.run('JSON.stringify(state)'),before);
-assert(test.run('combinedNutrition()').includes('Grundbedarf'));assert(test.run('combinedNutrition()').includes('Sport 440'));
+// Die frühere combinedNutrition() ist entfernt (kein Aufrufer in der Live-App); der Text kommt aus baselineEnergyLine().
+assert(test.run('baselineEnergyLine()').includes('Grundbedarf'));assert(test.run('baselineEnergyLine()').includes('Sport 440'));
 // Preserve and exercise Claude's presentation-only wrapper with the logic guard.
 const overviewSource=fs.readFileSync('js/activity-overview.js','utf8');test.run(overviewSource.slice(overviewSource.indexOf("if(typeof baselineEnergyLine==='function')")));
 assert(test.run('baselineEnergyLine().includes("baselineenergy")'));
@@ -149,7 +150,7 @@ for(const change of ["state.plan.mode='manual'","state.profile.special=true","st
   assert(selected.run('goalCard()').includes(shown+' KCAL'));
   selected.run('forecastDays=function(weight,target,tdee,intake){globalThis.projectedIntake=intake;return null};planTargetDate()');assert.equal(selected.run('projectedIntake'),selected.run('dayGoals(date).kcal'));
 }
-test.run('state.language="en"');assert(test.run('combinedNutrition()').includes('exercise 440'));test.run('state.language="de"');
+test.run('state.language="en"');assert(test.run('baselineEnergyLine()').includes('exercise 440'));test.run('state.language="de"');
 test.run('state.plan.adaptive=false;state.runs=[];state.workouts=[];adaptiveGoals()');let resting=test.run('dayGoals(today()).kcal');
 test.run("state.runs=[{id:'new',date:today(),type:'tabletennis',distanceKm:0,durationSeconds:3600}];adaptiveGoals()");assert.equal(test.run('state.goals.kcal'),resting+240,'sport updates with weight adaptation disabled');
 assert.equal(test.run('dayGoals(today()).kcal'),resting+240);

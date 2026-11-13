@@ -24,7 +24,8 @@ const c={console,Math,Number,String,Object,Array,Set,Map,JSON,isFinite,state,dat
  // accountPage ist seit Phase 4 eine Funktion: Kern aus flows.js (hier der Stub-Text), darüber das Glied aus quick-account.js.
  accountPage:()=>c.accountPageAfterQuickAccount('<div class="accountcompact accountrefresh accountoverview"></div>'),
  openAccountSection(key){c.accountSection=key;c.render()},closeAccountSection(){c.accountSection='';c.render()},
- go(next){c.page=next;c.render()},render(){renders++}};
+ // go ist seit Phase 4 eine Funktion: Kern (hier der Stub-Text), davor das Glied aus quick-account.js.
+ go(next){c.goBeforeQuickAccount?.(next);c.page=next;c.render()},render(){renders++}};
 c.window.pulsData87={display:()=>({...state.display}),water:()=>({mode:'auto',glassMl:state.water.glassMl}),waterRecommendation:()=>({ml:2450,mode:'auto'})};
 vm.createContext(c);
 vm.runInContext(fs.readFileSync('js/quick-account.js','utf8'),c,{filename:'js/quick-account.js'});

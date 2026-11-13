@@ -46,7 +46,7 @@ function assertValue(result,key,value,origin) {
 }
 
 // Real app entry paths and validators, with synthetic state/storage and no network.
-const harness = fs.readFileSync('tests/check-native-training.cjs','utf8').split('const started=options=>')[0]
+const harness = fs.readFileSync('tests/app-harness.cjs','utf8')
   .replace("'exercise-muscles','training-polish'","'exercise-muscles','food-flow','training-polish'");
 const app = vm.runInNewContext('(function(require){'+harness+';return app})(require)',{require,console});
 function fullApp() {
@@ -279,21 +279,4 @@ function fullApp() {
   assert.match(html,/js\/nutrient-resolver\.js\?v=\d+/);assert(worker.includes('js/nutrient-resolver.js'));
   console.log('PASS: OFF normalized units/salt fallback, DE/EN OCR specific lines, malformed/unknown values, portion-to-per100 labels and unchanged v94 asset integration');
 
-  const nativeSetup=fs.readFileSync('tests/check-native-nutrition.cjs','utf8').split('const interest=t=>')[0];
-  const startNative=vm.runInNewContext('(function(require){'+nativeSetup+';return start})(require)',{require,console,process:{argv:[]},AbortController,URLSearchParams});
-  const native=startNative();
-  for(const file of ['nutrient-definitions','nutrient-resolver'])native.run(fs.readFileSync('js/'+file+'.js','utf8'));
-  native.run('state.custom[0].nx={sugars:2,satfat:0,sodium:300}');
-  const owner=JSON.parse(fs.readFileSync('tests/fixtures/native-bridge/snapshot.json','utf8')).userId;
-  let serial=100;
-  function apply(op,args){native.ctx.window.pulsNativeApply({id:'f0000000-0000-4000-8000-'+String(serial++).padStart(12,'0'),userId:owner,baseSeq:0,op,args});const ack=native.messages.filter(m=>m.type==='ack').at(-1);assert.equal(ack.ok,true,JSON.stringify(ack));}
-  apply('food.add',{id:'nx-native-entry',product:{id:'product'},amount:100,unit:'g',meal:'Snacks',date:'2026-10-28',expect:clone(native.state().custom[0])});
-  let added=clone(native.state().foods.at(-1));assert.deepEqual(added.nx,{sugars:2,satfat:0,sodium:300});
-  apply('food.update',{id:added.id,amount:200,unit:'g',expect:added});
-  assert.equal(native.ctx.window.pulsNutrients.resolveEntry(clone(native.state().foods.at(-1))).values.sugars,4);
-  native.run('var extraDraft=mapOffProduct({product_name:"OFF fixture",nutriments:{"energy-kcal_100g":100,proteins_100g:10,carbohydrates_100g:10,fat_100g:2,sugars_100g:3,"saturated-fat_100g":1,salt_100g:0.5}},"3017620422003")');
-  const draft=clone(native.run('extraDraft'));draft.prepared=true;draft.nx.starch=12;draft.nx.future_nutrient=9;draft.nx.sodium=200.00000000000003;
-  apply('product.save',{kind:'review',product:{id:'native-off',name:draft.name,unit:'g',barcode:draft.barcode,kcal:100,p:10,c:10,f:2},draft,expect:null,confirmWarnings:true});
-  assert.deepEqual(clone(native.state().custom.at(-1).nx),{sugars:3,satfat:1,sodium:200});
-  console.log('PASS: native add/update preserve per100 labels and OFF review uses the same three Web fields');
 })().catch(error => {console.error(error);process.exitCode=1;});

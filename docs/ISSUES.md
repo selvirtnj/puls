@@ -1,14 +1,40 @@
 # PULS — offene Punkte, Grenzen und Refactor-Plan
 
-Stand 12.11.2026. Audit vom 12.11.2026: Tests grün, keine kritischen Defekte. Dies ist eine Liste von Risiken und Grenzen, keine Fehlerliste im Live-Betrieb. Aktueller Stand: [PROGRESS.md](PROGRESS.md).
+Stand 13.11.2026. Audits vom 12.11. und 13.11.2026: Tests grün, keine kritischen Defekte. Dies ist eine Liste von Risiken und Grenzen, keine Fehlerliste im Live-Betrieb. Aktueller Stand: [PROGRESS.md](PROGRESS.md).
 
 ## Audit-Befunde (Code)
 
-1. **Wrapper-Ketten:** `validData` (Phase 3) und `render` (Phase 4, Version 100) und `openModal` (Phase 4, Version 102) sind je eine Funktion in `js/app.js`, `accountPage` (Version 101) eine in `js/experience.js`, `workoutPage` (Version 103) eine in `js/flows.js`; sie rufen benannte Glieder der anderen Dateien in fester Reihenfolge auf. `nutrition` (Version 104) ist die eine Funktion in `js/food-diary.js`, `profileForm` (Version 104) eine in `js/enhancements.js`. Damit sind alle Ketten aus dem Plan zusammengelegt; `home` (10x) und `go` (7x) stehen nicht im Plan und bleiben Wrapper. Offen: Hilfsfunktionen, die nur die gelöschten `nutrition`-Definitionen nutzten (z. B. `nutritionSlides`, `waterCard`, `detailedMicroBars`), sind noch nicht aufgeräumt, weil Tests sie teils direkt aufrufen. Grenze der Ketten-Tests (`check-accountpage-order`, `check-workoutpage-order`): Der DOM-Stub in Node liefert bei Selektoren nichts, DOM-Umbauten der Glieder (Laufkarte, Kalender-Links) sind dort nicht belegt, nur im einmaligen Browser-Vergleich; Hotspot ist `js/flows.js`. Die Ladereihenfolge in `index.html` ist dabei Teil der Logik.
+1. **Wrapper-Ketten:** `validData` (Phase 3) und `render` (Phase 4, Version 100) und `openModal` (Phase 4, Version 102) sind je eine Funktion in `js/app.js`, `accountPage` (Version 101) eine in `js/experience.js`, `workoutPage` (Version 103) eine in `js/flows.js`; sie rufen benannte Glieder der anderen Dateien in fester Reihenfolge auf. `nutrition` (Version 104) ist die eine Funktion in `js/food-diary.js`, `profileForm` (Version 104) eine in `js/enhancements.js`. Seit Version 106 sind auch `go` (Kern `goBase`, sechs Glieder `goBefore…`/`goAfterMotion`) und `home` (ruft `homeDesign()` aus `js/design-system.js`) je eine Funktion in `js/app.js`; 32 Hilfsfunktionen ohne Aufrufer sind gelöscht. Kein Skript umhüllt mehr eine der Seitenfunktionen. Kleine Reste ohne Wirkung: `baselineEnergyLine`, `qaQuickWater`, `runMovingStats`, `runRouteSvg` (nur noch von Tests aufgerufen), der `weightPage`-Wrapper, tote `.nutritionslide`-Abfragen in `js/app-polish.js`, CSS `.nutritiondeck` und die alte `removeEntry`-Kette. Grenze der Ketten-Tests (`check-accountpage-order`, `check-workoutpage-order`): Der DOM-Stub in Node liefert bei Selektoren nichts, DOM-Umbauten der Glieder (Laufkarte, Kalender-Links) sind dort nicht belegt, nur im einmaligen Browser-Vergleich; Hotspot ist `js/flows.js`. Die Ladereihenfolge in `index.html` ist dabei Teil der Logik.
 2. **Fehlende Tests:** Kein Test prüft alle gespeicherten `state`-Schlüssel gegen `validData`. Kein Migrationstest über mehrere Versionen mit alten Sicherungen.
 3. **Anzeigeversion:** erledigt (Refactor Phase 1). Eine Konstante `APP_VERSION` in `js/account-refresh.js`; `scripts/bump-version.cjs` zieht sie mit.
-4. **native-*.js** (rund 3.400 Zeilen): geklärt am 13.11.2026. `native-state`, `-projection`, `-training`, `-progress`, `-activity`, `-nutrition` und `-account` brechen in der ersten Anweisung ab, wenn `webkit.messageHandlers.pulsState` oder das Merkmal `stateBridge` fehlt. Die iOS-Hülle (`ios/PULS/WebViewController.swift`) bietet beides nicht an; im Browser und in der App werden also keine Patches auf `render`, `openModal`, `home` oder `go` gesetzt. Die Dateien werden nur geladen und geparst. Aktiv sind `native-bridge.js` (über `pulsNative`) und `native-extras.js` (dessen `validData`-Wrapper gilt immer). Ob die sieben untätigen Dateien aus `index.html` entfernt werden, ist offen.
+4. **native-*.js:** erledigt (Version 106). Die sieben untätigen Zustandsdateien (`native-state`, `-projection`, `-training`, `-progress`, `-activity`, `-nutrition`, `-account`), `css/native-shell.css` und ihre Tests sind gelöscht; sie brachen ohne `pulsState`/`stateBridge` in der ersten Anweisung ab, und die iOS-Hülle bietet beides nicht an. Aktiv bleiben `native-bridge.js` und `native-extras.js`. Der alte Stand liegt in der Git-Historie (bis Commit `5b1e0a1`) und unter Tag `native-swiftui-archiv`.
 5. **Lesbarkeit:** Stark minifizierter Code in sehr langen Zeilen erschwert Diffs und Reviews.
+
+## Audit vom 13.11.2026 (ganzes Repository, nur Bericht)
+
+Kein Befund der Stufe „muss“. Nichts davon ist behoben; Selvir entscheidet, was gemacht wird.
+
+Sollte:
+
+1. **Falscher Sync-Konflikt nach verlorener Antwort** (`js/cloud.js:11`, `:19`): Kommt der Upload an, die Antwort aber nicht (Funkloch, 15-s-Timeout), bleibt `cloudRevision` alt und der nächste Versuch meldet einen Konflikt, obwohl beide Stände gleich sind. Lösung: im Konfliktzweig den Serverstand holen und bei gleichen Nutzdaten nur die Revision übernehmen; Test fehlt.
+2. **Anmeldung ersetzt lokale Daten ohne Rückfrage** (`js/cloud.js:23`, `:25`): Hat das Konto schon Daten, werden die lokalen ersetzt. Die Kopie `puls-cloud-local-before-login` ist in der Oberfläche nicht abrufbar und wird beim nächsten Login überschrieben. Produktentscheidung.
+3. **Ungültiger Barcode aus der Open-Food-Facts-Suche** (`js/food-flow.js:104`, `js/food-search.js:7`, `js/products.js:53`): Der Code eines Suchtreffers wird ungeprüft gespeichert; `validData` lehnt den Stand danach ab, Sync, Export und Import scheitern. Lösung: Treffer mit `validBarcode` filtern oder den Code weglassen.
+4. **Service Worker:** `scripts/check.cjs` prüft die `ASSETS`-Liste in `sw.js` nicht gegen vorhandene Dateien; ein falscher Eintrag lässt die Offline-Installation still scheitern. `.js`/`.css` mit Fehlerantwort fallen nicht auf den Cache zurück (`sw.js:67`).
+5. **iOS-Hülle** (`ios/PULS/WebViewController.swift:68`, `:97`, `:196`): Pfadprüfung `hasPrefix("/puls")` lässt auch `/pulsX/` zu; Nachrichten und `sendRunGps` werden nur nach Host geprüft. Geringes Risiko, weil der Host GitHub Pages des eigenen Kontos ist.
+6. **Tests außerhalb des Sammellaufs:** `check-shell-extras.cjs`, `check-premium.cjs` und `check-regional-foods.cjs` laufen einzeln grün, stehen aber nicht in `scripts/check.cjs`.
+
+Kann:
+
+7. Der beim Start geladene Stand wird nicht mit `validCore` geprüft (`js/app.js:40`); ein kaputter Speicherstand wie `{"version":2}` lässt den Start abbrechen.
+8. Nur ein Platz für Konfliktsicherungen (`js/cloud.js:26`); der zweite Konflikt überschreibt den ersten.
+9. Größenlimit: Client 4.000.000 Zeichen, Datenbank 5.000.000 (`backend/accounts.sql:6`).
+10. `trendData()` rechnet quadratisch über die Tage (`js/experience.js:17`); bei mehreren Jahren Daten spürbar.
+11. e1RM zählt Sätze mit 1–10 Wiederholungen (`js/enhancements.js:76`), der Rang 1–12 (`js/strength-ranks.js:169`). Produktfrage.
+12. Der Lauf-Spurspeicher schluckt Speicherfehler stumm (`js/running.js:95`, `:131`).
+13. `js/experience.js:17` mischt lokale Zeit und UTC; um Mitternacht kann ein Tag verrutschen.
+14. Keine Tests für Fasten, `trendData`, `fdWeekStats` und `weightTrend`.
+
+Ohne Befund: HTML-Ausgabe (`esc`, ID-Prüfung), RLS-SQL, `account-delete`, Edge Function `food-photo`, Freunde-SQL, Import, Geheimnisse im Repository, Einheitenlogik. Nicht gelesen: `js/i18n.js`, Leaflet, CSS, `catalog/`; große Dateien nur punktuell.
 
 ## Grenzen der Prüfung
 
@@ -44,7 +70,7 @@ Regeln: Kein Framework, kein Build-Schritt. Verhalten und Ladereihenfolge bleibe
 | 1 ✓ | Anzeigeversion als eine Konstante (statt `js/account-refresh.js:45`); `bump-version.cjs` anpassen. |
 | 2 ✓ | Kleine CSS-Dateien in gleicher Reihenfolge zusammenführen (Kaskade unverändert). 30 Dateien stecken jetzt in `css/style.css`; im Browser belegt: 3.430 Regeln mit gleichem Hash vorher und nachher. |
 | 3 ✓ | `validData`-Kette in eine Funktion zusammenführen. Erledigt in `js/app.js` (`validCore` plus Abschnitte in der alten Auswertungsreihenfolge); die Wiederherstellung beim Laden nutzt wie bisher nur die Kernprüfung. |
-| 4 | Übrige Wrapper (`render`, `accountPage`, `openModal`, dann `workoutPage`, `nutrition`, `profileForm`) schrittweise zusammenlegen. |
+| 4 ✓ | Übrige Wrapper (`render`, `accountPage`, `openModal`, `workoutPage`, `nutrition`, `profileForm`) zusammengelegt (Versionen 100 bis 104); `home` und `go` in Version 106. |
 | 5 | Erledigt (Version 105): Altlasten-Dateien heißen jetzt `puls-data.js`, `quick-account.*`, `ui-layer.css`; `index.html`, `sw.js`, Tests mitgezogen. |
 
-Vorab-Frage für Phase 4 ist geklärt (Befund 4): Die native-Zustandsdateien sind ohne Brücke untätig und gehören nicht zu den wirksamen Wrapper-Ketten.
+Der Plan ist abgeschlossen. Die native-Zustandsdateien sind seit Version 106 entfernt (Befund 4).

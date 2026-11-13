@@ -38,7 +38,7 @@ function fixture({features=[],native=true,state,reply,preview=false}={}){
 
   {
     // Reuse the established synthetic-profile bootstrap with the actual validation wrapper chain.
-    const harness=fs.readFileSync('tests/check-native-training.cjs','utf8').split('const started=options=>')[0];
+    const harness=fs.readFileSync('tests/app-harness.cjs','utf8');
     const app=vm.runInNewContext('(function(require){'+harness+';return app})(require)',{require,console});
     const t=app({handler:false,features:[]}),before=JSON.stringify(t.state());t.run(source);
     assert(t.run('validData(state)'),'real old profile remains valid');assert.equal(JSON.stringify(t.state()),before,'loading does not migrate or dirty old profile');

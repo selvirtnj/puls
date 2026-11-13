@@ -76,10 +76,10 @@ function dsSeriesColors(html){
   return String(html).replace(/#(a3b9fb|c3f86b|f2b87d|343b2e|9ba68f|30362b)\b/gi,m=>map[m.toLowerCase()]||m);
 }
 if(typeof progressChart==='function'){const dsChartBase=progressChart;progressChart=function(...args){return dsSeriesColors(dsChartBase.apply(this,args))}}
-home=function(){
+function homeDesign(){
   let chart=typeof progressChart==='function'?`<h2 class="dsgrouptitle">${dsText('Verlauf','Progress')}</h2><div class="dschart">${progressChart()}</div>`:'';
   return `<div class="dshome">${dsEnergyCard()}${dsFoodGroup()}${dsTrainingGroup()}${dsBodyGroup()}${chart}</div>`;
-};
+}
 
 /* ---------- Passwort anzeigen/verbergen ---------- */
 function dsPasswordToggle(button){
@@ -212,19 +212,6 @@ const dsRunIcons={run:'person-simple-run',trail:'mountains',walk:'person-simple-
 if(typeof runIcon==='function'){const dsRunIconBase=runIcon;runIcon=function(key){return dsRunIcons[key]?phIcon(dsRunIcons[key]):dsRunIconBase(key)}}
 const dsControlGlyphs={'⌄':'caret-down','⌃':'caret-up','‹':'caret-left','›':'caret-right','×':'x','✕':'x'};
 if(typeof controlIconSvg==='function')controlIconSvg=function(glyph){return phIcon(dsControlGlyphs[glyph]||'x','controlicon')};
-
-/* ---------- Essen: Kopf als ruhige Liste (kleiner Ring, Restwert, Makro-Balken) ---------- */
-if(typeof combinedNutrition==='function')combinedNutrition=function(){
-  let t=totals(),g=dsDayGoals(),e=dsEnergyFacts(t,g);
-  return `<div class="dsenergytop dsenergysmall"><div class="dsringwrap">${dsRing(e.percent,e.over)}</div><div class="dsenergyfacts"><span class="dsbig${e.over?' dsover':''}">${e.big}</span><span class="dscaption">${e.goal>0?dsKcal(e.eaten)+' '+dsText('von','of')+' '+dsKcal(e.goal)+' kcal · '+e.caption:e.caption}</span></div></div>${dsMacroRows(t,g)}${typeof baselineEnergyLine==='function'?baselineEnergyLine(date):''}`;
-};
-if(typeof nutritionSlides==='function'&&typeof microBars==='function'){
-  nutritionSlides=function(){
-    let labels=[dsText('Energie & Makros','Energy & macros'),dsText('Mikronährstoffe','Micronutrients')];
-    return `<section class="nutritiondeck"><div class="segmented slidedots dsslideswitch" role="group" aria-label="${dsText('Ansicht','View')}">${labels.map((label,i)=>`<button type="button" class="${nutrientSlide===i?'selected':''}" aria-pressed="${nutrientSlide===i}" onclick="setNutrientSlide(${i})" data-no-translate>${label}</button>`).join('')}</div><div class="nutritiontrack" id="nutrition-track" onscroll="nutritionSlideChanged(this)"><article class="nutritionslide">${combinedNutrition()}</article><article class="nutritionslide" aria-label="${labels[1]}">${microBars()}</article></div></section>`;
-  };
-  const dsSlideChanged=nutritionSlideChanged;nutritionSlideChanged=function(...args){let result=dsSlideChanged.apply(this,args);document.querySelectorAll('.dsslideswitch button').forEach((el,i)=>el.setAttribute('aria-pressed',String(i===nutrientSlide)));return result};
-}
 
 /* ---------- Tab-Leiste und Seitenrahmen ---------- */
 const dsTabs=[['workout','barbell','Training','Training'],['home','house','Übersicht','Overview'],['add','plus-circle','Hinzufügen','Add'],['food','fork-knife','Essen','Food'],['account','user-circle','Konto','Account']];

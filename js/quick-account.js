@@ -293,7 +293,6 @@ function qaSubmitEdit(event){
 }
 
 /* ---------- Unterseite Ziele ---------- */
-const qaPaceNames={low:['Wenig','Low'],medium:['Mittel','Medium'],high:['Viel','High'],extreme:['Extrem','Extreme']};
 const qaDirectionNames={lose:['Abnehmen','Lose'],maintain:['Halten','Maintain'],gain:['Aufbauen','Build']};
 function qaName(map,key){let x=map[key];return x?qaT(x[0],x[1]):'–'}
 // Prozentanteile der Makroenergie, auf ganze Zahlen mit Summe 100 gebracht (nur Vorbelegung, keine Speicherung).
@@ -309,10 +308,6 @@ function qaRatioFromGoals(g){
 function qaRatioValid(r){return qaObj(r)&&['p','c','f'].every(k=>Number.isInteger(r[k])&&r[k]>=5&&r[k]<=80)&&r.p+r.c+r.f===100}
 // Gramm aus Kalorien und Verhältnis: Protein und Kohlenhydrate 4 kcal/g, Fett 9 kcal/g.
 function qaGramsFromRatio(kcal,r){return {p:Math.round(kcal*r.p/100/4),c:Math.round(kcal*r.c/100/4),f:Math.round(kcal*r.f/100/9)}}
-function qaMacroRows(g){
-  let kcal=+g?.kcal||0,pct=(grams,factor)=>kcal>0?Math.round(grams*factor/kcal*100)+' %':'';
-  return [['p',qaT('Protein','Protein'),4],['c',qaT('Kohlenhydrate','Carbohydrates'),4],['f',qaT('Fett','Fat'),9]].map(([k,label,factor])=>qaRow({label,detail:pct(+g?.[k]||0,factor),value:Number.isFinite(g?.[k])?qaNum(g[k])+' g':'–'})).join('');
-}
 function qaMacroEditor(){
   let plan=state.plan||{},g=state.goals||{},ratio=plan.macroInput==='ratio'&&qaRatioValid(plan.ratio),open=ratio||qaRatioOpen,r=qaRatioValid(plan.ratio)?plan.ratio:qaRatioFromGoals(g);
   let seg=`<div class="segmented qaseg" role="group" aria-label="${qaT('Makro-Eingabe','Macro input')}" data-motion-indicator><button type="button" aria-pressed="${!open}" onclick="qaMacroInput('grams',this)">${qaT('Gramm','Grams')}</button><button type="button" aria-pressed="${open}" onclick="qaMacroInput('ratio',this)">${qaT('Verhältnis','Ratio')}</button></div>`;
@@ -439,8 +434,6 @@ function qaSection(key){
   qaParent=qaPage;qaAnimate='push';openAccountSection(key);
   if(typeof accountSection==='undefined'||!accountSection){qaParent='';qaAnimate=''}
 }
-function qaGoTrain(tab){trainTab=tab;go('workout')}
-function qaFood(pane){foodForm();if(typeof fpBackTo==='function')fpBackTo(pane);else if(typeof foodTab==='function')foodTab('recipes')}
 
 if(typeof closeAccountSection==='function'){
   const qaCloseBase=closeAccountSection;
@@ -454,7 +447,7 @@ if(typeof closeAccountSection==='function'){
     if(el&&motion?.pop&&!motion.reduced()&&!(typeof edgeBack!=='undefined'&&edgeBack.completing))motion.pop(el,done);else done();
   };
 }
-if(typeof go==='function'){const qaGo=go;go=function(next,...args){let before=typeof page!=='undefined'?page:'';qaPage='';qaParent='';qaRatioOpen=false;if(next==='account'&&before!=='account')qaAnimate='list';return qaGo.call(this,next,...args)}}
+if(typeof go==='function'){globalThis.goBeforeQuickAccount=function goBeforeQuickAccount(next){let before=typeof page!=='undefined'?page:'';qaPage='';qaParent='';qaRatioOpen=false;if(next==='account'&&before!=='account')qaAnimate='list'}}
 
 if(typeof accountPage==='function'){
   globalThis.accountPageAfterQuickAccount=function accountPageAfterQuickAccount(html){

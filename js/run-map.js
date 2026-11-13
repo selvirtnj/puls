@@ -54,7 +54,6 @@ function runRouteById(id){return runRouteList().find(r=>r.id===id)||null}
 function runDefaultView(){let r=[...runList()].reverse().find(x=>x.route),p=r?runRoutePoints(r.route)[0]?.[0]:runLineLatLngs(runRouteList().at(-1)?.line)[0];return p?{center:p,zoom:14}:{center:[51.16,10.45],zoom:6}}
 
 // Live-Karte im Lauf-Fenster
-function runLiveMapHtml(){return `<div class="runmap live" id="runlivemap"><button type="button" class="runmapbtn" onclick="runLiveRecenter()" aria-label="${runText('Karte auf mich zentrieren','Centre map on me')}">${uiIcon('crosshair')}</button></div>`}
 async function runLiveMapMount(id='runlivemap'){
   if(runLive.map&&!document.body.contains(runLive.map.getContainer())){runLive.map.remove();runLive.map=null}
   runLive.map=await runMountMap(id,map=>{

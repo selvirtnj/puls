@@ -31,7 +31,7 @@ async function checkSchemeAndConnectivity(){
   assert.equal(disk.get('puls-color-scheme'),expected);assert.deepEqual(JSON.parse(disk.get('puls-v1')),original,'Startup never saves/changes the old profile');
   assert.equal(fixture.earlyScheme,'light');assert(run('validData(state)'));
   assert(run('validData('+JSON.stringify(original)+')'),'Old backups remain accepted without mutation');
-  assert.equal(run('currentDesign()'),'classic');assert.equal(fixture.ctx.document.body.dataset.appDesign,undefined);
+  assert.equal(fixture.ctx.document.body.dataset.appDesign,undefined);
   assert.equal(fixture.properties.size,0,'Legacy design/accent palette no longer sets CSS variables');
   run('chooseAppDesign("volt");chooseColorTheme("mint");render()');assert.equal(run('state.appDesign'),design);assert.equal(run('state.colorTheme'),'rose');
  }

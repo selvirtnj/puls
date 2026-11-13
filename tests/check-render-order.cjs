@@ -8,7 +8,7 @@ const {loadApp,scriptList}=require('./validdata-env.cjs');
 const FIXTURE='tests/fixtures/render-order.json',OLD_COMMIT='35b35a3';
 
 // [Datei, Nr. des alten Wrappers in der Datei, Funktion vorher, Funktion nachher]. Nur die Glieder, die im Stub laufen
-// (native-bridge, native-extras und native-state sind ohne iOS-Brücke untätig; ihre Reihenfolge prüfen check-native-scanner und check-shell-extras).
+// (native-bridge und native-extras sind ohne iOS-Brücke untätig; ihre Reihenfolge prüfen check-native-scanner und check-shell-extras).
 const GLIEDER=[
  ['recipes',1,'renderBeforeRecipes',null],['training',1,'renderBeforeTracker',null],['finish',1,null,'renderAfterFinish'],
  ['personal',1,null,'renderAfterPersonal'],['navigation',1,null,'renderAfterNavigation'],['flows',1,null,'renderAfterFlowsSession'],
@@ -82,12 +82,12 @@ if(process.argv.includes('--record-old')){
  console.log(`Aufgezeichnet: ${FIXTURE} (${lines.length} Abschnitte, alte Kette aus ${OLD_COMMIT})`);process.exit(0);
 }
 
-// 1. Genau eine Definition: render ist nur in js/app.js deklariert; Zuweisungen gibt es nur im untätigen native-state.js.
+// 1. Genau eine Definition: render ist nur in js/app.js deklariert; Zuweisungen gibt es keine mehr.
 const code=file=>fs.readFileSync(file,'utf8').replace(/\/\*[\s\S]*?\*\//g,'').split('\n').filter(line=>!/^\s*\/\//.test(line)).join('\n');
 const jsFiles=fs.readdirSync('js').filter(f=>f.endsWith('.js')).map(f=>'js/'+f);
 assert.deepEqual(jsFiles.filter(f=>/(?<![.\w$])function\s+render\s*\(/.test(code(f))),['js/app.js'],'render darf nur in js/app.js deklariert sein');
-assert.deepEqual(jsFiles.filter(f=>/(?<![.\w$])render\s*=\s*(?:async\s*)?function\b/.test(code(f))),['js/native-state.js'],'render wird nur vom untätigen native-state.js noch umhüllt');
-assert.deepEqual(jsFiles.filter(f=>/(?<![.\w$])const\s+\w+\s*=\s*render\s*;\s*render\s*=/.test(code(f))&&f!=='js/native-state.js'),[],'keine Datei hält mehr eine alte render-Funktion fest');
+assert.deepEqual(jsFiles.filter(f=>/(?<![.\w$])render\s*=\s*(?:async\s*)?function\b/.test(code(f))),[],'render wird von keiner Datei mehr umhüllt');
+assert.deepEqual(jsFiles.filter(f=>/(?<![.\w$])const\s+\w+\s*=\s*render\s*;\s*render\s*=/.test(code(f))),[],'keine Datei hält mehr eine alte render-Funktion fest');
 
 // 2. Reihenfolge der Glieder wie in der alten Kette.
 const golden=JSON.parse(fs.readFileSync(FIXTURE,'utf8'));

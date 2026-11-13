@@ -11,7 +11,7 @@ function calorieFixture(language,consumed,goal,page='food'){
     closest:()=>({querySelector:()=>dial}),remove(){removed=true}
   };
   const ctx={state:{language,goals:{kcal:goal}},page,date:'2026-10-25',dayGoals:()=>({kcal:goal}),totals:()=>({kcal:consumed}),n:String,
-    renderBase(){},save(){},quickAddMenu(){},openModal(){},markFoodDayComplete(){},nutrientTotals(){},waterCard(){},
+    renderBase(){},save(){},quickAddMenu(){},openModal(){},markFoodDayComplete(){},nutrientTotals(){},
     modal:{addEventListener(){}},document:{addEventListener(){},
       querySelectorAll:selector=>selector.includes('combinedallowance')?[line]:[],querySelector:()=>null,
       createElement:()=>({append(...values){shown=values.at(-1)}})}};

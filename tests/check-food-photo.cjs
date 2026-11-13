@@ -24,7 +24,7 @@ function server(options={}){
  }));
  return {request,calls,exports,handler};
 }
-let harness=fs.readFileSync('tests/check-native-training.cjs','utf8').split('const started=options=>')[0]
+let harness=fs.readFileSync('tests/app-harness.cjs','utf8')
  .replace('const {ctx,run,el}=test,','ctxConfig(test);const {ctx,run,el}=test,');
 const app=vm.runInNewContext('(function(require,ctxConfig){'+harness+';return app})(require,ctxConfig)',{require,console,ctxConfig(test){test.ctx.window.PULS_CLOUD={url:'https://fixture.supabase.co',publicKey:'sb_publishable_fixture_public_configuration'};}});
 function client(){

@@ -141,12 +141,11 @@
   function checkSvg(cls=''){return `<svg class="motion-check${cls?' '+cls:''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path pathLength="1" d="M5 12.5l4.5 4.5L19 7.5"/></svg>`}
 
   // Tabwechsel: neue Seite hebt sich herein; Bewegungen je Seitenbesuch neu erlauben.
-  if(typeof go==='function'){const motionGo=go;go=function(...args){
-    let before=pageKey(),result=motionGo.apply(this,args);
+  if(typeof go==='function'){globalThis.goBeforeMotion=function goBeforeMotion(){return pageKey()};globalThis.goAfterMotion=function goAfterMotion(before){
     if(pageKey()!==before){visitSeen=new Set();let content=document.getElementById('content');
       if(content&&!reduced()){content.classList.remove('motion-page-in');void content.offsetWidth;content.classList.add('motion-page-in');clearTimeout(content.motionTimer);content.motionTimer=setTimeout(()=>content.classList.remove('motion-page-in'),DUR.base+DUR.fast*2+200)}
       scan(document)}
-    return result}}
+  }}
   const viewKey=()=>[pageKey(),typeof accountSection==='undefined'?'':accountSection,typeof qaPage==='undefined'?'':qaPage,pageKey()==='workout'&&typeof trainTab!=='undefined'?trainTab:''].join('/');
   let currentView=viewKey();
   if(typeof render==='function'){globalThis.renderAfterMotion=function renderAfterMotion(){

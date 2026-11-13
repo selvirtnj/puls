@@ -3,15 +3,13 @@
   "js/app.js#1"
  ],
  "render": [
-  "js/app.js#1",
-  "js/native-state.js#1"
+  "js/app.js#1"
  ],
  "accountPage": [
   "js/experience.js#1"
  ],
  "openModal": [
-  "js/app.js#1",
-  "js/native-state.js#1"
+  "js/app.js#1"
  ],
  "workoutPage": [
   "js/flows.js#1"
@@ -23,24 +21,9 @@
   "js/enhancements.js#1"
  ],
  "home": [
-  "js/app.js#1",
-  "js/enhancements.js#1",
-  "js/experience.js#1",
-  "js/portions.js#1",
-  "js/insights.js#1",
-  "js/flows.js#1",
-  "js/flows.js#2",
-  "js/refinement.js#1",
-  "js/native-state.js#1",
-  "js/design-system.js#1"
+  "js/app.js#1"
  ],
  "go": [
-  "js/app.js#1",
-  "js/experience.js#1",
-  "js/polish.js#1",
-  "js/account-refresh.js#1",
-  "js/native-state.js#1",
-  "js/quick-account.js#1",
-  "js/motion.js#1"
+  "js/app.js#1"
  ]
 }
