@@ -10,3 +10,1635 @@
 .librarylist{max-height:45dvh;overflow-y:auto}.librarylist .searchitem small{line-height:1.5}.orderbuttons{display:flex;gap:2px;flex-shrink:0}.setcount{align-self:center;color:var(--muted);font-size:12px}.workoutclock{font:700 25px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:var(--lime);white-space:nowrap}.livexercise{padding:20px 0;border-top:1px solid var(--line)}.livexercise .cardhead{align-items:flex-start;margin-bottom:12px}.livexercise h3{line-height:1.5}.restsetting{display:flex;align-items:center;justify-content:space-between;gap:15px}.restsetting input{width:90px;padding:8px;margin:0}.liveset{display:grid;grid-template-columns:24px 74px minmax(55px,1fr) minmax(50px,1fr) 28px;align-items:center;gap:8px;margin-bottom:9px;border-radius:7px;padding:4px}.liveset input{width:100%;min-width:0;padding:9px 5px;margin:0;font-size:16px;text-align:center}.liveset input[type=checkbox]{width:23px;height:23px;accent-color:var(--lime);justify-self:center}.setlabels{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}.previousset{font-size:11px;color:var(--muted);text-align:center}.setdone{background:var(--ds-fill)}.restpanel{position:sticky;top:12px;z-index:2;background:var(--ds-fill);border:1px solid var(--ds-green);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.restpanel strong{font-size:22px;margin-left:8px;color:var(--lime)}.restpanel .textbtn{font-size:11px;padding:5px}.trainingcalendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}.trainingcalendar small{padding:8px 0;letter-spacing:0}.calday{position:relative;background:var(--ds-fill);border:1px solid var(--ds-separator);color:var(--ds-label);border-radius:8px;min-height:43px;padding:8px}.calday.selected{border-color:var(--lime);color:var(--lime)}.calday.hasworkout{background:var(--ds-fill)}.calday i{display:block;width:5px;height:5px;background:var(--lime);border-radius:50%;margin:3px auto 0}.compactfood{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--line);padding:11px 0;font-size:12px}.compactfood small{margin-top:4px;letter-spacing:0}.compactfood strong{font-size:11px;white-space:nowrap}.todayfoods .cardhead{margin-bottom:6px}.todayfoods{padding-top:18px;padding-bottom:10px}.workoutcard .cardhead{flex-wrap:wrap}@media(max-width:420px){.liveset{grid-template-columns:20px 60px minmax(48px,1fr) minmax(45px,1fr) 25px;gap:5px;padding:3px}.workoutcard{padding:16px}.workouttabs .btn{padding:10px 4px;font-size:10px}.restpanel{flex-wrap:wrap;gap:8px}.workoutclock{font-size:22px}.livexercise>.cardhead{flex-wrap:nowrap}.livexercise h3{font-size:13px}.orderbuttons .textbtn{padding:3px}.calday{min-height:38px}}
 
 .metrictiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}.metrictiles>div{background:var(--ds-fill);padding:16px;border-radius:12px;min-width:0}.metrictiles strong{display:block;font-size:clamp(20px,4vw,29px);overflow-wrap:anywhere}.metrictiles small{display:block;color:var(--ds-label);margin-top:6px}.musclerow{display:grid;grid-template-columns:110px 1fr 28px;gap:10px;align-items:center;margin:12px 0;font-size:13px}.musclerow>div{height:8px;background:var(--ds-fill);border-radius:8px;overflow:hidden}.musclerow i{display:block;height:100%;background:var(--ds-green);border-radius:8px}.historyplot{width:100%;height:120px;background:var(--ds-fill);border-radius:12px}.historylist>div{border-bottom:1px solid var(--ds-separator);padding:14px 0}.historylist small,.historylist span{display:block;margin-top:6px;color:var(--ds-label)}.exerciseinsight{padding:4px 12px 18px;border-bottom:1px solid var(--ds-separator);margin-bottom:14px}.exerciseinsight p{font-size:13px;color:var(--ds-label);line-height:1.6}.recordwin{color:var(--ds-green-text)}.summarybutton{margin-bottom:18px}.historylist{max-height:380px;overflow:auto}
+
+/* ===== ehemals finish.css ===== */
+/* PULS 8: consistent touch targets, readable density, motion with reduced-motion support. */
+:root{--line:#30392e;--radius:20px}
+html{scroll-padding-bottom:110px;scroll-behavior:smooth}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}button,input,select{touch-action:manipulation}button:active:not(:disabled){transform:scale(.97)}button:disabled{opacity:.4;cursor:default}input:focus,select:focus{outline:2px solid var(--lime);outline-offset:2px}input,select{font-size:16px;min-height:46px}input[type=checkbox]{min-height:0}.card{border-radius:var(--radius);}.cardhead{gap:12px}.cardhead>div{min-width:0}h2{line-height:1.3}h3{line-height:1.4}p{overflow-wrap:anywhere}.btn{min-height:46px;padding:13px 18px;font-size:13px;border-radius:12px}.quiet,.delete,.textbtn,.today{min-height:44px;min-width:44px}.textbtn{line-height:1.4}.badge{white-space:normal}.dashboardstack{gap:18px}.sectionhead{gap:12px}.searchitem{min-height:62px;align-items:center;gap:12px;padding:15px 4px}.searchitem>div{min-width:0;overflow-wrap:anywhere}.searchitem small{font-size:12px;line-height:1.6}.empty{padding:28px 16px}.note{font-size:12px}.full{margin-top:14px}.formgrid,.formrow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tabs{flex-wrap:wrap}.tabs button{min-width:65px}.workouttabs{position:sticky;top:0;z-index:3;background:var(--bg);padding:8px 0}.workouttabs .btn{font-size:12px;padding:11px 8px}.exerciseinsight{border:0;background:var(--ds-fill);border-radius:12px;padding:12px 14px;margin:0 0 20px}.exerciseinsight p{margin:0}.exerciseinsight .textbtn{padding:10px 0 0;text-align:left}.liveset{min-height:48px}.liveset input{min-height:44px}.liveset input[type=checkbox]{width:28px;height:28px;min-height:28px}.previousset{font-size:12px}.restpanel{top:66px;}.metrictiles{gap:10px}.metrictiles small{font-size:11px;letter-spacing:0;line-height:1.5}.metrictiles strong{font-variant-numeric:tabular-nums}.historylist small{letter-spacing:0}.entry{align-items:center;gap:8px}.entry>div{min-width:0}.entry strong{overflow-wrap:anywhere}.entry .entryenergy{white-space:nowrap;font-size:12px}.entryactions{display:flex;gap:0;flex:0!important}.entryactions button{font-size:18px}.entryactions .textbtn{color:var(--muted)}.releaseinfo{display:flex;justify-content:space-between;gap:12px;padding:14px 0;font-size:11px;color:var(--muted)}.releaseinfo a{color:var(--lime)}dialog{overscroll-behavior:contain;}dialog[open]{display:block}.modalhead{position:sticky;top:-26px;background:var(--ds-fill);z-index:5;padding:12px 0;margin-top:-12px}.modalhead h2{font-size:20px}.modalhead .quiet{flex-shrink:0}#toast{max-width:calc(100vw - 32px);width:max-content;line-height:1.5;text-align:center;bottom:calc(96px + env(safe-area-inset-bottom));z-index:100}body:has(dialog[open]){overflow:hidden}dialog[open] #toast{position:static}.summarybutton{margin-top:-4px}details>summary{min-height:44px;padding:10px 0}details[open]>summary{margin-bottom:8px}
+@media(max-width:760px){main{padding:calc(18px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-left)) calc(120px + env(safe-area-inset-bottom))}.titleline{margin:20px 0 16px}.titleline h1{font-size:32px;letter-spacing:-1.2px}.titleline .live{display:none}.datebar{background:var(--ds-fill);border:1px solid var(--line);border-radius:12px;padding:3px 6px;margin-bottom:20px;justify-content:space-between;gap:2px}.datebar input{min-width:0;width:145px;margin:0;font-size:14px}.datebar .quiet{padding:5px}.today{padding:8px;font-size:12px}.card{padding:20px}.cardhead h2{font-size:19px}.energy{gap:18px}.ring{width:144px;height:144px;flex-shrink:0}.energy .big{font-size:32px}.macros{gap:12px}.macro strong{font-size:17px}.workoutcard{padding:16px}.workoutcard>.cardhead{align-items:flex-start}.workoutcard>.cardhead>div{flex:1;min-width:140px}.workoutclock{font-size:20px}.livexercise>.cardhead{flex-wrap:wrap}.livexercise h3{font-size:15px}.orderbuttons{margin-left:auto}.orderbuttons .textbtn{padding:5px;min-width:36px}.restsetting{font-size:12px!important}.restsetting input{width:85px}.restpanel{top:66px}.liveset{grid-template-columns:20px 57px minmax(48px,1fr) minmax(45px,1fr) 30px;gap:5px}.liveset input{font-size:16px}.levelscale{overflow:auto}.entry{flex-wrap:wrap}.entry>div:first-child{flex-basis:60%}.entryactions{margin-left:auto}.entryenergy{margin-left:auto}.metricrow{grid-template-columns:repeat(3,minmax(0,1fr))}.metricrow .big{font-size:23px}.planmetrics{gap:8px}.planmetrics strong{font-size:19px}.goalbanner .cardhead{flex-wrap:wrap}.musclerow{grid-template-columns:95px 1fr 26px}dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 32px - env(safe-area-inset-top));padding:20px;border-radius:12px}.modalhead{top:-20px}aside{padding:6px 10px calc(8px + env(safe-area-inset-bottom))}nav button{min-height:52px;font-size:11px}nav .ico{font-size:21px;line-height:1.2}footer{font-size:9px;letter-spacing:.3px;flex-wrap:wrap}footer span{text-align:left}}
+@media(max-width:359px){.energy{flex-wrap:wrap;justify-content:center}.ring{width:138px;height:138px}.formgrid,.formrow{grid-template-columns:1fr}.card{padding:16px}.workoutcard{padding:12px}.metrictiles>div{padding:12px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}
+
+/* ===== ehemals personal.css ===== */
+:root{--blue:#a8b8ff;--bg:#121015;--line:#393040;}body{background:var(--bg)}.card{background:var(--panel);border-color:var(--line)}.btn{color:var(--ds-label)}.btn.secondary{color:var(--ds-accent-text);border-color:var(--ds-separator)}.bar{background:var(--ds-fill)}.setdone{background:var(--ds-fill)}.exerciseinsight{background:var(--ds-fill)}.metrictiles>div{background:var(--ds-fill)}.ring{filter:hue-rotate(165deg)}.restpanel{background:var(--ds-fill);border-color:var(--ds-accent)}.datebar{background:var(--ds-fill)}.calday.hasworkout{background:var(--ds-fill)}.calday.selected{border-color:var(--lime);color:var(--lime)}.previewbox{background:var(--ds-fill);border-color:var(--ds-separator)}.rankline .rankpill{filter:none}.foodlive{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:8px;padding:16px 10px;background:var(--ds-fill);border:1px solid var(--ds-separator);border-radius:12px;margin:12px 0;color:var(--ds-label);font-size:15px;font-variant-numeric:tabular-nums}.foodlive small{margin-top:5px;font-size:10px;letter-spacing:0;color:var(--ds-label)}.foodlive strong{font-size:22px;line-height:1.1;color:var(--lime)}#diary-live{padding:12px;background:var(--ds-fill);border-radius:12px;line-height:1.7;color:var(--ds-accent-text)}.completedmetrics{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.completedmetrics span{background:var(--ds-fill);padding:6px 10px;border-radius:8px;font-size:12px;color:var(--ds-accent-text)}.completedworkout details{border-top:1px solid var(--line);margin-top:15px}.completedworkout summary{color:var(--lime);font-size:13px}.restglobal{display:block;margin-left:auto;margin-bottom:5px}.profilemark{font-size:42px;font-weight:800;color:var(--lime);text-align:center;margin:15px}.profilemark span{font-size:15px}.puls-splash{position:fixed;inset:0;z-index:9999;background:var(--ds-surface);display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;}.puls-splash.leaving{opacity:0;visibility:hidden}.splashlogo{font:800 76px -apple-system,BlinkMacSystemFont,system-ui,sans-serif,-apple-system,sans-serif;letter-spacing:-5px;color:var(--ds-label);}.splashlogo span{color:var(--ds-accent-text);font-size:24px;display:inline-block;margin-left:6px;}.splashline{width:50px;height:3px;border-radius:3px;margin-top:22px;}nav button.active{background:var(--ds-fill);color:var(--lime)}#toast{background:var(--lime);color:var(--ds-on-accent)}@media(max-width:760px){aside{background:var(--ds-fill)}.modalhead{background:var(--ds-fill)}dialog{background:var(--ds-fill);border-color:var(--ds-separator)}}
+
+/* ===== ehemals navigation.css ===== */
+main>header,main>.titleline{display:none}main{padding-top:24px}.datebar{justify-content:center;gap:20px;max-width:480px;margin:0 auto 22px}.daylabel{border:0;color:var(--ds-label);background:none;min-width:150px;font-size:19px;font-weight:700;min-height:48px}.datebar .quiet{min-width:48px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}.centraladd .ico{display:grid;place-items:center;background:var(--lime);color:var(--ds-on-accent);border-radius:50%;width:48px;height:48px;font-size:32px;line-height:1}.centraladd{justify-content:center!important;background:none!important}.profileavatar{height:48px;width:48px;border-radius:50%;background:var(--theme-tint);color:var(--lime);display:grid;place-items:center;overflow:hidden;font-size:22px;flex-shrink:0;border:1px solid var(--line)}.profileavatar img{width:100%;height:100%;object-fit:cover}#workout-identity{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin:0 0 20px;gap:10px}.identityprofile{padding:0;display:flex;gap:8px;align-items:center;justify-self:start;background:none;border:0;color:var(--ds-label);text-align:left}.identitylevels{display:grid;gap:3px;min-width:75px}.identitylevels strong{font-size:12px}.identitylevels small{font-size:10px;letter-spacing:0}.xpfill{display:block;height:5px;border-radius:8px;background:var(--line);overflow:hidden}.xpfill i{height:100%;display:block;background:var(--lime);}.identitystreak{text-align:center}.identitystreak strong{font-size:22px}.identitystreak small{font-size:10px;letter-spacing:0;margin-top:3px}.themeselect{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px}.themechoice{background:var(--bg);border:1px solid var(--line);color:var(--ds-label);display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 6px;border-radius:12px;min-height:48px}.themechoice[aria-pressed=true]{border-color:var(--lime);}.themechoice i{width:17px;height:17px;border-radius:50%;display:block}.card,.metrictiles>div,dialog,.modalhead{background:var(--panel)}.btn.secondary{color:var(--lime);border-color:var(--line)}nav button.active,.exerciseinsight,.previewbox,.setdone,.foodlive,.completedmetrics span,.restpanel,.datebar,.calday.hasworkout{background:var(--theme-tint)}aside{background:var(--bg)}.ring{filter:hue-rotate(var(--ring-hue))}.foodlive,.restpanel,.previewbox{border-color:var(--lime)}#diary-live{background:var(--theme-tint);color:var(--ds-label)}.profilemark span,.splashlogo span{color:var(--lime)}.puls-splash{background:var(--bg)}@media(max-width:760px){main{padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:calc(115px + env(safe-area-inset-bottom))}nav:where(:not(.dsgroup)){grid-template-columns:repeat(5,minmax(0,1fr));align-items:center}nav button{font-size:10px;gap:5px;min-width:0;padding:7px 0;min-height:58px}.centraladd{padding:0!important}.centraladd .ico{width:48px;height:48px;transform:translateY(-6px);}.datebar{gap:12px;border:none;background:none}.daylabel{min-width:155px}#workout-identity{grid-template-columns:1fr auto 1fr}.identitylevels{min-width:62px}.profileavatar{width:40px;height:40px}.identityprofile{gap:6px}.identitylevels strong{font-size:11px}.identitystreak strong{font-size:21px}.restpanel{top:65px}.themeselect{gap:8px}}
+/* Workout header: profile left, date centred, streak right. */
+body[data-current-page=workout] #workout-identity{display:flex;justify-content:space-between;height:64px;margin:0;gap:0}
+body[data-current-page=workout] .identityspacer{display:none}
+body[data-current-page=workout] .identitystreak{margin-left:auto;text-align:right;min-width:64px}
+body[data-current-page=workout] .datebar{position:relative;width:160px;max-width:calc(100% - 200px);height:64px;margin:-64px auto 20px;gap:0;background:none;padding:0}
+body[data-current-page=workout] .datebar .quiet{min-width:38px;width:38px;padding:0;flex-shrink:0}
+body[data-current-page=workout] .daylabel{min-width:0;flex:1;font-size:16px;padding:4px;line-height:1.3}
+@media(max-width:760px){body[data-current-page=workout] .identitylevels{min-width:50px}body[data-current-page=workout] .identityprofile{gap:5px}body[data-current-page=workout] .datebar{max-width:calc(100% - 180px);width:160px}}
+@media(max-width:359px){body[data-current-page=workout] .identityprofile{flex-direction:column;gap:2px}body[data-current-page=workout] .profileavatar{width:30px;height:30px;font-size:16px}body[data-current-page=workout] .identitylevels small{font-size:8px}body[data-current-page=workout] .datebar{max-width:calc(100% - 130px)}body[data-current-page=workout] .identitystreak strong{font-size:18px}}
+
+/* ===== ehemals flows.css ===== */
+.nutritiondeck{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}.nutritiontrack{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}.nutritiontrack::-webkit-scrollbar{display:none}.nutritionslide{flex:0 0 100%;min-width:0;padding:22px;scroll-snap-align:start;scroll-snap-stop:always;box-sizing:border-box}.nutritionslide h2{font-size:19px}.slidedots{display:flex;justify-content:center;gap:8px;padding:8px 0 14px}.slidedots button{width:32px;height:28px;min-width:0;background:none;border:0;position:relative}.slidedots button::after{content:'';position:absolute;width:7px;height:7px;left:12px;top:10px;background:var(--line);border-radius:50%}.slidedots button.selected::after{background:var(--lime)}.energydials{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:center;margin:22px 0}.energydial{aspect-ratio:1;border:7px solid var(--lime);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:12px}.energydial strong{font-size:clamp(16px,4.8vw,30px);font-variant-numeric:tabular-nums}.energydial small{font-size:11px;letter-spacing:0}.energydials>div:nth-child(2) .energydial{border-color:var(--ds-accent)}.energydials>div:nth-child(3) .energydial{border-color:var(--ds-orange)}.energydials>div>span{font-size:12px}.slideprogress{margin-top:14px}.slideprogress>div:first-child{display:flex;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:6px}.slideprogress .bar{height:7px}.slideprogress small{font-size:10px;letter-spacing:0;margin-top:4px}.microgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}.microgrid>div{padding:10px;background:var(--bg);border-radius:10px;min-width:0}.microgrid span,.microgrid strong{display:block;font-size:12px}.microgrid small{font-size:9px;letter-spacing:0;margin-top:5px}.microgrid .bar{margin-top:6px}.watertotal{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0}.watertotal>strong{font-size:25px;color:var(--ds-accent-text)}.watercard .note{font-size:11px}.compactdiary{padding:16px 18px}.compactdiary .cardhead{margin-bottom:8px}.diaryrow{display:flex;justify-content:space-between;align-items:center;gap:14px;width:100%;background:none;border:0;border-top:1px solid var(--line);color:var(--ds-label);text-align:left;padding:11px 0;min-height:60px}.diaryrow>span:first-child{min-width:0}.diaryrow strong{display:block;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.diaryrow>span:last-child{flex-shrink:0;text-align:right;font-size:13px}.diaryrow small{font-size:11px;letter-spacing:0;margin-top:3px}.routinepreview{margin-bottom:16px}.routinepreviewrow{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}.routinepreviewrow small{letter-spacing:0;white-space:nowrap}.quickaddmenu{display:grid;grid-template-columns:1fr 1fr;gap:12px}.quickaddmenu .searchitem{border:1px solid var(--line);background:var(--theme-tint);border-radius:12px;padding:18px 13px;min-height:100px}.quickaddmenu small{font-size:11px}#session-root{position:fixed;inset:0;z-index:20;overflow-y:auto;background:var(--bg);padding-bottom:calc(40px + env(safe-area-inset-bottom));overscroll-behavior:contain}.sessionopen{overflow:hidden}.sessionhead{display:flex;position:sticky;top:0;z-index:4;justify-content:space-between;align-items:center;gap:12px;background:var(--bg);padding:calc(12px + env(safe-area-inset-top)) 16px 12px;border-bottom:1px solid var(--line)}.sessionhead>strong{font-size:24px;color:var(--lime);font-variant-numeric:tabular-nums}.sessioncontent{max-width:760px;margin:auto;padding:22px 18px}.sessioncontent>.restpanel{top:82px}.sessioncontent>.exercise{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:0}.sessioncontent>.exerciseinsight{border-radius:0 0 12px 12px;margin-bottom:22px}.addsetwide{display:block;width:100%;margin:8px 0 0!important;min-height:48px}.sessioncontent .actionrow{width:100%;flex-direction:column;align-items:stretch}.sessioncontent .exercise h3{font-size:16px}.completion{max-width:600px;min-height:100dvh;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;margin:auto;padding:calc(65px + env(safe-area-inset-top)) 24px calc(30px + env(safe-area-inset-bottom));position:relative;}.completion h1{font-size:36px;letter-spacing:-1.2px}.completion .note,.completion p{max-width:450px}.completionclose{position:absolute;top:calc(12px + env(safe-area-inset-top));right:16px}.celebration{font-size:110px;color:var(--lime);line-height:1.2;}.completiontiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin:25px 0 14px}.completiontiles>div{background:var(--panel);padding:20px 12px;border:1px solid var(--line);border-radius:12px}.completiontiles small{letter-spacing:0;margin-bottom:8px;font-size:12px}.completiontiles strong{font-size:24px}.completioncontinue{margin-top:30px;flex-shrink:0}.streakhero{font-size:80px;color:var(--ds-orange-text);font-weight:800;margin-bottom:16px}.weekdots{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;background:var(--panel);border-radius:12px;padding:20px 12px;width:100%;margin:25px 0}.weekdots small{letter-spacing:0;font-size:11px;margin-bottom:8px}.weekdots span{display:grid;place-items:center;aspect-ratio:1;border-radius:50%;background:var(--line);color:var(--muted)}.weekdots .trained{background:var(--ds-orange);color:var(--ds-on-accent)}.weekdots .todaydot{outline:2px solid var(--ds-orange);outline-offset:3px}.completionxp{height:18px;width:100%;border-radius:12px;background:var(--line);overflow:hidden;margin:25px 0 10px}.completionxp i{display:block;height:100%;background:var(--lime);border-radius:12px;transform-origin:left;}.xpaward{font-size:44px;color:var(--lime);margin-top:20px}.completion details{text-align:left;width:100%;margin-top:20px}.completion details p{font-size:13px}
+@media(max-width:760px){dialog{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0;width:100%;max-width:100%;max-height:92dvh;border-radius:12px 12px 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom));border-bottom:0;}.modalhead{top:-24px}.modalhead::before{content:'';position:absolute;width:38px;height:4px;top:2px;left:calc(50% - 19px);background:var(--muted);opacity:.6;border-radius:8px}.modalhead{padding-top:18px}.nutritionslide{padding:20px 16px}.energydials{gap:10px}.energydial{border-width:6px}.completion{min-height:100dvh}.completion h1{font-size:32px}.sessioncontent>.restpanel{top:80px}}
+@media(prefers-reduced-motion:reduce){.nutritiontrack{scroll-behavior:auto}.weekdots .todaydot{outline-offset:1px}}
+.nutritiontrack{align-items:flex-start;overflow-y:hidden;}.nutritionslide{height:auto}
+/* Compact consistent headers and cards */
+main{padding-top:12px!important}body[data-current-page=account] .datebar,body[data-current-page=account] #workout-identity{display:none!important}#workout-identity{display:flex!important;justify-content:space-between;height:60px;margin:0;gap:0}#workout-identity[hidden]{display:none!important}.identityspacer{display:none}.identitystreak{margin-left:auto;text-align:right;min-width:55px}.datebar,body[data-current-page=workout] .datebar{position:relative;width:150px;max-width:calc(100% - 185px);height:60px;margin:-60px auto 12px;gap:0;background:none;padding:0}.datebar .quiet{min-width:27px;width:27px;padding:0;flex-shrink:0}.daylabel{min-width:0!important;flex:1;font-size:14px!important;padding:2px;line-height:1.3}.identitylevels{min-width:45px}.identitylevels small{font-size:9px}.identitystreak strong{font-size:19px}.slimenergy{padding:18px}.slimenergy h2{font-size:17px;margin:0}.slimmacros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.slimmacros .slideprogress>div:first-child{display:grid;gap:3px}.slimmacros .slideprogress strong{font-size:11px}.slimenergy .slideprogress small{display:none}.nutritiontrack{height:440px!important;align-items:stretch;}.nutritionslide{height:440px!important;overflow-y:auto;box-sizing:border-box}.nutritiondeck .microgrid{gap:8px;margin-top:10px}.nutritiondeck .microgrid>div{padding:7px}.nutritiondeck .microgrid strong{font-size:11px}.nutritiondeck .note{font-size:10px;margin:10px 0}.nutritiondeck .bar{margin-top:8px}.accountidentity{display:flex;align-items:center;gap:14px;padding:6px 2px}.avatarpicker{position:relative;overflow:visible;width:54px;height:54px;cursor:pointer}.avatarpicker img{border-radius:50%}.avatarpicker input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}.avatarpicker>span{position:absolute;right:-3px;bottom:-3px;border-radius:50%;background:var(--lime);color:var(--bg);font-size:12px;padding:3px}.accountname{text-align:left;min-width:0;overflow-wrap:anywhere}.accountname strong,.accountname small{display:block}.accountcompact .card{padding:16px}.accountcompact h2{font-size:17px}.accountcompact h3{font-size:14px}.accountcompact .themeselect{margin-top:12px;gap:7px}.accountcompact .themechoice{padding:7px;min-height:38px;font-size:12px}.bodystrip{display:flex;justify-content:space-between;gap:10px;font-size:11px}.bodystrip strong{display:block;font-size:17px;margin-top:5px}.weekweight{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;padding:10px 0;border-bottom:1px solid var(--line)}.weekweight small{font-size:10px;letter-spacing:0}.compactplan dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:0}.compactplan dd{text-align:right;margin:0}.compactplan dt{color:var(--muted)}.btn:active{transform:scale(.97)}@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}@media(max-width:760px){main{padding-top:calc(6px + env(safe-area-inset-top))!important}.identitylevels small{font-size:8px}.identityprofile .profileavatar{width:34px;height:34px}.identityprofile{gap:4px}.datebar{max-width:calc(100% - 167px)}}
+.nutritiontrack,.nutritionslide{height:390px!important}.caloriedial{width:190px;height:190px;border-radius:50%;padding:10px;margin:25px auto 12px}.caloriedial>div{height:100%;border-radius:50%;background:var(--panel);display:flex;align-items:center;justify-content:center;flex-direction:column}.caloriedial strong{font-size:34px}.caloriedial small{font-size:12px;letter-spacing:0}.energycaption{text-align:center;color:var(--muted);font-size:13px}.nutritionslide:nth-child(2) .slideprogress{margin-top:30px}
+/* Same compact height for every nutrition slide. */
+.nutritiontrack,.nutritionslide{height:230px!important}.nutritionslide{padding:14px 16px!important}.nutritionslide h2{font-size:15px;margin:0 0 10px}.slidedots{padding:0 0 4px}.nutritiondeck{border-radius:12px}.caloriedial{width:128px;height:128px;box-sizing:border-box;padding:7px;margin:9px auto 6px}.caloriedial strong{font-size:25px}.caloriedial small{font-size:10px}.energycaption{margin:7px 0;font-size:11px}.nutritionslide:nth-child(2) .slideprogress{margin-top:16px}.nutritionslide .slideprogress small{display:none}.nutritionslide .slideprogress>div:first-child{font-size:12px}.nutritiondeck .compactmicros{gap:11px 16px;margin-top:15px}.nutritiondeck .compactmicros>div{padding:0;background:none}.compactmicros .microlabel{display:flex;align-items:center;justify-content:space-between;gap:4px}.compactmicros .microlabel span,.compactmicros .microlabel strong{font-size:11px;white-space:nowrap}.nutritiondeck .compactmicros .bar{height:6px;margin-top:6px}.calorieallowance{display:flex;align-items:baseline;gap:8px;margin-top:9px;flex-wrap:wrap}.calorieallowance strong{font-size:19px;color:var(--lime)}.calorieallowance span{font-size:11px;color:var(--muted)}
+.combinednutrition{display:grid;grid-template-columns:112px minmax(0,1fr);align-items:center;gap:16px;margin-top:18px}.combinednutrition .caloriedial{width:112px;height:112px;margin:0;padding:7px}.combinednutrition .caloriedial strong{font-size:24px}.combinednutrition .caloriedial small{font-size:9px}.combinedbars{min-width:0}.combinedbars .slideprogress{margin:0 0 14px!important}.combinedbars .slideprogress:last-child{margin-bottom:0!important}.combinedbars .slideprogress>div:first-child{font-size:11px;gap:5px}.combinedbars .slideprogress strong{font-size:10px;white-space:nowrap}.combinedbars .bar{height:6px;margin-top:5px}.combinedallowance{text-align:center;font-size:11px;margin:17px 0 0;color:var(--muted)}.combinedallowance strong{color:var(--lime);font-size:15px}@media(max-width:359px){.combinednutrition{grid-template-columns:95px minmax(0,1fr);gap:10px}.combinednutrition .caloriedial{width:95px;height:95px}.combinedbars .slideprogress>div:first-child{font-size:10px}}
+.versionstamp{display:flex;align-items:center;gap:8px;margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-weight:700;font-size:12px;color:var(--muted)}.versionstamp span{font-size:10px;font-weight:400}.chartperiod{margin:0;font-size:10px}.chartperiod select{padding:7px;margin-top:3px;width:auto;min-width:100px;font-size:12px}.charttoggles{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}.charttoggles button{border:1px solid var(--line);border-radius:12px;padding:8px 11px;background:var(--bg);color:var(--muted);font-size:11px}.charttoggles button[aria-pressed=true]{color:var(--series);border-color:var(--series)}.charttoggles button[aria-pressed=false]{opacity:.55}.recommendedroutine{margin-top:16px}.recommendedroutine .cardhead{margin-bottom:8px}.recommendedroutine small{letter-spacing:0;margin-top:5px}.recommendedroutine summary{font-size:12px;margin-top:12px}.calroutines{display:block;width:100%;font-size:8px;line-height:1.3;overflow-wrap:anywhere;margin-top:3px}.calday{height:auto!important;min-height:55px;padding:7px 2px!important;align-self:stretch}.workouttabs~.card,.workouttabs~section,.exerciseinsight,.metrictiles,.recapcard{margin-bottom:20px}.metrictiles{gap:14px!important}.exerciseinsight{padding:18px!important}.compactplan dd{overflow-wrap:anywhere}
+.analyticsstack{display:grid;gap:22px}.analyticsstack>.card{margin:0!important}.analyticsstack .cardhead{margin-bottom:20px}.analyticsstack .musclerow{margin-top:12px}
+/* Optional design treatments are scoped below the fixed header and navigation. */
+
+.designoptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.designoption{min-width:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);color:var(--design-ink,var(--ds-label));text-align:left;}.designoption[aria-pressed=true]{border-color:var(--lime);}.designoption:active{transform:scale(.98)}.designmini{height:86px;background:var(--sample-bg);display:flex;position:relative;gap:9px;align-items:center;padding:15px 12px;border-bottom:1px solid var(--sample-line)}.designmini::before{content:'';position:absolute;inset:9px;border:1px solid var(--sample-line);border-radius:var(--sample-radius);background:var(--sample-panel)}.designmini>i{position:relative;display:block;width:32px;height:32px;border:4px solid var(--sample-accent);border-right-color:var(--sample-line);border-radius:50%;flex-shrink:0}.designmini>span{position:relative;display:grid;gap:6px;flex:1}.designmini b{height:4px;border-radius:3px;display:block}.designmini b:nth-child(2){width:85%}.designmini b:nth-child(3){width:70%}.designmini>em{display:none}.designcaption{display:block;padding:10px}.designcaption strong{font-size:12px;display:block}.designcaption small{font-size:10px!important;line-height:1.4;letter-spacing:0;margin-top:4px}.designchooser>.cardhead{margin-bottom:8px}
+/* Complete design systems: composition, hierarchy, rhythm, lists and controls. */
+
+.designhome{display:grid;gap:24px}.designhome>.nutritiondeck{margin-bottom:0}.designactionstrip{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:10px}.designactionstrip button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:48px;padding:10px 8px;background:var(--panel);color:var(--lime);border:1px solid var(--line);border-radius:12px;font-size:11px;font-weight:600}.designactionstrip button span{font-size:20px;line-height:1}.designsectionlabel{font-size:11px;color:var(--muted);letter-spacing:1px;margin:0 4px 10px;font-weight:650}.designdiary>.nutritiondeck{margin-bottom:20px}.designchapter{min-width:0}.chapterlabel{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}.chapterlabel>span{color:var(--muted);font:13px monospace}.chapterlabel h2{font-size:24px}.designworkouts{display:flow-root}.designworkouts>.card{margin:0 0 18px!important}.designworkouts .tabs{overflow-x:auto}.designworkouts .tabs button{white-space:nowrap}.designworkouts .routinepreviewrow{min-height:42px}.designdiary>.dashboardstack{gap:20px}
+/* Apple: grouped iOS lists and an action dock, generous open section labels. */
+
+/* Cronometer: a continuous diary surface, compact separators and utility rows. */
+
+/* Liftoff: a prominent session stage, stacked exercise tiles and tactile controls. */
+
+/* Hevy: flat training lists, blue full-width starts, activity feed instead of stacked panels. */
+
+/* Aurora: floating dashboard modules and wide luminous calls to action. */
+
+/* Graphit: editorial chapter structure, numbered sections, ruled data and square geometry. */
+
+/* Distinct previews reflect each composition instead of repeating one sample. */
+.designmini-apple{height:115px;align-items:flex-start;padding-top:24px}.designmini-apple::before{inset:9px 9px 35px;border-radius:12px}.designmini-apple>em{display:block;position:absolute;left:25px;right:25px;bottom:11px;height:15px;border-radius:12px;background:var(--ds-fill)}
+.designmini-cronometer{height:115px}.designmini-cronometer::before{border-radius:4px;inset:9px}.designmini-cronometer>i{width:22px;height:22px}.designmini-cronometer>span{gap:12px}.designmini-cronometer b{height:1px;border-radius:0}
+.designmini-liftoff{height:115px;padding:24px}.designmini-liftoff::before{inset:9px 14px 19px;border-radius:12px}.designmini-liftoff>i{display:none}.designmini-liftoff>span{gap:8px}.designmini-liftoff b{height:10px;background:var(--ds-fill)!important;width:100%!important;border-radius:4px}.designmini-liftoff>em{display:block;position:absolute;bottom:12px;left:35px;right:35px;height:13px;background:var(--ds-accent);border-radius:8px;}
+.designmini-hevy{height:115px}.designmini-hevy::before{border-radius:5px}.designmini-hevy>i{width:3px;height:40px;border:0;background:var(--ds-accent);border-radius:1px}.designmini-hevy b{height:4px;background:var(--ds-surface);width:100%!important}.designmini-hevy>em{display:block;position:absolute;left:20px;right:20px;bottom:15px;background:var(--ds-accent);height:11px;border-radius:3px}
+.designmini-aurora{height:115px}.designmini-aurora::before{inset:9px 9px 47px;border-radius:12px}.designmini-aurora>i{width:24px;height:24px;margin-bottom:24px}.designmini-aurora>span{margin-bottom:24px}.designmini-aurora>em{display:block;position:absolute;left:12px;right:12px;bottom:10px;height:29px;border:1px solid var(--ds-accent);border-radius:10px;}
+.designmini-mono{height:115px}.designmini-mono::before{inset:9px;border-width:1px 0;border-radius:0;background:transparent}.designmini-mono>i{border:0;border-radius:0;width:20px;height:32px;background:none;font:25px Georgia;color:var(--ds-label-2)}.designmini-mono>i::after{content:'01'}.designmini-mono b{height:2px;border-radius:0;background:var(--ds-surface)!important}.designmini-classic{height:115px}
+
+@media(max-width:359px){.designactionstrip{gap:5px}.designactionstrip button{font-size:9px;padding:8px 4px}.designactionstrip button span{font-size:16px}}
+/* Shared chrome, independent interiors. */
+.designworkouts>.workouttabs{margin:0 0 4px!important}.designworkouts>.restglobal{display:block;width:100%;text-align:right;font-size:11px;min-height:30px;margin:0 0 12px!important;padding:3px 0}.workoutbody>.card{margin-bottom:16px}.workoutbody>.sectionhead{margin-top:8px}.workoutbody{display:flow-root}.watercompact{padding:12px 16px!important}.waterinline{display:flex;align-items:center;justify-content:space-between;gap:10px}.waterinline h3{font-size:12px;margin:0 0 4px}.waterinline strong{font-size:22px;color:var(--ds-accent-text)}.waterinline strong small{display:inline;font-size:10px;letter-spacing:0;font-weight:400}.waterglass{min-height:38px!important;font-size:12px!important;padding:8px 12px!important;margin:0!important}.waterfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}.waterfoot>.textbtn{font-size:10px;padding:3px 0}.waterfoot details{font-size:10px;max-width:65%;text-align:right}.waterfoot summary{min-height:24px;padding:3px}.watercompact>.bar{margin:8px 0 2px}.accountname{flex:1;padding:0;text-align:left}.accountname>strong{font-size:21px!important;line-height:1.3;font-weight:700}.accountidentity{padding:8px 0;gap:12px;min-height:74px}.accountidentity .avatarpicker{width:52px;height:52px;min-width:52px;overflow:visible;border-radius:50%;margin:0}.accountidentity .avatarpicker>span{box-sizing:border-box;position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;padding:0;border:2px solid var(--bg);display:grid;place-items:center;font-size:11px;line-height:1;border-radius:50%;z-index:1;pointer-events:none}.accountidentity .avatarpicker input{cursor:pointer;min-height:0!important;border:0;padding:0;margin:0;z-index:2;border-radius:50%}.accountstreak{margin-left:auto;text-align:right;flex-shrink:0;color:var(--ds-label)}.accountstreak strong{display:block;font-size:21px;line-height:1.3}.accountstreak small{font-size:10px;letter-spacing:0}.accountidentity .accountname{color:var(--lime)!important}
+/* Same header/navigation geometry and appearance in every design. */
+#workout-identity,.datebar,aside,.accountidentity{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important}#workout-identity .profileavatar,.accountidentity .profileavatar{background:var(--theme-tint)}
+/* Nutrient cards share behavior but take on their design's own composition. */
+
+/* STUDIO: ivory canvas, right-hand energy ring, airy grouped lists. */
+
+.applehome .combinedbars{order:-1}
+
+.designworkouts .workoutbody>.sectionhead{margin-top:0}
+
+/* LEDGER: denser utility journal with a small ring and clearly ruled data. */
+
+/* FORGE: an arena, large numeric energy, strong exercise tiles and orange starts. */
+
+/* ORBIT: circle above a three-column macro deck; floating dashboard modules. */
+
+/* EDITION: split editorial sheet with a slender ruled macro column. */
+
+/* Preview compositions match the new designs. */
+.designmini-apple{background:var(--ds-surface)}.designmini-apple::before{background:white;border-color:var(--ds-separator)}.designmini-apple>em{background:var(--ds-surface)}.designmini-liftoff>em{background:var(--ds-orange);}.designmini-liftoff b{background:var(--ds-fill)!important}.designmini-aurora>i{position:absolute;top:18px;left:calc(50% - 12px);margin:0}.designmini-aurora>span{margin:28px 0 0;grid-template-columns:1fr 1fr 1fr;gap:5px}.designmini-aurora b{width:100%!important}.designmini-aurora::before{inset:9px 9px 20px}.designmini-aurora>em{display:none}
+@media(max-width:359px){.accountname>strong{font-size:18px!important}.accountidentity{gap:9px}.accountstreak strong{font-size:19px}}
+#toast{color:var(--bg)}
+
+/* ===== ehemals interactions.css ===== */
+/* Gesture sheets and compact active-session dock. */
+dialog{will-change:transform;}.modalhead{touch-action:pan-x;cursor:grab}.modalhead:active{cursor:grabbing}dialog.sheetclosing{transform:translateY(70px)!important;opacity:0}.foodtabs{gap:6px;flex-wrap:wrap}.foodtabs .btn{min-width:0;padding:10px 9px;font-size:11px;flex:1}.foodtabs .foodtabactive{background:var(--lime)!important;color:var(--bg)!important;border:1px solid var(--lime)!important;}.foodtabs .btn:not(.foodtabactive){background:transparent!important;color:var(--lime)!important;border:1px solid var(--line)!important}#workout-dock{position:fixed;bottom:calc(100px + env(safe-area-inset-bottom));left:calc(230px + 20px);right:20px;max-width:750px;margin:auto;display:flex;align-items:stretch;background:var(--panel);color:var(--app-ink,var(--ds-label));border:1px solid var(--lime);border-radius:12px;z-index:9;overflow:hidden}.dockresume{display:flex;align-items:center;gap:12px;flex:1;min-width:0;padding:12px 15px;border:0;background:none;color:inherit;text-align:left}.dockresume>span:nth-child(2){flex:1;min-width:0}.dockresume strong{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dockresume small{font-size:10px;letter-spacing:0;margin-top:3px}.dockresume b{font-weight:500;font-variant-numeric:tabular-nums}.dockresume>span:last-child{font-size:23px;color:var(--lime)}.dockpulse{width:8px;height:8px;flex-shrink:0;border-radius:50%;background:var(--lime);}.dockdiscard{border:0;border-left:1px solid var(--line);background:none;color:var(--muted);padding:12px;min-width:43px}.hasworkoutdock main{padding-bottom:180px!important}.hasworkoutdock #toast{bottom:calc(175px + env(safe-area-inset-bottom))}.discardworkout{color:var(--muted);font-size:11px;padding:16px}.sessionhead{cursor:default}.compactdesignoptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px!important;margin-top:10px!important}.compactdesignoptions .designmini{height:45px!important;padding:8px!important;gap:6px}.compactdesignoptions .designmini::before{inset:5px!important;border-radius:6px!important}.compactdesignoptions .designmini>i{width:17px!important;height:17px!important;border-width:2px!important;margin:0!important}.compactdesignoptions .designmini>span{gap:3px!important;margin:0!important}.compactdesignoptions .designmini b{height:2px!important}.compactdesignoptions .designmini>em{display:none!important}.compactdesignoptions .designmini-aurora>i{position:relative;top:auto;left:auto}.compactdesignoptions .designmini-mono>i{font-size:13px}.compactdesignoptions .designcaption{padding:7px}.compactdesignoptions .designcaption strong{font-size:10px!important}.compactdesignoptions .designcaption small{display:none!important}.designchooser>.note{display:none}.designchooser>.cardhead{margin-bottom:3px}.designchooser{padding:13px!important}.designchooser>.cardhead h2{font-size:15px}.designchooser>.note:last-child{display:none}.soundsettings .cardhead{margin-bottom:8px}.soundsettings .note{font-size:10px}.soundsettings input[type=range]{padding:0;border:0;accent-color:var(--lime);min-height:28px}.soundsettings .btn{min-height:36px;padding:8px 14px}.soundsettings label{font-size:11px;margin:10px 0}.btn:active,.textbtn:active{transform:scale(.96)}
+
+@media(max-width:760px){#workout-dock{left:14px;right:14px;bottom:calc(97px + env(safe-area-inset-bottom))}.hasworkoutdock main{padding-bottom:calc(190px + env(safe-area-inset-bottom))!important}.compactdesignoptions{grid-template-columns:repeat(3,minmax(0,1fr))}dialog.sheetclosing{transform:translateY(100%)!important}}
+.discardworkout{display:block;margin:0 0 8px auto;padding:7px 0;font-size:11px}
+
+/* ===== ehemals polish.css ===== */
+/* Header geometry is intentionally identical on overview, food and workout. */
+body main #workout-identity{display:flex!important;align-items:center!important;justify-content:space-between!important;height:64px!important;min-height:64px!important;margin:0!important;gap:0!important}
+body main #workout-identity[hidden]{display:none!important}
+body main .datebar{position:relative!important;display:flex;align-items:center!important;justify-content:center!important;height:64px!important;min-height:64px!important;margin:-64px auto 16px!important;padding:0!important;gap:0!important;width:calc(100% - 184px)!important;max-width:180px!important;min-width:0!important;border:0!important;border-radius:0!important}
+body main .datebar[hidden]{display:none!important}
+body main .datebar .quiet{display:grid;place-items:center;width:24px!important;min-width:24px!important;height:44px;padding:0!important;flex:none}
+body main .daylabel{font-size:14px!important;font-weight:650;line-height:1.25!important;letter-spacing:0;min-width:0!important;min-height:44px;margin:0;padding:3px 0!important;display:flex;align-items:center;justify-content:center;text-align:center;flex:1}
+body main .identityprofile{display:flex!important;flex-direction:row!important;align-items:center!important;width:92px;gap:6px!important;min-height:44px;padding:0!important;flex:none}
+body main .identityprofile .profileavatar{width:34px!important;height:34px!important;font-size:17px!important;flex:none}
+body main .identitylevels{width:52px!important;min-width:0!important;gap:3px!important;line-height:1.15}
+body main .identitylevels strong{font-size:11px!important;font-weight:650;white-space:nowrap}
+body main .identitylevels small{font-size:8px!important;letter-spacing:0!important;white-space:nowrap}
+body main .xpfill{height:4px;width:52px}
+body main .identitystreak{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;min-width:64px;width:64px;margin-left:auto;text-align:right;line-height:1.15}
+body main .identitystreak strong{font-size:21px!important;line-height:1.2;white-space:nowrap}
+body main .identitystreak small{font-size:9px!important;letter-spacing:0;margin:0!important;line-height:1.2}
+body main .identityspacer{display:none!important}
+body main .accountidentity{min-height:64px!important;align-items:center!important;padding:4px 0!important;margin:0 0 8px;gap:12px}
+body main .accountstreak{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;min-width:64px;line-height:1.15}
+body main .accountstreak strong{font-size:21px!important;line-height:1.2}.accountstreak small{font-size:9px!important;margin:0!important;line-height:1.2}
+/* Vector icons sit in explicit boxes, labels share a baseline. */
+.pulsicon{display:block;width:24px;height:24px;overflow:visible;flex:none;pointer-events:none}.chevronback{transform:rotate(180deg)}.datebar .pulsicon{width:17px;height:17px;stroke-width:1.8}
+#nav button{position:relative;isolation:isolate;overflow:hidden}#nav .ico{display:grid;place-items:center;flex:none;width:26px;height:26px;font-size:0;line-height:1}#nav .ico>.pulsicon{width:24px;height:24px}#nav .navlabel{line-height:14px;white-space:nowrap;font-weight:550}#nav .centraladd .ico{width:48px;height:48px;display:grid;place-items:center}#nav .centraladd .pulsicon{width:27px;height:27px;stroke-width:2}#nav .centraladd{overflow:visible}
+@media(max-width:760px){
+#nav{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;align-items:center!important;gap:4px;margin:0;padding:0}
+#nav button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;height:62px!important;min-height:62px!important;padding:7px 0!important;text-align:center;font-size:10px!important;border-width:0;box-sizing:border-box}
+#nav .centraladd{gap:0!important;padding:0!important}#nav .centraladd .ico{transform:none!important;margin:0!important;align-self:center}
+#nav .navlabel{display:block;height:14px;width:100%;text-align:center;letter-spacing:.05px}
+#nav button:not(.centraladd) .ico{margin:0!important;align-self:center}
+aside{padding-top:6px!important;padding-bottom:calc(8px + env(safe-area-inset-bottom))!important}
+}
+/* Optical rhythm for mixed text, symbols, chips and controls. */
+.cardhead{align-items:center}.cardhead>div{min-width:0}.cardhead h2,.cardhead h3{margin:0}.cardhead .textbtn,.cardhead>.badge{flex-shrink:0}.badge{display:inline-flex;align-items:center;justify-content:center;line-height:1.25;vertical-align:middle}.routinepreviewrow{align-items:center;gap:12px}.routinepreviewrow>span{min-width:0;line-height:1.45}.routinepreviewrow>small{margin-top:0;line-height:1.3}.actionrow{align-items:center}.waterinline h3{line-height:1.35}.waterinline strong{line-height:1.25}.waterglass{display:inline-flex;align-items:center;justify-content:center;line-height:1.2}.compactfood>strong{white-space:nowrap;font-variant-numeric:tabular-nums}.bodystrip>span{min-width:0}.charttoggles button{display:inline-flex;align-items:center;justify-content:center;min-height:36px;line-height:1.2}.completedmetrics{align-items:center}.completedmetrics span{line-height:1.3}.foodtabs .btn{display:flex;align-items:center;justify-content:center;line-height:1.3;min-height:46px}.sessionhead .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;line-height:1.25}.weekdots>div{display:flex;flex-direction:column;align-items:center}.weekdots>div>span{width:100%;max-width:46px}.designcaption strong{line-height:1.3}.soundsettings .cardhead{align-items:center}
+/* Motion accents only on navigation, deliberate touch and entry, not each input. */
+button{position:relative}.tapwave{position:absolute;width:8px;height:8px;border-radius:50%;background:currentColor;opacity:0;pointer-events:none;z-index:0;transform:translate(-50%,-50%);}
+#nav .active .pulsicon{stroke-width:2.05}
+
+.btn:active{transform:scale(.965)}.textbtn:active{transform:scale(.96)}
+button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+
+@media(prefers-reduced-motion:reduce){.tapwave{display:none!important}}
+button:has(>.tapwave){overflow:hidden}
+body #content .cardhead{align-items:center}
+html{scrollbar-gutter:stable}
+.daystack{display:grid;justify-items:center;align-content:center;gap:2px;line-height:1.15}.daystack>span{white-space:nowrap}body #content .workouttabs{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;width:100%;overflow:visible!important}body #content .workouttabs>.btn{min-width:0!important;max-width:100%;font-size:11px!important;padding:10px 3px!important;white-space:nowrap;min-height:44px;justify-content:center;text-align:center;line-height:1.2}@media(max-width:359px){body main .daylabel{font-size:12px!important}body main .datebar .quiet{width:20px!important;min-width:20px!important}body #content .workouttabs{gap:5px!important}body #content .workouttabs>.btn{font-size:10px!important;padding:9px 2px!important}}
+
+/* ===== ehemals compact.css ===== */
+/* Swipeable diary rows keep a full-size tap target and an undo path. */
+.swipediary{position:relative;overflow:hidden;border-radius:0;isolation:isolate;background:var(--ds-surface)}.swipediary .diaryrow{position:relative;z-index:1;margin:0!important;border-top:0!important;width:100%;background:var(--panel)!important;touch-action:pan-y;will-change:transform}.swipediary .swipedelete{position:absolute;inset:0 0 0 auto;width:80px;border:0;background:var(--ds-surface);color:white;font-weight:600;font-size:12px;padding:8px;display:grid;place-items:center;z-index:0}.swiperevealed .diaryrow{transform:translateX(-80px)}.swipediary .diaryrow:active{transform:none}.swipedragging .tapwave,.swiperevealed .tapwave{display:none}#diary-undo{position:fixed;bottom:calc(98px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:101;display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--panel);border:1px solid var(--lime);color:var(--app-ink,var(--ds-label));border-radius:12px;padding:8px 14px;font-size:12px;max-width:calc(100vw - 28px);width:330px;}#diary-undo button{background:none;border:0;color:var(--lime);font-size:12px;font-weight:700;min-height:36px}.hasworkoutdock #diary-undo{bottom:calc(175px + env(safe-area-inset-bottom))}
+/* Fixed shell: changing food tabs only scrolls the body, never moves the sheet. */
+body dialog.foodsheet[open]{display:flex!important;flex-direction:column;height:min(720px,88dvh);min-height:min(720px,88dvh);max-height:88dvh;overflow:hidden;box-sizing:border-box}
+body dialog.foodsheet>.modalhead{position:relative;top:auto;flex:0 0 auto;margin:0 0 10px;padding-top:12px;padding-bottom:6px}
+body dialog.foodsheet>#mb{display:flex;flex-direction:column;min-height:0;overflow:hidden;flex:1}
+body dialog.foodsheet .foodtabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 12px}
+body dialog.foodsheet .foodtabs .btn{min-width:0;font-size:11px;padding:9px 3px;min-height:44px}
+body dialog.foodsheet #foodbody{flex:1;overflow-y:auto;overscroll-behavior-y:contain;min-height:0;padding:0 2px 12px;scrollbar-gutter:stable}
+@media(max-width:760px){body dialog.foodsheet[open]{height:88dvh!important;min-height:88dvh!important;max-height:88dvh!important;bottom:0!important;top:auto!important;margin:0!important}}
+/* A modest density reduction, while preserving each design's own proportions. */
+body{--compact-padding:16px}
+body #content .card:not(.watercompact):not(.designchooser):not(.compactdiary){padding:var(--compact-padding)!important}
+body #content :is(.dashboardstack,.designhome,.foodscreen,.analyticsstack){gap:16px}
+body #content .cardhead{margin-bottom:13px}
+body #content .sectionhead{margin-top:16px;margin-bottom:10px}
+body #content .routinepreviewrow{padding-top:9px;padding-bottom:9px}
+body #content .routinepreview{margin-bottom:14px!important}
+body #content .card .empty{padding:18px 8px;font-size:12px}
+body #content .card .full{margin-top:11px}
+body #content .card .note{margin-top:6px;margin-bottom:6px}
+
+@media(max-width:359px){body dialog.foodsheet .foodtabs .btn{font-size:12px}}
+
+/* ===== ehemals lifecycle.css ===== */
+.plannertabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.plannertabs>.btn{min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;line-height:1.3;text-align:center;font-size:12px}.plannertabs>.btn[aria-pressed=true]{background:var(--lime)!important;color:var(--bg)!important;border:1px solid var(--lime)!important}.plannertabs>.btn[aria-pressed=false]{background:transparent!important;color:var(--lime)!important;border:1px solid var(--line)!important}.autosavednote{margin:0 0 16px;padding:0 12px;color:var(--muted)}
+.cloudaccount .actionrow{gap:8px;flex-wrap:wrap}.cloudaccount #cloud-conflict{padding:10px;border:1px solid var(--line);border-radius:10px;margin-top:12px}.cloudaccount .note{font-size:11px}
+
+/* ===== ehemals workout-polish.css ===== */
+/* One aligned grid, smaller cards and separate breathing room between exercises. */
+body #session-root .sessioncontent{padding:14px 12px 24px;max-width:680px}
+body #session-root .sessioncontent>.compactexercise{padding:10px 12px!important;margin:0 0 16px!important;border-radius:12px;overflow:hidden}
+.exercisehead{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0!important;min-height:38px}
+.exercisename{display:flex;align-items:center;gap:8px;flex:1;min-width:0;text-align:left;border:0;background:none;color:inherit;padding:0;min-height:44px;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer}
+.exercisename strong{font-size:14px;line-height:1.3;overflow-wrap:anywhere;font-weight:650;color:inherit}
+.exercisenumber{display:grid;place-items:center;flex:0 0 25px;height:25px;border-radius:8px;background:var(--theme-tint);color:var(--lime);font-size:11px;font-variant-numeric:tabular-nums}
+.exerciseoptions{display:grid;place-items:center;border:0;background:none;color:var(--muted);font-size:25px;line-height:1;width:36px;min-height:44px;flex:0 0 36px;padding:0}
+.exercisehistory{font-size:10px!important;line-height:1.4;margin:0 0 6px!important;color:var(--muted)}
+body .compactexercise .liveset{display:grid;grid-template-columns:20px 62px minmax(50px,1fr) minmax(48px,1fr) 36px;align-items:center;gap:6px;padding:0!important;margin:0 0 4px!important;min-height:44px;border:0!important;border-radius:8px;font-variant-numeric:tabular-nums}
+body .compactexercise .setlabels{min-height:22px;margin-bottom:2px!important;text-align:center;font-size:9px}
+body .compactexercise .setlabels>span:first-child{text-align:center}
+body .compactexercise .liveset input:not([type=checkbox]){margin:0!important;min-height:40px!important;height:40px!important;padding:4px!important;border-radius:8px;font-size:16px;line-height:1.2;width:100%;box-sizing:border-box}
+body .compactexercise .liveset input[type=checkbox]{width:28px;height:28px;min-height:28px;margin:0!important;justify-self:center;cursor:pointer}
+.compactexercise .setnumber{text-align:center;font-size:12px;color:var(--muted)}
+.compactexercise button.previousset{background:none;border:0;color:var(--muted);font-size:11px;padding:3px 0;min-height:44px;width:100%;border-radius:6px;text-align:center;white-space:nowrap;letter-spacing:0}
+.compactexercise .previousset:focus-visible,.exercisename:focus-visible,.exerciseoptions:focus-visible{outline:2px solid var(--lime);outline-offset:1px}
+body #session-root .compactexercise .addsetwide{width:100%;margin:7px 0 0!important;min-height:40px!important;height:40px;padding:6px;font-size:12px}
+body #session-root .compactexercise .removeset{display:block;min-height:32px;font-size:10px;margin:0 auto;padding:4px 8px;color:var(--muted)}
+body #session-root .sessioncontent>.restpanel{margin-bottom:16px;padding:8px 10px;gap:8px;flex-wrap:nowrap;border-color:var(--line);background:var(--theme-tint)}
+.sessioncontent>.restpanel>div{display:flex;align-items:center}.sessioncontent>.restpanel strong{font-size:19px}.sessioncontent>.restpanel .textbtn{min-height:40px;white-space:nowrap}
+.compactroutine{padding:10px 12px!important;margin:0 0 12px!important;border:1px solid var(--line);border-radius:12px}
+.routinecounts{display:flex;align-items:center;gap:12px;margin-top:4px;font-size:12px}.routinecounts>.btn{min-height:40px;padding:5px 12px;margin:0!important}
+.routinerest{font-size:11px;color:var(--muted);margin-top:4px}.routinerest summary{min-height:32px;padding:8px 0;font-size:11px}.routinerest input{margin-top:4px;min-height:40px}
+.exercisepositions{display:grid;gap:7px;margin:12px 0}.positionchoice{display:flex;align-items:center;gap:10px;min-height:56px;width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:inherit;text-align:left}.positionchoice>span{color:var(--lime);font-size:12px}.positionchoice>strong{flex:1;font-size:13px;font-weight:500;line-height:1.4}.positionchoice>small{font-size:10px;letter-spacing:0;white-space:nowrap}.positionchoice.selected{border-color:var(--lime);background:var(--theme-tint)}
+body dialog.planningsheet[open]{display:flex!important;flex-direction:column;height:min(760px,88dvh);min-height:min(760px,88dvh);max-height:88dvh;overflow:hidden;box-sizing:border-box}
+body dialog.planningsheet>.modalhead{position:relative;top:auto;flex:0 0 auto;margin:0 0 8px;padding:12px 0 6px}
+body dialog.planningsheet>#mb{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
+body dialog.planningsheet .plannertabs{flex:0 0 auto;margin:0 0 12px}
+body dialog.planningsheet #profile-form{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding:0 2px 16px}
+@media(max-width:760px){body dialog.planningsheet[open]{height:88dvh!important;min-height:88dvh!important;max-height:88dvh!important;bottom:0!important;top:auto!important;margin:0!important}}
+@media(max-width:359px){body .compactexercise .liveset{grid-template-columns:16px 52px minmax(40px,1fr) minmax(40px,1fr) 30px;gap:4px}.exercisename strong{font-size:13px}body #session-root .sessioncontent>.compactexercise{padding:8px!important}}
+
+/* Aktionsfenster der drei Punkte (iOS-Action-Sheet-Stil) und Namen ohne Textauswahl beim langen Drücken. */
+body #session-root .exercisename, body #session-root .exercisename * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+#modal .exerciseactions { display: grid; gap: 8px; }
+#modal .actiongroup { overflow: hidden; border-radius: 12px; background: var(--ds-surface, var(--card)); }
+#modal .actionrow, #modal .actioncancel { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 0 16px; border: 0; background: transparent; color: var(--ds-label, inherit); font-size: 17px; text-align: left; }
+#modal .actionrow + .actionrow { border-top: .5px solid var(--ds-separator, rgba(128,128,128,.3)); }
+#modal .actionrow .pulsicon { width: 22px; height: 22px; flex: 0 0 22px; }
+#modal .actiondanger { color: var(--ds-red-text, #ff453a); }
+#modal .actioncancel { justify-content: center; border-radius: 12px; background: var(--ds-surface, var(--card)); font-weight: 600; color: var(--ds-accent-text, inherit); }
+
+/* ===== ehemals comfort.css ===== */
+.preferencescard{padding:4px 12px!important}.preferencescard>.textbtn{display:flex;align-items:center;justify-content:space-between;margin:0!important;font-size:13px;min-height:42px}.iconchoices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.iconchoices button{display:grid;justify-items:center;gap:7px;padding:9px;background:none;color:inherit;border:1px solid var(--line);border-radius:12px;font-size:11px}.iconchoices button[aria-pressed=true]{border-color:var(--lime);background:var(--theme-tint)}.iconchoices img{width:52px;height:52px;border-radius:12px}.preferences label{font-size:12px}
+body .swipediary{border-radius:10px;background:var(--ds-surface);border:0;margin:4px 0}.swipediary .swipedelete{width:88px;display:flex;flex-direction:column;justify-content:center;gap:4px;font-size:11px;min-height:100%;padding:8px;background:var(--ds-surface)}.swipedelete svg{width:22px;height:22px}.swiperevealed .diaryrow{transform:translateX(-88px)}body #content .swipediary .diaryrow{padding:10px 9px!important;min-height:58px;border-radius:9px;}.swiperevealed .swipedelete{z-index:2}.swipediary .diaryrow{touch-action:pan-y;user-select:none;-webkit-user-select:none}.diarydeleting{opacity:0;transform:scale(.96);}
+.dragpositions{max-height:52dvh;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:3px;position:relative}.dragpositions .positionchoice{padding:5px 7px;min-height:58px;cursor:default}.dragpositions .positionchoice select{width:52px;min-height:40px;margin:0;padding:5px;font-size:13px}.draghandle{flex:0 0 40px;width:40px;min-height:44px;border:0;background:none;color:var(--muted);font-size:26px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.orderdragging{opacity:.25;border-style:dashed}.orderghost{position:fixed!important;pointer-events:none;z-index:2147483647;opacity:.96;transform:scale(1.025);background:var(--panel);color:var(--app-ink,inherit);border-color:var(--lime)}
+.toolactions{display:flex;gap:8px;flex-wrap:wrap}.toolactions>.btn{font-size:12px;min-height:42px;padding:8px 12px;margin:0!important}.compacttoolcard{margin:14px 0;padding:14px!important}.compacttoolcard .cardhead{margin-bottom:8px!important}.compacttoolcard h3{font-size:15px}.toolgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.toolgrid>div{padding:10px;border:1px solid var(--line);border-radius:10px;min-width:0}.toolgrid strong,.toolgrid small{display:block}.toolgrid strong{font-size:18px}.toolgrid small{font-size:10px;letter-spacing:0}.toolnote{font-size:11px;color:var(--muted);line-height:1.6}.minilist{display:grid;gap:6px}.minirow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:12px}.minirow>div{min-width:0}.minirow small{font-size:10px;letter-spacing:0}.statuspill{font-size:10px;padding:4px 7px;border:1px solid var(--line);border-radius:12px;color:var(--lime)}.toolclock{font-variant-numeric:tabular-nums;font-size:28px;color:var(--lime);margin:8px 0}.checkintext{font-size:12px;line-height:1.65}.photogrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.photogrid img{width:100%;height:180px;object-fit:cover;border-radius:12px}.photogrid small{font-size:10px;letter-spacing:0}.supersetbadge{display:inline-flex;align-items:center;gap:5px;margin:3px 0 6px;font-size:10px;color:var(--lime)}.trendplot{width:100%;height:110px}.trendlegend{display:flex;gap:12px;font-size:10px;color:var(--muted)}.trendlegend span:first-child{color:var(--lime)}
+@media(prefers-reduced-motion:reduce){.orderghost{transform:none}}
+
+/* Water stays above the food diary and uses a shallow, aligned row. */
+body #content .watercompact{padding:8px 12px!important}body .waterinline>div{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0}body .waterinline h3{margin:0;font-size:12px;line-height:1.3}body .waterinline strong{font-size:17px;line-height:1.3;white-space:nowrap}body .waterglass{min-height:36px!important;padding:6px 10px!important;font-size:11px!important;flex-shrink:0}body .waterfoot{margin-top:0;gap:6px}body .waterfoot>.textbtn,body .waterfoot summary{min-height:26px;padding:3px 0;font-size:10px}body .watercompact>.bar{height:4px;margin:4px 0}.orbitfoodgrid>.waterregion,.orbitfoodgrid>.diaryregion{grid-column:1/-1}
+
+/* ===== ehemals food-upgrade.css ===== */
+.foodwarning{font-size:12px;line-height:1.5;color:var(--ds-orange-text);padding:8px 10px;border:1px solid var(--ds-orange);background:var(--ds-fill);border-radius:10px;margin:6px 0}.foodack{display:flex;flex-direction:row;align-items:flex-start;gap:9px;font-size:12px;line-height:1.5;margin:12px 0}.foodack input[type=checkbox]{width:18px;min-height:18px;flex-shrink:0;margin:2px 0}.labelpreview{display:block;max-width:100%;max-height:150px;object-fit:contain;margin:12px auto;border-radius:10px}.labelpreview[hidden]{display:none}.foodtabs{overflow-x:auto;flex-wrap:nowrap!important;scrollbar-width:none}.foodtabs button{flex-shrink:0}.foodshortcutbar,.foodselectionmeta{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.foodshortcutbar{border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:8px}.foodshortcutbar button{font-size:11px;padding:6px}.foodselectionmeta small{font-size:11px}.foodextras{margin-bottom:12px}.foodextras details{font-size:12px;margin:6px 0}.foodextras summary{cursor:pointer;padding:7px 0}#label-photo{display:block;font-size:12px;width:100%;margin-top:8px}#label-basis-amount-row[hidden]{display:none}
+.foodtabs{scrollbar-width:none}body dialog.foodsheet .foodtabs{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}body dialog.foodsheet .foodtabs .btn{font-size:10px;padding:8px 2px;line-height:1.3}
+.foodsheet textarea,#food-free-text{width:100%;box-sizing:border-box;min-height:120px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel,var(--ds-fill));color:var(--text,var(--ds-label));font:inherit;font-size:14px;line-height:1.5;resize:vertical}.foodsheet .foodextras>.foodselectionmeta{margin-bottom:8px}.foodsheet .foodtabs .btn{overflow-wrap:anywhere}
+
+/* ===== ehemals account-guide.css ===== */
+.trainingutilities{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 12px}.trainingutilities .restglobal{margin:0!important;flex:1;text-align:left;min-width:0}.trainingutilities>.textbtn{font-size:11px;line-height:1.5;min-height:40px;padding:4px 0}.trainingutilities .liftingutility{text-align:right;max-width:44%}.accountdanger .textbtn{display:flex;justify-content:space-between;text-align:left;padding:12px 0;min-height:44px;border-bottom:1px solid var(--line)}.accountdanger .textbtn:last-child{border:0}.dangertext{color:var(--ds-red-text)!important}.dangerbutton{background:var(--ds-red)!important;color:white!important}.accountcompact .accountdanger{margin-top:4px}
+
+/* ===== ehemals quick-units.css ===== */
+.quantityentry{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px;align-items:end}.quantityentry label{min-width:0}.quantityentry input,.quantityentry select{width:100%;box-sizing:border-box;min-height:48px;font-size:16px}.quantityunits>details{font-size:11px;margin:10px 0 14px}.quantityunits summary{cursor:pointer;padding:6px 0}.quantityunits .note{margin-top:7px}.quickactiongrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}.quickactiongrid>button{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;min-width:0;padding:13px 5px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);cursor:pointer;}.quickactiongrid>button:active{transform:scale(.95);background:var(--tint)}.quickactionicon{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:color-mix(in srgb,var(--lime) 14%,transparent);color:var(--lime)}.quickactionicon svg{width:24px;height:24px}.quickactiongrid strong{font-size:12px;font-weight:600;line-height:1.3;text-align:center}.quickactiongrid small{font-size:9px;line-height:1.4;text-align:center;color:var(--muted)}.quickmore{font-size:12px;border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.quickmore summary{cursor:pointer;padding:8px 0}.quickmore .toolactions{gap:12px}
+
+/* ===== ehemals refinement.css ===== */
+.accountprofileheader{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0}.accountprofileheader .accountidentity{flex:1;min-width:0;margin:0}.accountprofileheader .accountstreak{position:static!important;margin:0!important;flex-shrink:0}.accountprofileheader .accountname{min-width:0}.accountprofileheader .accountname strong{overflow-wrap:anywhere}.bodytrend{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}.bodytrend .trendplot{height:130px}.bodyactions{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}.trainingutilities:empty{display:none}.orderghost{z-index:2147483647!important;transform:scale(1.025) rotate(-.5deg);border:1px solid var(--lime)!important;pointer-events:none}.orderdragging{opacity:.23;outline:1px dashed var(--lime);outline-offset:-1px}.positionchoice{will-change:transform}.orderlanding{pointer-events:none}@media(prefers-reduced-motion:reduce){.orderghost{transform:none}}
+.orderghost[popover],.orderlanding[popover]{margin:0!important;right:auto!important;bottom:auto!important;background:var(--panel);color:var(--app-ink);overflow:visible;box-sizing:border-box}.orderghost::backdrop,.orderlanding::backdrop{background:transparent}
+
+/* ===== ehemals progress-metrics.css ===== */
+.fullprogress{display:grid;gap:16px}.metricexplorer{min-width:0}.metricexplorer>.cardhead{gap:12px;align-items:center}.metricexplorer .cardhead small{font-size:9px;letter-spacing:1.2px;color:var(--muted)}.metricexplorer h2{margin:5px 0}.metricrange{font-size:10px;margin:0;max-width:130px}.metricrange select{min-height:38px;padding:7px 10px;font-size:12px}.metricgroups{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:16px 0}.metricgroups button{white-space:nowrap;min-height:36px;padding:8px 12px;font-size:11px}.metricexplorer>label{font-size:11px}#metric-select{font-size:14px;min-height:44px}.metricheadline{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:18px 0 4px}.metricheadline>strong{font-size:32px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}.metricheadline small{font-size:13px;letter-spacing:0;display:inline}.metricheadline>span{font-size:11px;text-align:right;color:var(--muted);line-height:1.5}.metricplot{width:100%;height:auto;min-height:130px;display:block;overflow:visible}.metricgridline{stroke:var(--line);stroke-width:.7}.metricaxis{fill:var(--muted);font:10px system-ui,sans-serif}.metricfacts{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line);font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}.metricempty{display:grid;place-items:center;min-height:130px;font-size:12px;color:var(--muted);border:1px dashed var(--line);border-radius:12px;margin:10px 0}
+
+/* Fortschritt: einheitlich 16px zwischen Karten und Gruppen (Verlauf, Training, Woche/Monat, Aktivitaeten). */
+#content .designworkouts[data-train-tab=insights] :is(.workoutbody, .fullprogress, .analyticsstack) { display: grid; gap: 16px; min-width: 0; }
+#content .designworkouts[data-train-tab=insights] :is(.workoutbody, .fullprogress, .analyticsstack) > .card { margin: 0 !important; }
+
+/* ===== ehemals account-refresh.css ===== */
+/* Konto: Gestaltung seit dem Apple-Redesign (Schritt 2) als iOS-Einstellungsliste in design-system.css.
+   Hier bleiben nur Seitenbreite und das Raster der App-Icon-Auswahl; Nummern, Wortmarke, Pfeile und Linksstreifen sind entfernt. */
+.accountrefresh { max-width: 720px; margin: 0 auto; min-width: 0; }
+.accountrefresh * { box-sizing: border-box; }
+.accountdetailcontent { min-width: 0; }
+.accountdetailcontent .actionrow { flex-wrap: wrap; }
+.accountappearance > h3 { margin: 0 0 10px; }
+.accountappearance > h3 + * { margin-bottom: 22px; }
+.accountappearance .iconchoices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.accountappearance .iconchoices button { display: grid; justify-items: center; gap: 6px; min-width: 0; min-height: 44px; padding: 8px 0; cursor: pointer; }
+.accountappearance .iconchoices img { width: 100%; max-width: 56px; height: auto; }
+/* Optional native settings; absent in Safari/PWA and older shells. */
+.nativeextras form{display:grid;gap:20px}
+.nativeextras fieldset{min-width:0;margin:0;padding:0;border:0}
+.nativeextras legend{font-weight:600;margin-bottom:8px}
+.nativeextras input[type=checkbox]{width:22px;min-width:22px;height:22px;min-height:22px;accent-color:var(--accent,#007aff);margin:0}
+.nativeextras label:has(>input[type=checkbox]){display:flex;align-items:center;gap:8px;min-height:44px}
+.nativeextras .nativeextras-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;margin:10px 0}
+.nativeextras .nativeextras-days label{display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:56px;font-size:12px}
+
+/* ===== ehemals overview-refresh.css ===== */
+/* Übersicht: Gestaltung seit dem Apple-Redesign in design-system.css (.dshome).
+   Hier bleibt nur die Kopfzeile des Verlaufsdiagramms; Nummerierung und Sonderfarben sind entfernt. */
+body[data-current-page=home] #content .cardhead { flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+body[data-current-page=home] #content .chartperiod { margin: 0 0 0 auto; }
+body[data-current-page=home] #content .progressplot { margin-top: 12px; }
+
+/* ===== ehemals training-refresh.css ===== */
+/* Training: Gestaltung seit dem Apple-Redesign (Schritt 2) in design-system.css.
+   Hier bleiben nur Seitenbreite, Umbruch und das Satz-Raster des laufenden Workouts;
+   die frühere Reiterlinie, Linksstreifen und Sonderfarben sind entfernt. */
+body[data-current-page=workout] #content .designworkouts { max-width: 720px; margin: 0 auto; }
+body[data-current-page=workout] #content .workoutbody { min-width: 0; }
+body[data-current-page=workout] #content .workoutbody :is(.sectionhead,.cardhead) { flex-wrap: wrap; }
+body[data-current-page=workout] #content .routinepreview .cardhead > div { flex: 1; min-width: 0; }
+body[data-current-page=workout] #content .routinepreviewrow > span { min-width: 0; overflow-wrap: anywhere; }
+body[data-current-page=workout] #content .metricexplorer .cardhead > div { flex: 1; min-width: 160px; }
+body[data-current-page=workout] #content .metricheadline { align-items: baseline; flex-wrap: wrap; }
+body[data-current-page=workout] #content .metrictiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px !important; margin-top: 14px; }
+body[data-current-page=workout] #content .metrictiles > div { min-width: 0; padding: 12px 14px; border: 0; border-radius: 12px; background: var(--ds-surface-2); }
+body #session-root .sessioncontent { max-width: 720px; padding: 16px 16px 32px; }
+body #session-root .sessioncontent > h2 { margin: 4px 0 8px; overflow-wrap: anywhere; }
+body #session-root .compactexercise .liveset { grid-template-columns: 20px 62px minmax(48px, 1fr) minmax(48px, 1fr) 44px; gap: 6px; min-height: 48px; }
+body #session-root .compactexercise .setlabels { min-height: 24px; }
+body #session-root .completion { max-width: 600px; }
+body #session-root .completiontiles { gap: 8px; margin: 24px 0 14px; }
+body #session-root .completiontiles > div { min-width: 0; padding: 14px 16px; }
+body #session-root .completiontiles strong { display: block; overflow-wrap: anywhere; }
+@media (max-width: 359px) {
+  body #session-root .compactexercise .liveset { grid-template-columns: 16px 52px minmax(44px, 1fr) minmax(44px, 1fr) 44px; gap: 4px; }
+}
+
+/* ===== ehemals session-focus.css ===== */
+/* Laufendes Workout, alle Designs: Pausentimer bleibt beim Scrollen direkt unter der Kopfzeile,
+   Satzzeilen ohne Trennlinien mit ruhigem Abstand, kleinere sichtbare Abhak-Box bei 44 px Tippfläche.
+   --session-head-h setzt session-focus.js aus der echten Kopfzeilenhöhe (inkl. Safe Area/Dynamic Island). */
+#session-root { --session-head-h: calc(69px + env(safe-area-inset-top, 0px)); }
+body #session-root .sessioncontent > .restpanel {
+  position: sticky;
+  top: calc(var(--session-head-h) + 8px);
+  z-index: 3;
+  margin-bottom: 14px;
+}
+/* Original-Design: der getönte Hintergrund war halb durchsichtig; beim Kleben schimmerten Sätze durch. */
+
+body #session-root :is(.compactexercise,.exercise) .liveset {
+  grid-template-columns: 20px 62px minmax(48px,1fr) minmax(48px,1fr) 44px;
+  border-bottom: 0 !important;
+}
+@media (max-width: 359px) {
+  body #session-root :is(.compactexercise,.exercise) .liveset {
+    grid-template-columns: 16px 52px minmax(44px,1fr) minmax(44px,1fr) 44px;
+    gap: 4px;
+  }
+}
+body #session-root :is(.compactexercise,.exercise) .liveset:not(.setlabels) {
+  margin: 0 0 8px !important;
+  padding-block: 2px !important;
+  border-radius: 10px;
+}
+body #session-root :is(.compactexercise,.exercise) .setlabels { margin-bottom: 4px !important; }
+
+/* Satzzeile: Spaltenköpfe und Zellen (Satz, Vorher, kg, Reps, Haken) horizontal und vertikal mittig. */
+html body #session-root :is(.compactexercise,.exercise) .liveset {
+  grid-template-columns: 36px 72px minmax(0, 1fr) minmax(0, 1fr) 44px;
+  align-items: center;
+}
+html body #session-root :is(.compactexercise,.exercise) .liveset > span,
+html body #session-root :is(.compactexercise,.exercise) .liveset > .previousset {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  text-align: center !important;
+}
+html body #session-root :is(.compactexercise,.exercise) .setlabels > span { min-height: 24px; }
+html body #session-root :is(.compactexercise,.exercise) .liveset input:not([type=checkbox]) { height: 44px !important; min-height: 44px !important; }
+@media (max-width: 359px) {
+  html body #session-root :is(.compactexercise,.exercise) .liveset { grid-template-columns: 30px 60px minmax(0, 1fr) minmax(0, 1fr) 44px; }
+}
+
+body #session-root .liveset input[type=checkbox] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0 !important;
+  padding: 0;
+  justify-self: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+body #session-root .liveset input[type=checkbox]::before {
+  content: "";
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border: 2px solid color-mix(in srgb, var(--app-ink, var(--ds-separator)) 38%, transparent);
+  border-radius: 7px;
+  background: transparent center / 14px no-repeat;
+}
+body #session-root .liveset input[type=checkbox]:checked::before {
+  border-color: var(--lime);
+  background-color: var(--lime);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.4 5.6 10.4 11.5 3.8' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  transform: scale(1.04);
+}
+/* Dunkle Akzentfarben: helles Häkchen. */
+
+body #session-root .liveset input[type=checkbox]:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: -2px;
+}
+
+/* ===== ehemals food-refresh.css ===== */
+/* Essen-Seite: Gestaltung seit dem Apple-Redesign (Schritt 2) in design-system.css.
+   Hier bleibt nur die Seitenbreite; die frühere Abschnitts-Nummerierung und Sonderfarben sind entfernt. */
+body[data-current-page=food] #content > .designdiary { max-width: 720px; margin: 0 auto; }
+body[data-current-page=food] #content > .compacttoolcard { max-width: 720px; margin: 0 auto 12px !important; }
+
+/* ===== ehemals profile-refresh.css ===== */
+/* Profil & Ziele: offene Abschnitte, Schalter statt Auswahllisten, Ergebnis und Speichern unten fest.
+   Gilt in allen Designs; Farben kommen aus den Design-Variablen. */
+#mb.profilemodal #planner-form > .note:not(.keepnote),
+#mb.profilemodal #planner-form .formsection > .note:not(#pace-info) { display: none; }
+#mb.profilemodal #planner-form { display: grid; gap: 0; }
+#mb.profilemodal #planner-form .formsection {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 18px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+#mb.profilemodal #planner-form .formsection > .label {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  text-transform: none;
+  color: var(--app-ink, inherit);
+}
+#mb.profilemodal #planner-form .formsection > .label i {
+  margin-right: 10px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .03em;
+  vertical-align: middle;
+  color: var(--lime);
+}
+#mb.profilemodal #planner-form .profileoff { display: none !important; }
+#mb.profilemodal #planner-form .formgrid { gap: 12px; margin: 0; }
+/* Schaltergruppen brauchen die volle Breite: Richtung und Tempo untereinander statt nebeneinander. */
+#mb.profilemodal #planner-form .formgrid.segstack { grid-template-columns: minmax(0, 1fr) !important; }
+#mb.profilemodal #planner-form .formgrid.segstack > label { grid-column: 1 / -1; min-width: 0; }
+#mb.profilemodal #planner-form label {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+}
+#mb.profilemodal #planner-form label :is(input:not([type=checkbox]),select) {
+  min-height: 44px;
+  margin: 0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+#mb.profilemodal #planner-form label[hidden],
+#mb.profilemodal #planner-form [hidden] { display: none !important; }
+
+/* Schalter */
+#mb.profilemodal #planner-form .segsource { display: none !important; }
+#mb.profilemodal #planner-form .segmented {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+#mb.profilemodal #planner-form .segmented button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+#mb.profilemodal #planner-form .segmented button[aria-pressed=true] {
+  background: var(--lime);
+  color: var(--bg);
+}
+#mb.profilemodal #planner-form .segmented button:disabled { opacity: .38; cursor: default; }
+#mb.profilemodal #planner-form .segmented button:active:not(:disabled) { transform: scale(.97); }
+#mb.profilemodal #planner-form .segmented button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+#mb.profilemodal #planner-form .segmented.disabled { opacity: .55; }
+#mb.profilemodal #planner-form #pace-info { margin: -4px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 359px) {
+  #mb.profilemodal #planner-form .segmented button { font-size: 12px; padding-inline: 2px; }
+}
+
+/* Automatik: Schalterzeilen */
+#mb.profilemodal #planner-form label.checklabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-ink, inherit);
+}
+#mb.profilemodal #planner-form label.checklabel input { width: 22px; height: 22px; margin: 0; flex: 0 0 auto; accent-color: var(--lime); }
+
+/* Ergebnis und Speichern bleiben unten sichtbar. */
+#mb.profilemodal #planner-form .profilefooter {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 14px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+/* 05 Ergebnis */
+#mb.profilemodal #planner-form .previewbox {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+#mb.profilemodal #planner-form .previewbox > .label { display: none; }
+#mb.profilemodal #planner-form .previewbox h3 {
+  margin: 12px 0 2px !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+#mb.profilemodal #planner-form .previewbox .planmetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 10px;
+}
+#mb.profilemodal #planner-form .previewbox .planmetrics > div {
+  display: grid;
+  gap: 2px;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: transparent;
+}
+#mb.profilemodal #planner-form .previewbox .planmetrics > div + div { padding-left: 10px; border-left: 1px solid var(--line); }
+#mb.profilemodal #planner-form .previewbox .planmetrics strong { font-size: 22px; font-weight: 850; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+#mb.profilemodal #planner-form .previewbox .planmetrics small { font-size: 11px; color: var(--muted); }
+#mb.profilemodal #planner-form .previewbox p { margin: 0; font-size: 15px; font-weight: 750; font-variant-numeric: tabular-nums; }
+#mb.profilemodal #planner-form .previewbox p.note { margin-top: 4px; font-size: 12px; font-weight: 500; color: var(--muted); }
+#mb.profilemodal #planner-form .profilefooter #plan-error:empty { display: none; }
+#mb.profilemodal #planner-form .profilefooter .btn.full { min-height: 48px; margin: 0; border-radius: 8px; }
+
+/* Sicherung */
+/* Oben anliegend statt über die Fensterhöhe verteilt; kompakte Knöpfe. */
+#mb #profile-form.backuppane { display: grid; gap: 8px; align-content: start; grid-auto-rows: max-content; }
+#mb #profile-form.backuppane > h3 { margin: 4px 0 2px; font-size: 15px; }
+#mb #profile-form.backuppane .btn { min-height: 44px; height: auto; margin: 0; padding: 10px 14px; border-radius: 12px; font-size: 14px; }
+#mb #profile-form.backuppane label { display: grid; gap: 6px; margin: 6px 0 0 !important; font-size: 12px; }
+#mb #profile-form.backuppane label input[type=file] { min-height: 44px; padding: 6px; font-size: 13px; }
+
+/* Kalorienberechnung: kurze Erklärung unter der Auswahl (Version 64). */
+#mb.profilemodal #planner-form #kcal-mode-info { margin: -4px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+
+/* ===== ehemals training-tabs.css ===== */
+/* Training-Tabs, alle Designs: Workout = Starten, Routinen = Verwalten, Kalender ohne doppelte Abschlusslinie. */
+
+/* Workout-Tab: ruhige Karten, Vorschau und ein eindeutiger Startknopf unten. */
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart {
+  margin: 0 0 12px !important;
+  padding: 12px 16px 16px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: var(--panel) !important;
+}
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 !important;
+}
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead > div { flex: 1 1 auto; min-width: 0; }
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead h2 {
+  margin: 0;
+  font-size: 17px !important;
+  letter-spacing: -.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+#content .designworkouts[data-train-tab=current] .routinepreview.quickstart > .cardhead small { display: block; margin-top: 2px; color: var(--muted); }
+html body #content .designworkouts[data-train-tab=current] .quickroutineoptions {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px !important;
+  color: var(--lime) !important;
+}
+html body #content .designworkouts[data-train-tab=current] .quickroutinepreview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  margin: 8px 0 16px !important;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--muted);
+}
+html body #content .designworkouts[data-train-tab=current] .quickroutinestart {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0 !important;
+  border-radius: 12px !important;
+}
+html body #content .designworkouts[data-train-tab=current] .workoutbody > .quickempty {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 16px !important;
+  margin: 0 0 16px !important;
+  border-radius: 12px !important;
+  text-align: left;
+}
+#content .designworkouts[data-train-tab=current] .quickempty svg { flex: 0 0 20px; }
+#content .designworkouts[data-train-tab=current] .workoutbody > .sectionhead { gap: 8px; }
+#content .designworkouts[data-train-tab=current] .quicknewroutine { min-height: 44px; }
+html body #content .designworkouts[data-train-tab=current] .quickroutines {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+html body #content .designworkouts[data-train-tab=current] .quickroutines > summary {
+  min-height: 44px;
+  padding: 12px 0;
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* „Heute erledigt“: klar abgesetzter eigener Abschnitt. */
+#content .designworkouts .workoutbody > h3.donehead {
+  margin: 34px 0 6px !important;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+#content .designworkouts .workoutbody > h3.donehead + .completedworkout { margin-top: 0 !important; }
+#content .designworkouts .workoutbody > .completedworkout + .completedworkout { margin-top: 14px !important; }
+
+/* Routinen-Tab: Verwaltung bleibt ausführlich; Starten ist dort Nebenaktion. */
+#content .designworkouts[data-train-tab=routines] .routinepreview .actionrow .btn:not(.secondary) {
+  background: transparent;
+  color: var(--lime);
+  border: 1px solid var(--line);
+}
+
+/* Kalender: Abschlusslinie des Blocks entfällt, die Linie unter dem letzten Eintrag reicht. */
+#content .designworkouts[data-train-tab=calendar] .workoutbody > .card:last-child { border-bottom: 0 !important; }
+
+/* Segmentleiste (Workout / Routinen / Kalender / Fortschritt): beim Kleben unter der Safe Area (Statusleiste,
+   Dynamic Island) statt am Bildschirmrand. Die Leiste selbst hat Seitenfarbe, das Grau liegt als ::before dahinter;
+   ein fester Streifen in Seitenfarbe deckt die Statusleiste ab. Keine Schatten. */
+html body #content .designworkouts > .workouttabs {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 3;
+  margin: 0 0 4px !important;
+  padding: 10px 2px !important;
+  border-radius: 0 !important;
+  background: var(--ds-bg) !important;
+}
+html body #content .designworkouts > .workouttabs::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 8px 0;
+  border-radius: 8px;
+  background: var(--ds-fill);
+  pointer-events: none;
+}
+body[data-current-page=workout]::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--ds-bg);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* v93: Favoritenstern an jeder Routinenkarte (Workout- und Routinen-Tab). */
+html body #content .routinepreview > .cardhead { align-items: center; }
+html body #content .routinepreview > .cardhead > div { flex: 1 1 auto; min-width: 0; }
+html body #content .routinefav {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+html body #content .routinefav svg { width: 22px; height: 22px; }
+html body #content .routinefav.on { color: var(--ds-cat-training, var(--blue)); }
+html body #content .routinefav:focus-visible { outline: 2px solid var(--ds-cat-training, var(--blue)); outline-offset: 2px; }
+html body #content .routinefav:active svg { transform: scale(.88); }
+
+/* ===== ehemals rest-popup.css ===== */
+/* Pop-up „Pause vorbei“ (eigener <dialog>, alle Designs). Überschreibt die globalen Dialog-Stile der Bottom-Sheets. */
+dialog#rest-popup {
+  position: fixed;
+  inset: 0;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0;
+  padding: 24px max(20px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--app-ink, inherit);
+  transform: none !important;
+  will-change: auto;
+  overflow: hidden;
+}
+dialog#rest-popup[open] { display: grid !important; place-items: center; }
+dialog#rest-popup::backdrop {
+  background: var(--ds-surface);
+}
+#rest-popup .restpopupcard {
+  width: min(340px, 100%);
+  padding: 28px 22px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  text-align: center;
+}
+#rest-popup .restpopupring {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--theme-tint, var(--ds-fill));
+}
+#rest-popup .restpopupring svg { width: 100%; height: 100%; fill: none; stroke: var(--lime); stroke-linecap: round; stroke-linejoin: round; }
+#rest-popup .restpopupring circle { stroke-width: 4; stroke-dasharray: 176; stroke-dashoffset: 0; transform: rotate(-90deg); transform-origin: center; }
+#rest-popup .restpopupring path { stroke-width: 5; stroke-dasharray: 40; stroke-dashoffset: 0; }
+#rest-popup h2 { margin: 0; font-size: 26px; font-weight: 850; letter-spacing: -.04em; }
+#rest-popup .restpopupnext { margin: 14px 0 2px; font-size: 11px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: var(--lime); }
+#rest-popup .restpopupexercise { margin: 0; font-size: 18px; font-weight: 750; letter-spacing: -.02em; overflow-wrap: anywhere; }
+#rest-popup .restpopupdetail { margin: 4px 0 0; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#rest-popup .btn.full { min-height: 52px; margin: 22px 0 0; border-radius: 12px; font-size: 17px; font-weight: 800; }
+/* Eigene Ausblend-Keyframes, damit die Animation beim Schließen wirklich neu startet. */
+
+@media (prefers-reduced-motion: reduce) {
+
+  #rest-popup .restpopupring circle, #rest-popup .restpopupring path { stroke-dashoffset: 0; }
+}
+
+/* ===== ehemals workout-controls.css ===== */
+/* Linien-Symbole, Abschluss-Fenster, Pausen-Bedienung im Workout, Scroll-Rad. Alle Designs. */
+.hasicon { display: inline-grid !important; place-items: center; line-height: 0; }
+button .controlicon, a .controlicon, .controlicon {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+button.hasicon:active, button:active > .hasicon { transform: scale(.9); }
+
+/* Workout abschließen */
+#mb .finishform { display: grid; gap: 12px; }
+#mb .finishform > h3 { margin: 0; font-size: 22px; font-weight: 850; letter-spacing: -.03em; }
+#mb .finishform > p { margin: -6px 0 4px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#mb .finishform .finishwarn { color: var(--danger, var(--ds-red-text)); font-size: 13px; }
+#mb .finishform label { margin: 0; }
+#mb .finishform .btn { margin: 0; min-height: 48px; }
+
+/* Pausenleiste: −30 s / +30 s / Beenden gleichmäßig */
+.restpanel > div { display: flex; gap: 2px; align-items: center; }
+.restpanel > div .textbtn { min-height: 44px; min-width: 52px; padding: 6px 8px; font-variant-numeric: tabular-nums; }
+#session-root .sessionrestsetting {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: -6px 0 6px;
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+#session-root .sessionrestsetting::before { content: '◷'; color: var(--lime); }
+
+/* Standardpause: gruppierte iOS-Einstellungszeilen (Text links, Bedienelement rechts, vertikal mittig) */
+#mb .restsettingsform { display: grid; gap: 14px; }
+#mb .restsettingsform > p { margin: 0; color: var(--muted); }
+#mb .restgroup {
+  display: grid;
+  border-radius: 12px;
+  background: var(--ds-surface, var(--panel));
+  overflow: hidden;
+}
+#mb .restgroup .restrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  margin: 0;
+  padding: 4px 12px 4px 16px;
+  box-sizing: border-box;
+}
+#mb .restgroup .restrow + .restrow { border-top: .5px solid var(--ds-separator, var(--line)); }
+#mb .restgroup .restlabel { flex: 1 1 auto; min-width: 0; color: var(--ds-label, inherit); font-size: 16px; font-weight: 400; line-height: 1.25; }
+#mb .restgroup .restapply { cursor: pointer; }
+#mb .restgroup .restapply > input[type=checkbox] {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin: 0 0 0 12px;
+  accent-color: var(--ds-accent, var(--lime));
+}
+#mb .reststepper { display: inline-flex; align-items: center; flex: 0 0 auto; gap: 0; }
+#mb .reststepper .restvalue {
+  min-width: 64px;
+  text-align: center;
+  color: var(--ds-label, inherit);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+#mb .reststepper .reststep {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ds-fill);
+  color: var(--ds-accent-text, var(--lime));
+}
+#mb .reststepper .reststep svg { width: 22px; height: 22px; }
+#mb .reststepper .reststep:disabled { opacity: .38; }
+#mb .reststepper .reststep:active:not(:disabled) { transform: scale(.94); }
+#mb .reststepper .reststep:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+
+/* Datumsfeld: auf dem iPhone mittig und groß statt an den Rand gedrückt */
+input[type=date] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  text-align: center;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+input[type=date]::-webkit-date-and-time-value { text-align: center; margin: 0 auto; }
+
+/* Kopfzeile des laufenden Workouts: Verwerfen rechts gegenüber dem Routinennamen. */
+body #session-root .sessiontitlerow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+body #session-root .sessiontitlerow > h2 { flex: 1; min-width: 0; }
+body #session-root .sessiontitlerow > .discardworkout { display: inline-flex; align-items: center; flex: 0 0 auto; min-height: 44px; margin: 0; padding: 0 4px; font-size: 15px; color: var(--ds-red-text, #ff453a); }
+
+/* ===== ehemals page-slide.css ===== */
+/* Tab-Wechsel: Wischen nach links oder rechts. Alle Designs. */
+main { overflow-x: clip; }
+#content.pageslideghost {
+  position: fixed;
+  z-index: 1;
+  margin: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+/* Die alte Seite ist schon fast weg, wenn die neue sichtbar wird: kein unruhiges Überlagern. */
+
+@media (prefers-reduced-motion: reduce) {
+  #content.pageslideghost { display: none; }
+
+}
+
+/* ===== ehemals exercise-muscles.css ===== */
+/* Reuses the recap's rows and theme colours, with room for long muscle labels. */
+.exercise-muscle-chart{min-width:0;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.exercise-muscle-chart h3{font-size:15px;line-height:1.4;margin:0 0 12px;overflow-wrap:anywhere}
+.exercise-muscle-chart .musclerow{display:grid;grid-template-columns:minmax(0,112px) minmax(0,1fr) minmax(24px,auto);gap:10px;align-items:center}
+.exercise-muscle-chart .musclerow>span{overflow-wrap:anywhere;font-size:12px}
+.exercise-muscle-chart .musclerow>div{min-width:0;background:var(--panel)}
+.exercise-muscle-chart .musclerow i{background:var(--lime)}
+.exercise-muscle-chart .musclerow strong{text-align:right;font-variant-numeric:tabular-nums}
+.exercise-muscle-chart .note{color:var(--muted);font-size:11px;line-height:1.5}
+
+/* ===== ehemals food-flow.css ===== */
+/* Essen hinzufügen: ruhige Bottom-Sheet-Gestaltung für Suche, Portion, Barcode, Rezepte, eigene Werte und Foto. */
+body dialog.ffsheet {
+
+  color: var(--ff-ink);
+}
+body dialog.ffsheet [hidden] { display: none !important; }
+body dialog.ffsheet .ffhidden { display: none !important; }
+body dialog.ffsheet #foodbody { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+body dialog.ffsheet svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* Reiter */
+body dialog.ffsheet .foodtabs.fftabs {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 2px;
+  margin: 0 0 14px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--ff-field);
+  border: 1px solid var(--line);
+}
+body dialog.ffsheet .foodtabs.fftabs .btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 54px;
+  margin: 0;
+  padding: 6px 2px !important;
+  border: 0 !important;
+  border-radius: 12px;
+  background: transparent !important;
+  color: var(--ff-muted) !important;
+  font-size: 11px !important;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+body dialog.ffsheet .foodtabs.fftabs .btn.foodtabactive {
+  background: var(--theme-tint) !important;
+  color: var(--lime) !important;
+  border: 0 !important;
+}
+body dialog.ffsheet .fftabicon { display: grid; place-items: center; }
+body dialog.ffsheet .fftablabel { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Suchfeld */
+body dialog.ffsheet .ffsearchbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0 0 10px;
+}
+body dialog.ffsheet .ffsearchicon {
+  position: absolute;
+  left: 14px;
+  display: grid;
+  color: var(--ff-muted);
+  pointer-events: none;
+}
+body dialog.ffsheet .ffsearchbar input {
+  width: 100%;
+  min-height: 50px;
+  margin: 0;
+  padding: 12px 46px 12px 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--ff-radius);
+  background: var(--ff-field);
+  color: var(--ff-ink);
+  font-size: 16px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+body dialog.ffsheet .ffsearchbar input::-webkit-search-cancel-button { display: none; }
+body dialog.ffsheet :is(input, select, textarea):focus { outline: none; border-color: var(--lime); }
+body dialog.ffsheet .ffclear {
+  position: absolute;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ff-muted);
+}
+body dialog.ffsheet .ffclear svg { width: 18px; height: 18px; }
+
+/* Chips */
+body dialog.ffsheet .ffchips {
+  display: flex;
+  gap: 8px;
+  margin: 0 -2px 6px;
+  padding: 2px 2px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+body dialog.ffsheet .ffchips::-webkit-scrollbar { display: none; }
+body dialog.ffsheet .ffchip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 44px;
+  max-width: 180px;
+  padding: 6px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ff-ink);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+body dialog.ffsheet .ffchip > span { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+body dialog.ffsheet .ffchip small { margin-top: 1px; font-size: 11px; font-weight: 500; color: var(--ff-muted); font-variant-numeric: tabular-nums; }
+body dialog.ffsheet .ffchip.active { border-color: var(--lime); background: var(--theme-tint); color: var(--lime); }
+body dialog.ffsheet .ffchip.active small { color: inherit; opacity: .8; }
+body dialog.ffsheet .ffchip:active { transform: scale(.96); }
+
+/* Trefferlisten */
+body dialog.ffsheet .ffstatus { margin: 4px 0; font-size: 12px; line-height: 1.5; color: var(--ff-muted); }
+body dialog.ffsheet .ffstatus:empty { display: none; }
+body dialog.ffsheet .ffresults { display: flex; flex-direction: column; }
+body dialog.ffsheet .searchitem.ffrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  min-height: 60px;
+  margin: 0;
+  padding: 10px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ff-ink);
+  text-align: left;
+}
+body dialog.ffsheet .searchitem.ffrow:active { background: var(--ff-soft); }
+body dialog.ffsheet .ffrowtext { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+body dialog.ffsheet .ffrowtext strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
+}
+body dialog.ffsheet .ffrowtext small { overflow: hidden; font-size: 12px; line-height: 1.35; color: var(--ff-muted); white-space: nowrap; text-overflow: ellipsis; }
+body dialog.ffsheet .ffrowkcal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-ink);
+}
+body dialog.ffsheet .ffrowkcal small { font-size: 10px; font-weight: 500; color: var(--ff-muted); }
+body dialog.ffsheet .ffmorebtn {
+  min-height: 44px;
+  margin: 4px 0 0;
+  border: 0;
+  background: none;
+  color: var(--lime);
+  font-size: 13px;
+  font-weight: 650;
+}
+body dialog.ffsheet .ffmorebtn small { color: var(--ff-muted); font-weight: 500; }
+body dialog.ffsheet .ffempty { margin: 14px 2px; font-size: 13px; line-height: 1.5; color: var(--ff-muted); }
+body dialog.ffsheet .ffsectionhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 22px 0 4px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ff-muted);
+}
+body dialog.ffsheet .ffonline .ffonlinestatus { font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; text-align: right; }
+body dialog.ffsheet .ffonline[data-loading] .ffonlinestatus { font-size: 0; }
+body dialog.ffsheet .ffonline[data-loading] .ffonlinestatus::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--line);
+  border-top-color: var(--lime);
+  border-radius: 50%;
+}
+body dialog.ffsheet .ffonline[data-loading] #food-online-results { opacity: .45; }
+body dialog.ffsheet .ffonlineerror { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; font-size: 13px; color: var(--ff-muted); }
+body dialog.ffsheet .ffpager { display: flex; justify-content: center; gap: 8px; margin: 12px 0 0; }
+body dialog.ffsheet .ffprivacy { margin: 18px 2px 0; font-size: 11px; line-height: 1.55; color: var(--ff-muted); }
+body dialog.ffsheet .ffprivacy a { color: var(--lime); }
+
+/* Lebensmittel-Detail */
+body dialog.ffsheet .ffdetailhead { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; }
+body dialog.ffsheet :is(.ffback, .fffav, .fficonbtn) {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ff-soft);
+  color: var(--ff-ink);
+}
+body dialog.ffsheet .ffback { margin-left: -2px; }
+body dialog.ffsheet .ffdetailtitle { flex: 1; min-width: 0; }
+body dialog.ffsheet .ffdetailtitle h3 { margin: 0; font-size: 19px; font-weight: 800; line-height: 1.25; letter-spacing: -.03em; overflow-wrap: anywhere; }
+body dialog.ffsheet .ffdetailtitle small { display: block; margin-top: 3px; font-size: 12px; line-height: 1.4; color: var(--ff-muted); }
+body dialog.ffsheet .fffav[aria-pressed=true] { color: var(--lime); background: var(--theme-tint); }
+body dialog.ffsheet .fffav[aria-pressed=true] svg { fill: currentColor; }
+body dialog.ffsheet .ffportionchips { margin-bottom: 10px; }
+body dialog.ffsheet .ffamount {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(64px, 112px) 48px;
+  gap: 6px;
+  align-items: center;
+}
+body dialog.ffsheet .ffamount input, body dialog.ffsheet .ffamount select {
+  min-height: 56px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--ff-radius);
+  background: var(--ff-field);
+  color: var(--ff-ink);
+}
+body dialog.ffsheet .ffamount input {
+  min-width: 0;
+  padding: 8px 10px;
+  font-size: 24px;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+body dialog.ffsheet .ffamount select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 26px 8px 12px;
+  font-size: 16px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  -webkit-appearance: none;
+  appearance: none;
+  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+body dialog.ffsheet .ffstep {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 56px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--ff-radius);
+  background: transparent;
+  color: var(--ff-ink);
+}
+body dialog.ffsheet .ffstep:active { background: var(--ff-soft); transform: scale(.95); }
+body dialog.ffsheet .ffequiv { min-height: 0; margin: 6px 2px 0; font-size: 12px; text-align: center; color: var(--ff-muted); font-variant-numeric: tabular-nums; }
+body dialog.ffsheet .ffequiv:empty, body dialog.ffsheet .ffquantityerror:empty { display: none; }
+body dialog.ffsheet .ffquantityerror { margin: 6px 2px 0; font-size: 12px; text-align: center; }
+body dialog.ffsheet .ffpreview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 14px 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--theme-tint);
+}
+body dialog.ffsheet .ffkcal { display: flex; flex-direction: column; min-width: 76px; }
+body dialog.ffsheet .ffkcal strong { font-size: 32px; font-weight: 850; line-height: 1; letter-spacing: -.05em; color: var(--lime); font-variant-numeric: tabular-nums; }
+body dialog.ffsheet .ffkcal span { margin-top: 3px; font-size: 11px; color: var(--ff-muted); }
+body dialog.ffsheet .ffmacros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; flex: 1; min-width: 0; }
+body dialog.ffsheet .ffmacros span { display: flex; flex-direction: column; min-width: 0; }
+body dialog.ffsheet .ffmacros b { font-size: 14px; font-weight: 750; white-space: nowrap; font-variant-numeric: tabular-nums; }
+body dialog.ffsheet .ffmacros small { overflow: hidden; margin-top: 2px; font-size: 10px; color: var(--ff-muted); white-space: nowrap; text-overflow: ellipsis; }
+body dialog.ffsheet .ffsubmit {
+  width: 100%;
+  min-height: 52px;
+  margin: 6px 0 0;
+  border-radius: var(--ff-radius);
+  font-size: 15px;
+  font-weight: 750;
+}
+body dialog.ffsheet .ffmore { margin: 16px 0 0; border-top: 1px solid var(--line); }
+body dialog.ffsheet .ffmore > summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  font-size: 13px;
+  color: var(--ff-muted);
+  cursor: pointer;
+  list-style: none;
+}
+body dialog.ffsheet .ffmore > summary::-webkit-details-marker { display: none; }
+body dialog.ffsheet .ffmore > summary::after { content: '＋'; margin-left: auto; }
+body dialog.ffsheet .ffmore[open] > summary::after { transform: rotate(45deg); }
+body dialog.ffsheet .ffmore .textbtn { min-height: 44px; }
+body dialog.ffsheet .ffinline { display: grid; grid-template-columns: minmax(0, 1fr) 96px auto; gap: 6px; align-items: center; margin-bottom: 12px; }
+body dialog.ffsheet .ffinline > input, body dialog.ffsheet .ffinline .ffunitinput input { margin: 0; }
+body dialog.ffsheet .ffinline .btn { min-height: 46px; margin: 0; padding: 10px 12px; }
+
+/* Formulare */
+body dialog.ffsheet .fffield { display: block; margin: 0 0 14px; font-size: 12px; font-weight: 600; color: var(--ff-muted); }
+body dialog.ffsheet .fffield > input, body dialog.ffsheet .fffield > select, body dialog.ffsheet .fffield > textarea, body dialog.ffsheet .fffield > .ffunitinput { margin-top: 6px; }
+body dialog.ffsheet .fflabel { display: block; margin-bottom: 6px; }
+body dialog.ffsheet .ffform :is(input:not([type=checkbox]):not([type=hidden]), select, textarea),
+body dialog.ffsheet .ffsearch input,
+body dialog.ffsheet .ffrecipeform input {
+  border-radius: 12px;
+  background: var(--ff-field);
+  color: var(--ff-ink);
+  font-size: 16px;
+}
+body dialog.ffsheet textarea { width: 100%; box-sizing: border-box; min-height: 110px; padding: 12px; border: 1px solid var(--line); font: inherit; font-size: 16px; line-height: 1.45; resize: vertical; }
+body dialog.ffsheet .ffunitinput { position: relative; display: block; }
+body dialog.ffsheet .ffunitinput > input { width: 100%; margin: 0; padding-right: 44px; }
+body dialog.ffsheet .ffunitinput > span {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ff-muted);
+  pointer-events: none;
+}
+body dialog.ffsheet .ffnutrients { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 14px; }
+body dialog.ffsheet .ffnutrient { display: flex; flex-direction: column; gap: 6px; margin: 0; font-size: 12px; font-weight: 600; color: var(--ff-muted); }
+body dialog.ffsheet .ffnutrient input { font-weight: 700; font-variant-numeric: tabular-nums; }
+body dialog.ffsheet .ffnutrientkcal input { color: var(--lime); }
+body dialog.ffsheet .ffsegment {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--ff-radius);
+  background: var(--ff-field);
+}
+body dialog.ffsheet .ffsegment button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ff-muted);
+  font-size: 14px;
+  font-weight: 650;
+}
+body dialog.ffsheet .ffsegment button[aria-checked=true] { background: var(--theme-tint); color: var(--lime); }
+body dialog.ffsheet .foodcheck:empty { display: none; }
+body dialog.ffsheet .foodack { align-items: center; min-height: 44px; font-size: 13px; color: var(--ff-ink); }
+body dialog.ffsheet .foodack input[type=checkbox] { width: 20px; height: 20px; margin: 0; accent-color: var(--lime); }
+body dialog.ffsheet .ffreview > .foodwarning { margin: 0 0 12px; }
+
+/* Barcode */
+body dialog.ffsheet .ffcamera {
+  position: relative;
+  overflow: hidden;
+  margin: 0 0 12px;
+  border-radius: 12px;
+  background: var(--ds-surface);
+  aspect-ratio: 4 / 3;
+}
+body dialog.ffsheet .ffcamera video { display: block; width: 100%; height: 100%; object-fit: cover; }
+body dialog.ffsheet .ffscanframe {
+  position: absolute;
+  /* quadratisch und mittig: gilt für jede Ausrichtung des Codes */
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  height: 66%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid rgba(255, 255, 255, .75);
+  border-radius: 12px;
+  pointer-events: none;
+}
+body dialog.ffsheet .ffcamstop {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ds-surface);
+  color: var(--ds-label);
+  font-size: 13px;
+  font-weight: 650;
+}
+body dialog.ffsheet .fftorch {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ds-surface);
+  color: var(--ds-label);
+  font-size: 13px;
+  font-weight: 650;
+}
+body dialog.ffsheet .fftorch::before { content: '⚡ '; }
+body dialog.ffsheet .fftorch[aria-pressed=true] { background: var(--ds-orange); color: var(--ds-on-accent); }
+body dialog.ffsheet .fftorch[hidden] { display: none; }
+body dialog.ffsheet #barcode-camera:not([hidden]) + #ff-camera-start { display: none; }
+body dialog.ffsheet .ffcambtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 54px;
+  margin: 0 0 10px;
+  border-radius: var(--ff-radius);
+  font-size: 15px;
+  font-weight: 750;
+  cursor: pointer;
+}
+body dialog.ffsheet .ffcambtn input[type=file] { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; opacity: 0; pointer-events: none; }
+body dialog.ffsheet .ffbarcodeform { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+body dialog.ffsheet .ffbarcodeform input {
+  min-height: 52px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--ff-radius);
+  background: var(--ff-field);
+  color: var(--ff-ink);
+  font-size: 17px;
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+}
+body dialog.ffsheet .ffbarcodeform .btn { min-height: 52px; margin: 0; padding: 0 20px; border-radius: var(--ff-radius); font-size: 14px; }
+body dialog.ffsheet .ffbarcode .ffstatus { margin-top: 10px; }
+
+/* Foto */
+body dialog.ffsheet .ffphotoactions { display: grid; gap: 0; }
+body dialog.ffsheet .ffphotoactions .btn.secondary { background: transparent; border: 1px solid var(--line); color: var(--ff-ink); }
+body dialog.ffsheet .labelpreview { max-height: 180px; margin: 4px auto 12px; border-radius: 12px; }
+body dialog.ffsheet .ffocrstatus { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 6px; }
+body dialog.ffsheet .ffocrstatus .textbtn { min-height: 44px; flex-shrink: 0; }
+body dialog.ffsheet .ffocrstatus:has(.ffstatus:empty) { display: none; }
+
+/* Rezepte */
+body dialog.ffsheet .ffactions { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 8px; margin: 0 0 8px; }
+body dialog.ffsheet .ffactions .btn { min-height: 48px; margin: 0; border-radius: var(--ff-radius); font-size: 14px; }
+body dialog.ffsheet .ffactions .btn.secondary { background: transparent; border: 1px solid var(--line); color: var(--ff-ink); }
+body dialog.ffsheet .ffrecipe { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); }
+body dialog.ffsheet .ffrecipe .searchitem.ffrow { flex: 1; min-width: 0; border-bottom: 0; }
+body dialog.ffsheet .ffemptystate { margin: 24px 4px; text-align: center; }
+body dialog.ffsheet .ffemptystate strong { font-size: 16px; }
+body dialog.ffsheet .ffemptystate p { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--ff-muted); }
+body dialog.ffsheet .ffrecipeform .ffsectionhead:first-of-type { margin-top: 8px; }
+body dialog.ffsheet .ffingredient {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px 44px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+body dialog.ffsheet .ffingredientname { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+body dialog.ffsheet .ffingredientname strong { font-size: 14px; font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
+body dialog.ffsheet .ffingredientname small { font-size: 11px; color: var(--ff-muted); }
+body dialog.ffsheet .ffingredientamount input { min-height: 46px; padding: 8px 34px 8px 10px; font-weight: 700; text-align: right; }
+body dialog.ffsheet .ffingredientamount > span { right: 10px; }
+body dialog.ffsheet .fficonbtn { background: transparent; color: var(--ff-muted); }
+body dialog.ffsheet .ffadd { min-height: 48px; margin: 10px 0 0; border-radius: var(--ff-radius); background: transparent; border: 1px dashed var(--line); color: var(--lime); }
+body dialog.ffsheet .ffsummary { display: grid; gap: 8px; margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; background: var(--theme-tint); }
+body dialog.ffsheet .ffsumrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; }
+body dialog.ffsheet .ffsumrow span { font-size: 12px; color: var(--ff-muted); }
+body dialog.ffsheet .ffsumrow strong { font-size: 16px; font-weight: 800; color: var(--lime); font-variant-numeric: tabular-nums; }
+body dialog.ffsheet .ffsumrow small { grid-column: 1 / -1; font-size: 11px; color: var(--ff-muted); font-variant-numeric: tabular-nums; }
+body dialog.ffsheet .ffsecondary { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 18px; margin: 10px 0 0; }
+body dialog.ffsheet .ffsecondary .textbtn { min-height: 44px; }
+body dialog.ffsheet .ffdanger { color: var(--ds-red-text); }
+
+@media (max-width: 359px) {
+  body dialog.ffsheet .foodtabs.fftabs .btn { font-size: 10px !important; }
+  body dialog.ffsheet .ffamount { grid-template-columns: 44px minmax(0, 1fr) minmax(58px, 92px) 44px; }
+  body dialog.ffsheet .ffstep { width: 44px; }
+  body dialog.ffsheet .ffkcal strong { font-size: 27px; }
+}
+
+/* Etikett-Reihenfolge: Energie über volle Breite, „davon“-Werte rechts neben ihrem Hauptwert. */
+body dialog.ffsheet .fflabelgrid .ffnutrientwide { grid-column: 1 / -1; }
+body dialog.ffsheet .fflabelgrid .ffnutrientsub > span:first-child { color: var(--ff-muted); font-weight: 500; }
+body dialog.ffsheet .fflabelgrid .ffnutrientopt input::placeholder { color: var(--ds-label-3, var(--ff-muted)); font-weight: 400; }
+
+/* ===== ehemals training-polish.css ===== */
+/* Training-Feinschliff (Original-Design). */
+
+/* Standardpause: sichtbar als Pille, ohne eingrenzende Linien. */
+body[data-current-page=workout] #content .trainingutilities {
+  justify-content: flex-start !important;
+  margin: 14px 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+body[data-current-page=workout] #content .trainingutilities .restglobal {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: auto !important;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 14px !important;
+  border-radius: 8px;
+  background: var(--theme-tint, var(--ds-fill));
+  color: var(--app-ink, inherit) !important;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kein Strich unter „Leeres Workout starten“, nur Abstand. */
+#content .designworkouts .workoutbody > h3.donehead { border-top: 0 !important; padding-top: 0; margin-top: 36px !important; }
+#content .designworkouts[data-train-tab=current] .workoutbody > .card.empty { border-bottom: 0 !important; }
+
+/* Keine Linie unter der letzten Routine – Trennlinien nur zwischen Routinen. */
+#content .designworkouts .workoutbody > section.routinepreview:not(:has(~ section.routinepreview)) { border-bottom: 0 !important; }
+
+/* Eigene Übung in der Suche: dezent abgesetzt. */
+#mb .searchitem.ownexercise { border-style: dashed; }
+#mb .searchitem.ownexercise small { color: var(--lime); }
+
+/* Laufendes Workout: grünes „Läuft“ mit pulsierendem Punkt. */
+.badge.runningbadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid var(--ds-green) !important;
+  border-radius: 8px;
+  background: var(--ds-fill) !important;
+  color: var(--ds-green-text) !important;
+  font-weight: 800;
+}
+.badge.runningbadge > i {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ds-green);
+}
+.badge.runningbadge > i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ds-green);
+}
+
+/* Übungssuche: feste Sheet-Höhe, die Trefferliste scrollt innen (kein Schrumpfen bei kurzen Listen). */
+html body dialog#modal.exercisesheet[open] {
+  display: flex !important;
+  flex-direction: column;
+  height: min(90dvh, 860px) !important;
+  min-height: min(90dvh, 860px) !important;
+  max-height: min(90dvh, 860px) !important;
+  overflow: hidden !important;
+  box-sizing: border-box;
+}
+@media (max-width: 760px) {
+  html body dialog#modal.exercisesheet[open] { height: 90dvh !important; min-height: 90dvh !important; max-height: 90dvh !important; }
+}
+html body dialog#modal.exercisesheet > .modalhead { position: relative; top: auto; flex: 0 0 auto; }
+html body dialog#modal.exercisesheet > #mb { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+html body dialog#modal.exercisesheet > #mb > * { flex: 0 0 auto; }
+html body dialog#modal.exercisesheet > #mb > #library-results {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+html body dialog#modal.exercisesheet > #mb > p.note { display: none; }
+
+/* ===== ehemals app-polish.css ===== */
+/* App-weiter Feinschliff (Original-Design). */
+
+/* Nummerierung 01/02/03 nur noch im Konto. */
+body[data-current-page=food] #content :where(.nutritionslide h2,.compactdiary h3,.dashboardstack > .card > h3,details.card > summary,.compacttoolcard h3)::before,
+body[data-current-page=home] #content :where(.nutritionslide h2,.todayfoods h3,.dashboardstack > .card > .cardhead h2)::before { content: none !important; display: none !important; }
+#mb.profilemodal #planner-form .formsection > .label i { display: none; }
+
+/* Design-Auswahl ist ausgeblendet; nur das Original bleibt. */
+.designchooser, .compactdesignoptions { display: none !important; }
+
+/* Fenster: gleiten federnd von unten herein und ruhig wieder hinaus. */
+
+dialog#modal.sheetclosing {
+  transform: translateY(100%) !important;
+  opacity: .4;
+}
+
+/* Kacheln im Plus-Menü erscheinen nacheinander. */
+
+/* Plus dreht sich zum ×, solange das Menü offen ist. */
+
+body.quickaddopen #nav .centraladd .ico svg { transform: rotate(135deg); }
+
+/* Essen-Seite: Kalorien als breiter Balken, Makros als drei Spalten – anders als der Ring der Übersicht. */
+body[data-current-page=food] #content .nutritionslide:first-child .combinednutrition { display: grid; grid-template-columns: 1fr; gap: 16px; }
+body[data-current-page=food] #content .nutritionslide:first-child .caloriedial {
+  width: auto !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  border-radius: 0;
+  background: none !important;
+}
+body[data-current-page=food] #content .nutritionslide:first-child .caloriedial::before { display: none !important; }
+body[data-current-page=food] #content .nutritionslide:first-child .caloriedial > div {
+  position: static !important;
+  display: flex;
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+  align-items: baseline !important;
+  gap: 8px;
+  inset: auto;
+  background: none !important;
+  text-align: left;
+}
+body[data-current-page=food] #content .nutritionslide:first-child .caloriedial strong { font-size: 38px; line-height: 1; letter-spacing: -.05em; }
+body[data-current-page=food] #content .nutritionslide:first-child .caloriedial small { font-size: 13px; color: var(--muted); }
+body[data-current-page=food] #content .nutritionslide:first-child .caloriedial::after {
+  content: '';
+  display: block;
+  height: 10px;
+  border-radius: 8px;
+}
+body[data-current-page=food] #content .nutritionslide:first-child .combinedbars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+body[data-current-page=food] #content .nutritionslide:first-child .slideprogress {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+body[data-current-page=food] #content .nutritionslide:first-child .slideprogress > div:first-child { display: grid; gap: 2px; }
+body[data-current-page=food] #content .nutritionslide:first-child .slideprogress span { font-size: 11px; color: var(--muted); }
+body[data-current-page=food] #content .nutritionslide:first-child .slideprogress strong { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+body[data-current-page=food] #content .nutritionslide:first-child .slideprogress > small { display: none; }
+/* Alle drei Makro-Boxen gleich hoch: keine Sonderabstände aus älteren Regeln für die letzte Box. */
+body[data-current-page=food] #content .nutritionslide:first-child .combinedbars { align-items: stretch; }
+body[data-current-page=food] #content .nutritionslide:first-child .slideprogress { align-content: start; margin: 0 !important; }
+body[data-current-page=food] #content .nutritionslide:first-child .slideprogress > div:first-child > * { margin: 0 !important; padding: 0 !important; border: 0 !important; line-height: 1.4 !important; }
+
+/* Essen „Heute gegessen“: Karte wächst mit dem Inhalt statt innen zu scrollen; übrige kcal rechts in der Zeile. */
+body[data-current-page=food] #content .nutritiondeck .nutritiontrack,
+body[data-current-page=food] #content .nutritiondeck .nutritionslide { height: auto !important; max-height: none !important; overflow-y: visible !important; }
+body[data-current-page=food] #content .nutritiondeck .nutritiontrack { align-items: start; }
+body[data-current-page=food] #content .nutritionslide:first-child .caloriedial > div .kcalleft { margin-left: auto; font-size: 17px !important; letter-spacing: -.02em !important; color: var(--lime); }
+/* Übersicht: nur die übrige kcal-Zahl unter dem Ring. */
+#content .nutritionslide .dialcolumn { display: grid; justify-items: center; align-content: start; gap: 10px; }
+#content .nutritionslide .dialcolumn > .kcalleft { font-size: 15px; font-weight: 800; color: var(--lime); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#content .nutritionslide .kcalleft.over { color: var(--danger, var(--ds-red-text)) !important; }
+
+/* „Erfassung abschließen“: Knopf in voller Breite unter der Überschrift – er ändert beim Umschalten weder Größe noch Lage. */
+body[data-current-page=food] #content .compacttoolcard > .cardhead { display: grid !important; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+body[data-current-page=food] #content .compacttoolcard > .cardhead > .btn { box-sizing: border-box; width: 100%; height: 48px; min-height: 48px; margin: 0; border: 0 !important; }
+
+/* Fenster-X: kein Kasten beim Antippen; Tastatur-Fokus bleibt sichtbar. */
+#modal .modalhead button.quiet { background: transparent !important; border: 0 !important; -webkit-tap-highlight-color: transparent; }
+#modal .modalhead button.quiet:focus:not(:focus-visible) { outline: none !important; }
+
+/* iPad/breite Ansicht: kein „P · Mein Fortschritt · Ein Tag nach dem anderen“ unten in der Seitenleiste. */
+aside .sidefoot, aside > small { display: none !important; }
+
+/* Essen-Seite: kein Erklärtext unter den Vorschlägen, keine Linie unter Barcode/Rezepte – nur Abstand. */
+body[data-current-page=food] #content .card:has(> button[onclick^="useFoodSuggestion"]) > .note { display: none; }
+/* Nur eine Linie unter den Vorschlägen: die Kartenlinie, nicht zusätzlich die des letzten Eintrags. */
+body[data-current-page=food] #content .card:has(> button[onclick^="useFoodSuggestion"]) > .searchitem:last-of-type { border-bottom: 0 !important; }
+body[data-current-page=food] #content > .designdiary > .dashboardstack > section.card:has(> button[onclick^="useFoodSuggestion"]):not(.x):not(.y) { padding-bottom: 8px !important; }
+body[data-current-page=food] #content .card:has(> button[onclick^="useFoodSuggestion"]) + .note { margin-top: 12px; }
+body[data-current-page=food] #content .foodtools.compactfoodtools { border-bottom: 0 !important; padding-bottom: 0 !important; margin-bottom: 18px !important; }

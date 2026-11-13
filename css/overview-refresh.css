@@ -1,5 +1,0 @@
-/* Übersicht: Gestaltung seit dem Apple-Redesign in design-system.css (.dshome).
-   Hier bleibt nur die Kopfzeile des Verlaufsdiagramms; Nummerierung und Sonderfarben sind entfernt. */
-body[data-current-page=home] #content .cardhead { flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-body[data-current-page=home] #content .chartperiod { margin: 0 0 0 auto; }
-body[data-current-page=home] #content .progressplot { margin-top: 12px; }

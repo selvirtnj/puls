@@ -1,4 +1,0 @@
-/* Essen-Seite: Gestaltung seit dem Apple-Redesign (Schritt 2) in design-system.css.
-   Hier bleibt nur die Seitenbreite; die frühere Abschnitts-Nummerierung und Sonderfarben sind entfernt. */
-body[data-current-page=food] #content > .designdiary { max-width: 720px; margin: 0 auto; }
-body[data-current-page=food] #content > .compacttoolcard { max-width: 720px; margin: 0 auto 12px !important; }
