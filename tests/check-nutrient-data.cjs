@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const zlib = require('node:zlib');
+const crypto = require('node:crypto');
 const {numeric, formatNumber, shardFor, readXlsx, csvRows} = require('../scripts/lib/nutrient-readers.cjs');
 const {definitions, sidecarKeys, LEGACY_KEYS, roundSr, formulaDependencies, blsValue, ciqualValues} = require('../scripts/lib/nutrient-mapping.cjs');
 const {BASE_DIGEST, EXTENSION_DIGEST, SOURCES, sha256, baseFiles, extensionBaseFiles, verifyRaw, compareLegacy} = require('../scripts/import-nutrients.cjs');
@@ -45,6 +46,7 @@ const base = json('catalog/manifest.json').files.flatMap(json);
 const byKey = new Map(base.map(row => [row[7] + ':' + row[0],row])), seen = new Map();
 const coverage = new Map(SOURCES.map(source => [source.name,Object.fromEntries(keys.map(k => [k,0]))]));
 const warnings = [];
+const unchangedCells = crypto.createHash('sha256');
 let precisionExceptions = 0;
 for (const [index,descriptor] of meta.shards.entries()) {
   assert.equal(descriptor.file,'catalog/nutrients-v2-' + String(index).padStart(2,'0') + '.json');
@@ -62,6 +64,9 @@ for (const [index,descriptor] of meta.shards.entries()) {
     let hash = 2166136261n;for (const byte of Buffer.from(catalogKey)) hash = ((hash ^ BigInt(byte)) * 16777619n) & 0xffffffffn;
     assert.equal(Number(hash % 64n),index);
     assert.equal(typeof text,'string');const fields = text.split(';');assert.equal(fields.length,keys.length);
+    const previousFields=[...fields];
+    if(catalogKey.startsWith('CNF 2026:'))previousFields[keys.indexOf('niacin_ne')]='';
+    unchangedCells.update(JSON.stringify([catalogKey,previousFields.join(';')])+'\n');
     const row = byKey.get(catalogKey), values = {};
     assert.notEqual(row[9],'ml','Never use g-sidecars for ml foods');
     for (const [i,field] of fields.entries()) {
@@ -83,6 +88,9 @@ for (const [index,descriptor] of meta.shards.entries()) {
 }
 assert.equal(precisionExceptions,838,'Exact base macros: six BLS, 830 CNF, two CoFID values');
 assert.equal(seen.size,28827);
+assert.equal(unchangedCells.digest('hex'),'4d36cec5a483b80745fa901b6fa4743634a5db30ead38d7c2d920410c385df12','Only the CNF niacin_ne column may differ from the reviewed v2 rows');
+assert.equal(meta.sources[4].coverage.niacin_ne,2389);
+assert.equal(meta.sources[4].diagnostics.definitionChecks,65);
 assert.equal(meta.sources[0].diagnostics.previousSuppressedFormulaZeros,2549);
 assert.equal(meta.sources[0].diagnostics.suppressedFormulaZeros,2331);
 assert.equal(meta.sources[0].diagnostics.suppressedBeforeByOrigin.Rezeptberechnung,208);
@@ -125,7 +133,9 @@ for (const sample of expected.samples) for (const [key,value] of Object.entries(
 // Direct source samples read separately from CNF Nutrient_Amount, CoFID sheets
 // 1.3/1.6/1.12 and FNDDS foodNutrients at development time; not generated at test time.
 for(const [catalogKey,values]of [
-  ['CNF 2026:CNF_2',{sugars:2.661,vita_rae:193.76,vite:2.0266,folic_acid:5.562,folate_dfe:30.449,linoleic:2.01,ala:0.4522,arachidonic:0.047}],
+  ['CNF 2026:CNF_2',{niacin_ne:2.5505,sugars:2.661,vita_rae:193.76,vite:2.0266,folic_acid:5.562,folate_dfe:30.449,linoleic:2.01,ala:0.4522,arachidonic:0.047}],
+  ['CNF 2026:CNF_130',{niacin_ne:3.3777}],
+  ['CNF 2026:CNF_693',{niacin_ne:6.0483}],
   ['CoFID 2021:COFID_13-145',{sugars:0.8,satfat:null,mufat:null,pufat:null,omega3:0.07,omega6:0.52,beta_carotene:0,vite:null,linoleic:0.57,ala:0.07,arachidonic:0,epa:0,dha:0}],
   ['USDA FNDDS 2021-2023:FNDDS_11111000',{sugars:4.81,vite:0.05,vitd:1.1,folic_acid:0,folate_dfe:0,epa:0.001,dha:0,linoleic:null,ala:null,arachidonic:null}]
 ])for(const [key,value]of Object.entries(values))assert.equal(seen.get(catalogKey)[key],value,catalogKey+'/'+key);
@@ -133,7 +143,16 @@ console.log('PASS: 64 v2 shards, 28,827 rows, old v1 row strings identical, 59 L
 
 for (const missing of [undefined,null,'',' ','-','<LOD','<LOQ','<LOD or <LOQ','TR','Tr','traces','< 0,2','N','(0.11)',-1,'-0.2',Infinity,NaN]) assert.equal(numeric(missing),null);
 const cnfDictionary = new Map(Object.values(CNF).map(([id,Nutrient_Unit,Nutrient_Name_EN,Tagname])=>[String(id),{Nutrient_Unit,Nutrient_Name_EN,Tagname}]));
-auditCnf(cnfDictionary);cnfDictionary.get('328').Nutrient_Unit='International Unit';assert.throws(()=>auditCnf(cnfDictionary),/definition\/unit/);
+auditCnf(cnfDictionary);
+assert.deepEqual(CNF.niacin_ne,[409,'Niacin Equivalents','Total niacin equivalent','NIAEQ']);
+for(const unit of ['Milligram','NE','Gram']){
+  cnfDictionary.get('409').Nutrient_Unit=unit;
+  assert.throws(()=>auditCnf(cnfDictionary),/definition\/unit/,'Code 409 requires its exact raw unit label');
+}
+cnfDictionary.get('409').Nutrient_Unit='Niacin Equivalents';
+cnfDictionary.get('406').Nutrient_Unit='Niacin Equivalents';assert.throws(()=>auditCnf(cnfDictionary),/definition\/unit/,'No other code accepts the special unit');
+cnfDictionary.get('406').Nutrient_Unit='Milligram';
+cnfDictionary.get('328').Nutrient_Unit='International Unit';assert.throws(()=>auditCnf(cnfDictionary),/definition\/unit/);
 const [id,number,unitName,name]=FNDDS.vitd;
 auditFndds({id,number,unitName,name},FNDDS.vitd);
 for(const patch of [{number:'324'},{unitName:'IU'},{name:'Vitamin D IU'},{id:1110}])assert.throws(()=>auditFndds({id,number,unitName,name,...patch},FNDDS.vitd),/definition\/number\/unit/);

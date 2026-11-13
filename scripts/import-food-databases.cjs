@@ -1,4 +1,4 @@
-/* Rebuild and verify the CNF/CoFID/FNDDS extension, accepting only the seven reviewed corrections.
+/* Rebuild and verify the CNF/CoFID/FNDDS extension, accepting changes only to CNF portions.
  * Usage: node scripts/import-food-databases.cjs [raw-data-directory]
  * Standard-library only; deterministic, safe to rerun. See docs/FOOD-DATABASES.md.
  */
@@ -53,9 +53,13 @@ function importDatabases(rawDir=path.join(root,'catalog-raw')){
   if(['0','11'].includes(x.Food_Source_Code)&&legacyNdb.has(String(Number(x.USDA_NDB_Code)))){stats[sources[0]].skipped++;stats[sources[0]].duplicates++;continue}
   if(add(record('CNF_'+x.Food_Code,x.Food_Description_EN,cnf.get(x.Food_Code)||{},sources[0]),sources[0]))importedCnf.add(x.Food_Code);
  }
+ const measureTypes=auditMeasureTypes(objects(read(CNF_DIR+'Measure_Type.csv')));
  const measures=new Map(objects(read(CNF_DIR+'Measure_Name.csv')).map(x=>[x.Measure_Code,x.Measure_Description_and_Unit_EN]));
  // 2026 structure guide p17: this is weight of the measure, NOT the old /100 factor.
- for(const x of objects(read(CNF_DIR+'Measure_Weight_Conversion.csv')))if(importedCnf.has(x.Food_Code))portion('CNF_'+x.Food_Code,sources[0],measures.get(x.Measure_Code),number(x.Measure_Weight_Conversion));
+ for(const x of objects(read(CNF_DIR+'Measure_Weight_Conversion.csv'))){
+  if(!measureTypes.has(x.Measure_Type_Code))throw Error('Unknown CNF measure type '+x.Measure_Type_Code);
+  if(x.Measure_Type_Code==='6'&&importedCnf.has(x.Food_Code))portion('CNF_'+x.Food_Code,sources[0],measures.get(x.Measure_Code),number(x.Measure_Weight_Conversion));
+ }
  function cofid(sheet){const data=readXlsx(path.join(rawDir,EXTRA_SOURCES[1].files[0][0]),sheet),keys=Array.from({length:data[0].length},(_,i)=>String(data[1][i]??'').trim()||String(data[0][i]??'').trim()||'Food Code');return data.slice(3).map(row=>Object.fromEntries(keys.map((k,i)=>[k,row[i]??''])))}
  // Food Code 13-669 occurs for two distinct foods in the official workbook.
  // Joining on the exact food name as well prevents the old cross-food overwrite.
@@ -81,15 +85,19 @@ function importDatabases(rawDir=path.join(root,'catalog-raw')){
  for(const source of sources)manifest.sources[source]=stats[source].imported;
  outputs.push({file:'catalog/manifest.json',data:manifest},{file:'catalog/portions.json',data:portions});
  const differences=compareOutputs(outputs,oldExtension);
- if(differences.length&&!reviewedCorrections(differences)){console.error(JSON.stringify({reproducible:false,differences},null,2));throw Error('Base import differs; no files written');}
+ if(differences.length&&!reviewedPortionChanges(differences)){console.error(JSON.stringify({reproducible:false,differences},null,2));throw Error('Base import differs; no files written');}
  // Write only reviewed differences, after verifying every generated output.
  for(const {file,data} of outputs){const target=path.join(root,file),text=JSON.stringify(data);if(fs.readFileSync(target,'utf8').replace(/\r\n/g,'\n')!==text)fs.writeFileSync(target,text)}
  console.log(JSON.stringify({count:manifest.count,stats,catalogueBytes:fs.readdirSync(path.join(root,'catalog')).reduce((n,f)=>n+fs.statSync(path.join(root,'catalog',f)).size,0)},null,2));
  return {stats,reproducible:true};
 }
-function reviewedCorrections(differences){
- const expected=[['COFID_13-669','calcium',138,24],['COFID_13-669','iron',0.72,0.49],['COFID_13-669','magnesium',16,27],['COFID_13-669','potassium',300,389],['COFID_13-669','vitc',62,3],['COFID_13-669','folate',43,20],['COFID_14-377','iron',null,0.07]];
- return differences.length===expected.length&&expected.every(([id,key,old,value])=>differences.some(d=>d.field?.startsWith('catalog/foods-'+(id==='COFID_13-669'?42:45)+'.json:'+id+' (')&&d.field.endsWith('.8.'+key)&&d.old===old&&d.new===value));
+function auditMeasureTypes(rows){
+ const expected=new Map([['3','Refuse'],['6','User-defined'],['9','Yield']]);
+ if(rows.length!==expected.size||new Set(rows.map(r=>r.Measure_Type_Code)).size!==expected.size||rows.some(r=>!expected.has(r.Measure_Type_Code)||expected.get(r.Measure_Type_Code)!==r.Measure_Type_Description_EN))throw Error('CNF measure type definition mismatch');
+ return expected;
+}
+function reviewedPortionChanges(differences){
+ return differences.every(d=>d.field?.startsWith('catalog/portions.json.CNF 2026:CNF_'));
 }
 function compareOutputs(outputs,oldExtension){
  const differences=[];
@@ -114,5 +122,5 @@ function compareOutputs(outputs,oldExtension){
  for(const file of oldExtension)if(!outputs.some(o=>o.file===file))differences.push({file,removed:true});
  return differences;
 }
-module.exports={csv,number,record,importDatabases,compareOutputs,reviewedCorrections};
+module.exports={csv,number,record,importDatabases,compareOutputs,reviewedPortionChanges,auditMeasureTypes};
 if(require.main===module){try{importDatabases(process.argv[2])}catch(error){console.error(error.message);process.exitCode=1}}

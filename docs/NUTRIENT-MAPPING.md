@@ -345,16 +345,22 @@ Die Konstanten in `scripts/lib/nutrient-new-mapping.cjs` stammen aus den Rohdefi
 
 ### Ausgelassen, Definition weicht ab oder Feld fehlt
 
-- CNF: `618`/`619`/`620` sind undifferenzierte Fettsäuren; nur `675`/`851`/`855` passen zu Linolsäure/ALA/Arachidonsäure. `324` (Vitamin D IU), D-Fraktionen, zusätzliches Alpha-Tocopherol `573`, K-Fraktionen und andere Carotinoide ersetzen keine Zielfelder. `409` nennt als Einheit nur „Niacin Equivalents“, keine Masseneinheit; konservativ kein `niacin_ne`. DFE nur `435`, Folsäure nur `431`. Mannitol und Sorbitol ergeben ohne Gesamtfeld keine Polyol-Summe. Kein Stärke-, lösliche/unlösliche Faser- oder Omega-Summenfeld. Nicht vorhandene Mineralstoffe bleiben unbekannt.
+- CNF: `618`/`619`/`620` sind undifferenzierte Fettsäuren; nur `675`/`851`/`855` passen zu Linolsäure/ALA/Arachidonsäure. `324` (Vitamin D IU), D-Fraktionen, zusätzliches Alpha-Tocopherol `573`, K-Fraktionen und andere Carotinoide ersetzen keine Zielfelder. `409` wird als mg Niacin-Äquivalent (`niacin_ne`) übernommen. Die Rohdatei nennt die Einheit „Niacin Equivalents“ (NE); ausschließlich Code 409 mit exaktem Namen und INFOODS-Tag `NIAEQ` akzeptiert diese Einheit. Der unabhängige Rohdatenabgleich bestätigt bei allen 3.574 vergleichbaren Datensätzen 409 = 406 + Tryptophan (mg)/60. Die bereits vorhandenen 409-Werte werden direkt übernommen; der Import berechnet keine Ersatzwerte. DFE nur `435`, Folsäure nur `431`. Mannitol und Sorbitol ergeben ohne Gesamtfeld keine Polyol-Summe. Kein Stärke-, lösliche/unlösliche Faser- oder Omega-Summenfeld. Nicht vorhandene Mineralstoffe bleiben unbekannt.
 - CoFID: `RETEQU` ist Retinol-Äquivalent, kein RAE; `CAREQU` ist Carotin-Äquivalent, kein reines Beta-Carotin. `VITE` heißt „Total Vitamin E“ und wird ausgelassen; stattdessen nur `ATOPH` aus Blatt 1.6. Beta-Carotin kommt nur aus `BCAR` desselben Blatts. `FOLT` und `5METHF` ersetzen weder DFE noch Folsäure; beide Schlüssel bleiben leer. `TRYP60` ist kein Tryptophan in g. Keine Aminosäure-Zuordnung. Alle je-100-g-Fettsäuren-Spalten (`FAC`) und unspezifische einzelne PUFA bleiben ungenutzt; nur explizite `FOD…cn3/cn6` werden übernommen. `ENGFIB` ist kein AOAC-Gesamtballaststoff.
 - FNDDS: `1269/618` (18:2), `1270/619` (18:3) und `1271/620` (20:4) sind undifferenziert: keine Ersatzwerte für `linoleic`, `ala`, `arachidonic`. Vitamin E added `1242` wird nicht addiert, Gesamtfolat `1177` und food folate `1187` ersetzen keine DFE-/Folsäurefelder. Keine Aminosäuren, Omega-Summen, Stärke oder Zuckerarten in dieser Ausgabe.
 - Alle neun Altschlüssel bleiben ausschließlich im Katalog/Snapshot. Wasserwerte werden bei der Selbstprüfung nur mit dem bestehenden Zahlenwert verglichen; keine g/ml-Umrechnung.
+
+### Definitionsunterschiede der zusätzlichen Quellen
+
+- CoFID-Kohlenhydrate, Gesamtzucker, einzelne Zuckerarten und Stärke sind Monosaccharid-Äquivalente. Disaccharide liegen dadurch bis etwa 5 %, Stärke bis etwa 10 % höher als bei BLS/USDA/Ciqual. Bei `COFID_17-061` (Demerara) betragen `sucrose` und `sugars` jeweils 104,5 g. Die Quellenwerte werden nach R4 unverändert übernommen, ohne Umrechnung.
+- CoFID `VITD` enthält 25-Hydroxy-D3 mit Faktor 5; betroffen sind 56 Katalog-Lebensmittel. USDA, CNF und FNDDS führen D2 + D3. Der jeweilige Quellenwert bleibt erhalten.
+- CoFID `FOD20:5` und `FOD22:6` sind im Rohblatt als EPA/DHA beschriftet, bleiben nach R5 ungenutzt. Ausschließlich die ausdrücklich spezifizierten `cn3`-Spalten werden übernommen. Dadurch fehlen EPA bei 31 und DHA bei 64 Katalog-Lebensmitteln bewusst.
 
 ### Selbstprüfung und Korrektur vor Veröffentlichung
 
 Die sieben Bestandsabweichungen wurden vor der Veröffentlichung korrigiert. Der alte CoFID-Import verknüpfte Blätter nur über den doppelt vergebenen Code 13-669 und übernahm sechs Brunnenkresse-Mikrowerte an die Aubergine. Der Import verbindet jetzt Code und exakten Namen. Zusätzlich wurde der in der XLSX belegte Eisenwert der Ananas (COFID_14-377, 0,07 mg) ergänzt. Die historische CSV-Darstellung ist nicht mehr verfügbar. Alle übrigen Basiswerte, Manifest, Portionen und Sidecar-Nährstoffzeilen bleiben inhaltsgleich. Die Selbstprüfung der drei zusätzlichen Quellen läuft ohne Bestandsausnahmen oder Abweichungen.
 
-CNF prüft 64 Definitionen, CoFID 54 dreifache Spaltenbeschriftungen, FNDDS 217.240 gemappte Definitionen an Einzelwerten (40 je vollständigem Datensatz). Neue Quellen enthalten keine negativen Zellen in den gelesenen Bereichen. In den gemappten CoFID-Blättern wurden keine Klammerwerte gefunden; R9 wird zusätzlich synthetisch getestet. Zwölf ml-Datensätze werden gegen die Basis geprüft, dann von v2 ausgeschlossen. Alle 18.199 alten Zeilen werden beim Import und im Test vollständig als Strings gegen v1 verglichen.
+CNF prüft 65 Definitionen, CoFID 54 dreifache Spaltenbeschriftungen, FNDDS 217.240 gemappte Definitionen an Einzelwerten (40 je vollständigem Datensatz). Neue Quellen enthalten keine negativen Zellen in den gelesenen Bereichen. In den gemappten CoFID-Blättern wurden keine Klammerwerte gefunden; R9 wird zusätzlich synthetisch getestet. Zwölf ml-Datensätze werden gegen die Basis geprüft, dann von v2 ausgeschlossen. Alle 18.199 alten Zeilen werden beim Import und im Test vollständig als Strings gegen v1 verglichen.
 
 Lokale Prüfung: Import mit fixierten Rohdaten, Daten-/Runtime-/Kompatibilitäts-/Cachetests mit lokalen Fixtures/Mocks. Kein Browser-/iPhone-/Live-RLS-Test. Unabhängiges Review, CURRENT-STATE und Release-Versionierung übernimmt der Koordinator.
 
@@ -366,6 +372,7 @@ Lokale Prüfung: Import mit fixierten Rohdaten, Daten-/Runtime-/Kompatibilitäts
 - `cnf-2026/cnf_fcen_all-files-data_2026_extracted/Food_Name.csv` – `ee75a3208e8b79ee523ec5adffcf149f3f21806ac5d9942a9449077efe414c6c`
 - `cnf-2026/cnf_fcen_all-files-data_2026_extracted/Nutrient_Amount.csv` – `c53803c72faadbdec9750ccaa1fc9a9cfd8732e0c784d2a66c62cd27d09b22d2`
 - `cnf-2026/cnf_fcen_all-files-data_2026_extracted/Nutrient_Name.csv` – `708a942fc8a6a4913b106cd964f4f3b116845ec72942a936477241be8889f785`
+- `cnf-2026/cnf_fcen_all-files-data_2026_extracted/Measure_Type.csv` – `ce6ecd0f370820d6800d7b7b88ae5710691b5d7b358c0503273d36a1a878f977`
 - `cnf-2026/cnf_fcen_all-files-data_2026_extracted/Measure_Name.csv` – `429cf2e8d4bbd2b732a6e9acf35427ce6d3b4e9447aabaf86b427c48833b112f`
 - `cnf-2026/cnf_fcen_all-files-data_2026_extracted/Measure_Weight_Conversion.csv` – `9d41fac4ba1471fddd25ea7e51a8352aec66de4f3c88802b0a2e02a85ebc3e6f`
 
@@ -438,7 +445,7 @@ CoFID-Blätter: P = 1.3 Proximates, I = 1.4 Inorganics, V = 1.5 Vitamins, VF = 1
 | b1 | mg | `404` mg | `V:THIA` mg | `1165/404` mg |
 | b2 | mg | `405` mg | `V:RIBO` mg | `1166/405` mg |
 | niacin | mg | `406` mg | `V:NIAC` mg | `1167/406` mg |
-| niacin_ne | mg | — | `V:NIACEQU` mg | — |
+| niacin_ne | mg | `409` NE (mg, siehe Definition) | `V:NIACEQU` mg | — |
 | b5 | mg | `410` mg | `V:PANTO` mg | — |
 | b6 | mg | `415` mg | `V:VITB6` mg | `1175/415` mg |
 | biotin | µg | `416` µg | `V:BIOT` µg | — |
@@ -510,7 +517,7 @@ CoFID-Blätter: P = 1.3 Proximates, I = 1.4 Inorganics, V = 1.5 Vitamins, VF = 1
 | b1 | 2358 | 2399 | 5431 |
 | b2 | 2377 | 2409 | 5431 |
 | niacin | 2388 | 2461 | 5431 |
-| niacin_ne | 0 | 2393 | 0 |
+| niacin_ne | 2389 | 2393 | 0 |
 | b5 | 1765 | 2087 | 0 |
 | b6 | 2283 | 2233 | 5431 |
 | biotin | 112 | 1786 | 0 |

@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),crypto=require('node:crypto'),{performance}=require('node:perf_hooks');
-const {csv,number,record}=require('../scripts/import-food-databases.cjs');
+const {csv,number,record,auditMeasureTypes}=require('../scripts/import-food-databases.cjs');
 const read=f=>fs.readFileSync(f,'utf8'),clone=x=>JSON.parse(JSON.stringify(x));
 const manifest=JSON.parse(read('catalog/manifest.json')),rows=manifest.files.flatMap(f=>{assert(fs.existsSync(f),f);return JSON.parse(read(f))});
 assert.equal(rows.length,manifest.count);assert.equal(manifest.count,28893);assert.equal(new Set(manifest.files).size,manifest.files.length);
@@ -29,6 +29,22 @@ assert.deepEqual(csv('\uFEFFa,b\r\n"quoted, name","line\nwith ""quote"""\r\n'),[
 for(const v of ['',null,'N','Tr','-1','NaN','Infinity'])assert.equal(number(v),undefined);assert.equal(number('0'),0);
 assert.equal(record('test','No protein',{kcal:4,c:1,f:0},'fixture'),null);
 const portions=JSON.parse(read('catalog/portions.json'));
+const cnfPortions=Object.fromEntries(Object.entries(portions).filter(([k])=>k.startsWith('CNF 2026:')));
+const otherPortions=Object.fromEntries(Object.entries(portions).filter(([k])=>!k.startsWith('CNF 2026:')));
+assert.equal(Object.values(cnfPortions).flat().length,7703);
+assert.equal(Object.keys(cnfPortions).length,2511);
+assert.equal(2573-Object.keys(cnfPortions).length,62,'CNF foods without a portion');
+// Independently rebuilt from only type-6 raw measures, before the four-portion cap.
+assert.equal(crypto.createHash('sha256').update(JSON.stringify(cnfPortions)).digest('hex'),'7bfa7379fba08fee81e647c29541a7ac9e642afd5cf5ce7e05f2b75adc141922','Every CNF portion matches the type-6 rebuild, with no refuse/yield measures');
+assert.equal(crypto.createHash('sha256').update(JSON.stringify(otherPortions)).digest('hex'),'4b9856611601b9fcc5154c9bc2493656514c26eeffcdcfef478bfc182c3a63fe','All other sources retain their portions');
+assert.deepEqual(cnfPortions['CNF 2026:CNF_130'].map(p=>[p.name,p.amount]),[['1 large egg',50],['100 ml chopped',57.481],['15 ml',8.615],['50 g',50]]);
+assert.deepEqual(cnfPortions['CNF 2026:CNF_668'].map(p=>p.amount),[83,125,90],'Refuse, bone and skin excluded before limiting portions');
+assert.deepEqual(cnfPortions['CNF 2026:CNF_693'].map(p=>[p.name,p.amount]),[['1/2 bird',133],['55 g',55]],'No 19.45-g yield measure');
+const measureTypes=[['3','Refuse'],['6','User-defined'],['9','Yield']].map(([Measure_Type_Code,Measure_Type_Description_EN])=>({Measure_Type_Code,Measure_Type_Description_EN}));
+assert.equal(auditMeasureTypes(measureTypes).get('6'),'User-defined');
+assert.throws(()=>auditMeasureTypes(measureTypes.map(r=>r.Measure_Type_Code==='6'?{...r,Measure_Type_Description_EN:'Yield'}:r)),/measure type definition/);
+assert.throws(()=>auditMeasureTypes(measureTypes.slice(1)),/measure type definition/);
+assert.throws(()=>auditMeasureTypes([measureTypes[0],measureTypes[0],measureTypes[2]]),/measure type definition/);
 const originalPortions=Object.fromEntries(Object.entries(portions).filter(([k])=>!k.startsWith('CNF 2026:')&&!k.startsWith('USDA FNDDS 2021-2023:')));
 assert.equal(crypto.createHash('sha256').update(JSON.stringify(originalPortions)).digest('hex'),'21bc4dcb468dcd89ff4bb8e0c3118a30cc6d6739645bb338ff22c07c72db832f','all old portion values preserved');
 for(const [key,list] of Object.entries(portions).filter(([k])=>/^(CNF 2026:|USDA FNDDS 2021-2023:)/.test(k))){assert(list.length<=4);assert(lookup(key.slice(key.indexOf(':')+1)));for(const p of list){assert.equal(p.unit,'g');assert(p.amount>0&&p.amount<=10000);assert(p.name.length<=80)}}
@@ -61,6 +77,18 @@ prefsContext.fpToggleSource('bls');assert.deepEqual(future.foodSearch.sources,['
 prefsContext.fpToggleSource('cnf');assert.deepEqual(clone(future.foodSearch.sources),['bls','cnf','fineli']);
 prefsContext.fpToggleSource('fineli');assert(future.foodSearch.sources.includes('fineli'));
 prefsContext.fpResetFilter();assert.equal(future.foodSearch.catalogueSourcesVersion,2);assert.equal(future.foodSearch.sources.at(-1),'fineli');assert.equal(prefsContext.fpSearchPrefs().sources.length,9);
+const futureKeys=Array.from({length:32},(_,i)=>'future'+i);
+future.foodSearch.sources=[...futureKeys];
+prefsContext.fpResetFilter();
+assert.deepEqual(clone(future.foodSearch.sources),[...prefsContext.fdDefaults.foodSearch.sources,...futureKeys.slice(0,23)],'All known sources take priority over unknown sources at the 32-key limit');
+assert(c.validData(future));
+future.foodSearch.sources=['bls',...futureKeys.slice(0,31)];
+prefsContext.fpToggleSource('cnf');
+assert.deepEqual(clone(future.foodSearch.sources),['bls','cnf',...futureKeys.slice(0,30)]);
+prefsContext.fpToggleSource('bls');
+const lastKnown=JSON.stringify(future.foodSearch);
+prefsContext.fpToggleSource('cnf');
+assert.equal(JSON.stringify(future.foodSearch),lastKnown,'Unknown sources cannot permit deselecting the last known database');
 // Product-detail attribution also covers the three added sources.
 Object.assign(c,{fdT:de=>de,fpAllKey:food=>food.catalogKey});
 vm.runInContext(read('js/food-page.js').match(/function fpSourceCredit\(food\)\{[\s\S]*?\n\}/)[0],c);
@@ -121,10 +149,10 @@ loaderTest().catch(error=>{console.error(error);process.exitCode=1});
 // The new raw-input importer must report differences before any write. This
 // comparison uses only synthetic catalogue data and needs neither raw files nor Git.
 {
- const {compareOutputs,reviewedCorrections}=require('../scripts/import-food-databases.cjs');
- const corrections=[['COFID_13-669','calcium',138,24],['COFID_13-669','iron',0.72,0.49],['COFID_13-669','magnesium',16,27],['COFID_13-669','potassium',300,389],['COFID_13-669','vitc',62,3],['COFID_13-669','folate',43,20],['COFID_14-377','iron',null,0.07]].map(([id,key,old,value])=>({field:'catalog/foods-'+(id==='COFID_13-669'?42:45)+'.json:'+id+' (Food).8.'+key,old,new:value}));
- assert(reviewedCorrections(corrections));assert(!reviewedCorrections(corrections.slice(1)));assert(!reviewedCorrections([...corrections,{field:'extra',old:0,new:1}]));
- assert(!reviewedCorrections(corrections.map((d,i)=>i?d:{...d,new:25})));
+ const {compareOutputs,reviewedPortionChanges}=require('../scripts/import-food-databases.cjs');
+ const changes=[{field:'catalog/portions.json.CNF 2026:CNF_130.0.name',old:'total refuse',new:'1 large egg'}];
+ assert(reviewedPortionChanges(changes));
+ for(const field of ['catalog/portions.json.USDA FNDDS 2021-2023:FNDDS_11111000.0.amount','catalog/foods-42.json:COFID_13-669 (Food).8.iron','catalog/manifest.json.count','serialization/order'])assert(!reviewedPortionChanges([...changes,{field,old:0,new:1}]));
  const readFile=fs.readFileSync,exists=fs.existsSync,write=fs.writeFileSync;
  try {
   fs.existsSync=()=>true;fs.writeFileSync=()=>{throw Error('Unexpected write')};

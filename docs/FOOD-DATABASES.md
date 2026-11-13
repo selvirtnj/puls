@@ -9,7 +9,7 @@ node scripts/import-nutrients.cjs C:/Users/selvir/Documents/Projekte/puls/catalo
 
 Ohne Argument gilt `catalog-raw/` im Repository. Im Worktree liegen die Rohdateien außerhalb unter `C:/Users/selvir/Documents/Projekte/puls/catalog-raw` und werden nur gelesen. Beide Skripte benötigen ausschließlich Node-Standardbibliotheken. CNF wird direkt aus CSV, CoFID direkt aus der XLSX mit dem vorhandenen ZIP/XML-Leser und FNDDS direkt aus JSON gelesen. Sämtliche verwendeten Rohdateien werden vor Verarbeitung per SHA-256 geprüft; genaue Pfade und Hashes stehen in [NUTRIENT-MAPPING.md](NUTRIENT-MAPPING.md). Inventare, entpackte XML-Dateien und frühere CSV-Exporte der CoFID-Blätter sind keine Eingaben.
 
-Der Basisimport berechnet `foods-37…58`, Manifest und Portionen im Speicher und vergleicht die vollständige Serialisierung nach LF-Normalisierung mit dem Bestand. Er akzeptiert ausschließlich die sieben exakt festgelegten Korrekturen vor Veröffentlichung als vollständigen Satz. Jede andere Abweichung meldet er mit Lebensmittel, Feld, alt/neu, endet mit Exit 1 und schreibt nichts. Auch bei Gleichheit werden bestehende Dateien nicht unnötig neu geschrieben. `foods-0…36` werden niemals geschrieben. Der Sidecar-Import schreibt nur `nutrients-v2*.json`; v1 bleibt unverändert.
+Der Basisimport berechnet `foods-37…58`, Manifest und Portionen im Speicher und vergleicht die vollständige Serialisierung nach LF-Normalisierung mit dem Bestand. Er akzeptiert ausschließlich Änderungen der aus fixierten Rohdaten erzeugten CNF-Portionen. Jede andere Abweichung meldet er mit Lebensmittel, Feld, alt/neu, endet mit Exit 1 und schreibt nichts. Auch bei Gleichheit werden bestehende Dateien nicht unnötig neu geschrieben. `foods-0…36` werden niemals geschrieben. Der Sidecar-Import schreibt nur `nutrients-v2*.json`; v1 bleibt unverändert.
 
 ### Korrektur vor Veröffentlichung (12.11.2026)
 
@@ -17,7 +17,7 @@ Die sieben Bestandsabweichungen wurden vor der Veröffentlichung korrigiert. Der
 
 | Quelle | Importiert | Ausgelassen | Grund | Übernommene Portionen |
 |---|---:|---:|---|---:|
-| CNF 2026 | 2.573 | 3.420 | unveränderte USDA-Dubletten | 8.117 |
+| CNF 2026 | 2.573 | 3.420 | unveränderte USDA-Dubletten | 7.703 |
 | CoFID 2021 | 2.636 | 251 | mindestens kcal oder ein Makro fehlt bzw. ist nicht quantifiziert | 0 |
 | USDA FNDDS 2021–2023 | 5.431 | 1 | Humanmilch ohne Nährwerte | 16.993 |
 
@@ -30,11 +30,12 @@ Format: `[id, Anzeigename, englischer Suchname, kcal, Protein, KH, Fett, Quelle,
 - Nur bekannte Mikros: water, fiber, vitc, calcium, iron, b12, potassium, magnesium, folate. Einheiten wie bisher: g, mg bzw. µg. CoFID `N`, leere Felder und `Tr` sind keine gemessenen Nullwerte und werden weggelassen. Ist dadurch ein Pflichtmakro nicht quantifiziert, entfällt das Lebensmittel. Bei fiber wird ausschließlich AOACFIB genutzt; ENGFIB/NSP misst eine andere Fraktion und ersetzt es nicht.
 - Keine belastbare allgemeine Übersetzungslogik im bestehenden Importpfad: englische Namen in beiden Namensfeldern, kein erfundenes Deutsch. Suche prüft beide Namen unabhängig von der App-Sprache. BLS behält seinen bestehenden Prioritätsbonus von 35.
 - CNF Food_Source_Code 0 (unverändert) und 11 (USDA-Daten, dort inzwischen gelöscht) entfallen nur bei vorhandenem USDA-SR-Legacy-NDB-Code. Kanadisch angepasste Einträge bleiben erhalten. `scripts/usda-sr-legacy-ndb.json` enthält ausschließlich NDB/FDC-Identifikatorpaare der 7.793 vorhandenen Legacy-Einträge, abgeleitet aus `sr_legacy_food.csv` des offiziellen USDA-Archivs; URL und SHA-256 des Archivs stehen in der Datei. Der Import ist damit ohne weitere Netzwerkabfragen reproduzierbar.
+- CNF-Portionen stammen ausschließlich aus `Measure_Type_Code=6` (User-defined). Die fixierte `Measure_Type.csv` wird auf die Definitionen 3 = Refuse, 6 = User-defined und 9 = Yield geprüft. Abfall- und Ausbeutemaße entfallen vor der Vierergrenze. Nach Korrektur bleiben 7.703 Portionen bei 2.511 Lebensmitteln; 38 Lebensmittel verlieren alle bisherigen Portionen, insgesamt haben 62 der 2.573 CNF-Lebensmittel keine Portion.
 - CNF 2026 Measure_Weight_Conversion ist ausdrücklich das Gewicht des Maßes (Strukturhandbuch S. 17), kein älterer Multiplikationsfaktor. Grammgewicht direkt übernommen, nicht mit 100 multipliziert. FNDDS gramWeight wird direkt übernommen; Nullgewichte und ungültige Mengen entfallen. Höchstens vier eindeutige Portionen je Lebensmittel, Namen auf bestehende 80 Zeichen begrenzt. Keine g/ml-Umrechnung.
 
 ## Laden, Filter und Sicherungen
 
-Katalog insgesamt: 5.541.974 → 10.387.038 Bytes (inklusive Manifest und Portionen; unkomprimiert). Die Suche bleibt im Worker, bei Ausfall in kleinen asynchronen Hauptthread-Blöcken. Downloads des Loaders sind auf vier gleichzeitig begrenzt; Offline-Vorladen bleibt auf drei begrenzt und folgt automatisch dem Manifest. `puls-catalog-v3` verhindert veraltete Inhalte. Ein echter iPhone-Laufzeit-/Layouttest ist durch den Koordinator erforderlich; VM-Messungen sind kein Nachweis wahrgenommener Geschwindigkeit auf dem Gerät.
+Katalog insgesamt: 5.541.974 → 10.355.541 Bytes (inklusive Manifest und Portionen; unkomprimiert). Die Suche bleibt im Worker, bei Ausfall in kleinen asynchronen Hauptthread-Blöcken. Downloads des Loaders sind auf vier gleichzeitig begrenzt; Offline-Vorladen bleibt auf drei begrenzt und folgt automatisch dem Manifest. `puls-catalog-v3` verhindert veraltete Inhalte. Ein echter iPhone-Laufzeit-/Layouttest ist durch den Koordinator erforderlich; VM-Messungen sind kein Nachweis wahrgenommener Geschwindigkeit auf dem Gerät.
 
 Neue Filter `cnf`, `cofid`, `fndds`; FNDDS ist unabhängig vom bisherigen `usda`-Filter. Worker und Fallback filtern vor der Begrenzung auf 60 Treffer. Alte gespeicherte Quellenlisten erhalten die drei Quellen einmalig beim bestehenden Migrationsweg. `foodSearch.catalogueSourcesVersion: 1` verhindert erneutes Aktivieren nach bewusster Abwahl. Die Validierung akzeptiert alte Sicherungen und das optionale Feld, ohne neue Speicher-/Sync-Wege einzuführen. Keine Auth- oder Serveränderung.
 

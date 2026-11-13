@@ -10,6 +10,7 @@ const EXTRA_SOURCES = [
     [CNF_DIR+'Food_Name.csv','ee75a3208e8b79ee523ec5adffcf149f3f21806ac5d9942a9449077efe414c6c'],
     [CNF_DIR+'Nutrient_Amount.csv','c53803c72faadbdec9750ccaa1fc9a9cfd8732e0c784d2a66c62cd27d09b22d2'],
     [CNF_DIR+'Nutrient_Name.csv','708a942fc8a6a4913b106cd964f4f3b116845ec72942a936477241be8889f785'],
+    [CNF_DIR+'Measure_Type.csv','ce6ecd0f370820d6800d7b7b88ae5710691b5d7b358c0503273d36a1a878f977'],
     [CNF_DIR+'Measure_Name.csv','429cf2e8d4bbd2b732a6e9acf35427ce6d3b4e9447aabaf86b427c48833b112f'],
     [CNF_DIR+'Measure_Weight_Conversion.csv','9d41fac4ba1471fddd25ea7e51a8352aec66de4f3c88802b0a2e02a85ebc3e6f']
   ]},

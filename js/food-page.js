@@ -182,7 +182,7 @@ function fpFilterSheet(){
 function fpSheetClose(){let sheet=$('fp-sheet');if(!sheet)return;fdSound('sheetClose');if(fdReduced()){sheet.remove();return}sheet.classList.add('fpclosing');setTimeout(()=>sheet.remove(),180)}
 function fpStoreSearch(sort,sources){
   let s=fdEnsure('foodSearch'),unknown=(s.sources||[]).filter(k=>!fdDefaults.foodSearch.sources.includes(k));
-  s.sort=sort;s.sources=[...sources.slice(0,32-unknown.length),...unknown];
+  s.sort=sort;s.sources=[...sources,...unknown.slice(0,32-sources.length)];
   if(!Number.isInteger(s.catalogueSourcesVersion)||s.catalogueSourcesVersion<1)s.catalogueSourcesVersion=1;
   save();fpApplyFilter();
 }

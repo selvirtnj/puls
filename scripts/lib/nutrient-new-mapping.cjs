@@ -51,6 +51,8 @@ const CNF = {
   vitk:[430,"Microgram","Vitamin K (phylloquinone)","VITK1"],
   b1:[404,"Milligram","Thiamine","THIA"],
   b2:[405,"Milligram","Riboflavin","RIBF"],
+  // Code 409 uses the raw unit label Niacin Equivalents (NE), interpreted as mg NE.
+  niacin_ne:[409,"Niacin Equivalents","Total niacin equivalent","NIAEQ"],
   niacin:[406,"Milligram","Niacin (nicotinic acid) preformed","NIA"],
   b5:[410,"Milligram","Pantothenic acid","PANTAC"],
   b6:[415,"Milligram","Vitamin B-6","VITB6A"],
