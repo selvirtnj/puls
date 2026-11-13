@@ -40,8 +40,7 @@ const reviewBaseCompletion=completionHtml;completionHtml=function(id,step){
 };
 
 // Kalender: ein abgeschlossenes Workout öffnet direkt die Auswertung.
-const polishWorkoutPage=workoutPage;workoutPage=function(...args){
-  let html=polishWorkoutPage.apply(this,args);
+globalThis.workoutPageAfterTrainingPolish=function workoutPageAfterTrainingPolish(html){
   if(trainTab!=='calendar'||typeof calendarSelected==='undefined')return html;
   let template=document.createElement('template');template.innerHTML=html;
   let pool=state.workouts.filter(w=>w.finished&&w.date===calendarSelected);

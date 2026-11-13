@@ -14,20 +14,7 @@
   "js/native-state.js#1"
  ],
  "workoutPage": [
-  "js/app.js#1",
-  "js/enhancements.js#1",
-  "js/training.js#1",
-  "js/insights.js#1",
-  "js/finish.js#1",
-  "js/personal.js#1",
-  "js/flows.js#1",
-  "js/flows.js#2",
-  "js/flows.js#3",
-  "js/tracker-tools.js#1",
-  "js/account-guide.js#1",
-  "js/refinement.js#1",
-  "js/training-polish.js#1",
-  "js/running.js#1"
+  "js/flows.js#1"
  ],
  "nutrition": [
   "js/app.js#1",

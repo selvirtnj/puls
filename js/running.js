@@ -262,8 +262,8 @@ function runProgressCard(){
 }
 
 // Workout-Tab: Laufkarte unter den Routinen.
-const runningWorkoutPage=workoutPage;workoutPage=function(...args){
-  let html=runningWorkoutPage.apply(this,args);if(trainTab!=='current')return html;
+globalThis.workoutPageAfterRunning=function workoutPageAfterRunning(html){
+  if(trainTab!=='current')return html;
   let template=document.createElement('template');template.innerHTML=html;let body=template.content.querySelector('.workoutbody');if(!body)return html;
   body.insertAdjacentHTML('beforeend',runCard());return template.innerHTML;
 };
