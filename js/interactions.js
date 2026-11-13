@@ -1,7 +1,7 @@
 /* PULS 24: forgiving sheets, resumable sessions and optional sound feedback. */
 let sheetClosingTimer=null;
 function dismissSheet(){if(typeof setupPending!=='undefined'&&setupPending)return;clearTimeout(sheetClosingTimer);modal.classList.add('sheetclosing');sheetClosingTimer=setTimeout(()=>{modal.close();modal.classList.remove('sheetclosing');modal.style.removeProperty('transform')},170)}
-const touchOpenBase=openModal;openModal=function(title,body){clearTimeout(sheetClosingTimer);modal.classList.remove('sheetclosing');modal.style.removeProperty('transform');touchOpenBase(title,body)};
+globalThis.openModalBeforeInteractions=function openModalBeforeInteractions(){clearTimeout(sheetClosingTimer);modal.classList.remove('sheetclosing');modal.style.removeProperty('transform')};
 let outsideSheet=false,dragSheet=null;
 modal.addEventListener('pointerdown',event=>{let rect=modal.getBoundingClientRect();outsideSheet=event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom;if(outsideSheet||setupPending||event.target.closest('button,input,select,textarea,a,video,summary'))return;if(event.target.closest('.modalhead')||modal.scrollTop<=0)dragSheet={y:event.clientY,x:event.clientX,dy:0,time:Date.now()}});
 modal.addEventListener('click',event=>{if(outsideSheet&&event.target===modal){outsideSheet=false;dismissSheet()}});

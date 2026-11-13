@@ -9,7 +9,7 @@ if(typeof englishUI==='object')Object.assign(englishUI,{
  'Suche dauert zu lange. Bitte erneut versuchen.':'Search timed out. Please try again.'
 });
 const ffSheetTitles=new Set(['Essen hinzufügen','Mein Rezept','Zutat hinzufügen','Eigene Zutat','Rezept importieren','Text & Sprache']);
-const ffOpenModal=openModal;openModal=function(title,body){modal.classList.toggle('ffsheet',ffSheetTitles.has(title));return ffOpenModal(title,body)};
+globalThis.openModalBeforeFoodFlow=function openModalBeforeFoodFlow(title){modal.classList.toggle('ffsheet',ffSheetTitles.has(title))};
 modal.addEventListener('close',()=>{clearTimeout(ffOnlineTimer);clearTimeout(ffIngredientTimer);ffOnlineEpoch++;foodSearchRequest?.abort()});
 
 const ffIconPaths={search:'<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',barcode:quickActionPaths.barcode,camera:quickActionPaths.camera,recipe:quickActionPaths.recipe,edit:'<path d="M4 20h4L19 9l-4-4L4 16Z"/><path d="m13.5 6.5 4 4"/>',back:'<path d="m15 5-7 7 7 7"/>',star:'<path d="m12 3.6 2.6 5.2 5.8.9-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.9Z"/>',minus:'<path d="M6 12h12"/>',plus:'<path d="M12 6v12M6 12h12"/>',close:'<path d="m7 7 10 10M17 7 7 17"/>',image:'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-5-5-8.5 8.5"/>'};

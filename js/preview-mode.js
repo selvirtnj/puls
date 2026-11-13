@@ -1,4 +1,4 @@
 /* A first-run demo uses memory only; it never reads or overwrites the real profile. */
 function decorateFirstRunPreview(){if(!firstRunPreview)return;let body=$('mb');if(body&&!body.querySelector('.firstrunnotice'))body.insertAdjacentHTML('afterbegin','<div class="firstrunnotice">Erststart-Vorschau · Eingaben werden nicht gespeichert. <a href="./">Zurück zu deinem Konto</a></div>')}
-if(firstRunPreview){let main=document.querySelector('main');main?.insertAdjacentHTML('afterbegin','<div class="firstrunbanner">Erststart-Vorschau · Deine bisherigen Daten bleiben erhalten. <a href="./">Vorschau verlassen</a></div>');const previewOpenBase=openModal;openModal=function(title,body){previewOpenBase(title,body);decorateFirstRunPreview()};decorateFirstRunPreview()}
+if(firstRunPreview){let main=document.querySelector('main');main?.insertAdjacentHTML('afterbegin','<div class="firstrunbanner">Erststart-Vorschau · Deine bisherigen Daten bleiben erhalten. <a href="./">Vorschau verlassen</a></div>');globalThis.openModalAfterPreviewMode=function openModalAfterPreviewMode(){decorateFirstRunPreview()};decorateFirstRunPreview()}
 render();

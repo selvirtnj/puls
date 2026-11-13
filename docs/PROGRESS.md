@@ -4,12 +4,13 @@ Stand 14.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Live
 
-- **Version 101** auf `main` (Commit „Version 101: Refactor Phase 4, accountPage als eine Funktion“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
+- **Version 102** auf `main` (Commit „Version 102: Refactor Phase 4, openModal als eine Funktion“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
-- In Arbeit: Refactor nach [ISSUES.md](ISSUES.md), Phasen 0 bis 3 sind erledigt, von Phase 4 sind `render` und `accountPage` fertig, die übrigen Ketten und Phase 5 sind offen. Es gibt nur den Branch `main`.
+- In Arbeit: Refactor nach [ISSUES.md](ISSUES.md), Phasen 0 bis 3 sind erledigt, von Phase 4 sind `render`, `accountPage` und `openModal` fertig, die übrigen Ketten und Phase 5 sind offen. Es gibt nur den Branch `main`.
 
 ## Letzte Versionen
 
+- **102** (14.11.): Refactor Phase 4, dritter Teil, ohne sichtbare Änderung. `openModal` ist eine Funktion in `js/app.js` (Kern `openModalBase`, 18 Glieder `openModalBefore…`/`openModalAfter…` in 16 Dateien) statt 17 Wrappern. Neuer Test `tests/check-openmodal-order.cjs` (164 Zustände gegen den alten Stand), Browser-Vergleich alt gegen neu über 72 Fensteraufrufe ohne Unterschied, von Codex gegengeprüft.
 - **101** (14.11.): Refactor Phase 4, zweiter Teil, ohne sichtbare Änderung. `accountPage` ist eine Funktion in `js/experience.js` (Kern `accountPageBase` in `js/flows.js`, 14 Glieder `accountPageAfter…`) statt 20 Wrappern; sechs davon liefen nie und sind gelöscht. Neuer Test `tests/check-accountpage-order.cjs` (45 Zustände gegen den alten Stand), Browser-Vergleich über 34 Konto-Zustände ohne Unterschied, von Codex gegengeprüft.
 - **100** (14.11.): Refactor Phase 4, erster Teil, ohne sichtbare Änderung. `render` ist eine Funktion in `js/app.js`, die die benannten Glieder (`renderBefore…`, `renderAfter…`, `renderFinally…`) der anderen Dateien in fester Reihenfolge aufruft, statt 25 Wrappern. Neuer Test `tests/check-render-order.cjs`. Browser-Vergleich alt gegen neu über 241 Schritte ohne DOM-Unterschied, von Codex gegengeprüft.
 - **99** (14.11.): Refactor Phase 3 ohne sichtbare Änderung. `validData` ist eine Funktion in `js/app.js` statt 30 Wrappern in 26 Dateien; neue gespeicherte Felder bekommen dort einen Abschnitt. Alt-Neu-Vergleich über 29.250 Eingaben ohne Abweichung, von Codex gegengeprüft. Einziger Unterschied: Startet die App angemeldet mit ungesicherten Änderungen, gilt beim ersten Abgleich schon die volle Prüfung.

@@ -154,7 +154,7 @@
     if(next!==currentView){currentView=next;scrollViewTop()}
   }}
   // Sheet entry points converge here after the earlier decorators and focus work.
-  if(typeof openModal==='function'){const motionModal=openModal;openModal=function(...args){let result=motionModal.apply(this,args);scrollViewTop(modal);return result}}
+  if(typeof openModal==='function'){globalThis.openModalAfterMotion=function openModalAfterMotion(){scrollViewTop(modal)}}
   if(typeof foodTab==='function'){const motionFoodTab=foodTab;foodTab=function(...args){let result=motionFoodTab.apply(this,args);scrollViewTop(modal);return result}}
 
   // Neu eingefügte Elemente gesammelt einmal pro Bild prüfen.

@@ -35,7 +35,7 @@ const flowAddFood=addFood;addFood=function(event){
 const flowSaveAmount=saveDiaryAmount;saveDiaryAmount=function(event,id){let x=state.foods.find(x=>x.id===id),before=x?.grams,amount=+$('diary-amount').value;flowSaveAmount(event,id);if(x&&before>0&&x.grams===amount&&x.nutrients){for(let k of Object.keys(x.nutrients))x.nutrients[k]*=amount/before;save();render()}};
 const flowEditDiary=editDiaryFood;editDiaryFood=function(id){flowEditDiary(id);$('mb').insertAdjacentHTML('beforeend',`<button class="textbtn full" onclick="removeEntry('foods','${id}')">Eintrag löschen</button>`)};
 /* All entry dialogs become sheets on phones; a fresh open resets scroll. */
-const flowOpenModal=openModal;openModal=function(title,body){flowOpenModal(title,body);modal.scrollTop=0};
+globalThis.openModalAfterFlows=function openModalAfterFlows(){modal.scrollTop=0};
 let sessionWorkoutId=null,completionId=null,completionStep=0;
 function sessionRoot(){let root=$('session-root');if(!root){root=document.createElement('section');root.id='session-root';root.tabIndex=-1;root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label','Training');document.body.appendChild(root)}return root}
 function openWorkoutSession(id){let w=state.workouts.find(w=>w.id===id&&!w.finished);if(!w)return;sessionWorkoutId=id;completionId=null;modal.close();render()}

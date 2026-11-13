@@ -278,7 +278,7 @@ function dsDecorateSheet(){
   if($('cloud-email'))body.querySelector('form')?.classList.add('dsauth');
   dsDecoratePasswords(body);dsDecorateFileInputs(body);dsDecorateDecimals(body);
 }
-const dsOpenModal=openModal;openModal=function(...args){let result=dsOpenModal.apply(this,args);dsDecorateSheet();return result};
+globalThis.openModalAfterDesignSystem=function openModalAfterDesignSystem(){dsDecorateSheet()};
 
 /* ---------- Darstellung: System / Hell / Dunkel ---------- */
 function dsCurrentScheme(){

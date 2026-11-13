@@ -3,7 +3,7 @@
 
 // Übung suchen und eigene Übung anlegen in einem: Ohne Treffer steht der Vorschlag oben, sonst unter der Liste.
 // Feste Sheet-Höhe: die Klasse gilt nur für die Übungssuche und fällt bei jedem anderen Fenster wieder weg.
-const exerciseSheetOpenModal=openModal;openModal=function(...args){modal.classList.remove('exercisesheet');return exerciseSheetOpenModal.apply(this,args)};
+globalThis.openModalBeforeTrainingPolish=function openModalBeforeTrainingPolish(){modal.classList.remove('exercisesheet')};
 modal.addEventListener('close',()=>modal.classList.remove('exercisesheet'));
 const polishExercisePicker=exercisePicker;exercisePicker=function(...args){
   let result=polishExercisePicker.apply(this,args),custom=$('library-custom');

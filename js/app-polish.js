@@ -21,7 +21,7 @@ const polishQuickAdd=quickAddMenu;quickAddMenu=function(...args){
   let result=polishQuickAdd.apply(this,args);document.body.classList.add('quickaddopen');return result;
 };
 modal.addEventListener('close',()=>document.body.classList.remove('quickaddopen'));
-const polishOpenSheet=openModal;openModal=function(...args){let quick=document.body.classList.contains('quickaddopen');let result=polishOpenSheet.apply(this,args);if(quick&&!modal.querySelector('.quickactiongrid,.dsactionlist'))document.body.classList.remove('quickaddopen');return result};
+globalThis.openModalBeforeAppPolish=function openModalBeforeAppPolish(){return document.body.classList.contains('quickaddopen')};globalThis.openModalAfterAppPolish=function openModalAfterAppPolish(quick){if(quick&&!modal.querySelector('.quickactiongrid,.dsactionlist'))document.body.classList.remove('quickaddopen')};
 
 // Essen-Seite: eigene Überschrift, damit sie sich beim Wechsel von der Übersicht sofort unterscheidet.
 globalThis.renderAfterAppPolish=function renderAfterAppPolish(){

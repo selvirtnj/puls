@@ -11,23 +11,7 @@
  ],
  "openModal": [
   "js/app.js#1",
-  "js/products.js#1",
-  "js/flows.js#1",
-  "js/interactions.js#1",
-  "js/polish.js#1",
-  "js/compact.js#1",
-  "js/preview-mode.js#1",
-  "js/workout-polish.js#1",
-  "js/comfort.js#1",
-  "js/i18n.js#1",
-  "js/food-flow.js#1",
-  "js/training-polish.js#1",
-  "js/app-polish.js#1",
-  "js/sound-engine.js#1",
-  "js/native-state.js#1",
-  "js/design-system.js#1",
-  "js/food-page.js#1",
-  "js/motion.js#1"
+  "js/native-state.js#1"
  ],
  "workoutPage": [
   "js/app.js#1",

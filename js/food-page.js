@@ -16,7 +16,7 @@ function fpSearchPrefs(){let s=fdField('foodSearch'),all=fdDefaults.foodSearch.s
 function fpFilterActive(){let p=fpSearchPrefs();return p.sort!=='best'||p.sources.length<fdDefaults.foodSearch.sources.length}
 
 /* ---------- Seite öffnen und schließen ---------- */
-const fpOpenModalBase=openModal;openModal=function(title,...rest){modal.classList.toggle('fpage',title==='Essen hinzufügen');return fpOpenModalBase.call(this,title,...rest)};
+globalThis.openModalBeforeFoodPage=function openModalBeforeFoodPage(title){modal.classList.toggle('fpage',title==='Essen hinzufügen')};
 modal.addEventListener('close',()=>{modal.classList.remove('fpage');fpPick=null;$('fp-sheet')?.remove()});
 // In der Vollseite gibt es kein Herunterziehen zum Schließen (würde das Scrollen in den Listen stören).
 modal.addEventListener('pointerdown',()=>{if(fpActive()&&typeof dragSheet!=='undefined')dragSheet=null});

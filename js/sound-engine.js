@@ -177,6 +177,6 @@
     };
   }
   // Fenster: sanftes Hochgleiten und Hinausgleiten.
-  if(typeof openModal==='function'){const engineOpen=openModal;openModal=function(...args){let was=modal?.open;let r=engineOpen.apply(this,args);if(!was)pulsSound('sheetOpen');return r}}
+  if(typeof openModal==='function'){globalThis.openModalBeforeSound=function openModalBeforeSound(){return modal?.open};globalThis.openModalAfterSound=function openModalAfterSound(was){if(!was)pulsSound('sheetOpen')}}
   if(typeof dismissSheet==='function'){const engineDismiss=dismissSheet;dismissSheet=function(...args){let was=modal?.open&&!modal.classList.contains('sheetclosing');let r=engineDismiss.apply(this,args);if(was&&modal.classList.contains('sheetclosing'))pulsSound('sheetClose');return r}}
 })();

@@ -36,6 +36,9 @@ function stubElement(el){
 // Tests, die einzelne Dateien mit render-Gliedern in einen Stub laden, führen sie dort aus; der Stub liefert nur den Kern als renderBase().
 const renderSource=(text=read('js/app.js'))=>{const start=text.search(/^function render\(\)\{/m);if(start<0)throw Error('render fehlt in js/app.js');return text.slice(start,text.indexOf('\n}',start)+2)};
 
+// Die eine openModal() steht in js/app.js (Refactor Phase 4): „function openModal(“ bis zur schließenden Klammer in Spalte 0; der Kern ist openModalBase().
+const openModalSource=(text=read('js/app.js'))=>{const start=text.search(/^function openModal\(/m);if(start<0)throw Error('openModal fehlt in js/app.js');return text.slice(start,text.indexOf('\n}',start)+2)};
+
 // options.now: fester Zeitpunkt (ms) für Date. options.search: location.search (z. B. ?erststart=1).
 const fixedDate=now=>class extends Date{constructor(...a){a.length?super(...a):super(now)}static now(){return now}};
 // options.transform: {Datei: text=>neuerText} ändert Quelltexte vor dem Laden. options.storage: Startinhalt von localStorage.
@@ -81,4 +84,4 @@ function appValidator(){
  return fn;
 }
 const baseState=(name='initial')=>JSON.parse(JSON.stringify(JSON.parse(read('tests/fixtures/validdata/cases.json')).states[name]));
-module.exports={renderSource,loadApp,scriptList,assignmentCount,read,ASSIGN,validDataSource,sections,withoutSection,appValidator,baseState};
+module.exports={renderSource,openModalSource,loadApp,scriptList,assignmentCount,read,ASSIGN,validDataSource,sections,withoutSection,appValidator,baseState};

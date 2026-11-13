@@ -1,6 +1,6 @@
 // v87 Klangwerk, Haptik-Zuordnung und Bewegungs-Helfer in einer synthetischen VM (kein echtes Audio, keine echte Vibration).
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const {renderSource}=require('./validdata-env.cjs');
+const {renderSource,openModalSource}=require('./validdata-env.cjs');
 
 /* ---------- Fake WebAudio: Knoten, Tonhöhen, Hüllkurven und Start/Stop-Zeiten ---------- */
 function fakeAudio(log){
@@ -34,7 +34,7 @@ run(`var state={soundEnabled:true,soundVolume:35,display:{}};let pulsAudio=null,
 function pulsSound(kind){throw new Error('old engine must be replaced')}
 function unlockPulsAudio(){}document.addEventListener('pointerdown',unlockPulsAudio);
 var toasts=[];var toast=function(m){toasts.push(m);if(/gespeichert|erfasst|hinzugefügt|250 ml/.test(m))pulsSound('save')};
-var openModal=function(){modal.open=true};var dismissSheet=function(){};`);
+var openModalBase=function(){modal.open=true};var dismissSheet=function(){};`);run(openModalSource());
 const engine=fs.readFileSync('js/sound-engine.js','utf8');
 run(engine);
 assert.equal(listeners.pointerdown.length,1,'old unlock listener is replaced by the new one');
