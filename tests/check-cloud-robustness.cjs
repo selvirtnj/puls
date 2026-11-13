@@ -34,6 +34,9 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   disk=new Map([['puls-v1','[1,2]'],['puls-v1-corrupt','older']]);
   let b=harness({disk,fetchImpl:async()=>json(null)});
   assert.equal(disk.get('puls-v1-corrupt'),'older');assert(b.run('stateLoadCorrupt'));assert.equal(b.run('state.goals.kcal'),2200);
+  // Audit 13.11.2026 Punkt 7: Objekt ohne Grundgerüst lässt den Start nicht abbrechen, sondern gilt als beschädigt.
+  disk=new Map([['puls-v1','{"version":2}']]);b=harness({disk,fetchImpl:async()=>json(null)});
+  assert(b.run('stateLoadCorrupt'));assert.equal(disk.get('puls-v1-corrupt'),'{"version":2}');assert.equal(b.run('state.goals.kcal'),2200);assert(b.run('cloudUploadBlocked'));
   // Gültiger Stand bleibt unverändert und ist nicht markiert.
   disk=new Map([['puls-v1',JSON.stringify(remote)]]);
   let c=harness({disk,fetchImpl:async()=>json(null)});

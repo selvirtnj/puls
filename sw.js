@@ -1,5 +1,5 @@
 /* Static assets only. Auth, API responses and photos are never cached here. */
-const CACHE='puls-static-107',ASSETS=[
+const CACHE='puls-static-108',ASSETS=[
 "js/workout-ranks.js","css/workout-ranks.css",
 "js/routine-favorites.js",
 "js/nutrient-definitions.js","js/nutrient-references.js","js/nutrient-resolver.js",
@@ -68,6 +68,8 @@ self.addEventListener('fetch',event=>{
     let cached=await cache.match(request,{ignoreSearch:true});if(cached)return cached;
     throw Error('Offline asset unavailable');
    }
+   // Serverfehler (z. B. 503): lieber die zuletzt gespeicherte Datei als eine kaputte App.
+   if(!fresh.ok){let cached=await cache.match(request,{ignoreSearch:true});if(cached)return cached}
    // A quota/storage failure must not replace a successful network response.
    if(fresh.ok)try{await cache.put(new URL(path,base),fresh.clone())}catch{}
    return fresh;

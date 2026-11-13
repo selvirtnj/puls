@@ -12,27 +12,28 @@ Stand 13.11.2026. Audits vom 12.11. und 13.11.2026: Tests grün, keine kritische
 
 ## Audit vom 13.11.2026 (ganzes Repository, nur Bericht)
 
-Kein Befund der Stufe „muss“. Die Punkte 1 und 3 sind seit Version 107 behoben; über den Rest entscheidet Selvir.
+Kein Befund der Stufe „muss“. Die Punkte 1 und 3 sind seit Version 107 behoben, 2, 4 bis 7, 10 und 12 bis 14 seit Version 108. Offen sind 8, 9 (beide bewusst so belassen), 11 (Produktfrage) und 15.
 
 Sollte:
 
 1. ✓ behoben in Version 107. **Falscher Sync-Konflikt nach verlorener Antwort** (`js/cloud.js:11`, `:19`): Kommt der Upload an, die Antwort aber nicht (Funkloch, 15-s-Timeout), bleibt `cloudRevision` alt und der nächste Versuch meldet einen Konflikt, obwohl beide Stände gleich sind. Lösung: im Konfliktzweig den Serverstand holen und bei gleichen Nutzdaten nur die Revision übernehmen; Test fehlt.
-2. **Anmeldung ersetzt lokale Daten ohne Rückfrage** (`js/cloud.js:23`, `:25`): Hat das Konto schon Daten, werden die lokalen ersetzt. Die Kopie `puls-cloud-local-before-login` ist in der Oberfläche nicht abrufbar und wird beim nächsten Login überschrieben. Produktentscheidung.
+2. ✓ entschärft in Version 108: Nach dem Laden des Kontostands sagt ein Hinweis, dass der bisherige Gerätestand beim Abmelden zurückkommt (`signOutCloud` stellt ihn wieder her). Eine Rückfrage vor dem Ersetzen gibt es weiter nicht. **Anmeldung ersetzt lokale Daten ohne Rückfrage** (`js/cloud.js:23`, `:25`): Hat das Konto schon Daten, werden die lokalen ersetzt. Die Kopie `puls-cloud-local-before-login` ist in der Oberfläche nicht abrufbar und wird beim nächsten Login überschrieben. Produktentscheidung.
 3. ✓ behoben in Version 107. **Ungültiger Barcode aus der Open-Food-Facts-Suche** (`js/food-flow.js:104`, `js/food-search.js:7`, `js/products.js:53`): Der Code eines Suchtreffers wird ungeprüft gespeichert; `validData` lehnt den Stand danach ab, Sync, Export und Import scheitern. Lösung: Treffer mit `validBarcode` filtern oder den Code weglassen.
-4. **Service Worker:** `scripts/check.cjs` prüft die `ASSETS`-Liste in `sw.js` nicht gegen vorhandene Dateien; ein falscher Eintrag lässt die Offline-Installation still scheitern. `.js`/`.css` mit Fehlerantwort fallen nicht auf den Cache zurück (`sw.js:67`).
-5. **iOS-Hülle** (`ios/PULS/WebViewController.swift:68`, `:97`, `:196`): Pfadprüfung `hasPrefix("/puls")` lässt auch `/pulsX/` zu; Nachrichten und `sendRunGps` werden nur nach Host geprüft. Geringes Risiko, weil der Host GitHub Pages des eigenen Kontos ist.
-6. **Tests außerhalb des Sammellaufs:** `check-shell-extras.cjs`, `check-premium.cjs` und `check-regional-foods.cjs` laufen einzeln grün, stehen aber nicht in `scripts/check.cjs`.
+4. ✓ behoben in Version 108 (`scripts/check.cjs` prüft `ASSETS`, Fehlerantworten fallen auf den Cache zurück). **Service Worker:** `scripts/check.cjs` prüft die `ASSETS`-Liste in `sw.js` nicht gegen vorhandene Dateien; ein falscher Eintrag lässt die Offline-Installation still scheitern. `.js`/`.css` mit Fehlerantwort fallen nicht auf den Cache zurück (`sw.js:67`).
+5. ✓ behoben in Version 108 (`isAppPath`, Pfadprüfung auch bei Nachrichten und `sendRunGps`); Swift-Build und Gerät ungeprüft, wirkt erst mit dem nächsten App-Build. **iOS-Hülle** (`ios/PULS/WebViewController.swift:68`, `:97`, `:196`): Pfadprüfung `hasPrefix("/puls")` lässt auch `/pulsX/` zu; Nachrichten und `sendRunGps` werden nur nach Host geprüft. Geringes Risiko, weil der Host GitHub Pages des eigenen Kontos ist.
+6. ✓ behoben in Version 108. **Tests außerhalb des Sammellaufs:** `check-shell-extras.cjs`, `check-premium.cjs` und `check-regional-foods.cjs` laufen einzeln grün, stehen aber nicht in `scripts/check.cjs`.
 
 Kann:
 
-7. Der beim Start geladene Stand wird nicht mit `validCore` geprüft (`js/app.js:40`); ein kaputter Speicherstand wie `{"version":2}` lässt den Start abbrechen.
-8. Nur ein Platz für Konfliktsicherungen (`js/cloud.js:26`); der zweite Konflikt überschreibt den ersten.
-9. Größenlimit: Client 4.000.000 Zeichen, Datenbank 5.000.000 (`backend/accounts.sql:6`).
-10. `trendData()` rechnet quadratisch über die Tage (`js/experience.js:17`); bei mehreren Jahren Daten spürbar.
+7. ✓ behoben in Version 108: Ein Stand ohne Grundgerüst (`goals`, `foods`, `weights`, `workouts`, `custom`) gilt als beschädigt, wird nach `puls-v1-corrupt` gesichert und sperrt den Upload. Der beim Start geladene Stand wird nicht mit `validCore` geprüft (`js/app.js:40`); ein kaputter Speicherstand wie `{"version":2}` lässt den Start abbrechen.
+8. Offen, bewusst: Nur ein Platz für Konfliktsicherungen (`js/cloud.js:26`); der zweite Konflikt überschreibt den ersten. Die Sicherung ist im Konto herunterladbar; mehrere Plätze würden den Gerätespeicher (bis 4 MB je Stand) schnell füllen.
+9. Kein Fehler: Größenlimit Client 4.000.000 Zeichen, Datenbank 5.000.000 (`backend/accounts.sql:6`). Der Client ist absichtlich strenger, damit ein Upload nie am Server scheitert.
+10. ✓ behoben in Version 108 (einmal nach Tag gruppiert). `trendData()` rechnet quadratisch über die Tage (`js/experience.js:17`); bei mehreren Jahren Daten spürbar.
 11. e1RM zählt Sätze mit 1–10 Wiederholungen (`js/enhancements.js:76`), der Rang 1–12 (`js/strength-ranks.js:169`). Produktfrage.
-12. Der Lauf-Spurspeicher schluckt Speicherfehler stumm (`js/running.js:95`, `:131`).
-13. `js/experience.js:17` mischt lokale Zeit und UTC; um Mitternacht kann ein Tag verrutschen.
-14. Keine Tests für Fasten, `trendData`, `fdWeekStats` und `weightTrend`.
+12. ✓ behoben in Version 108 (einmaliger Hinweis). Der Lauf-Spurspeicher schluckt Speicherfehler stumm (`js/running.js:95`, `:131`).
+13. ✓ behoben in Version 108 (Stichtag aus lokalen Datumsteilen). `js/experience.js:17` mischt lokale Zeit und UTC; um Mitternacht kann ein Tag verrutschen.
+14. ✓ behoben in Version 108: `tests/check-trends-fasting.cjs`.
+15. Neu (beim Schreiben der Tests gefunden): `weeklyWeights` (`js/flows.js:60`) zählt auch Gewichte mit künftigem Datum ins Wochenmittel des Verlaufs; der Test hält das fest. Die Montagsregel in `js/flows.js:81` ist tot, weil Zeile 88 das Feld überschreibt.
 
 Ohne Befund: HTML-Ausgabe (`esc`, ID-Prüfung), RLS-SQL, `account-delete`, Edge Function `food-photo`, Freunde-SQL, Import, Geheimnisse im Repository, Einheitenlogik. Nicht gelesen: `js/i18n.js`, Leaflet, CSS, `catalog/`; große Dateien nur punktuell.
 

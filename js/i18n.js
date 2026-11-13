@@ -582,7 +582,9 @@ Object.assign(englishUI,{
 
 Object.assign(englishUI,{
  "Ungültige Sicherung. Daten bleiben erhalten.": "Invalid backup. Your data is preserved.",
- "Abgemeldet. Gerätespeicher voll – aktueller Stand bleibt auf diesem Gerät.": "Signed out. Device storage full. Your current data remains on this device.",
+ "Cloud-Profil geladen. Dein bisheriger Stand auf diesem Gerät ist gesichert und kommt beim Abmelden normalerweise zurück.": "Cloud profile loaded. Your previous data on this device is saved and normally comes back when you sign out.",
+ "Gerätespeicher voll: Die Laufspur wird gerade nicht zwischengespeichert.": "Device storage full: the run track is not being saved right now.",
+ "Abgemeldet. Gerätespeicher voll – aktueller Stand bleibt auf diesem Gerät.":"Signed out. Device storage full. Your current data remains on this device.",
  "Die automatische Planung ist für Erwachsene von 18 bis 100 Jahren verfügbar.": "Automatic planning is available for adults aged 18 to 100.",
  "Das berechnete Ziel liegt unter 1.000 kcal. Dafür werden keine automatischen Ziele gesetzt.": "The calculated target is below 1,000 kcal. Automatic targets are unavailable.",
  "Lege zuerst eine Übung an": "Create an exercise first",

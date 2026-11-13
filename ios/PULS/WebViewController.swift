@@ -8,6 +8,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     static let home = URL(string: "https://selvirtnj.github.io/puls/")!
     static let appHost = "selvirtnj.github.io"
     static let appPath = "/puls"
+    /// Genau der App-Pfad oder darunter; "/pulsX" gehört nicht dazu.
+    private static func isAppPath(_ url: URL) -> Bool { url.path == appPath || url.path.hasPrefix(appPath + "/") }
     static let background = UIColor(red: 0x10 / 255, green: 0x12 / 255, blue: 0x10 / 255, alpha: 1)
 
     private var webView: WKWebView!
@@ -67,7 +69,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     private func isAppURL(_ url: URL) -> Bool {
         if ["blob", "data", "about"].contains(url.scheme ?? "") { return true }
-        return url.host == Self.appHost && url.path.hasPrefix(Self.appPath)
+        return url.host == Self.appHost && Self.isAppPath(url)
     }
 
     private func presentOnTop(_ controller: UIViewController) {
@@ -96,6 +98,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame,
               message.frameInfo.securityOrigin.host == Self.appHost,
+              let page = message.frameInfo.request.url, Self.isAppPath(page),
               let body = message.body as? [String: Any],
               let type = body["type"] as? String else { return }
         switch type {
@@ -184,7 +187,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     private func sendExtras(_ requestID: String, _ body: [String: Any]) {
         guard let url = webView.url, url.scheme == "https", url.host == Self.appHost,
-              url.path.hasPrefix(Self.appPath) else { return }
+              Self.isAppPath(url) else { return }
         var payload = body
         payload["requestId"] = requestID
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
@@ -194,7 +197,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     /// GPS-Punkte an running.js (window.pulsRunGpsReceive) zurückgeben.
     private func sendRunGps(_ payload: [String: Any]) {
-        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+        guard let url = webView.url, url.scheme == "https", url.host == Self.appHost, Self.isAppPath(url),
+              let data = try? JSONSerialization.data(withJSONObject: payload),
               let json = String(data: data, encoding: .utf8) else { return }
         webView.evaluateJavaScript("window.pulsRunGpsReceive&&window.pulsRunGpsReceive(\(json))", completionHandler: nil)
     }
@@ -261,7 +265,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         locateTimeout = nil
         locateManager?.delegate = nil
         locateManager = nil
-        guard let url = webView.url, url.host == Self.appHost, url.path.hasPrefix(Self.appPath),
+        guard let url = webView.url, url.host == Self.appHost, Self.isAppPath(url),
               let data = try? JSONSerialization.data(withJSONObject: payload),
               let json = String(data: data, encoding: .utf8) else { return }
         webView.evaluateJavaScript("window.pulsRunLocateReceive&&window.pulsRunLocateReceive(\(json))", completionHandler: nil)

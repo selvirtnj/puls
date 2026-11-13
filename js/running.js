@@ -92,7 +92,8 @@ function runTrackFor(run=state.activeRun){
   try{let saved=JSON.parse(appStore.getItem('puls-run-track'));runTrack=saved?.key===key&&Array.isArray(saved.points)?saved:{key,points:[],native:0}}catch{runTrack={key,points:[],native:0}}
   return runTrack;
 }
-function storeRunTrack(){if(runTrack)try{appStore.setItem('puls-run-track',JSON.stringify(runTrack))}catch{}}
+let runTrackStoreFailed=false;
+function storeRunTrack(){if(runTrack)try{appStore.setItem('puls-run-track',JSON.stringify(runTrack));runTrackStoreFailed=false}catch{/* einmal melden, nicht bei jedem GPS-Punkt */if(!runTrackStoreFailed){runTrackStoreFailed=true;if(typeof toast==='function')toast('Gerätespeicher voll: Die Laufspur wird gerade nicht zwischengespeichert.')}}}
 function clearRunTrack(){runTrack=null;runPendingRoute=null;runPendingSplits=null;runNativeTotal=0;runOwnedKey='';try{appStore.setItem('puls-run-track','null')}catch{}runDeviceKey(null)}
 function runMeters(a,b){const rad=Math.PI/180,dLat=(b[1]-a[1])*rad,dLon=(b[2]-a[2])*rad,h=Math.sin(dLat/2)**2+Math.cos(a[1]*rad)*Math.cos(b[1]*rad)*Math.sin(dLon/2)**2;return 12742000*Math.asin(Math.min(1,Math.sqrt(h)))}
 // Distanz: ungenaue Punkte (> 35 m), Zitter-Schritte (< 4 m) und unmögliche Sprünge (> 12 m/s) fließen nicht ein.
