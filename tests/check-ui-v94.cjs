@@ -6,7 +6,7 @@ let harness=read('tests/check-native-training.cjs').split('const started=options
  .replace("run('var englishUI={}');","run(fs.readFileSync('js/i18n.js','utf8'));");
 const app=vm.runInNewContext('(function(require){'+harness+';return app})(require)',{require,console});
 const t=app({handler:false,features:[],preview:true});
-for(const name of ['food-diary','quick-account-v87','food-flow','food-photo','workout-import'])t.run(read('js/'+name+'.js'));
+for(const name of ['food-diary','quick-account','food-flow','food-photo','workout-import'])t.run(read('js/'+name+'.js'));
 for(const id of ['barcode-camera','foodpreview'])t.el(id).classList.contains=()=>false;
 t.el('ff-torch').setAttribute=()=>{};
 const german=/[äöüßÄÖÜ]|\b(?:und|dein|deine|deinen|für|nicht|Gewicht|Menge|Ziele|Einträge|erfassen|erfasst|gespeichert|Bitte|Keine|Kein|Woche|Sätze|Wiederholungen)\b/;

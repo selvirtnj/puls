@@ -4,12 +4,13 @@ Stand 14.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Live
 
-- **Version 104** auf `main` (Commit „Version 104: Refactor Phase 4, nutrition und profileForm als je eine Funktion“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
+- **Version 105** auf `main` (Commit „Version 105: Refactor Phase 5, Altlasten-Dateien umbenannt“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
-- In Arbeit: Refactor nach [ISSUES.md](ISSUES.md), Phasen 0 bis 3 sind erledigt, Phase 4 ist mit `render`, `accountPage`, `openModal`, `workoutPage`, `nutrition` und `profileForm` fertig, Phase 5 ist offen. Es gibt nur den Branch `main`.
+- Der Refactor nach [ISSUES.md](ISSUES.md) ist mit den Phasen 0 bis 5 abgeschlossen (Versionen 99 bis 105). Es gibt nur den Branch `main`.
 
 ## Letzte Versionen
 
+- **105** (14.11.): Refactor Phase 5, ohne sichtbare Änderung. Umbenannt: `js/puls-data-v87.js` → `js/puls-data.js`, `js/quick-account-v87.js` → `js/quick-account.js`, `css/quick-account-v87.css` → `css/quick-account.css`, `css/v90-ui.css` → `css/ui-layer.css`; `index.html`, `sw.js`, Tests und Doku nachgezogen. Globale Namen wie `pulsData87` und die Testdateinamen bleiben.
 - **104** (14.11.): Refactor Phase 4, letzter Teil, ohne sichtbare Änderung. `nutrition` ist die eine Funktion in `js/food-diary.js`; die 13 älteren Definitionen liefen nie und sind gelöscht. `profileForm` ist eine Funktion in `js/enhancements.js` (Kern `profileFormBase`, 9 Glieder `profileFormAfter…`) statt 10 Wrappern. Neue Tests `tests/check-nutrition-order.cjs` (108 Zustände) und `tests/check-profileform-order.cjs` (91 Zustände) gegen den alten Stand; `check-premium` und `check-refinement34` prüfen die Ernährungsseite jetzt an der vollständig geladenen App statt an der nie wirksamen alten Kette. Browser-Vergleich alt gegen neu ohne Unterschied, von Codex gegengeprüft.
 - **103** (14.11.): Refactor Phase 4, vierter Teil, ohne sichtbare Änderung. `workoutPage` ist eine Funktion in `js/flows.js` (Kern `workoutPageBase`, 5 Glieder `workoutPageAfter…`) statt 14 Wrappern; acht davon liefen nie und sind gelöscht. Neuer Test `tests/check-workoutpage-order.cjs` (72 Zustände gegen den alten Stand), Browser-Vergleich alt gegen neu über 69 Training-Zustände ohne Unterschied, von Codex gegengeprüft.
 - **102** (14.11.): Refactor Phase 4, dritter Teil, ohne sichtbare Änderung. `openModal` ist eine Funktion in `js/app.js` (Kern `openModalBase`, 18 Glieder `openModalBefore…`/`openModalAfter…` in 16 Dateien) statt 17 Wrappern. Neuer Test `tests/check-openmodal-order.cjs` (164 Zustände gegen den alten Stand), Browser-Vergleich alt gegen neu über 72 Fensteraufrufe ohne Unterschied, von Codex gegengeprüft.

@@ -17,7 +17,7 @@ const CASES=JSON.parse(fs.readFileSync('tests/fixtures/validdata/cases.json','ut
 const GLIEDER=[
  ['experience',1,'profileFormAfterExperience'],['experience',2,'profileFormAfterExperiencePersonal'],['flows',1,'profileFormAfterFlowsRefined'],['flows',2,'profileFormAfterFlowsOnboarding'],
  ['lifecycle',1,'profileFormAfterLifecycle'],['workout-polish',1,'profileFormAfterWorkoutPolish'],['adaptation',1,'profileFormAfterAdaptation'],['profile-refresh',1,'profileFormAfterProfileRefresh'],
- ['quick-account-v87',1,'profileFormAfterQuickAccount']
+ ['quick-account',1,'profileFormAfterQuickAccount']
 ];
 const LABEL=new Map(GLIEDER.map(([file,nr,name])=>[name,`${file}#${nr}`]));LABEL.set('profileFormBase','kern:enhancements');
 
@@ -235,5 +235,5 @@ for(const group of ['standard','erststart']){
  }
 }
 const full=Object.values(golden.standard.faelle).find(f=>f.ablauf.startsWith('kern:enhancements')).ablauf.split(' ');
-assert.equal(full[0],'kern:enhancements');assert.equal(full.at(-1),'quick-account-v87#1');assert.equal(full.length,10);
+assert.equal(full[0],'kern:enhancements');assert.equal(full.at(-1),'quick-account#1');assert.equal(full.length,10);
 console.log(`PASS: profileForm ist eine Funktion; ${Object.keys(golden.standard.faelle).length+Object.keys(golden.erststart.faelle).length} Zustände liefern Ablauf, DOM-Zugriffe und Formular wie die alte Kette (${full.length} Glieder im Vollauf).`);

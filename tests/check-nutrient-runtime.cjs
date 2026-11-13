@@ -53,7 +53,7 @@ function fullApp() {
   const t = app({handler:false});
   const readState=t.state;t.state=()=>clone(readState());
   t.run('cloudSession=null;state=initial();migrate();render=function(){};');
-  for (const file of ['food-photo','native-extras','workout-import','strength-ranks','puls-data-v87','routine-favorites','nutrient-definitions','nutrient-resolver']) {
+  for (const file of ['food-photo','native-extras','workout-import','strength-ranks','puls-data','routine-favorites','nutrient-definitions','nutrient-resolver']) {
     t.run(fs.readFileSync('js/'+file+'.js','utf8'));t.run('render=function(){}');
   }
   return t;

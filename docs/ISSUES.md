@@ -45,6 +45,6 @@ Regeln: Kein Framework, kein Build-Schritt. Verhalten und Ladereihenfolge bleibe
 | 2 ✓ | Kleine CSS-Dateien in gleicher Reihenfolge zusammenführen (Kaskade unverändert). 30 Dateien stecken jetzt in `css/style.css`; im Browser belegt: 3.430 Regeln mit gleichem Hash vorher und nachher. |
 | 3 ✓ | `validData`-Kette in eine Funktion zusammenführen. Erledigt in `js/app.js` (`validCore` plus Abschnitte in der alten Auswertungsreihenfolge); die Wiederherstellung beim Laden nutzt wie bisher nur die Kernprüfung. |
 | 4 | Übrige Wrapper (`render`, `accountPage`, `openModal`, dann `workoutPage`, `nutrition`, `profileForm`) schrittweise zusammenlegen. |
-| 5 | Altlasten-Dateinamen (`puls-data-v87.js`, `quick-account-v87.*`, `v90-ui.css`) umbenennen; `index.html`, `sw.js`, Tests mitziehen. |
+| 5 | Erledigt (Version 105): Altlasten-Dateien heißen jetzt `puls-data.js`, `quick-account.*`, `ui-layer.css`; `index.html`, `sw.js`, Tests mitgezogen. |
 
 Vorab-Frage für Phase 4 ist geklärt (Befund 4): Die native-Zustandsdateien sind ohne Brücke untätig und gehören nicht zu den wirksamen Wrapper-Ketten.

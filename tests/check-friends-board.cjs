@@ -1,7 +1,7 @@
 // v87 Freunde-Bestenliste, Rang-Embleme, Slacking-Band und einmalige Rang-Feier in einer synthetischen VM.
 // Prüft keine echte Darstellung (Layout/Animation) und kein Backend; dafür Browser-Test bei 390 × 844.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const board=fs.readFileSync('js/friends-board.js','utf8'),dataSource=fs.readFileSync('js/puls-data-v87.js','utf8');
+const board=fs.readFileSync('js/friends-board.js','utf8'),dataSource=fs.readFileSync('js/puls-data.js','utf8');
 const xpLine=fs.readFileSync('js/workout-polish.js','utf8').split('\n').find(line=>line.startsWith('function xpProgress('));
 assert(xpLine,'xpProgress source');
 
@@ -41,7 +41,7 @@ function fixture({snapshot,xp=6400,language='de',display={},strengthScore=12}={}
   ctx.state.workouts=[{id:'w1',finished:true,date:'2026-11-07',sets:[{}],exercises}];
  }
  setStrength(strengthScore);
- vm.runInContext(xpLine,ctx);vm.runInContext(dataSource,ctx,{filename:'puls-data-v87.js'});
+ vm.runInContext(xpLine,ctx);vm.runInContext(dataSource,ctx,{filename:'puls-data.js'});
  vm.runInContext(board,ctx,{filename:'friends-board.js'});
  return {ctx,nodes,panel,mount,log,api:ctx.pulsFriendsBoard,setStrength,setXp:v=>{currentXp=v;clock+=2000},setSnap:v=>{snap=v},tick:ms=>{clock+=ms}};
 }
@@ -200,11 +200,11 @@ for(const [display,migrated,quiet,celebrates] of [
  assert.equal(f.log.toasts.length,0,'old Protein Farter II -> Creatine Bloater III is not a new rank');
 }
 
-// Einbindung: eigene Dateien, Reihenfolge nach friends.js/puls-data-v87.js und vor motion.js, Offline-Cache.
+// Einbindung: eigene Dateien, Reihenfolge nach friends.js/puls-data.js und vor motion.js, Offline-Cache.
 {
  const html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
  const at=s=>{const i=html.indexOf(s);assert(i>=0,s);return i};
- assert(at('js/friends.js')<at('js/friends-board.js')&&at('js/puls-data-v87.js')<at('js/friends-board.js')&&at('js/friends-board.js')<at('js/motion.js'));
+ assert(at('js/friends.js')<at('js/friends-board.js')&&at('js/puls-data.js')<at('js/friends-board.js')&&at('js/friends-board.js')<at('js/motion.js'));
  assert(at('css/design-system.css')<at('css/friends-board.css'));
  for(const file of ['js/friends-board.js','css/friends-board.css'])assert(sw.includes('"'+file+'"'),file);
  assert.match(fs.readFileSync('js/friends.js','utf8'),/<section id="puls-friends-board-mount">/);

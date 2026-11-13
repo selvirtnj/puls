@@ -321,7 +321,7 @@ function persistSeen(index){
 let rankBase={state:null,index:-1};
 function celebrate(root=document){
  const s=currentState(),r=ownRank();if(!r||!s)return false;
- // Old 25-stage marks (no rankScale 2) are mapped once before comparing; see puls-data-v87 migrate.
+ // Old 25-stage marks (no rankScale 2) are mapped once before comparing; see puls-data migrate.
  if(s.display?.rankScale!==2&&typeof data()?.migrate==='function'){try{data().migrate(s)}catch(error){console.error(error)}}
  const storedSeen=s.display?.rankScale===2?data()?.display?.().lastRankSeen:undefined;
  const seen=Number.isInteger(storedSeen)?Math.min(maxStage(),storedSeen):storedSeen;

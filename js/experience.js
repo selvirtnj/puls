@@ -21,7 +21,7 @@ home=function(){return `<div class="dashboardstack">${macroCard()}<button class=
 // (js/flows.js); jedes Glied ist accountPageAfter… in seiner Datei (gesetzt dort, wo früher der Wrapper installiert wurde), bekommt den HTML-Text des
 // Vorgängers und gibt den neuen zurück. Reihenfolge wie die alte Verschachtelung (zuletzt geladener Wrapper außen); aufgerufen wird nur, was gesetzt ist.
 // accountPageBuild(n) rechnet den Text mit den ersten n Gliedern; rerun() im Glied ist ein zweiter Aufruf des Vorgängers (nur account-guide.js, wenn .accountcompact fehlt),
-// und accountRefreshBase (account-refresh.js) liefert den Text unter dem Glied account-refresh, den quick-account-v87.js für „Konto verwalten“ braucht.
+// und accountRefreshBase (account-refresh.js) liefert den Text unter dem Glied account-refresh, den quick-account.js für „Konto verwalten“ braucht.
 // Der frühere Kern aus diesem Block mit den Gliedern aus experience.js, finish.js, personal.js und navigation.js lag unter dem Ersatz aus flows.js und lief nie.
 const accountPageSteps=['accountPageAfterFlowsPlan','accountPageAfterFlowsDesign','accountPageAfterFlowsLayout','accountPageAfterFlowsStreak','accountPageAfterInteractions','accountPageAfterWorkoutPolish','accountPageAfterComfort','accountPageAfterTrackerTools','accountPageAfterAdaptation','accountPageAfterCloud','accountPageAfterAccountGuide','accountPageAfterRefinement','accountPageAfterAccountRefresh','accountPageAfterQuickAccount'];
 function accountPageBuild(count=accountPageSteps.length){let html=accountPageBase();for(let i=0;i<count;i++){const step=globalThis[accountPageSteps[i]];if(typeof step==='function')html=step(html,()=>accountPageBuild(i))}return html}

@@ -5,7 +5,7 @@ ctx.TextEncoder=TextEncoder;
 run('render=function(){}');run(fs.readFileSync('js/machine-library.js','utf8'));
 run('var accountManageBody=()=>\'\';var accountListRow=()=>\'\';');ctx.cloudSession=null;
 run(fs.readFileSync('js/workout-import.js','utf8'));
-// Plus-Menü-Helfer aus quick-account-v87.js als schlanke Attrappen.
+// Plus-Menü-Helfer aus quick-account.js als schlanke Attrappen.
 run('var qaT=(de,en)=>de;var qaRow=({label,action})=>\'<button onclick="\'+action+\'">\'+label+\'</button>\';var qaGroup=(t,rows)=>rows;var qaQuickRoutines=()=>null;');
 run(fs.readFileSync('js/routine-favorites.js','utf8'));
 run('state=initial();migrate();var favSaves=0;save=()=>favSaves++;');

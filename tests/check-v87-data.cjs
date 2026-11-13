@@ -15,7 +15,7 @@ let haptics=0;c.pulsHaptic=()=>++haptics;
 // Ohne window.pulsData87 (noch nicht geladen) prüft validData wie vor v87: keine Bereinigung der Optionen, keine Kombi-Prüfung.
 const oldValidator=s=>{const v87=c.window.pulsData87;c.window.pulsData87=undefined;try{return c.validData(s)}finally{c.window.pulsData87=v87}};
 let writes=0;c.localStorage.setItem=()=>{writes++};
-const source=fs.readFileSync('js/puls-data-v87.js','utf8');run(fs.readFileSync('js/strength-ranks.js','utf8'));run(source);
+const source=fs.readFileSync('js/puls-data.js','utf8');run(fs.readFileSync('js/strength-ranks.js','utf8'));run(source);
 const api=c.window.pulsData87,clone=x=>JSON.parse(JSON.stringify(x));
 const old=()=>JSON.parse(run('JSON.stringify(initial())'));
 const validate=s=>c.validData(s);
@@ -132,8 +132,8 @@ for(const [display,source,expected] of [
  const restored={...old(),display:clone(probe.display)};assert(validate(restored));assert.deepEqual(clone(restored.display),clone(probe.display),'migrated marks pass backup validation');
 }
 assert.equal(writes,writesBefore,'scale migration never saves');
-for(const file of ['index.html','sw.js'])assert(fs.readFileSync(file,'utf8').includes('js/puls-data-v87.js'));
-assert(fs.readFileSync('index.html','utf8').indexOf('js/puls-data-v87.js')>fs.readFileSync('index.html','utf8').indexOf('js/friends.js'));
+for(const file of ['index.html','sw.js'])assert(fs.readFileSync(file,'utf8').includes('js/puls-data.js'));
+assert(fs.readFileSync('index.html','utf8').indexOf('js/puls-data.js')>fs.readFileSync('index.html','utf8').indexOf('js/friends.js'));
 // Real startup with mixed malformed local combos: preserve all valid snapshots.
 const repairedHarness={require,console};vm.runInNewContext(setup+'\nglobalThis.fixture87={ctx,run};',repairedHarness);
 const repaired=repairedHarness.fixture87;repaired.ctx.seedMeals87=[clone(optional.meals[0]),{}, {...clone(optional.meals[0]),id:'second-valid'}, {id:'bad',name:'Bad',items:[]}];

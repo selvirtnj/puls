@@ -147,7 +147,7 @@ const ai={name:'Foto',grams:300,unit:'g',kcal:500,p:20,c:50,f:20,source:'KI-Sch�
 const snap=c.fpSnapshot(ai,300);for(const k of ['source','aiEstimate','recipeId','foodRef','barcode'])assert.equal(snap[k],ai[k],k);
 assert.equal(c.fpMealsOK([{id:'combo-2',name:'KI',items:[snap]}]),true);
 assert.equal(c.fpMealsOK([{id:'combo-2',name:'KI',items:[{...snap,aiEstimate:'ja'}]}]),false);
-const v87=fs.readFileSync('js/puls-data-v87.js','utf8');assert.match(v87,/aiEstimate===undefined\|\|typeof x\.aiEstimate==='boolean'/);assert.match(v87,/'foodRef','recipeId'/);
+const v87=fs.readFileSync('js/puls-data.js','utf8');assert.match(v87,/aiEstimate===undefined\|\|typeof x\.aiEstimate==='boolean'/);assert.match(v87,/'foodRef','recipeId'/);
 
 // Wasser „Automatisch“ löscht ein früheres eigenes Ziel.
 const inputs={'fd-water-mode':{value:'auto'},'fd-water-glass':{value:'300'},'fd-water-goal':{value:'2500'}};

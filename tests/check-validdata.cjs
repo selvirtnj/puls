@@ -67,7 +67,7 @@ built.forEach(({c,state},i)=>{
  const got=baseline[i];
  if(got.result!=='throws'&&got.kind!=='boolean')nonBoolean++;
  if(got.result!==c.expected)wrongResult.push(`${c.name}: erwartet ${c.expected}, erhalten ${got.result}${got.thrown?' ('+got.thrown+')':''}`);
- // Eine Ablehnung verändert die Eingabe nicht; bei Annahme darf nur `removed` verschwinden (Bereinigung durch puls-data-v87.js).
+ // Eine Ablehnung verändert die Eingabe nicht; bei Annahme darf nur `removed` verschwinden (Bereinigung durch puls-data.js).
  const wantAfter=c.expected===true?expectedAfter(c,state):got.before;
  if(got.after!==wantAfter)wrongMutation.push(c.name);
 });
@@ -127,7 +127,7 @@ const STATE_KEYS=['goals','foods','weights','workouts','custom','version','profi
  'waterGoal','microGoals','nativeExtras','progressView','chartLines','chartPeriod','runs','activeRun','runRoutes','runSettings'];
 // Heute ohne Ablehnung in validData (nur dokumentiert, nicht nachgerüstet): beliebige Werte gelten als gültig.
 const UNCHECKED_TODAY=['version','colorScheme','chartPeriod','chartLines'];
-// Heute nur bereinigt: ungültige Teilfelder werden still entfernt (puls-data-v87.js), das Profil bleibt gültig.
+// Heute nur bereinigt: ungültige Teilfelder werden still entfernt (puls-data.js), das Profil bleibt gültig.
 const SANITIZED_ONLY=['display','water','foodSearch'];
 const NOT_STATE=['js','__pulsRecoveryUploadBlocked']; // „state.js“ im Kommentar, lokales Wiederherstellungs-Flag
 const allJs=fs.readdirSync('js').filter(f=>f.endsWith('.js')).map(f=>read('js/'+f)).join('\n');

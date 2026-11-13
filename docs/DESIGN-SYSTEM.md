@@ -9,7 +9,7 @@ Verbindliche Entscheidung von Selvir. Grundlage: Apple Human Interface Guideline
 - Eine Akzentfarbe für Bedienelemente: Apple-Blau, hell `#007AFF`, dunkel `#0A84FF`. Systemfarben (Grün, Orange, Rot) nur mit Bedeutung (erreicht, Warnung, Fehler); Orange bleibt „Ziel überschritten“.
 - Kategoriefarben (v89, Selvirs Wunsch „mehr Farbe“), nur für Daten-Kategorien in Übersicht und Essen-Tab (Ringe, Balken, Farbpunkte, Symbolquadrate). Vollton, keine Verläufe, kein Lila/Violett, kein Neon. Tokens `--ds-cat-*` in `css/design-system.css`; der Essen-Tab nutzt sie über `--fd-k/p/c/f`.
 
-  v90 (Selvirs Wunsch): **Training = Blau, Essen = Orange, Körper = Grün**, überall gleich (Übersicht, Tabs, Tab-Leiste, laufendes Workout, Abschluss/Rangseite, Konto, Freunde). Seitenakzent im Workout-Bereich Blau, im Essen-Tab und den Essen-Seiten Orange. Im Essen-Bereich zeigt „Ziel überschritten“ Rot (`--ds-cat-over`), weil Orange dort die Bereichsfarbe ist. Frisch/Mitternacht überschreiben einzelne Töne. Weiße Schrift/Symbole auf `*-fill` mindestens 4.5:1. Zusätzliche Regeln in `css/v90-ui.css`.
+  v90 (Selvirs Wunsch): **Training = Blau, Essen = Orange, Körper = Grün**, überall gleich (Übersicht, Tabs, Tab-Leiste, laufendes Workout, Abschluss/Rangseite, Konto, Freunde). Seitenakzent im Workout-Bereich Blau, im Essen-Tab und den Essen-Seiten Orange. Im Essen-Bereich zeigt „Ziel überschritten“ Rot (`--ds-cat-over`), weil Orange dort die Bereichsfarbe ist. Frisch/Mitternacht überschreiben einzelne Töne. Weiße Schrift/Symbole auf `*-fill` mindestens 4.5:1. Zusätzliche Regeln in `css/ui-layer.css`.
 
   | Kategorie | Hell | Dunkel |
   |---|---|---|

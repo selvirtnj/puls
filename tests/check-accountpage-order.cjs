@@ -16,7 +16,7 @@ const GLIEDER=[
  ['interactions',1,'accountPageAfterInteractions'],['workout-polish',1,'accountPageAfterWorkoutPolish'],['comfort',1,'accountPageAfterComfort'],
  ['tracker-tools',1,'accountPageAfterTrackerTools'],['adaptation',1,'accountPageAfterAdaptation'],['cloud',1,'accountPageAfterCloud'],
  ['account-guide',1,'accountPageAfterAccountGuide'],['refinement',1,'accountPageAfterRefinement'],['account-refresh',1,'accountPageAfterAccountRefresh'],
- ['quick-account-v87',1,'accountPageAfterQuickAccount']
+ ['quick-account',1,'accountPageAfterQuickAccount']
 ];
 const LABEL=new Map(GLIEDER.map(([file,nr,name])=>[name,`${file}#${nr}`]));LABEL.set('accountPageBase','kern:flows');
 
@@ -37,7 +37,7 @@ function instrumentOld(file,text){
 // Neuer Code: Jedes Glied meldet sich beim Eintritt.
 function instrumentNew(file,text){
  // Das frühere „Ende des Vorgängers“ meldeten die Wrapper selbst; im neuen Code melden es hier rerun() von account-guide.js (zweiter Aufruf des Vorgängers)
- // und accountRefreshBase() von account-refresh.js (quick-account-v87.js ruft es für „Konto verwalten“ auf).
+ // und accountRefreshBase() von account-refresh.js (quick-account.js ruft es für „Konto verwalten“ auf).
  if(file==='js/experience.js')text=text.replace('()=>accountPageBuild(i)',()=>`()=>{const r=accountPageBuild(i);__ev(${JSON.stringify(Object.fromEntries(LABEL))}[accountPageSteps[i]]);return r}`);
  if(file==='js/account-refresh.js')text=text.replace("const accountRefreshBase=()=>accountPageBuild(accountPageSteps.indexOf('accountPageAfterAccountRefresh'));",()=>"const accountRefreshBase=()=>{const r=accountPageBuild(accountPageSteps.indexOf('accountPageAfterAccountRefresh'));__ev('account-refresh#1');return r};");
  text=text.replace(/globalThis\.(accountPage(?:Base|After\w+))=function \1\(([^)]*)\)\{/g,(m,name)=>m+`__ev(${JSON.stringify(LABEL.get(name))});`);
@@ -127,5 +127,5 @@ for(const group of ['standard','erststart']){
  }
 }
 const full=Object.values(golden.standard.faelle).find(f=>f.ablauf.startsWith('kern:flows')).ablauf.split(' ');
-assert.equal(full[0],'kern:flows');assert.equal(full.at(-1),'quick-account-v87#1');
+assert.equal(full[0],'kern:flows');assert.equal(full.at(-1),'quick-account#1');
 console.log(`PASS: accountPage ist eine Funktion; ${Object.keys(golden.standard.faelle).length+Object.keys(golden.erststart.faelle).length} Zustände liefern Ablauf und HTML wie die alte Kette (${full.length} Glieder im Vollauf).`);

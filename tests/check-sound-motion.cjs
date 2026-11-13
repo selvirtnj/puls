@@ -134,6 +134,6 @@ assert(motion.checkSvg().includes('pathLength="1"'));
 
 const html=fs.readFileSync('index.html','utf8'),at=name=>html.indexOf(name);
 assert(at('js/interactions.js')<at('js/sound-engine.js')&&at('js/sound-engine.js')<at('js/haptics.js'),'sound-engine loads after interactions and before haptics');
-assert(at('js/motion.js')>at('js/puls-data-v87.js')&&at('css/motion.css')>at('css/friends.css'),'motion loads last');
+assert(at('js/motion.js')>at('js/puls-data.js')&&at('css/motion.css')>at('css/friends.css'),'motion loads last');
 const sw=fs.readFileSync('sw.js','utf8');for(const file of ['js/sound-engine.js','js/motion.js','css/motion.css'])assert(sw.includes('"'+file+'"'),'offline '+file);
 console.log('PASS: v87 sound engine, haptic mapping and motion helpers');

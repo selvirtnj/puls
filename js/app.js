@@ -192,7 +192,7 @@ function validData(input){
  //§! Vorbereitung: Optionen (water, display, foodSearch, plan) werden auf einer Kopie bereinigt; native Befehle prüfen {...state,...} und dürfen geteilte Unterobjekte nie verändern
  if(!object(input))return false;
  const s=v87?v87.optionDraft(input):input;
- //§ js/puls-data-v87.js (Kombis)
+ //§ js/puls-data.js (Kombis)
  if(v87&&input.meals!==undefined&&!v87.mealsOK(input.meals))return false;
  //§ js/nutrient-resolver.js (ck/nx in Einträgen, Produkten, Kombis)
  if(nx&&!(['foods','custom'].every(key=>Array.isArray(s[key])&&s[key].every(nx.validFields))&&(s.meals===undefined||Array.isArray(s.meals)&&s.meals.every(meal=>Array.isArray(meal?.items)&&meal.items.every(nx.validFields)))))return false;

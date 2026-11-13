@@ -43,7 +43,7 @@ assert.equal(portions['CNF 2026:CNF_2'][0].amount,40.152,'2026 measure is grams,
 assert(!Object.keys(portions).some(k=>/^USDA FNDDS 2021-2023:/.test(k)),'No FNDDS portions');
 // Exercise the real v87 option validation/migration without persistence/network.
 const c={state:{},window:{},migrate(){},render(){},today:()=> '2026-11-10',console};
-vm.createContext(c);vm.runInContext(read('js/puls-data-v87.js'),c);const api=c.window.pulsData87;
+vm.createContext(c);vm.runInContext(read('js/puls-data.js'),c);const api=c.window.pulsData87;
 // validData (js/app.js) bereinigt die Optionen mit optionDraft/optionCommit und schreibt sie nur nach bestandener Prüfung zurück; hier mit einem Stand-in für die übrigen Abschnitte (accept:false lehnt ab).
 c.validData=s=>{const draft=api.optionDraft(s);if(draft.accept===false)return false;api.optionCommit(s,draft);return true};
 let s={foodSearch:{sort:'az',sources:['own','bls']},foods:[{id:'keep',nutrients:{fiber:2}}],workouts:[{id:'keep-workout'}]};
@@ -56,7 +56,7 @@ const oldBackup={foodSearch:{sources:[]}};assert(c.validData(oldBackup));api.mig
 // Saved states that still carry the retired keys stay valid and are not rewritten; unversioned ones only gain cnf.
 const retiredKeys={foodSearch:{sort:'az',sources:['bls','cofid','fndds'],catalogueSourcesVersion:1}},retiredBefore=JSON.stringify(retiredKeys.foodSearch);assert(c.validData(retiredKeys));api.migrate(retiredKeys);assert.equal(JSON.stringify(retiredKeys.foodSearch),retiredBefore);
 const retiredOld={foodSearch:{sources:['bls','cofid','fndds']}};assert(c.validData(retiredOld));api.migrate(retiredOld);assert.deepEqual(clone(retiredOld.foodSearch.sources),['bls','cofid','fndds','cnf']);assert.equal(retiredOld.foodSearch.catalogueSourcesVersion,1);
-assert(read('js/puls-data-v87.js').includes("'cnf','cofid','fndds'];"),'cofid/fndds remain valid stored source keys');
+assert(read('js/puls-data.js').includes("'cnf','cofid','fndds'];"),'cofid/fndds remain valid stored source keys');
 const shared={foodSearch:{sources:['bls'],catalogueSourcesVersion:1}},before=JSON.stringify(shared);assert(!c.validData({...shared,accept:false}));assert.equal(JSON.stringify(shared),before);
 // Future sources/versions survive validation, migration, storage and known-source controls.
 const future={foodSearch:{sort:'az',sources:['bls','fineli'],catalogueSourcesVersion:2}};
@@ -98,7 +98,7 @@ for(const [source,label] of [['CNF 2026','Health Canada'],['CoFID 2021','Public 
 // Actual source classification; the retired keys still classify foods saved earlier (FNDDS before /^USDA/).
 vm.runInContext(read('js/food-page.js').match(/function fpSourceKeys\(x\)\{[\s\S]*?\n\}/)[0],c);
 for(const [source,key] of [['CNF 2026','cnf'],['CoFID 2021','cofid'],['USDA FNDDS 2021-2023','fndds'],['USDA SR Legacy 2018','usda']])assert.deepEqual([...c.fpSourceKeys({source})],[key]);
-for(const f of ['js/food-page.js','js/food-diary.js','js/puls-data-v87.js'])assert(read(f).includes("'cnf'"));
+for(const f of ['js/food-page.js','js/food-diary.js','js/puls-data.js'])assert(read(f).includes("'cnf'"));
 const attrs=["Health Canada, Canadian Nutrient File 2026. Contains information licensed under the Open Government Licence – Canada."];
 for(const f of ['js/catalog-search.js','js/lifecycle.js','js/native-nutrition.js','README.md'])assert(!/Public Health England|Dietary Studies|CoFID/.test(read(f)),'Catalogue-wide credit lists only databases that are shipped: '+f);
 for(const f of ['js/catalog-search.js','js/lifecycle.js','js/native-nutrition.js','README.md','docs/FOOD-DATABASES.md'])for(const attr of attrs)assert(read(f).replaceAll("\\'","'").includes(attr),'Attribution '+f);

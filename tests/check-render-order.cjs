@@ -15,8 +15,8 @@ const GLIEDER=[
  ['flows',2,null,'renderAfterFlowsIdentity'],['flows',3,null,'renderAfterFlowsDesign'],['interactions',1,null,'renderAfterInteractions'],
  ['polish',1,'renderBeforePolish','renderAfterPolish'],['comfort',1,null,'renderAfterComfort'],['i18n',1,null,'renderAfterLanguage'],
  ['training-tabs',1,null,'renderAfterTrainingTabs'],['app-polish',1,null,'renderAfterAppPolish'],['run-session',1,null,'renderAfterRunSession'],
- ['design-system',1,null,'renderAfterDesignSystem'],['puls-data-v87',1,'renderBeforeData',null],['food-diary',1,'renderBeforeFoodDiary','renderAfterFoodDiary'],
- ['quick-account-v87',1,null,'renderAfterQuickAccount'],['motion',1,null,'renderAfterMotion']
+ ['design-system',1,null,'renderAfterDesignSystem'],['puls-data',1,'renderBeforeData',null],['food-diary',1,'renderBeforeFoodDiary','renderAfterFoodDiary'],
+ ['quick-account',1,null,'renderAfterQuickAccount'],['motion',1,null,'renderAfterMotion']
 ];
 const KERNE=[['experience','renderExperience'],['app','renderBase']];
 const label=(file,nr)=>`${file}#${nr}`;

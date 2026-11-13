@@ -21,13 +21,13 @@ const c={console,Math,Number,String,Object,Array,Set,Map,JSON,isFinite,state,dat
  accountGoalSummary:()=>'<section class="accountgoal"></section>',planTargetDate:()=>'März 2027',profileError:()=>'',forecastDays:()=>90,dateAfter:()=>'7. Feb. 2027',
  energyFor:()=>({rmr:1800,tdee:2600}),planNumbers:()=>({change:-.15,kcal:2000}),recordGoalHistory(){calls.push('history')},
  quickAddRun(){},weightForm(){},measurementsForm(){},recipeEditor(){},foodForm(){calls.push('foodForm')},foodTab(){},fpMealEdit(){calls.push('meal')},fpBackTo(p){calls.push('pane:'+p)},
- // accountPage ist seit Phase 4 eine Funktion: Kern aus flows.js (hier der Stub-Text), darüber das Glied aus quick-account-v87.js.
+ // accountPage ist seit Phase 4 eine Funktion: Kern aus flows.js (hier der Stub-Text), darüber das Glied aus quick-account.js.
  accountPage:()=>c.accountPageAfterQuickAccount('<div class="accountcompact accountrefresh accountoverview"></div>'),
  openAccountSection(key){c.accountSection=key;c.render()},closeAccountSection(){c.accountSection='';c.render()},
  go(next){c.page=next;c.render()},render(){renders++}};
 c.window.pulsData87={display:()=>({...state.display}),water:()=>({mode:'auto',glassMl:state.water.glassMl}),waterRecommendation:()=>({ml:2450,mode:'auto'})};
 vm.createContext(c);
-vm.runInContext(fs.readFileSync('js/quick-account-v87.js','utf8'),c,{filename:'js/quick-account-v87.js'});
+vm.runInContext(fs.readFileSync('js/quick-account.js','utf8'),c,{filename:'js/quick-account.js'});
 const run=code=>vm.runInContext(code,c);
 
 // Plus-Menü: Kacheln und Liste, keine Sprachnotiz, keine Notiz, kein Fasten; fremde Einträge bleiben.
@@ -83,7 +83,7 @@ for(const sex of [undefined,null,'invalid','']){
  assert.equal(fixture.profile.sex,'male');assert.equal(fixture.profile.special,false);
 }
 test.run('state.onboardingComplete=true;state.setupPending=false;setupPending=false;state.profile=null;state.plan={mode:"manual",direction:"lose",pace:"medium",macroMode:"manual",protein:1.8,fat:.8,macroInput:"ratio",ratio:{p:30,c:40,f:30}};state.goals={kcal:2000,p:150,c:200,f:67};page="home"');
-test.run(fs.readFileSync('js/quick-account-v87.js','utf8'));
+test.run(fs.readFileSync('js/quick-account.js','utf8'));
 test.run('settings()');fill(test,{'manual-kcal':2400});
 assert.equal(test.run('planError(collectProfile(),collectPlan(),collectManual())'),'');
 assert.equal(test.run('commitProfile('+submit+')'),true);
@@ -254,10 +254,10 @@ run("go('home')");assert.equal(run('qaPage'),'');
 
 // Einbindung: nach food-page.js, vor motion.js (bleibt letztes Skript); Offline-Liste vollständig.
 const index=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
-assert(index.indexOf('js/quick-account-v87.js')>index.indexOf('js/food-page.js'));
-assert(index.indexOf('js/quick-account-v87.js')<index.indexOf('js/motion.js'));
+assert(index.indexOf('js/quick-account.js')>index.indexOf('js/food-page.js'));
+assert(index.indexOf('js/quick-account.js')<index.indexOf('js/motion.js'));
 assert(index.lastIndexOf('<script')===index.indexOf('<script src="js/motion.js'));
-assert(index.indexOf('css/quick-account-v87.css')>index.indexOf('css/design-system.css'));
-for(const asset of ['js/quick-account-v87.js','css/quick-account-v87.css'])assert(sw.includes(`"${asset}"`),asset);
+assert(index.indexOf('css/quick-account.css')>index.indexOf('css/design-system.css'));
+for(const asset of ['js/quick-account.js','css/quick-account.css'])assert(sw.includes(`"${asset}"`),asset);
 
 console.log('PASS: v87 Plus-Menü, Konto-Unterseiten, Verhältnis-Makros und Darstellung');
