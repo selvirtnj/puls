@@ -1,5 +1,6 @@
 // v87 Klangwerk, Haptik-Zuordnung und Bewegungs-Helfer in einer synthetischen VM (kein echtes Audio, keine echte Vibration).
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {renderSource}=require('./validdata-env.cjs');
 
 /* ---------- Fake WebAudio: Knoten, Tonhöhen, Hüllkurven und Start/Stop-Zeiten ---------- */
 function fakeAudio(log){
@@ -118,7 +119,7 @@ const mc={console,Date,Math,Number,String,Object,Set,Map,WeakSet,Intl,setTimeout
   matchMedia:()=>m,addEventListener(){},MutationObserver:class{observe(){}},
   document:{documentElement:root,body:{},querySelectorAll:()=>[],addEventListener(){},getElementById:()=>null}};
 mc.window=mc;vm.createContext(mc);
-vm.runInContext(`var state={display:{motion:'system'}};var page='today';function render(){}function go(p){page=p}`,mc);
+vm.runInContext(`var state={display:{motion:'system'}};var page='today';function renderBase(){}function go(p){page=p}`,mc);vm.runInContext(renderSource(),mc);
 vm.runInContext(fs.readFileSync('js/motion.js','utf8'),mc);
 const motion=mc.pulsMotion;
 assert.equal(motion.reduced(),false);assert(!classes.has('reduce-motion'));

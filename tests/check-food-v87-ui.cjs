@@ -1,5 +1,6 @@
 // v87 Essen-Tab und Hinzufügen-Seite: reine Logik (Wasser, Wochenschnitt, Filter, Kombis) ohne echtes Layout.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {renderSource}=require('./validdata-env.cjs');
 const day='2026-11-09',localISO=d=>d.toISOString().slice(0,10);
 const state={foods:[],custom:[],recipes:[],goals:{kcal:2000,p:150,c:250,f:70},waterGoal:0};
 const c={console,Date,Math,Number,String,Object,Array,Set,Map,JSON,Promise,isFinite,parseFloat,state,date:day,page:'home',englishUI:{},
@@ -7,10 +8,10 @@ const c={console,Date,Math,Number,String,Object,Array,Set,Map,JSON,Promise,isFin
  modal:{classList:{toggle(){},remove(){},contains:()=>false},addEventListener(){},open:false,close(){}},
  document:{querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){},body:{classList:{toggle(){}}}},
  window:{addEventListener(){}},requestAnimationFrame:()=>0,cancelAnimationFrame(){},setTimeout:()=>0,clearTimeout(){},
- $:()=>null,save(){},render(){},toast(){},phIcon:()=>'',validNutrients:()=>true};
+ $:()=>null,save(){},renderBase(){},toast(){},phIcon:()=>'',validNutrients:()=>true};
 c.window.pulsData87={waterRecommendation:(s)=>({ml:2450,mode:'auto'})};
 for(const name of ['openModal','foodForm','foodTab','showSearch','foodResultHTML','ffAutoOnline','ffRenderDetail','previewFood','productReview','customFood','barcodePanel','lookupBarcode','addFood','nutrition'])c[name]=()=>'';
-vm.createContext(c);
+vm.createContext(c);vm.runInContext(renderSource(),c);
 vm.runInContext(fs.readFileSync('js/flows.js','utf8').match(/function addWaterGlass[^\n]*/)[0],c);
 for(const file of ['js/food-diary.js','js/food-page.js'])vm.runInContext(fs.readFileSync(file,'utf8'),c,{filename:file});
 

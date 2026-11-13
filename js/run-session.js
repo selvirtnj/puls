@@ -403,7 +403,7 @@ function runEditSave(event,id){
 }
 
 // Andere Vollbilder (laufendes Workout) setzen inert nach jedem render() zurück; solange die Aktivität offen ist, bleibt der Hintergrund gesperrt.
-const runSessionRender=render;render=function(...args){let result=runSessionRender.apply(this,args);if(runView)document.querySelectorAll('main,aside').forEach(el=>el.inert=true);return result};
+globalThis.renderAfterRunSession=function renderAfterRunSession(){if(runView)document.querySelectorAll('main,aside').forEach(el=>el.inert=true)};
 // Nach Neuladen mit laufender Aktivität: Ansicht wieder öffnen, damit Pause/Beenden sofort erreichbar sind.
 if(state.activeRun&&runOwnedHere(state.activeRun)){runView='live';renderRunView()}
 if(typeof quickAddActions!=='undefined'&&Array.isArray(quickAddActions)){let item=quickAddActions.find(x=>x[0]==='run');if(item){item[1]='Aktivität';item[2]='Laufen, Rad & mehr'}}

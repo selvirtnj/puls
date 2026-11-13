@@ -475,9 +475,7 @@ if(typeof accountPage==='function'){
 }
 // Nach dem Zeichnen: Seitentitel bei Unterseiten ausblenden, Push und gestaffelte Liste nur nach Navigation.
 if(typeof render==='function'){
-  const qaRender=render;
-  render=function(...args){
-    let result=qaRender.apply(this,args);
+  globalThis.renderAfterQuickAccount=function renderAfterQuickAccount(){
     try{
       let title=document.getElementById('title');if(title&&typeof page!=='undefined'&&page==='account'&&qaPage)title.hidden=true;
       if(qaAnimate&&typeof page!=='undefined'&&page==='account'){
@@ -489,7 +487,6 @@ if(typeof render==='function'){
         }
       }
     }catch(error){console.error(error)}
-    return result;
   };
 }
 

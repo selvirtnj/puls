@@ -1,19 +1,20 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 require('./check-shell-extras.cjs');
+const {renderSource}=require('./validdata-env.cjs');
 
 // Run the actual bridge with synthetic workouts and event hooks, without a real account.
 function bridgeFixture(workouts=[],overrides={}){
   const messages=[],events={},state={workouts};
-  const c={state,Date,console,setInterval(){},save(){},render(){},
+  const c={state,Date,console,setInterval(){},save(){},renderBase(){},
     document:{documentElement:{classList:{add(){}}},createElement:()=>({}),head:{appendChild(){}},addEventListener:(e,f)=>events[e]=f},
     window:{pulsNativeFeatures:['workoutTimer'],webkit:{messageHandlers:{pulsNative:{postMessage:m=>messages.push(m)}}},addEventListener:(e,f)=>events[e]=f}};
-  Object.assign(c,overrides);vm.runInNewContext(fs.readFileSync('js/native-bridge.js','utf8'),c);
+  Object.assign(c,overrides);vm.createContext(c);vm.runInContext(renderSource(),c);vm.runInContext(fs.readFileSync('js/native-bridge.js','utf8'),c);
   return {c,state,messages,events};
 }
 
 {
   const original=new Error('original render failure'),warnings=[];
-  const f=bridgeFixture([],{save:()=>42,render(){throw original},console:{warn:(...args)=>warnings.push(args)}});
+  const f=bridgeFixture([],{save:()=>42,renderBase(){throw original},console:{warn:(...args)=>warnings.push(args)}});
   f.c.syncRunActivity=()=>{throw Error('bridge failure')};
   assert.equal(f.c.save(),42,'bridge exception cannot override save return value');
   assert.throws(()=>f.c.render(),error=>error===original,'bridge exception cannot replace original render exception');

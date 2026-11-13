@@ -149,10 +149,9 @@
     return result}}
   const viewKey=()=>[pageKey(),typeof accountSection==='undefined'?'':accountSection,typeof qaPage==='undefined'?'':qaPage,pageKey()==='workout'&&typeof trainTab!=='undefined'?trainTab:''].join('/');
   let currentView=viewKey();
-  if(typeof render==='function'){const motionRender=render;render=function(...args){
-    let result=motionRender.apply(this,args),next=viewKey();syncReduced();
+  if(typeof render==='function'){globalThis.renderAfterMotion=function renderAfterMotion(){
+    let next=viewKey();syncReduced();
     if(next!==currentView){currentView=next;scrollViewTop()}
-    return result;
   }}
   // Sheet entry points converge here after the earlier decorators and focus work.
   if(typeof openModal==='function'){const motionModal=openModal;openModal=function(...args){let result=motionModal.apply(this,args);scrollViewTop(modal);return result}}

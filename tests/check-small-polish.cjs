@@ -1,4 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {renderSource}=require('./validdata-env.cjs');
 
 // Synthetic DOM fixture: the language wrapper has already translated the allowance
 // before app-polish.render runs, as in index.html's actual wrapper order.
@@ -10,11 +11,11 @@ function calorieFixture(language,consumed,goal,page='food'){
     closest:()=>({querySelector:()=>dial}),remove(){removed=true}
   };
   const ctx={state:{language,goals:{kcal:goal}},page,date:'2026-10-25',dayGoals:()=>({kcal:goal}),totals:()=>({kcal:consumed}),n:String,
-    render(){},save(){},quickAddMenu(){},openModal(){},markFoodDayComplete(){},nutrientTotals(){},waterCard(){},
+    renderBase(){},save(){},quickAddMenu(){},openModal(){},markFoodDayComplete(){},nutrientTotals(){},waterCard(){},
     modal:{addEventListener(){}},document:{addEventListener(){},
       querySelectorAll:selector=>selector.includes('combinedallowance')?[line]:[],querySelector:()=>null,
       createElement:()=>({append(...values){shown=values.at(-1)}})}};
-  vm.runInNewContext(fs.readFileSync('js/app-polish.js','utf8'),ctx);
+  vm.createContext(ctx);vm.runInContext(renderSource(),ctx);vm.runInContext(fs.readFileSync('js/app-polish.js','utf8'),ctx);
   assert(removed);
   return shown;
 }

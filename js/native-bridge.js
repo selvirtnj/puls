@@ -61,7 +61,7 @@ function syncNativeState(){try{syncNativeRest();if(typeof syncRunActivity==='fun
 // Ende/Verwerfen sofort melden, bevor iOS die WebView nach dem nächsten Wechsel schlafen legt.
 for(const name of ['save','render']){
   if(name==='save'&&typeof save==='function'){const base=save;save=function(...args){try{return base.apply(this,args)}finally{syncNativeState()}}}
-  if(name==='render'&&typeof render==='function'){const base=render;render=function(...args){try{return base.apply(this,args)}finally{syncNativeState()}}}
+  if(name==='render'&&typeof render==='function')globalThis.renderFinallyNativeBridge=syncNativeState;
 }
 document.addEventListener('visibilitychange',syncNativeState);
 window.addEventListener('pagehide',syncNativeState);

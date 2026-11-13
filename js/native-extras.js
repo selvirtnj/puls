@@ -133,7 +133,7 @@ if(typeof accountAppearanceCard==='function'){
 }
 for(const name of ['save','render']){
   if(name==='save'){const base=save;save=function(...args){try{return base.apply(this,args)}finally{schedule()}}}
-  if(name==='render'){const base=render;render=function(...args){try{return base.apply(this,args)}finally{schedule()}}}
+  if(name==='render')globalThis.renderFinallyNativeExtras=schedule;
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});
 window.addEventListener('pageshow',schedule);schedule();

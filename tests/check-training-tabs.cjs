@@ -1,5 +1,6 @@
 // Synthetic DOM and real routine editor/save/delete handlers. No browser layout or real profiles.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {renderSource}=require('./validdata-env.cjs');
 class Element{
   constructor(tag='div',cls=''){this.tag=tag;this.className=cls;this.children=[];this.dataset={};this.attrs={};this.events={};this.textContent=''}
   get classList(){return {add:(...keys)=>{this.className=[...new Set([...this.className.split(' '),...keys])].join(' ')},contains:key=>this.className.split(' ').includes(key)}}
@@ -54,11 +55,11 @@ function fixture(language='de',count=2,tab='current'){
   makeDOM();
   let c={state,page:'workout',trainTab:tab,date:'2026-11-09',today:()=> '2026-11-09',englishUI:{},
     uiIcon:key=>`<svg data-icon="${key}"></svg>`,exerciseBookItem:id=>({name:id==='e1'?'<Cable & Row>':'Pull-up'}),
-    render(){makeDOM()},save(){saves++},go(){},toast(){},confirm:()=>false,uid:()=> 'copy-id',routineDraft:null,renderPersonalRoutine(){},
+    renderBase(){makeDOM()},save(){saves++},go(){},toast(){},confirm:()=>false,uid:()=> 'copy-id',routineDraft:null,renderPersonalRoutine(){},
     modal:{close(){modalCloses++}},openModal(title,html){actions=['edit','copy','delete'].map(action=>{let b=el('button');b.dataset.routineAction=action;return b});c.lastModal={title,html}},
     $:()=>({textContent:''}),document:{createElement:tag=>el(tag),querySelector:()=>root,querySelectorAll:()=>actions},
     pulsMotion:{scan(){scans++}}};c.window=c;
-  vm.createContext(c);
+  vm.createContext(c);vm.runInContext(renderSource(),c);
   // Load the actual base handlers; the tested UI must delegate, without a second persistence path.
   for(const [file,prefix] of [['js/training.js','routineForm=function'],['js/enhancements.js','function saveRoutine('],['js/enhancements.js','function deleteRoutine(']]){
     vm.runInContext(fs.readFileSync(file,'utf8').split(/\r?\n/).find(line=>line.startsWith(prefix)),c);

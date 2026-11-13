@@ -262,7 +262,7 @@ function dsChrome(){
   dsDecoratePasswords(content||document);
   dsRenderConnectivity(window.pulsConnectivity);
 }
-const dsRenderBase=render;render=function(...args){let result=dsRenderBase.apply(this,args);dsChrome();return result};
+globalThis.renderAfterDesignSystem=function renderAfterDesignSystem(){dsChrome()};
 
 /* Fenster: Schließen-Symbol, Passwortfelder, Anmeldung im neuen Stil. */
 function dsDecorateSheet(){

@@ -32,6 +32,10 @@ function stubElement(el){
   get content(){return el('c'+Math.random())},appendChild(){},setAttribute(){},getAttribute:()=>null,focus(){},scrollIntoView(){}};
 }
 
+// Die eine render() steht in js/app.js (Refactor Phase 4) und reicht von „function render(){“ bis zur schließenden Klammer in Spalte 0.
+// Tests, die einzelne Dateien mit render-Gliedern in einen Stub laden, führen sie dort aus; der Stub liefert nur den Kern als renderBase().
+const renderSource=(text=read('js/app.js'))=>{const start=text.search(/^function render\(\)\{/m);if(start<0)throw Error('render fehlt in js/app.js');return text.slice(start,text.indexOf('\n}',start)+2)};
+
 // options.transform: {Datei: text=>neuerText} ändert Quelltexte vor dem Laden. options.storage: Startinhalt von localStorage.
 // options.afterScript(file, {ctx, run}) läuft nach jedem Skript (Zwischenstände während des Ladens).
 function loadApp(options={}){
@@ -75,4 +79,4 @@ function appValidator(){
  return fn;
 }
 const baseState=(name='initial')=>JSON.parse(JSON.stringify(JSON.parse(read('tests/fixtures/validdata/cases.json')).states[name]));
-module.exports={loadApp,scriptList,assignmentCount,read,ASSIGN,validDataSource,sections,withoutSection,appValidator,baseState};
+module.exports={renderSource,loadApp,scriptList,assignmentCount,read,ASSIGN,validDataSource,sections,withoutSection,appValidator,baseState};

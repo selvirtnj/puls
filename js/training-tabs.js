@@ -74,6 +74,6 @@ function refineTrainingTabs(){
   if(done){done.classList.add('donehead');let day=done.textContent.split('·').slice(1).join('·').trim();done.textContent=(date===today()?(en?'Done today':'Heute erledigt'):(en?'Done':'Erledigt'))+(day?' · '+day:'')}
   window.pulsMotion?.scan?.(body);
 }
-const trainingTabsRender=render;render=function(...args){let result=trainingTabsRender.apply(this,args);refineTrainingTabs();return result};
+globalThis.renderAfterTrainingTabs=function renderAfterTrainingTabs(){refineTrainingTabs()};
 refineTrainingTabs();
 if(typeof englishUI==='object')Object.assign(englishUI,{'Neue Routine':'New routine','Routine starten':'Start routine','Heute erledigt':'Done today','Erledigt':'Done'});

@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const {appValidator,baseState}=require('./validdata-env.cjs');
+const {appValidator,baseState,renderSource}=require('./validdata-env.cjs');
 // validData ist eine Funktion in js/app.js: die nativeExtras-Regeln werden an der echten, vollständig geladenen App geprüft.
 const fullValidData=appValidator(),validate=s=>fullValidData({...baseState(),...s});
 const source=fs.readFileSync('js/native-extras.js','utf8');
@@ -7,15 +7,15 @@ function fixture({features=[],native=true,state,reply,preview=false}={}){
   const messages=[],timers=new Map(),nodes=new Map(),events={};let id=0,saves=0,webStarts=0,webStops=0,lookups=[],html='';
   const c={console,Date,Math,Promise,Set,Map,firstRunPreview:preview,cloudSession:null,cloudBusy:false,cloudConflict:false,cloudApplying:false,cloudUploadBlocked:false,
     state:state||{weights:[],workouts:[],runs:[],custom:[]},validData:s=>s&&Array.isArray(s.workouts),
-    save(){saves++;return 7},render(){return 8},accountAppearanceCard:()=>'<p>base</p>',accountListRow:()=>'<button>iPhone</button>',
+    save(){saves++;return 7},renderBase(){return 8},accountAppearanceCard:()=>'<p>base</p>',accountListRow:()=>'<button>iPhone</button>',
     startBarcodeCamera(){webStarts++},stopBarcode(){webStops++},normalizeBarcode:s=>s,validBarcode:s=>s==='3017620422003',lookupBarcode:(event,code)=>lookups.push(code),
     modal:{open:true},$:id=>nodes.get(id)||null,openModal(title,body){html=body},
     setTimeout(fn,delay){const key=++id;timers.set(key,{fn,delay});return key},clearTimeout:key=>timers.delete(key),
     document:{hidden:false,querySelectorAll:()=>[],addEventListener:(key,fn)=>events[key]=fn},
     window:{pulsNativeFeatures:features,addEventListener:(key,fn)=>events[key]=fn}};
   if(native)c.window.webkit={messageHandlers:{pulsNative:{postMessage(message){messages.push(message);if(reply){const response=reply(message);if(response)queueMicrotask(()=>c.window.pulsNativeExtrasReceive({requestId:message.requestId,...response}))}}}}};
-  const webStart=c.startBarcodeCamera,webStop=c.stopBarcode,save=c.save,render=c.render;
-  vm.createContext(c);vm.runInContext(source,c);
+  const webStart=c.startBarcodeCamera,webStop=c.stopBarcode,save=c.save;
+  vm.createContext(c);vm.runInContext(renderSource(),c);const render=c.render;vm.runInContext(source,c);
   const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
   const tick=async()=>{for(const [key,t] of [...timers])if(t.delay===350){timers.delete(key);t.fn()}await flush()};
   const answer=(message,body)=>c.window.pulsNativeExtrasReceive({requestId:message.requestId,...body});

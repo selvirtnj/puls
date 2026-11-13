@@ -24,4 +24,4 @@ function deleteRecipe(id){if(!confirm('Gespeichertes Rezept löschen? Erfasste P
 function cancelRecipe(){if(recipeDraft?.ingredients.length&&!confirm('Rezeptbearbeitung ohne Speichern verlassen?'))return;returnToRecipes()}
 const recipesImportData=importData;importData=async function(file){await recipesImportData(file);state.recipes??=[];save();render()};
 const recipesNutrition=nutrition;nutrition=function(){return `<section class="card goalbanner"><div><span class="label">DEINE KÜCHE, DEINE REZEPTE</span><h2>Kochen. Wiegen. Wiederverwenden.</h2></div><button class="btn" onclick="foodForm();foodTab('recipes')">Meine Rezepte ↗</button></section>`+recipesNutrition()};
-const recipesRender=render;render=function(){state.recipes??=[];return recipesRender()};
+globalThis.renderBeforeRecipes=function renderBeforeRecipes(){state.recipes??=[]};

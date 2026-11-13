@@ -156,8 +156,8 @@ async function cloudRoundTrip(){
   assert(Array.isArray(s.meals));assert.equal(typeof s.foodSearch.sort,'string');
   renderChecks++;
  };
- // Observe the inner render: defaults must exist before any UI accesses them.
- cr('var innerRender87=render;render=function(...args){assertV87Ready(state);return innerRender87.apply(this,args)}');
+ // Observe the render core (renderExperience): defaults must exist before any UI accesses them.
+ cr('var innerRender87=renderExperience;renderExperience=function(){assertV87Ready(state);return innerRender87()}');
  const before=[...disk.entries()];cr(source);assert.deepEqual([...disk.entries()],before,'data startup leaves cloud storage intact');
  assert.equal(cr('cloudDirty'),false);assert.equal(cr('cloudRevision'),0);
  cr(`cloudSession={access_token:'synthetic-test-access',refresh_token:'synthetic-test-refresh',expires_at:Date.now()/1000+3600,user:{id:'fixture-87'}};

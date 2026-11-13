@@ -107,8 +107,7 @@ const baseMigrate=migrate;
 migrate=function(...args){const result=baseMigrate.apply(this,args);migrate87(state);return result};
 // Cloud login/logout replace state inside their functions before rendering.
 // This also covers reset/import and preserves their existing save/CAS ordering.
-const baseRender=render;
-render=function(...args){migrate87(state);return baseRender.apply(this,args)};
+globalThis.renderBeforeData=function renderBeforeData(){migrate87(state)};
 if(typeof applyCloudProfile==='function'){
  const baseApply=applyCloudProfile;
  applyCloudProfile=function(row,...args){

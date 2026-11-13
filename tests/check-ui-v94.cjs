@@ -1,6 +1,7 @@
 // Synthetic rendered markup and real i18n. No layout, real clipboard or iOS claims.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const read=file=>fs.readFileSync(file,'utf8');
+const {renderSource}=require('./validdata-env.cjs');
 let harness=read('tests/check-native-training.cjs').split('const started=options=>')[0]
  .replace("run('var englishUI={}');","run(fs.readFileSync('js/i18n.js','utf8'));");
 const app=vm.runInNewContext('(function(require){'+harness+';return app})(require)',{require,console});
@@ -88,7 +89,7 @@ const friends=vm.runInNewContext('(function(require){'+friendsHarness+';return f
   MutationObserver:class{observe(){}},scrollViewTop:()=>{resets++},
   document:{documentElement:{classList:{toggle(){}}},body:{},querySelectorAll:()=>[],addEventListener(){},getElementById:()=>null}};
  motionContext.window=motionContext;vm.createContext(motionContext);
- vm.runInContext("var state={display:{motion:'system'}},page='workout',trainTab='current',qaPage='',accountSection='';function render(){}",motionContext);
+ vm.runInContext("var state={display:{motion:'system'}},page='workout',trainTab='current',qaPage='',accountSection='';function renderBase(){}",motionContext);vm.runInContext(renderSource(),motionContext);
  vm.runInContext(read('js/motion.js'),motionContext);
  vm.runInContext('render()',motionContext);assert.equal(resets,0);
  for(const tab of ['routines','calendar','insights','current']){

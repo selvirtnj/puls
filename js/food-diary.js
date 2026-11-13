@@ -276,14 +276,14 @@ nutrition=function(){
   let suggestion='';try{suggestion=typeof foodSuggestionCard==='function'?foodSuggestionCard():''}catch{}
   return `<div class="fdroot${fdEnter&&!fdReduced()?' fdenter':''}">${fdHead()}${fdDeck()}${fdWaterCard()}${fdDiaryList()}<div class="fdextras">${suggestion}${typeof productAttribution==='string'?productAttribution:''}</div></div>`;
 };
-const fdRenderBase=render;render=function(...args){
+globalThis.renderBeforeFoodDiary=function renderBeforeFoodDiary(){
   let key=page==='food'?'food|'+date:'';
   fdEnter=!!key&&key!==fdLastKey;if(fdEnter){fdSlide=fdViews().indexOf('macros');fdKnownIds=null;fdWaterMemory={key:'',filled:-1}}
   fdLastKey=key;
-  let result=fdRenderBase.apply(this,args);
+};
+globalThis.renderAfterFoodDiary=function renderAfterFoodDiary(){
   document.body.classList.toggle('fdpage',page==='food');
   if(page==='food'){let track=$('fd-track');if(track){let left=fdSlide*track.clientWidth;if(Math.abs(track.scrollLeft-left)>1)track.scrollTo({left,behavior:'auto'})}}
-  return result;
 };
 window.addEventListener('resize',()=>{let track=$('fd-track');if(track)track.scrollTo({left:fdSlide*track.clientWidth,behavior:'auto'})});
 
