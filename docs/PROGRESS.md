@@ -4,12 +4,13 @@ Stand 13.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Live
 
-- **Version 96** auf `main` (Commit „Version 96: CNF 2026, CoFID 2021 und USDA FNDDS im Katalog“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
+- **Version 97** auf `main` (Commit „Version 97: Refactor Phasen 0 bis 2“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
-- Nichts in Arbeit. Worktree und Arbeitsbranches von Version 96 sind gelöscht; es gibt nur noch `main`.
+- In Arbeit: Refactor nach [ISSUES.md](ISSUES.md), Phasen 0 bis 2 sind erledigt, 3 bis 5 offen. Es gibt nur den Branch `main`.
 
 ## Letzte Versionen
 
+- **97** (13.11.): Refactor ohne sichtbare Änderung. Tests für die `validData`-Kette und die Wrapper-Reihenfolge, Anzeigeversion als Konstante `APP_VERSION` in `js/account-refresh.js`, 30 kleine CSS-Dateien in `css/style.css` zusammengeführt (13 statt 42 Stylesheets, gleiche Regeln in gleicher Reihenfolge).
 - **96** (13.11.): CNF 2026 (2.573), CoFID 2021 (2.636) und USDA FNDDS 2021–2023 (5.431) im Katalog, zusammen 28.893 Lebensmittel in `catalog/foods-00…58.json`; Quellenfilter `cnf`, `cofid`, `fndds`; Nährstoff-Sidecars `catalog/nutrients-v2-*.json` für alle Quellen; Katalog-Cache `puls-catalog-v3`. CNF-Portionen nur aus benutzerdefinierten Maßen (Typ 6), CNF-Niacin-Äquivalent aus Code 409. Namen der neuen Einträge sind englisch. Details: [FOOD-DATABASES.md](FOOD-DATABASES.md), [NUTRIENT-MAPPING.md](NUTRIENT-MAPPING.md).
 - **95** (12.11.): bis zu 63 zusätzliche Nährwerte je Katalog-Lebensmittel (BLS 4.0, USDA SR Legacy, USDA Foundation, Ciqual) als nachladbare `catalog/nutrients-v1-*.json`; Produktdetail „Alle Nährwerte“, Tagesansicht „Alle Nährstoffe“, neue optionale Felder `ck` und `nx`. Nachkorrektur: Prüfsummen zeilenendenunabhängig (GitHub „Web checks“ war rot).
 - **94** (09.11.): Ränge neu kalibriert (18 Ränge auf 40 Stufen, 4 neue über Tren Cougher); UI-Sammelkorrektur (Seiten starten oben, Englisch komplett, Erklärtexte entfernt, Wischen, Farbschema, iPhone-Funktionen, Freunde).
