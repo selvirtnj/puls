@@ -664,6 +664,9 @@ html body #session-root .setlabels span:first-child { text-align: left; }
 html body #session-root .setlabels .pulsicon { width: 16px; height: 16px; }
 html body #session-root .liveset .setnumber { font-size: 15px; font-weight: 600; color: var(--ds-label-2); }
 html body #session-root .liveset .previousset { min-height: 44px; padding: 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-label-2) !important; font-size: 13px !important; text-align: center; }
+html body .setnote { margin: -2px 0 6px 36px; font-size: 12px; line-height: 1.4; color: var(--ds-label-2); overflow-wrap: anywhere; }
+html body .setnote span, html body .setsuggest span { font-weight: 600; }
+html body .setsuggest { display: block; width: calc(100% - 36px); min-height: 44px; margin: 0 0 6px 36px; padding: 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-accent-text) !important; font-size: 13px !important; text-align: left; }
 html body #session-root .liveset input[type=number] { min-height: 44px !important; height: 44px; padding: 0 6px !important; text-align: center; font-size: 17px !important; }
 html body #session-root .liveset.setdone input[type=number] { background-color: transparent !important; }
 html body #session-root .liveset input[type=checkbox]::before { border-color: var(--ds-label-3) !important; }
