@@ -41,7 +41,7 @@ assert.deepEqual(Array.from(run('qaQuickTiles().map(x=>x[0])')),['search','barco
 {let tabs=[];c.foodTab=t=>tabs.push(t);c.foodPhotoOpen=()=>tabs.push('ai');run('qaQuickPhoto()');assert.deepEqual(tabs,['photo','ai']);c.foodTab=()=>{};delete c.foodPhotoOpen}
 assert.equal(run('qaQuickRows().at(-1)[0]'),'ruler');
 assert(!run('qaQuickRows().some(x=>x[0]==="water"||x[0]==="run")'));
-c.addWaterGlass=ml=>calls.push('water:'+ml);run('qaQuickWater()');assert.equal(calls.at(-1),'water:300');
+c.addWaterGlass=ml=>calls.push('water:'+ml);
 run('quickAddMenu()');
 assert(!/voice|microphone|Notiz|Fasten|Sprach/i.test(modal.html));
 run('quickAddMenu()');assert.equal(dismissed,1,'zweites Tippen schließt das Menü');

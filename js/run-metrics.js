@@ -182,16 +182,6 @@ function runMaxSpeed(points){
   measure(group);return best===null?null:Math.round(best*10)/10;
 }
 
-// Time between accepted fixes in the same segment; includes unmarked stops and
-// signal gaps. This is segment time, not an inferred auto-pause measurement.
-function runMovingStats(points){
-  const accepted=runAcceptedPoints(points);let movingSeconds=0,meters=0;
-  for(let i=1;i<accepted.length;i++){
-    const a=accepted[i-1],b=accepted[i];if(a[4]!==b[4])continue;
-    movingSeconds+=Math.max(0,(b[0]-a[0])/1000);meters+=runMeters(a,b);
-  }
-  return {movingSeconds,distanceKm:meters/1000};
-}
 
 // Baseline goals wait for this complete activity module; earlier render calls
 // must not persist a temporary target without sport. Later renders are idempotent.

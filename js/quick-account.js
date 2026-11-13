@@ -62,7 +62,6 @@ function qaQuickHTML(){
   let row=([key,icon,label,note,action])=>`<button type="button" class="dsrow dsiconrow motion-enter" style="--motion-i:${Math.min(i++,10)}" data-qa-quick="${key}" onclick="${action}"><span class="dsrowicon" aria-hidden="true">${qaIcon(icon)}</span><span class="dsrowtext"><span>${label}</span><small>${note}</small></span></button>`;
   return `<div class="qaquick"><div class="qatiles" role="group" aria-label="${qaT('Erfassen','Log')}">${qaQuickTiles().map(tile).join('')}</div><div class="dsgroup dsactionlist qaquicklist">${qaQuickRows().map(row).join('')}</div></div>`;
 }
-function qaQuickWater(){let ml=qaWater().glassMl;if(typeof modal!=='undefined')modal.close();document.body.classList.remove('quickaddopen');if(typeof addWaterGlass==='function')addWaterGlass(ml);qaSound('water')}
 function qaQuickMeal(){foodForm();if(typeof fpMealEdit==='function')fpMealEdit();else if(typeof fpBackTo==='function')fpBackTo('meals')}
 function qaQuickTraining(){
   if(activeWorkout())return quickAddWorkout();

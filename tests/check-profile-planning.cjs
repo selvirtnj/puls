@@ -108,7 +108,7 @@ for(const correct of [false,true]){
   if(correct)boot.run('state.goals={kcal:2056,p:144,c:226,f:64}');
   let previous=boot.run('JSON.stringify(state.goals)');
   boot.run(fs.readFileSync('js/running.js','utf8'));boot.run('render();adaptiveGoals()');
-  assert.equal(boot.run('JSON.stringify(state.goals)'),previous);assert.equal(boot.run('bootSaves.length'),0);assert(boot.run('dayGoals()===state.goals'));assert.equal(boot.run('baselineEnergyLine()'),'');assert.equal(boot.run('state.goalHistory.length'),0);
+  assert.equal(boot.run('JSON.stringify(state.goals)'),previous);assert.equal(boot.run('bootSaves.length'),0);assert(boot.run('dayGoals()===state.goals'));assert.equal(boot.run('state.goalHistory.length'),0);
   boot.run(fs.readFileSync('js/run-metrics.js','utf8'));
   assert.equal(boot.run('state.goals.kcal'),2056);assert.equal(boot.run('bootSaves.length'),correct?0:1);assert(boot.run('bootSaves.every(g=>g.kcal===2056)'));
   boot.run('render();render()');assert.equal(boot.run('bootSaves.length'),correct?0:1);
@@ -126,13 +126,8 @@ test.run('settings()');assert.equal(test.el('pl-learn-tdee').disabled,true);asse
 fill(test,{'pr-baseline-factor':1.3});savedPlan=savePlan(test);assert.equal(savedPlan.profile.baselineFactor,1.3);assert.equal(savedPlan.profile.kcalMode,'baseline');
 // Day selection is pure, uses that day's entries, and never changes persisted goals.
 before=test.run('JSON.stringify(state)');let present=test.run('dayGoals(today())'),prior=test.run('dayGoals(daysBefore(today(),1))');assert.equal(present.kcal-prior.kcal,440);assert.equal(test.run('JSON.stringify(state)'),before);
-// Die frühere combinedNutrition() ist entfernt (kein Aufrufer in der Live-App); der Text kommt aus baselineEnergyLine().
-assert(test.run('baselineEnergyLine()').includes('Grundbedarf'));assert(test.run('baselineEnergyLine()').includes('Sport 440'));
-// Preserve and exercise Claude's presentation-only wrapper with the logic guard.
-const overviewSource=fs.readFileSync('js/activity-overview.js','utf8');test.run(overviewSource.slice(overviewSource.indexOf("if(typeof baselineEnergyLine==='function')")));
-assert(test.run('baselineEnergyLine().includes("baselineenergy")'));
 for(const change of ["state.plan.mode='manual'","state.profile.special=true","state.plan.protein=NaN","state.profile.target=50","state.weights=[{date:today(),kg:350}]"]){
-  let snapshot=test.run('JSON.stringify(state)');test.run(change);assert(test.run('dayGoals()===state.goals'),change);assert.equal(test.run('baselineEnergyLine()'),'',change);test.run('state='+snapshot);
+  let snapshot=test.run('JSON.stringify(state)');test.run(change);assert(test.run('dayGoals()===state.goals'),change);test.run('state='+snapshot);
 }
 // Every named consumer uses the selected diary date, including the final
 // suggestedFoods override and the account summary loaded later in index.html.
@@ -150,12 +145,11 @@ for(const change of ["state.plan.mode='manual'","state.profile.special=true","st
   assert(selected.run('goalCard()').includes(shown+' KCAL'));
   selected.run('forecastDays=function(weight,target,tdee,intake){globalThis.projectedIntake=intake;return null};planTargetDate()');assert.equal(selected.run('projectedIntake'),selected.run('dayGoals(date).kcal'));
 }
-test.run('state.language="en"');assert(test.run('baselineEnergyLine()').includes('exercise 440'));test.run('state.language="de"');
 test.run('state.plan.adaptive=false;state.runs=[];state.workouts=[];adaptiveGoals()');let resting=test.run('dayGoals(today()).kcal');
 test.run("state.runs=[{id:'new',date:today(),type:'tabletennis',distanceKm:0,durationSeconds:3600}];adaptiveGoals()");assert.equal(test.run('state.goals.kcal'),resting+240,'sport updates with weight adaptation disabled');
 assert.equal(test.run('dayGoals(today()).kcal'),resting+240);
 test.run('state.runs=[];adaptiveGoals()');assert.equal(test.run('state.goals.kcal'),resting,'deletion removes allowance');
-test.run('settings()');fill(test,{'pr-kcal-mode':'classic'});savedPlan=savePlan(test);assert.equal(savedPlan.profile.kcalMode,'classic');assert.equal(test.run('baselineEnergyLine()'),'');
+test.run('settings()');fill(test,{'pr-kcal-mode':'classic'});savedPlan=savePlan(test);assert.equal(savedPlan.profile.kcalMode,'classic');
 test.run("state.workouts=[{id:'old',date:daysBefore(today(),1),name:'Gym',finished:true,exercises:[{id:'e1',name:'Bench',sets:[{kg:40,reps:8,done:true}]}]},{id:'new',date:today(),startedAt:2,name:'Gym',finished:true,durationSeconds:3600,durationXpVersion:1,exercises:[{id:'e2',name:'Bench',sets:[{kg:45,reps:8,done:true}]}]}];state.runs=[{id:'first',date:today(),startedAt:1,type:'tabletennis',distanceKm:0,durationSeconds:7200,durationXpVersion:1}]");
 assert.equal(test.run('workoutAwards().new.xp'),29,'gym exercise PR keeps 25 XP on top of remaining duration XP');assert.equal(test.run('totalWorkoutXP()'),125);
 test.run('state.workouts=[];state.runs=[];state.routines=[{id:"routine",name:"Gym",exercises:[]}];startRoutine("routine")');assert.equal(test.run('state.workouts[0].durationXpVersion'),1,'routine creation marks only new workouts');

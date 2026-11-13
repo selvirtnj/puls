@@ -61,16 +61,3 @@ function activityOverviewCard(){
   return card+(filter==='run'?runProgressCard():'');
 }
 
-// Heute (Baseline-Modus): Aufteilung so zeigen, dass sie zum Tagesziel aufgeht: Grundbedarf ± Zielanpassung + Sport = Ziel.
-// Nur Darstellung; Rechenwerte kommen unverändert aus energyFor()/dayGoals() (enhancements.js).
-if(typeof baselineEnergyLine==='function'){const actBaselineLine=baselineEnergyLine;baselineEnergyLine=function(dateKey=today(),...rest){
-  let html=actBaselineLine.call(this,dateKey,...rest);if(!html||typeof dayGoals!=='function')return html;
-  try{
-    let p=state.profile,weight=state.plan?.adaptive===false?p.weight:(typeof runLatestWeight==='function'?runLatestWeight(state,dateKey):null)??p.weight,e=energyFor(p,weight,state.plan,dateKey);
-    if(!Number.isFinite(e.baseline)||!Number.isFinite(e.sport))return html;
-    let base=Math.round(e.baseline),sport=Math.round(e.sport),auto=state.plan?.mode==='auto',goal=auto?dayGoals(dateKey)?.kcal:null,adj=Number.isFinite(goal)?goal-sport-base:0;
-    if(!auto||!Number.isFinite(goal)||Math.abs(adj)>base*.5)adj=0;
-    let pct=adj?Math.round(adj/base*100):0,en=state.language==='en';
-    return `<p class="note baselineenergy"><span>${en?'Base':'Grundbedarf'} ${n(base)}</span>${pct?`<span>${pct>0?'+':'−'}${Math.abs(pct)} % ${en?'goal':'Ziel'}</span>`:''}<span>+ ${en?'exercise':'Sport'} ${n(sport)}</span>${auto&&Number.isFinite(goal)?`<b>= ${n(goal)} kcal</b>`:'<b>kcal</b>'}<small>${en?'estimated':'geschätzt'}</small></p>`;
-  }catch{return html}
-}}
