@@ -54,7 +54,7 @@ Ohne Befund: HTML-Ausgabe (`esc`, ID-Prüfung), RLS-SQL, `account-delete`, Edge 
 
 ## Bekannte Grenzen in der Funktion (Version 95)
 
-- Rezepte aggregieren die neuen Zusatznährwerte nicht. Einträge, die mit weniger als 10 g erfasst und stark vergrößert wurden, verlieren die Katalogwerte (sichere Richtung).
+- Rezepte aggregieren die Zusatznährwerte aus den Zutaten (`ck`, `nx`, `nutrients` je Zutat, beim Hinzufügen gespeichert); der Rezept-Eintrag liest sie bei der Anzeige über `recipeId`. Ein Wert erscheint nur, wenn jede Zutat ihn kennt, sonst bleibt er unbekannt (Anzeige „n/m“). Alte Rezepte, per URL/Text importierte Zutaten ohne Katalogtreffer und eigene Zutatenwerte liefern weiter nur Makros. Wird das Rezept später so geändert, dass seine Makros je 100 g vom Eintrag abweichen, oder gelöscht, entfallen die Zusatzwerte dieses Eintrags (sichere Richtung). Das Rezept wird im Eintrag nicht eingefroren. Einträge, die mit weniger als 10 g erfasst und stark vergrößert wurden, verlieren die Katalogwerte (sichere Richtung).
 - Bearbeitet ein Gerät mit Version ≤ 94 eine neue Kombi, entfallen dort `ck` und `nx`.
 - Kein DGE-Referenzwert für Vitamin D, Zink, Kupfer, Mangan, Chrom und Molybdän.
 - Das Vorladen des Katalogs holt zusätzlich 4,4 MB.
