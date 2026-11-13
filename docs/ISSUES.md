@@ -6,10 +6,9 @@ Stand 12.11.2026. Audit vom 12.11.2026: Tests grün, keine kritischen Defekte. D
 
 1. **validData-Kette:** `validData()` wird rund 30-fach umhüllt, von `js/app.js:151` bis `js/workout-import.js:237`. Ein Fehler in einem Zwischenglied macht das ganze Profil ungültig. Weitere Wrapper-Ketten: `render` 25x, `accountPage` 20x, `openModal` 18x, `workoutPage` und `nutrition` je 14x, `profileForm` 10x; Hotspot ist `js/flows.js`. Die Ladereihenfolge in `index.html` ist dabei Teil der Logik.
 2. **Fehlende Tests:** Kein Test prüft alle gespeicherten `state`-Schlüssel gegen `validData`. Kein Migrationstest über mehrere Versionen mit alten Sicherungen.
-3. **Anzeigeversion** ist hart codiert in `js/account-refresh.js:45` (`.replace(/Version \d+/g,'Version 95')`); `scripts/bump-version.cjs` muss das mitziehen.
+3. **Anzeigeversion** ist hart codiert in `js/account-refresh.js:45` (`.replace(/Version \d+/g,'Version 96')`); `scripts/bump-version.cjs` muss das mitziehen.
 4. **native-*.js** (rund 3.400 Zeilen) werden geladen und patchen `render`, `openModal`, `home` und `go` (`js/native-state.js:809–844`), obwohl die SwiftUI-Zustandsbrücke nicht aktiv sein soll. Ob sie ohne Brücke wirklich untätig sind, ist ungeprüft.
-5. **Version 96:** braucht laut bisheriger Doku einen höheren Katalog-Cache-Namen in `sw.js` (auf `main`: `puls-catalog-v2`).
-6. **Lesbarkeit:** Stark minifizierter Code in sehr langen Zeilen erschwert Diffs und Reviews.
+5. **Lesbarkeit:** Stark minifizierter Code in sehr langen Zeilen erschwert Diffs und Reviews.
 
 ## Grenzen der Prüfung
 
@@ -37,7 +36,7 @@ Stand 12.11.2026. Audit vom 12.11.2026: Tests grün, keine kritischen Defekte. D
 
 ## Refactor-Plan
 
-Regeln: Kein Framework, kein Build-Schritt. Verhalten und Ladereihenfolge bleiben gleich; jede Phase einzeln mit `node scripts/check.cjs` und Browser-Stichprobe, eigener Commit. **Erst nach Abschluss von Version 96 beginnen**, weil der Worktree `backend-v96-food-db` dieselben Dateien berührt.
+Regeln: Kein Framework, kein Build-Schritt. Verhalten und Ladereihenfolge bleiben gleich; jede Phase einzeln mit `node scripts/check.cjs` und Browser-Stichprobe, eigener Commit. Version 96 ist veröffentlicht; der Refactor kann beginnen.
 
 | Phase | Inhalt |
 |---|---|
