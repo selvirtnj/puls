@@ -4,7 +4,7 @@ Die Rohdaten liegen lokal in `catalog-raw/`. Der Ordner wird **nicht versioniert
 
 Abrufdatum aller Dateien: **12.11.2026**.
 
-## Teil A – Quellen im Katalog
+## Teil A – Quellen im Katalog (BLS, USDA SR Legacy, USDA Foundation, Ciqual, CNF)
 
 ### BLS 4.0 – Bundeslebensmittelschlüssel
 - Herausgeber: Max Rubner-Institut (MRI), Karlsruhe
@@ -56,6 +56,10 @@ Abrufdatum aller Dateien: **12.11.2026**.
 - Ordner: `catalog-raw/cnf-2026/`, entpackt in `cnf_fcen_all-files-data_2026_extracted/`
 - Datei: `cnf_fcen_all-files-data_2026.zip` – 26.656.195 Byte – SHA-256 `f5faad8977ee6bbdd9d69c8649077cacd87d8658ad200509a4047db1e29edcdd`
 - Einzeldatei-Hashes und verwendete Definitionen: [NUTRIENT-MAPPING.md](NUTRIENT-MAPPING.md).
+
+## Teil A2 – Aus dem Katalog entfernt (14.11.2026)
+
+CoFID 2021 und USDA FNDDS 2021–2023 waren vom 12.11. bis 14.11.2026 im Katalog und wurden auf Selvirs Wunsch entfernt; sie kommen nur auf Wunsch zurück. Die Rohdaten bleiben lokal liegen, sind aber keine Eingabe der Import-Skripte mehr. Die Angaben stehen hier für eine mögliche Rückkehr und für Lizenzhinweise bei bereits gespeicherten Lebensmitteln.
 
 ### USDA FNDDS 2021–2023 (Survey Foods, 10/2024)
 - Herausgeber: USDA ARS (FoodData Central)

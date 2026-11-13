@@ -5,7 +5,7 @@
    Optionale v87-Felder (display, water, meals, foodSearch) werden nur über geschützte Getter gelesen. */
 
 /* ---------- Geschützte Getter für v87-Felder (nach Profilwechsel evtl. undefined) ---------- */
-const fdDefaults={display:{summaryViews:['energy','micros','week'],showRemaining:false,highlighted:['fiber','vitc','iron','calcium','b12','folate','potassium','magnesium'],hapticsEnabled:true,motion:'system'},water:{mode:'auto',glassMl:250},foodSearch:{sort:'best',sources:['bls','usda','ciqual','off','own','puls','cnf','cofid','fndds']}};
+const fdDefaults={display:{summaryViews:['energy','micros','week'],showRemaining:false,highlighted:['fiber','vitc','iron','calcium','b12','folate','potassium','magnesium'],hapticsEnabled:true,motion:'system'},water:{mode:'auto',glassMl:250},foodSearch:{sort:'best',sources:['bls','usda','ciqual','off','own','puls','cnf']}};
 function fdField(key){
   try{let getter=window.pulsData87?.[key];if(typeof getter==='function'){let value=getter.call(window.pulsData87);if(value!==undefined&&value!==null)return value}}catch{}
   let value=state?.[key];

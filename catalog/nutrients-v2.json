@@ -79,7 +79,7 @@
   },
   "precision": {
     "extendedSignificantDigits": 5,
-    "baseMacros": "Exact catalogue values, including 838 values with more than five significant digits (BLS 6, CNF 830, CoFID 2)"
+    "baseMacros": "Exact catalogue values, including 836 values with more than five significant digits (BLS 6, CNF 830)"
   },
   "baseFiles": {
     "foods-0.json": "9f7f7cdf64ffa64558694cc44ee795a9b74999b8f133ca16a6fda7b9ac2492b3",
@@ -124,344 +124,328 @@
     "foods-39.json": "dafc99baef9fbbd798eb85eb842827c0142fd55d48aa3e03236fbdf10bd0a3a7",
     "foods-40.json": "432805ea1ae7dbba16bd2e7483b4a1c472436047dd79ccfe7ebc53c0e8f61dfb",
     "foods-41.json": "9553b10f948029d36700b75dfd3e8fe4f86fb433a8a53d5b07a75c94f8df1018",
-    "foods-42.json": "57022ffedf2defa0517663a4863eb537e90d6454116af6f0fe217e761996cf99",
-    "foods-43.json": "ec8c5279dac59c2b6bc823683c03f7e8ad92dcd000e53c644e828ad71b8608da",
-    "foods-44.json": "3d2d22d8113aa16e954ee9fe56d3856f69479546fdbcd4675e7c2cbd1b8b8ef2",
-    "foods-45.json": "1db7853a0d3b99a37c1e2b4f8433976313e680a50d8ddb189bafa815a41dcf7e",
-    "foods-46.json": "7533d0baa1443e9dee53e427fc3ca6f4787ee554b3c91219070d697fbee4f010",
-    "foods-47.json": "2e2c797fadd3accc9cb81a5e9152ddf2a2f6c8a5794e7a2e1008ead53912fbb1",
-    "foods-48.json": "d35dab5ce2e580efe02da89704bcc1a84e9f82a0c11cdfc9e3656bfc6697fb89",
-    "foods-49.json": "64c9fed4beb8aa82034bd45301c6407147c55ae0bdb7a08364db0224fc840842",
-    "foods-50.json": "abc4494c31f997e86b4bbeb1919fd8e605b4876fa29118ba9c3ff3bde3e0a99d",
-    "foods-51.json": "228410327eec510f7c3cf74d128f1efa885c0e0689baad585ade2572869ab383",
-    "foods-52.json": "d567eae9994413e225627c2308a0b0a7b738c050878f782aa0698660897bfc1b",
-    "foods-53.json": "f5cea2e15e7b749e419af1478be111bb767f6c9b108b4892b4663f9c364d71ce",
-    "foods-54.json": "393d1ddbb4c08d7182cadcb04734c89273637c9e0c396e1b8936094fdaa2022f",
-    "foods-55.json": "f71c93a03fd598dc0d76012f543a5ba860a9effd68f083984895cc317e1d56b5",
-    "foods-56.json": "dfde6c899358550dd12342a42b2ebf081cb765b049db9fdbb770985a1c6f669c",
-    "foods-57.json": "9c6ab5595ccbc0adffb0b67228e74c91dade50bde91088cd91745f6f69a3eab9",
-    "foods-58.json": "24a989225993d21fa4bb54b7c4112acd7229cc94802325ad1920e98ccb6dff2e"
+    "foods-42.json": "59e4f800472df4d8203a616214c3a872d6fa4318250ae5f194f3955400b7fb6b"
   },
   "shards": [
     {
       "file": "catalog/nutrients-v2-00.json",
-      "rows": 437,
-      "sha256": "8bcbe4bae9f3f5b97d62f18bb12be59ea3614a0f607e5435b66a78b8eff4e38b"
+      "rows": 316,
+      "sha256": "70e1555e2deeeb156d90e40c1d2dd03e35e63ff6bffedc16677d8b7331f270eb"
     },
     {
       "file": "catalog/nutrients-v2-01.json",
-      "rows": 480,
-      "sha256": "176e5724b9d2b7225752d398b272e9aba012aeb880dbab3ecc0ab25f796535ee"
+      "rows": 347,
+      "sha256": "2d8860594cbe8cb87239b51028192a9265820591aa2271d0b063af406e72d5d1"
     },
     {
       "file": "catalog/nutrients-v2-02.json",
-      "rows": 430,
-      "sha256": "2e7d45b29c9aed0aeaffe1a966a6fec0e61e7768dd882701634dfc8111004065"
+      "rows": 311,
+      "sha256": "511417f26d8f098cb6885018799fed858bdd2d3a281b6779ff0e246f181b3bc3"
     },
     {
       "file": "catalog/nutrients-v2-03.json",
-      "rows": 432,
-      "sha256": "c4212b38b27fc3f3f0c56671af9fafe6ee170267901ceebafb1a4742a7791011"
+      "rows": 311,
+      "sha256": "ce371ae1add5b32941ca69c32979c95797bc949873c712b4aae6b63d14654b48"
     },
     {
       "file": "catalog/nutrients-v2-04.json",
-      "rows": 451,
-      "sha256": "fc310989af74900eb601ac4b025a80c911a04d50e99b71719276aa451d758d6d"
+      "rows": 335,
+      "sha256": "d20701412d560945f4c78281c3f821562f8300553c6e5360b11bfa457f2e7b11"
     },
     {
       "file": "catalog/nutrients-v2-05.json",
-      "rows": 447,
-      "sha256": "6fc0c59b98877fd38e1a3f8e868a53aca36b7aacfce48dcc6e277a35dda17b2a"
+      "rows": 304,
+      "sha256": "00723ebf39414528a938c0bc117d32edd771460b3e38b58da284dd81a13b2460"
     },
     {
       "file": "catalog/nutrients-v2-06.json",
-      "rows": 455,
-      "sha256": "0b643845fe0d6556e283d4269531c5793c67492d14fcb32ad03a64319ad2a634"
+      "rows": 317,
+      "sha256": "69ab153d1923fd4de1773f2848f7d6833ce0be7066830d6e049cb5f6b19bb118"
     },
     {
       "file": "catalog/nutrients-v2-07.json",
-      "rows": 456,
-      "sha256": "14e14bf101884d62410df2d05ceb5bbe1c284dd346eda7931882d9cdb378bb99"
+      "rows": 333,
+      "sha256": "bbdaadc71f4d7fe4bdb3f6d9a1d5d8abf339a52f72733b25f10e1950d14efbd3"
     },
     {
       "file": "catalog/nutrients-v2-08.json",
-      "rows": 474,
-      "sha256": "427d58b6708793712513d8c901a96b1e43f07d95741e359ce4566242dc604923"
+      "rows": 350,
+      "sha256": "2c763105e47ae80ccf09e65ef109653981d6bb7cdb148f4cf326889fe8115e61"
     },
     {
       "file": "catalog/nutrients-v2-09.json",
-      "rows": 446,
-      "sha256": "a4d02cfcebc1cfa839fdea502e17f292b9d517bf182cd80a64c0b7fc4339f3fa"
+      "rows": 318,
+      "sha256": "fe105e3bbc1c6eebc7ae2b124b9f8a6db360782bc76604a4316d09d5a51c023d"
     },
     {
       "file": "catalog/nutrients-v2-10.json",
-      "rows": 469,
-      "sha256": "7f0cbe490f7b7b17f22b9597fab863487c3731c1cb1ed5311242cb77e0b2baea"
+      "rows": 338,
+      "sha256": "8d4170f8b9ad091958a9f59a82040f9ce678f848df7839923aa68224747e67b5"
     },
     {
       "file": "catalog/nutrients-v2-11.json",
-      "rows": 446,
-      "sha256": "4e6d7bba15a17ede6becf1f898427af0c7ca3ad5527b98b17382f127a83207db"
+      "rows": 329,
+      "sha256": "923b20757fe43816f279897e64eaf30a867b4de3cf862232dfe49e30feb84008"
     },
     {
       "file": "catalog/nutrients-v2-12.json",
-      "rows": 408,
-      "sha256": "50a1653b062d6bc96c159728fc10fb0f8ec7b3ef6edb468fa3c821c2c79e1d05"
+      "rows": 290,
+      "sha256": "d0feb8a8887ec11c52369a00836e5910084558be1746153ce5affe0558863107"
     },
     {
       "file": "catalog/nutrients-v2-13.json",
-      "rows": 448,
-      "sha256": "1b649e8e9538bddb333cfe6f63d88d7091630aa4ce73d6af3ea41eaaefa576bc"
+      "rows": 335,
+      "sha256": "2cf104500d2e0f51239a532f081d4781a8ab99936c6f5024687c9923451b2650"
     },
     {
       "file": "catalog/nutrients-v2-14.json",
-      "rows": 440,
-      "sha256": "d02cbf865c649f6615c811932781bb857cad79c8c567d2ce07e2bc0a3a24d25c"
+      "rows": 317,
+      "sha256": "baed2ca43a104a3d6853b1dd5a08fc9a6a7e0f58dca11fc6455ee4559958d833"
     },
     {
       "file": "catalog/nutrients-v2-15.json",
-      "rows": 484,
-      "sha256": "483a17d74852bc7ed0eabc7454e3c9708feffc77950404c76733f86f8fd6091c"
+      "rows": 341,
+      "sha256": "5fbbff559e5b82b1dc99402021e293078eb2be2daa56e09a99e91b655cb1f3f4"
     },
     {
       "file": "catalog/nutrients-v2-16.json",
-      "rows": 460,
-      "sha256": "7c1d6c1604eac5610dcf508a8d8201405424731fbdfb814f9dd2c7a9c13186b8"
+      "rows": 325,
+      "sha256": "294ba64ee7f296dd8290fbbcba93c0ac4c0688f378d7726299b3907ce659926f"
     },
     {
       "file": "catalog/nutrients-v2-17.json",
-      "rows": 454,
-      "sha256": "85b36f0451b8a245198af0e4069998a246beafd9af6761af58bfb1c80c0571f1"
+      "rows": 324,
+      "sha256": "ad69620721bff09d72246dceaf8c7177002bec516ffc3ae8dbf3646ae64a6cf9"
     },
     {
       "file": "catalog/nutrients-v2-18.json",
-      "rows": 418,
-      "sha256": "5966cbc253cef3cd2141e5a1a8dbe5e232056848d55660f5a0503b5494a03eae"
+      "rows": 320,
+      "sha256": "7025acd54819aceaec42fbcfe54cf6f81771d086df4d62180e00cbb79bd1fd20"
     },
     {
       "file": "catalog/nutrients-v2-19.json",
-      "rows": 445,
-      "sha256": "429b6608fc67703c0689e3b5fddcd4b426a1758639db9a0d45ec299da5ace5cb"
+      "rows": 317,
+      "sha256": "b1f2c8151597072c6fbfa41ee3ae099dd89927ffd0831bf360f89ff4245cb0b2"
     },
     {
       "file": "catalog/nutrients-v2-20.json",
-      "rows": 465,
-      "sha256": "242b86847a00e2035e34b949c911fc7913b84df6cce24fe412d2aaa60d8c6e10"
+      "rows": 329,
+      "sha256": "6cb15daf89c6b1fedca6a3abbeecb88f6e9329f8d9c5296e1625bb41bb2b9ddd"
     },
     {
       "file": "catalog/nutrients-v2-21.json",
-      "rows": 450,
-      "sha256": "56f1524cc677122110b63006ed4ffe1148acb8e08a9c670d9c0970382b26bcf2"
+      "rows": 324,
+      "sha256": "7b3c58c049619320c6332e731eea6b63eee9b4ee955bd91d74188a41d8deef1a"
     },
     {
       "file": "catalog/nutrients-v2-22.json",
-      "rows": 452,
-      "sha256": "e2de33bdc440817fc4003d3bf2ffc5634532e5dfe779279a404ee6c82378071f"
+      "rows": 328,
+      "sha256": "0ce0e76c870e638d4a518510e1f0c991cadd78dff0aa494fc3b726a4e732ece3"
     },
     {
       "file": "catalog/nutrients-v2-23.json",
-      "rows": 452,
-      "sha256": "36b995ba1a9f0a74bb447cf58e60e478d08790927b3dd091c5ec060a8758c6bd"
+      "rows": 330,
+      "sha256": "5c07aa04ca1daa49a58b379d6649e074d40568b2d6bc88af1d218c60a4cbe5d8"
     },
     {
       "file": "catalog/nutrients-v2-24.json",
-      "rows": 480,
-      "sha256": "bd7c4c131663a00be9dbb421ae37d65724883892907ed0dc4a07e939c7c75269"
+      "rows": 347,
+      "sha256": "dc43296affffdcd5274f8b6a21314f71fc3e7bcf520b4c57f0761031bd0a636e"
     },
     {
       "file": "catalog/nutrients-v2-25.json",
-      "rows": 447,
-      "sha256": "6196bec19afcd0653f22b0d8ddca46189c06b662ae79123569e12581a42b94ec"
+      "rows": 322,
+      "sha256": "261dce2db64d50ebddfb0116f6ad49bfef6e563099e1d725ea2c4f52ce2abbb6"
     },
     {
       "file": "catalog/nutrients-v2-26.json",
-      "rows": 482,
-      "sha256": "f5d57b5b5b77b651852c218a8c23043a03d31a05fb6e1fc7134736e4c0f93868"
+      "rows": 335,
+      "sha256": "af0650d96bbb5375d3112d86847b2647948a3a949e491445837909878ca37a56"
     },
     {
       "file": "catalog/nutrients-v2-27.json",
-      "rows": 456,
-      "sha256": "b26b39e89019a4f287a1e0a9572cb2d715825ec9e449b54551a3fc80c1f18eae"
+      "rows": 335,
+      "sha256": "f67d838e50c5f6bd09de526e8856a669af6d0ab57482899671b82dacd155da00"
     },
     {
       "file": "catalog/nutrients-v2-28.json",
-      "rows": 453,
-      "sha256": "d4a4f6fa509824733abc6d3c7d8cfee52e59125307b651f89e1b6b4252899324"
+      "rows": 347,
+      "sha256": "72993d020a4e1469419f42bb0bcac93e859026bdcdcd5500ee98ea2c18dcbfe7"
     },
     {
       "file": "catalog/nutrients-v2-29.json",
-      "rows": 458,
-      "sha256": "e978c0e5e39eb5c3a1f0dda768bf819945aba6a6fe368b709e7fbe0cc587c4a9"
+      "rows": 331,
+      "sha256": "06a04c81418c32f00db3868daff862a3190721f560ff9227adc198f2a9c72bdf"
     },
     {
       "file": "catalog/nutrients-v2-30.json",
-      "rows": 464,
-      "sha256": "85aa80803a02aed45c7e8d425bb7e71c40e67eb2c8bebedcdaa3534703fc6ab4"
+      "rows": 332,
+      "sha256": "8a72f567355f2b135c3140eaa26b8a1e72db92981283ad4caac0731da01ac6da"
     },
     {
       "file": "catalog/nutrients-v2-31.json",
-      "rows": 448,
-      "sha256": "6d9ee4d0d682ad1dfc09a847e202852f720278a4210d81d6e230585c0f3a3823"
+      "rows": 327,
+      "sha256": "1fab12e01b5925faa8e830b4f6aec179a9b97643e7346e61640109c9a7b7bd79"
     },
     {
       "file": "catalog/nutrients-v2-32.json",
-      "rows": 438,
-      "sha256": "917122c367facd8a587bfa300f0078d8cf788fd3ca630bb6143bd6e9a243bf9f"
+      "rows": 323,
+      "sha256": "17774aaefe0eed9dffc39424cfc27918d3dcfea43e8a068de1859bbb897ce1e5"
     },
     {
       "file": "catalog/nutrients-v2-33.json",
-      "rows": 475,
-      "sha256": "f72d90ef5c175265d87bd6c8efe13dcfab22e664bf1df7e3ffba53e0c0bd1b78"
+      "rows": 349,
+      "sha256": "ec5ded479afa1ab1b04988e6b62823f3e396dd0f712308a83958b17ed2a9cf44"
     },
     {
       "file": "catalog/nutrients-v2-34.json",
-      "rows": 463,
-      "sha256": "5cce250b7a3cea074e4084f38a4b67718ef84cd12dcea16318cbf34b3ed747bb"
+      "rows": 332,
+      "sha256": "4a9165ef9583fb98496a4ba4b5bd662b190e0a10d77e43ad87fa1790905407c6"
     },
     {
       "file": "catalog/nutrients-v2-35.json",
-      "rows": 441,
-      "sha256": "02856b0c3b3e461b412d95dd0524a5abf59a487291f43d1a35564d476882f26f"
+      "rows": 322,
+      "sha256": "a44c01ff1c59ba0d55939a941ec80cd125f4b2bc0db767650efea9f8b3fd5e06"
     },
     {
       "file": "catalog/nutrients-v2-36.json",
-      "rows": 466,
-      "sha256": "654a3eb4f0a446f64ad087b6be793cd778374bbd6ba7249532df2afe9bc5fb95"
+      "rows": 336,
+      "sha256": "40bc10e6142834a3c68eb2bb4d1d379454a4c68133df346f7a21cc014d2524ce"
     },
     {
       "file": "catalog/nutrients-v2-37.json",
-      "rows": 423,
-      "sha256": "30301613dec2286345ef7b7283d76fa989f5f7248a4f764feb363fbdf0ca5c46"
+      "rows": 304,
+      "sha256": "d0c47d088483cef9e61a49677bebe84ae5d7ef84a2b2f6ecf2a89e93d3dacc07"
     },
     {
       "file": "catalog/nutrients-v2-38.json",
-      "rows": 454,
-      "sha256": "bdaba648b817f490412ad94b2dd08ad516663bed85b8a64d7eaf4cb191186dfc"
+      "rows": 321,
+      "sha256": "3f9544994a05ed68a07e4369b94e72ff7a182c12a055c0e06bb11792cd3e9b2f"
     },
     {
       "file": "catalog/nutrients-v2-39.json",
-      "rows": 466,
-      "sha256": "2c143c0190722b793efa0e8e83b668589a1b2d25bc6e91d8b9e50471aee0d3eb"
+      "rows": 336,
+      "sha256": "ae42ffc8087ca688d36b0732a2cbaeb5a392985416144719580bbc7e95aea2db"
     },
     {
       "file": "catalog/nutrients-v2-40.json",
-      "rows": 451,
-      "sha256": "f7ec0671b5ae1bd734b621edb51d17f8ccda9d878b1e3d4d190d2442340d2dff"
+      "rows": 323,
+      "sha256": "7d43accc42b81609a6d2c7154d13489437a838a06552f478dc29ea2b4bbe245c"
     },
     {
       "file": "catalog/nutrients-v2-41.json",
-      "rows": 420,
-      "sha256": "1b65d1460cb53132efa03d07bd9debfb181084fd194694a1c4fe70639a3cc542"
+      "rows": 303,
+      "sha256": "4843a0116d9f1aaf4d2487174aeeba5b30c0386827c2ccbec3095ee1a65cf232"
     },
     {
       "file": "catalog/nutrients-v2-42.json",
-      "rows": 433,
-      "sha256": "548937254ec173f913b4fa06bc143b11bf42eda33175a6ae1dc2a14d184ab218"
+      "rows": 304,
+      "sha256": "3482fd0412fd2b7847bed1f68781eea4979d37ae12c7200d54eb9ac3e1743216"
     },
     {
       "file": "catalog/nutrients-v2-43.json",
-      "rows": 444,
-      "sha256": "04c3518d7314e67a2fcc323862a947cf0b350c879880e5097a1d3a4444ea786a"
+      "rows": 312,
+      "sha256": "ba15f0e9cb31d0234ba9880094b7de1b28eac8bce4db1906b72aa072ac39d681"
     },
     {
       "file": "catalog/nutrients-v2-44.json",
-      "rows": 436,
-      "sha256": "fb898679a1b6c358f868ec5fd48704b1006b5401e10bb9d70e0d73ad4d16f189"
+      "rows": 314,
+      "sha256": "48dd1b7577955d3058d51297b620e18050877c583454c9d4ea69752e5e1d79fb"
     },
     {
       "file": "catalog/nutrients-v2-45.json",
-      "rows": 453,
-      "sha256": "d11605a2f8eb8ec5cd4553b899345462373dc31d53f23267a4018b9613b6fbff"
+      "rows": 320,
+      "sha256": "8a5f7d47afcb39d0370d3e4d111aae52401ee7395ef65645b162e1cc05eb15d4"
     },
     {
       "file": "catalog/nutrients-v2-46.json",
-      "rows": 458,
-      "sha256": "505e949df178d8e090023f0648a9877d367c0cdd36d78931d6d4522d0da970b8"
+      "rows": 317,
+      "sha256": "4cce0e17853ffc929d8dc9105599c59107030f6bce796bd39d6a336ea16ecf69"
     },
     {
       "file": "catalog/nutrients-v2-47.json",
-      "rows": 443,
-      "sha256": "af5c3c90e2dd69e81fcdf28fea87ff152c6c3c20b12e3cc9b9a81372c9e56f99"
+      "rows": 309,
+      "sha256": "bdbdaac77c601883360ef5f5ff8b3adb9bdd6ddad71ee7a11337faf7f635487d"
     },
     {
       "file": "catalog/nutrients-v2-48.json",
-      "rows": 450,
-      "sha256": "44eecfe6ed9cacdd19bee0d6395d333e99647c46e77ae8e080d0e4118913b4df"
+      "rows": 320,
+      "sha256": "64391ec6d6e257e9f777120c2e6cbb3e26dcdaa6bf05c21504d99f987af71c2a"
     },
     {
       "file": "catalog/nutrients-v2-49.json",
-      "rows": 462,
-      "sha256": "4ff9a3415718a52c8d35b72c09df2af3111fc0db1677f392a1b76540df29bb36"
+      "rows": 329,
+      "sha256": "ccd239b7fab950a9f9099970b05614e47970c7f5c7d4c31fc9d0ea0f9a83c512"
     },
     {
       "file": "catalog/nutrients-v2-50.json",
-      "rows": 453,
-      "sha256": "9a6a64042f37bd908952f74c4895349a15cd23a4d622805dcf8f29d793ff7a4b"
+      "rows": 328,
+      "sha256": "45ca364d030acdb54e377460f97fb3c32965475aaa10c22f1a05e413ab363508"
     },
     {
       "file": "catalog/nutrients-v2-51.json",
-      "rows": 447,
-      "sha256": "618c97ac252d4644595a80ea9e2ada2b50546ad2bdc7b668bb437c0f4b298fa7"
+      "rows": 311,
+      "sha256": "7cb6f86d65cc089cc7986dee9e2624bbeb2def8e0d6fb07135e80f7d06d0d642"
     },
     {
       "file": "catalog/nutrients-v2-52.json",
-      "rows": 448,
-      "sha256": "5199e7edd6041241e60056330020c19298768b8d44067a805e49a908d30160a0"
+      "rows": 318,
+      "sha256": "ca9b96484f4a9949f9f87801ab502b0b98c6ffe363e2440fa0784b293753fcb4"
     },
     {
       "file": "catalog/nutrients-v2-53.json",
-      "rows": 426,
-      "sha256": "0db3c7d173fc04ba85685fbe64528991e4e5138477edafd3fc3689074bc91631"
+      "rows": 315,
+      "sha256": "40f2cc889282c46544183d556c95529d4ddca8665008251c9bf96ca64a4382e5"
     },
     {
       "file": "catalog/nutrients-v2-54.json",
-      "rows": 432,
-      "sha256": "9039ff7d42949f606c4812c1f4705b3a6b0f5e23c10eca1206e9fc7d87cb6605"
+      "rows": 318,
+      "sha256": "572040ba66fbf2bb7d4c136b1a2a97f367a422c4216cd03240e8d82f9e11ab1a"
     },
     {
       "file": "catalog/nutrients-v2-55.json",
-      "rows": 454,
-      "sha256": "c6f3c03c94087af7799dcfb8cfaf6a5ae04487a170cd2a6589ae9971b3bfe7a0"
+      "rows": 337,
+      "sha256": "078da3f37873df2d1d9e55cd6965f46f36844f37a0ead92012df6b22fd1a57f6"
     },
     {
       "file": "catalog/nutrients-v2-56.json",
-      "rows": 468,
-      "sha256": "7a44d99fc44900f89cac8c159a98a0aaa0b9bd9d381a1ad34e6ab11fa3273e9c"
+      "rows": 345,
+      "sha256": "db6d510fa9c09a05e5a0f546f3d4e2bff8ff22a5c6656c12538fa6cbeee6307b"
     },
     {
       "file": "catalog/nutrients-v2-57.json",
-      "rows": 440,
-      "sha256": "5133b3fa8d75d504e8747324f1b9de95cb5f782405094e243601c2414d68f591"
+      "rows": 324,
+      "sha256": "00c4dc37b2fc2417ac44d06f892673bc5e2100349b709ffb296a1d9f03529655"
     },
     {
       "file": "catalog/nutrients-v2-58.json",
-      "rows": 463,
-      "sha256": "b67deccc75fcff2e72f467de17112837681eb393598f81b1950021dc63cfb7f6"
+      "rows": 332,
+      "sha256": "a59dad275a64d5908d016777dad2b89d0d8b3bb147f541d452b42dc1a8a95878"
     },
     {
       "file": "catalog/nutrients-v2-59.json",
-      "rows": 472,
-      "sha256": "9069b4eac79f7b982428d02d28e16fea276c1bbff42ef92565ecc46d10008b52"
+      "rows": 340,
+      "sha256": "26a165f143b52c4d39d68a49e55e22cff820b9db55a073f4dc11e82cd9833a59"
     },
     {
       "file": "catalog/nutrients-v2-60.json",
-      "rows": 451,
-      "sha256": "3c7813e56ec5291a51c809e91b6b12caef4744e105589b8cab69261856213c72"
+      "rows": 323,
+      "sha256": "a43df2bc9219f814b481de74fd2fc570be34d089233c5af17f45e4293e16a25a"
     },
     {
       "file": "catalog/nutrients-v2-61.json",
-      "rows": 438,
-      "sha256": "8c2e3f033481abcfb327f4cd2702e96fadc2814c3cfa8517d616f7beaa953884"
+      "rows": 319,
+      "sha256": "326706f14468ffdb16b768588add7f822d5ee2caed505298bbdc43520fd73a4d"
     },
     {
       "file": "catalog/nutrients-v2-62.json",
-      "rows": 436,
-      "sha256": "72b62325a942c4eb104837139df9fb31795e60fd17af0bcee2de2687aea57515"
+      "rows": 311,
+      "sha256": "b97eaf769c6b47c36c55845698963320d212a33a0c0579fec6a307f39c936c53"
     },
     {
       "file": "catalog/nutrients-v2-63.json",
-      "rows": 436,
-      "sha256": "c88c3142a2cc4e3497169f0fe457a9e9eea9eb0e6dcfe8bb8715d1d518532ca3"
+      "rows": 312,
+      "sha256": "ccdd4b852bdf53858422a11d5de14868e0b1cc4c8127ee74b39015a4b3e4c4cd"
     }
   ],
   "sources": [
@@ -1071,193 +1055,6 @@
         "negativeCells": 0,
         "definitionChecks": 65
       }
-    },
-    {
-      "name": "CoFID 2021",
-      "edition": "CoFID 2021",
-      "rawFiles": [
-        {
-          "file": "cofid-2021/McCance_Widdowsons_Composition_of_Foods_Integrated_Dataset_2021..xlsx",
-          "sha256": "436e9445ef2adb2a75f3d7edd51302de3adad25385f9795fc94ba58bd030e97d"
-        }
-      ],
-      "matched": 2636,
-      "imported": 2624,
-      "coverage": {
-        "kcal": 2624,
-        "p": 2624,
-        "c": 2624,
-        "f": 2624,
-        "sugars": 2474,
-        "starch": 2394,
-        "polyols": 0,
-        "glucose": 2055,
-        "fructose": 2072,
-        "galactose": 1180,
-        "sucrose": 2127,
-        "lactose": 2337,
-        "maltose": 2295,
-        "fiber_sol": 0,
-        "fiber_insol": 0,
-        "satfat": 2210,
-        "mufat": 2124,
-        "pufat": 2200,
-        "transfat": 1470,
-        "omega3": 576,
-        "omega6": 589,
-        "ala": 500,
-        "epa": 288,
-        "dha": 278,
-        "linoleic": 503,
-        "arachidonic": 353,
-        "cholesterol": 2418,
-        "histidine": 0,
-        "isoleucine": 0,
-        "leucine": 0,
-        "lysine": 0,
-        "methionine": 0,
-        "phenylalanine": 0,
-        "threonine": 0,
-        "tryptophan": 0,
-        "valine": 0,
-        "cysteine": 0,
-        "tyrosine": 0,
-        "vita_rae": 0,
-        "retinol": 1870,
-        "beta_carotene": 683,
-        "vitd": 1976,
-        "vite": 426,
-        "vitk": 262,
-        "b1": 2399,
-        "b2": 2409,
-        "niacin": 2461,
-        "niacin_ne": 2393,
-        "b5": 2087,
-        "b6": 2233,
-        "biotin": 1786,
-        "folate_dfe": 0,
-        "folic_acid": 0,
-        "choline": 0,
-        "sodium": 2522,
-        "chloride": 2283,
-        "phosphorus": 2573,
-        "zinc": 2424,
-        "copper": 2316,
-        "manganese": 2132,
-        "selenium": 1694,
-        "iodine": 1333,
-        "fluoride": 0,
-        "chromium": 0,
-        "molybdenum": 0,
-        "alcohol": 1713,
-        "caffeine": 0
-      },
-      "selfCheck": {
-        "comparisons": 34268,
-        "presentComparisons": 31210,
-        "expectedDifferences": [],
-        "unexpectedDifferences": []
-      },
-      "diagnostics": {
-        "negativeCells": 0,
-        "parenthesizedUnknown": 0,
-        "definitionChecks": 54,
-        "mlRowsExcluded": 12,
-        "duplicateCodes": [
-          "13-669 (Aubergine / Watercress), joined by code and exact food name"
-        ]
-      }
-    },
-    {
-      "name": "USDA FNDDS 2021-2023",
-      "edition": "Survey Foods 2021-2023, JSON 2024-10-31",
-      "rawFiles": [
-        {
-          "file": "usda-fndds/FoodData_Central_survey_food_json_2024-10-31_extracted/surveyDownload.json",
-          "sha256": "2e7eb9fda92adf1d4d784dba5eaa3a7fd4418cd86ccff383c7c9294d79e9b808"
-        }
-      ],
-      "matched": 5431,
-      "imported": 5431,
-      "coverage": {
-        "kcal": 5431,
-        "p": 5431,
-        "c": 5431,
-        "f": 5431,
-        "sugars": 5431,
-        "starch": 0,
-        "polyols": 0,
-        "glucose": 0,
-        "fructose": 0,
-        "galactose": 0,
-        "sucrose": 0,
-        "lactose": 0,
-        "maltose": 0,
-        "fiber_sol": 0,
-        "fiber_insol": 0,
-        "satfat": 5431,
-        "mufat": 5431,
-        "pufat": 5431,
-        "transfat": 0,
-        "omega3": 0,
-        "omega6": 0,
-        "ala": 0,
-        "epa": 5431,
-        "dha": 5431,
-        "linoleic": 0,
-        "arachidonic": 0,
-        "cholesterol": 5431,
-        "histidine": 0,
-        "isoleucine": 0,
-        "leucine": 0,
-        "lysine": 0,
-        "methionine": 0,
-        "phenylalanine": 0,
-        "threonine": 0,
-        "tryptophan": 0,
-        "valine": 0,
-        "cysteine": 0,
-        "tyrosine": 0,
-        "vita_rae": 5431,
-        "retinol": 5431,
-        "beta_carotene": 5431,
-        "vitd": 5431,
-        "vite": 5431,
-        "vitk": 5431,
-        "b1": 5431,
-        "b2": 5431,
-        "niacin": 5431,
-        "niacin_ne": 0,
-        "b5": 0,
-        "b6": 5431,
-        "biotin": 0,
-        "folate_dfe": 5431,
-        "folic_acid": 5431,
-        "choline": 5431,
-        "sodium": 5431,
-        "chloride": 0,
-        "phosphorus": 5431,
-        "zinc": 5431,
-        "copper": 5431,
-        "manganese": 0,
-        "selenium": 5431,
-        "iodine": 0,
-        "fluoride": 0,
-        "chromium": 0,
-        "molybdenum": 0,
-        "alcohol": 5431,
-        "caffeine": 5431
-      },
-      "selfCheck": {
-        "comparisons": 70603,
-        "presentComparisons": 70603,
-        "expectedDifferences": [],
-        "unexpectedDifferences": []
-      },
-      "diagnostics": {
-        "negativeCells": 0,
-        "definitionChecks": 217240
-      }
     }
   ],
   "plausibilityWarnings": [
@@ -1404,22 +1201,6 @@
     {
       "catalogKey": "CNF 2026:CNF_846",
       "rule": "fatFractions"
-    },
-    {
-      "catalogKey": "CoFID 2021:COFID_16-055",
-      "rule": "fatFractions"
-    },
-    {
-      "catalogKey": "CoFID 2021:COFID_19-614",
-      "rule": "fatFractions"
-    },
-    {
-      "catalogKey": "USDA FNDDS 2021-2023:FNDDS_81100500",
-      "rule": "sugars"
-    },
-    {
-      "catalogKey": "USDA FNDDS 2021-2023:FNDDS_81101000",
-      "rule": "sugars"
     },
     {
       "catalogKey": "USDA Foundation 2026:749420",

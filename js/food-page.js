@@ -7,11 +7,12 @@
 
 let fpPane='all',fpLists={},fpPick=null,fpMealDraft=null,fpPaneFrame=0,fpRefreshTimer=null;
 const fpPanes=[['all','Alle','All'],['frequent','Häufig','Frequent'],['recent','Zuletzt','Recent'],['favorites','Favoriten','Favourites'],['own','Eigene','Custom'],['recipes','Rezepte','Recipes'],['meals','Kombis','Combos'],['products','Produkte','Products'],['drinks','Getränke','Drinks']];
-const fpSourceNames=[['bls','BLS 4.0'],['usda','USDA'],['ciqual','Ciqual'],['cnf','CNF 2026'],['cofid','CoFID 2021'],['fndds','USDA FNDDS 2021-2023'],['off','Open Food Facts'],['own',['Eigene','Custom']],['puls',['PULS-Richtwerte','PULS reference values']]];
+const fpSourceNames=[['bls','BLS 4.0'],['usda','USDA'],['ciqual','Ciqual'],['cnf','CNF 2026'],['off','Open Food Facts'],['own',['Eigene','Custom']],['puls',['PULS-Richtwerte','PULS reference values']]];
 const fpSorts=[['best',['Beste Treffer','Best match']],['az',['A bis Z','A to Z']],['za',['Z bis A','Z to A']],['recent',['Zuletzt','Most recent']],['frequent',['Häufigste','Most frequent']]];
 function fpActive(){return typeof modal!=='undefined'&&modal.classList.contains('fpage')&&modal.open}
 function fpL(x){return Array.isArray(x)?fdT(x[0],x[1]):x}
-function fpSearchPrefs(){let s=fdField('foodSearch'),all=fdDefaults.foodSearch.sources;return {sort:fpSorts.some(([k])=>k===s.sort)?s.sort:'best',sources:Array.isArray(s.sources)?s.sources.filter(k=>all.includes(k)):[...all]}}
+// Retired keys (cofid, fndds) stay stored but count as nothing; a list of only retired keys means "all", not "empty".
+function fpSearchPrefs(){let s=fdField('foodSearch'),all=fdDefaults.foodSearch.sources,own=Array.isArray(s.sources)?s.sources.filter(k=>all.includes(k)):[...all];return {sort:fpSorts.some(([k])=>k===s.sort)?s.sort:'best',sources:own.length||!s.sources?.length?own:[...all]}}
 function fpFilterActive(){let p=fpSearchPrefs();return p.sort!=='best'||p.sources.length<fdDefaults.foodSearch.sources.length}
 
 /* ---------- Seite öffnen und schließen ---------- */

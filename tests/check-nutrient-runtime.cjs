@@ -149,21 +149,27 @@ function fullApp() {
   assertValue(api.resolveEntry(entry({grams:undefined,nx:{sugars:2}})),'sugars',null,'unknown');
   console.log('PASS: resolver priority, per100 scaling, 0/unknown coverage, rounding boundary, old foodRef/record links, altered/ml/recipe/AI exclusions, coalescing and offline retry');
 
-  // Real v2 shards for each new source, plus the volume-basis exclusion.
+  // Real v2 shard for CNF. CoFID/FNDDS left the catalogue on 14.11.2026, but foods saved from them stay valid and fall back to their snapshots.
   const manifest=JSON.parse(fs.readFileSync('catalog/manifest.json','utf8'));
   const catalogue=manifest.files.flatMap(file=>JSON.parse(fs.readFileSync(file,'utf8')));
-  const selected=['CNF_2','COFID_13-145','COFID_17-793','FNDDS_11111000'].map(id=>catalogue.find(r=>r[0]===id));
+  const legacyRow=(source,id,name,kcal,p,c,f,unit)=>[id,name,name,kcal,p,c,f,source,{},...(unit?[unit]:[])];
+  const selected=[catalogue.find(r=>r[0]==='CNF_2'),legacyRow('CoFID 2021','COFID_13-145','Legacy CoFID food',151,2.9,.8,15.2),legacyRow('CoFID 2021','COFID_17-793','Legacy CoFID drink',98,4,9.6,2.3,'ml'),legacyRow('USDA FNDDS 2021-2023','FNDDS_11111000','Legacy FNDDS food',61,3.27,4.63,3.2)];
+  assert(!catalogue.some(r=>/^(COFID_|FNDDS_)/.test(r[0])),'Retired sources are no longer in the catalogue');
   const newFoods=selected.map((r,i)=>({id:'compat-'+i,name:r[1],catalogKey:r[7]+':'+r[0],source:r[7],record:r[0],unit:r[9]||'g',kcal:r[3],p:r[4],c:r[5],f:r[6],nutrients:r[8]}));
   const real=fixture({fetch:async url=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(url,'utf8'))})});
   await real.api.ensure(newFoods.map(p=>p.catalogKey));
   for(const p of newFoods) {
     const result=real.api.resolveProduct(p);
-    if(p.unit==='ml') {assertValue(result,'sugars',null);assert.equal(result.pending,false);}
-    else {assert.equal(result.origin.sugars,'catalog');assert.equal(result.pending,false);}
+    if(p.source==='CNF 2026') assert.equal(result.origin.sugars,'catalog');
+    else assertValue(result,'sugars',null);
+    assert.equal(result.pending,false);
   }
   for(const key of ['CNF 2026:123','CoFID 2021:123','USDA FNDDS 2021-2023:123']) {
     const count=real.requests.length;assert.equal((await real.api.ensure([key])).unavailable.length,1);assert.equal(real.requests.length,count,'Malformed new record prefix does not trigger a fetch');
   }
+  const stale='CoFID 2021:COFID_13-145',staleRows={[stale]:'1;1;1;1'+';'.repeat(keys.length-4)};
+  const staleShard=fixture({fetch:async url=>({ok:true,json:async()=>({schemaVersion:1,keys,rows:Number(/-(\d+)\.json$/.exec(url)[1])===shardFor(stale)?staleRows:{}})})});
+  assert.equal((await staleShard.api.ensure([stale])).ready.length,1,'A stale cached shard that still carries retired rows still decodes');
   const wrongShape=fixture({fetch:async()=>({ok:true,json:async()=>({schemaVersion:1,keys,rows:[]})})});
   assert.equal((await wrongShape.api.ensure([newFoods[0].catalogKey])).unavailable.length,1);
 

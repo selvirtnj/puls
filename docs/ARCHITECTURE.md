@@ -54,4 +54,4 @@ Erfasste Lebensmittel können `ck` als direkten Katalogschlüssel und `nx` als e
 
 Das Profil liegt lokal in `puls-v1`. Supabase Auth und revisionsgeprüfte Speicherung synchronisieren dasselbe Profil. Der öffentliche Publishable Key darf im Client stehen; `service_role`, Passwörter oder andere geheime Schlüssel gehören niemals ins Repository. RLS beschränkt den Zugriff auf die eigene Nutzer-ID. SQL-Dateien werden nicht automatisch ausgeführt.
 
-Der gebündelte Lebensmittelkatalog umfasst 28.893 Einträge. `catalog/manifest.json` steuert alle Chunks sowie Offline-Vorladen; `scripts/import-food-databases.cjs` ergänzt ausschließlich CNF 2026, CoFID 2021 und USDA FNDDS 2021–2023. Importkonventionen und Katalogformat: [FOOD-DATABASES.md](FOOD-DATABASES.md).
+Der gebündelte Lebensmittelkatalog umfasst 20.826 Einträge. `catalog/manifest.json` steuert alle Chunks sowie Offline-Vorladen; `scripts/import-food-databases.cjs` ergänzt ausschließlich CNF 2026 (CoFID 2021 und USDA FNDDS wurden am 14.11.2026 entfernt). Importkonventionen und Katalogformat: [FOOD-DATABASES.md](FOOD-DATABASES.md).

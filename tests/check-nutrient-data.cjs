@@ -7,8 +7,8 @@ const crypto = require('node:crypto');
 const {numeric, formatNumber, shardFor, readXlsx, csvRows} = require('../scripts/lib/nutrient-readers.cjs');
 const {definitions, sidecarKeys, LEGACY_KEYS, roundSr, formulaDependencies, blsValue, ciqualValues} = require('../scripts/lib/nutrient-mapping.cjs');
 const {BASE_DIGEST, EXTENSION_DIGEST, SOURCES, sha256, baseFiles, extensionBaseFiles, verifyRaw, compareLegacy} = require('../scripts/import-nutrients.cjs');
-const {CNF,FNDDS,COFID} = require('../scripts/lib/nutrient-new-mapping.cjs');
-const {auditCnf,auditFndds,auditCofid} = require('../scripts/lib/nutrient-new-sources.cjs');
+const {CNF} = require('../scripts/lib/nutrient-new-mapping.cjs');
+const {auditCnf} = require('../scripts/lib/nutrient-new-sources.cjs');
 const expected = require('./fixtures/nutrient-import/expectations.json');
 const json = file => JSON.parse(fs.readFileSync(file,'utf8'));
 const defs = definitions(), keys = sidecarKeys(), meta = json('catalog/nutrients-v2.json');
@@ -26,8 +26,8 @@ const context = {};vm.runInNewContext(fs.readFileSync('js/nutrient-definitions.j
 assert.equal(context.PULS_NUTRIENT_DEFS.length,76);
 assert(/nutrient-definitions\.js\?v=\d+/.test(fs.readFileSync('index.html','utf8')),'Registry is integrated with an asset version');
 assert.equal(sha256(JSON.stringify(baseFiles())),BASE_DIGEST,'Original catalogue retains deployed LF bytes');
-assert.equal(baseFiles().length,37);
-assert.deepEqual({...Object.fromEntries(baseFiles()),...Object.fromEntries(extensionBaseFiles())},meta.baseFiles,'All 59 food chunks match the unchanged LF catalogue');
+assert.equal(baseFiles().length,37);assert.equal(Object.keys(extensionBaseFiles()).length,6,'Only the six CNF chunks remain after CoFID/FNDDS were removed');
+assert.deepEqual({...Object.fromEntries(baseFiles()),...Object.fromEntries(extensionBaseFiles())},meta.baseFiles,'All 43 food chunks match the unchanged LF catalogue');
 assert.equal(sha256(JSON.stringify(extensionBaseFiles())),EXTENSION_DIGEST);
 const readBase = fs.readFileSync, normalizedBase = baseFiles();
 try {
@@ -86,9 +86,10 @@ for (const [index,descriptor] of meta.shards.entries()) {
     seen.set(catalogKey,values);
   }
 }
-assert.equal(precisionExceptions,838,'Exact base macros: six BLS, 830 CNF, two CoFID values');
-assert.equal(seen.size,28827);
-assert.equal(unchangedCells.digest('hex'),'4d36cec5a483b80745fa901b6fa4743634a5db30ead38d7c2d920410c385df12','Only the CNF niacin_ne column may differ from the reviewed v2 rows');
+assert.equal(precisionExceptions,836,'Exact base macros: six BLS, 830 CNF values');
+assert.equal(seen.size,20772);
+assert(![...seen.keys()].some(key=>/^(CoFID 2021|USDA FNDDS 2021-2023):/.test(key)),'No sidecar row of a retired source');
+assert.equal(unchangedCells.digest('hex'),'1174009bdaeaba6450193f0cfd736593eb181de24ac46a4a624af1ba1da51dee','Only the CNF niacin_ne column may differ from the reviewed v2 rows');
 assert.equal(meta.sources[4].coverage.niacin_ne,2389);
 assert.equal(meta.sources[4].diagnostics.definitionChecks,65);
 assert.equal(meta.sources[0].diagnostics.previousSuppressedFormulaZeros,2549);
@@ -104,9 +105,7 @@ assert.equal(meta.sources[1].coverage.arachidonic,165);
 for (const row of base.filter(row => row[0].startsWith('PULS_'))) assert(!seen.has(row[7] + ':' + row[0]));
 const newExceptions = [
   ...['1172','2789','2996','3169','3220','3422','3578','3596','3645','4078','4781','5767','5784','693','7190','775','7928','846'].map(id=>['CNF 2026:CNF_'+id,'fatFractions']),
-  ...['151','2976','7740'].map(id=>['CNF 2026:CNF_'+id,'sugars']),
-  ...['16-055','19-614'].map(id=>['CoFID 2021:COFID_'+id,'fatFractions']),
-  ...['81100500','81101000'].map(id=>['USDA FNDDS 2021-2023:FNDDS_'+id,'sugars'])
+  ...['151','2976','7740'].map(id=>['CNF 2026:CNF_'+id,'sugars'])
 ];
 assert.deepEqual(warnings.sort(),[...expected.plausibilityExceptions.map(x => [...x]),...newExceptions].sort());
 assert.deepEqual(meta.plausibilityWarnings.map(x => [x.catalogKey,x.rule]).sort(),warnings);
@@ -118,28 +117,20 @@ for (const [i,source] of meta.sources.entries()) {
   assert.deepEqual(source.selfCheck.unexpectedDifferences,[]);
   assert.equal(source.selfCheck.expectedDifferences.length,i === 2 ? 1 : 0);
 }
-assert.deepEqual(meta.sources.slice(4).map(s=>[s.imported,s.selfCheck.comparisons,s.selfCheck.presentComparisons]),[[2573,33449,32315],[2624,34268,31210],[5431,70603,70603]]);
-assert.equal(meta.sources[5].diagnostics.mlRowsExcluded,12);
-assert.deepEqual(meta.sources[5].selfCheck.expectedDifferences,[]);
-// Every differing CoFID value must now fail, including the former exceptions.
+assert.equal(meta.sources.length,5,'Four old sources plus CNF');
+assert.deepEqual(meta.sources.slice(4).map(s=>[s.imported,s.selfCheck.comparisons,s.selfCheck.presentComparisons]),[[2573,33449,32315]]);
+// Every differing value of an added source must fail; there are no exceptions.
 const report={comparisons:0,presentComparisons:0,expectedDifferences:[],unexpectedDifferences:[]};
-compareLegacy(['COFID_13-669','','',62,2.1,5.2,3.8,'CoFID 2021',{vitc:62}],{macros:[62,2.1,5.2,3.8],legacy:{vitc:3}},report);
+compareLegacy(['CNF_2','','',62,2.1,5.2,3.8,'CNF 2026',{vitc:62}],{macros:[62,2.1,5.2,3.8],legacy:{vitc:3}},report);
 assert.equal(report.unexpectedDifferences.length,1);
-for(const source of ['CNF 2026','USDA FNDDS 2021-2023'])for(const [key,value]of seen)if(key.startsWith(source+':')) {
-  if(source.startsWith('USDA'))for(const k of ['ala','linoleic','arachidonic'])assert.equal(value[k],null,'Undifferentiated fatty acids stay unknown');
-}
-for(const [k,v] of [['vita_rae',null],['folate_dfe',null],['folic_acid',null]])for(const [key,value]of seen)if(key.startsWith('CoFID 2021:'))assert.equal(value[k],v);
 for (const sample of expected.samples) for (const [key,value] of Object.entries(sample.values)) assert.equal(seen.get(sample.catalogKey)?.[key],value,sample.catalogKey + '/' + key);
-// Direct source samples read separately from CNF Nutrient_Amount, CoFID sheets
-// 1.3/1.6/1.12 and FNDDS foodNutrients at development time; not generated at test time.
+// Direct source samples read separately from CNF Nutrient_Amount at development time; not generated at test time.
 for(const [catalogKey,values]of [
   ['CNF 2026:CNF_2',{niacin_ne:2.5505,sugars:2.661,vita_rae:193.76,vite:2.0266,folic_acid:5.562,folate_dfe:30.449,linoleic:2.01,ala:0.4522,arachidonic:0.047}],
   ['CNF 2026:CNF_130',{niacin_ne:3.3777}],
-  ['CNF 2026:CNF_693',{niacin_ne:6.0483}],
-  ['CoFID 2021:COFID_13-145',{sugars:0.8,satfat:null,mufat:null,pufat:null,omega3:0.07,omega6:0.52,beta_carotene:0,vite:null,linoleic:0.57,ala:0.07,arachidonic:0,epa:0,dha:0}],
-  ['USDA FNDDS 2021-2023:FNDDS_11111000',{sugars:4.81,vite:0.05,vitd:1.1,folic_acid:0,folate_dfe:0,epa:0.001,dha:0,linoleic:null,ala:null,arachidonic:null}]
+  ['CNF 2026:CNF_693',{niacin_ne:6.0483}]
 ])for(const [key,value]of Object.entries(values))assert.equal(seen.get(catalogKey)[key],value,catalogKey+'/'+key);
-console.log('PASS: 64 v2 shards, 28,827 rows, old v1 row strings identical, 59 LF-verified base chunks, seven-source coverage, 12 ml exclusions, zero additional-source deviations and 49 pinned plausibility cases');
+console.log('PASS: 64 v2 shards, 20,772 rows, old v1 row strings identical, 43 LF-verified food chunks, five-source coverage, zero additional-source deviations and pinned plausibility cases');
 
 for (const missing of [undefined,null,'',' ','-','<LOD','<LOQ','<LOD or <LOQ','TR','Tr','traces','< 0,2','N','(0.11)',-1,'-0.2',Infinity,NaN]) assert.equal(numeric(missing),null);
 const cnfDictionary = new Map(Object.values(CNF).map(([id,Nutrient_Unit,Nutrient_Name_EN,Tagname])=>[String(id),{Nutrient_Unit,Nutrient_Name_EN,Tagname}]));
@@ -153,13 +144,6 @@ cnfDictionary.get('409').Nutrient_Unit='Niacin Equivalents';
 cnfDictionary.get('406').Nutrient_Unit='Niacin Equivalents';assert.throws(()=>auditCnf(cnfDictionary),/definition\/unit/,'No other code accepts the special unit');
 cnfDictionary.get('406').Nutrient_Unit='Milligram';
 cnfDictionary.get('328').Nutrient_Unit='International Unit';assert.throws(()=>auditCnf(cnfDictionary),/definition\/unit/);
-const [id,number,unitName,name]=FNDDS.vitd;
-auditFndds({id,number,unitName,name},FNDDS.vitd);
-for(const patch of [{number:'324'},{unitName:'IU'},{name:'Vitamin D IU'},{id:1110}])assert.throws(()=>auditFndds({id,number,unitName,name,...patch},FNDDS.vitd),/definition\/number\/unit/);
-for(const mapping of Object.values(COFID)) {
-  const specs=Object.values(mapping),rows=[specs.map(s=>s[1]),specs.map(s=>s[0]),specs.map(s=>s[2])];
-  assert.equal(auditCofid(rows,mapping).size,specs.length);rows[0][0]+=' wrong basis';assert.throws(()=>auditCofid(rows,mapping),/definition\/unit/);
-}
 assert.equal(numeric(0),0);assert.equal(numeric('0'),0);assert.equal(numeric('0,05'),0.05);
 assert.equal(numeric('2.7E-2'),0.027);
 for (const [raw,text] of [[0,'0'],[0.000000000123456,'0.00000000012346'],[1.4999999999999999e-2,'0.015'],[4934.36/1000,'4.9344'],[12345678,'12346000']]) assert.equal(formatNumber(raw),text);

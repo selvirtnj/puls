@@ -105,7 +105,7 @@ function migrate87(s=state){
  if(object(s.plan))s.plan.macroInput??='grams';
  s.foodSearch??={};s.foodSearch.sort??='best';s.foodSearch.sources??=[...sources];
  // One-time addition, preserving previous exclusions and future explicit deselection.
- if(!integer(s.foodSearch.catalogueSourcesVersion,1,Infinity)){s.foodSearch.sources=[...new Set([...s.foodSearch.sources,'cnf','cofid','fndds'])].slice(0,32);s.foodSearch.catalogueSourcesVersion=1;}
+ if(!integer(s.foodSearch.catalogueSourcesVersion,1,Infinity)){s.foodSearch.sources=[...new Set([...s.foodSearch.sources,'cnf'])].slice(0,32);s.foodSearch.catalogueSourcesVersion=1;}
  return s;
 }
 const baseMigrate=migrate;

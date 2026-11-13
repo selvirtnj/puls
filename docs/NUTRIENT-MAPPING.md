@@ -2,7 +2,7 @@
 
 Prüfsummen des Basiskatalogs und der Sidecars werden nach CRLF-zu-LF-Normalisierung geprüft und entsprechen den ausgelieferten LF-Dateien. Windows- und LF-Checkouts liefern dieselben Digests. Rohdatei-Prüfsummen beziehen sich immer auf exakte Originalbytes.
 
-v1 basiert auf ad92acf; v2 erweitert den Stand 7a01611 um CNF, CoFID und FNDDS (12.11.2026). Das unabhängige Integrationsreview für v2 erfolgt beim Koordinator. Registry und Resolver werden nach `flows.js` geladen. Die Sidecars enthalten vier Basis-Makros und 63 neue Schlüssel. Die neun Altschlüssel water, fiber, vitc, calcium, iron, b12, potassium, magnesium und folate stammen ausschließlich aus Basiskatalog oder gespeicherten Snapshots. Die sieben Basiswert-Korrekturen vor Veröffentlichung betreffen foods-42 und foods-45 (siehe Selbstprüfung). foods-0…36, die übrigen Erweiterungsdateien, Manifest, Portionen und sämtliche v1-Dateien bleiben unverändert.
+v1 basiert auf ad92acf; v2 erweitert den Stand 7a01611 um CNF (12.11.2026). CoFID 2021 und USDA FNDDS 2021–2023 waren ebenfalls Teil von v2 und wurden am 14.11.2026 auf Selvirs Wunsch wieder entfernt; Zeilen, Reader und Zuordnungen sind weg, übrige Zeilen byte-gleich. Das unabhängige Integrationsreview für v2 erfolgt beim Koordinator. Registry und Resolver werden nach `flows.js` geladen. Die Sidecars enthalten vier Basis-Makros und 63 neue Schlüssel. Die neun Altschlüssel water, fiber, vitc, calcium, iron, b12, potassium, magnesium und folate stammen ausschließlich aus Basiskatalog oder gespeicherten Snapshots. foods-0…36 und sämtliche v1-Dateien bleiben unverändert.
 
 ## Reproduzieren
 
@@ -13,13 +13,13 @@ node scripts/import-nutrients.cjs C:/Users/selvir/Documents/Projekte/puls/catalo
 node scripts/check.cjs
 ```
 
-Ohne Argument gilt `catalog-raw/` im Repository; in diesem Worktree liegen die Rohdaten außerhalb unter `C:/Users/selvir/Documents/Projekte/puls/catalog-raw` und werden nur gelesen. Der Import liest die unten fixierten Rohdateien direkt aus XLSX/CSV/JSON. Entpackte XML-Dateien und Inventare sind keine Eingabeabhängigkeit. Alle Rohdatei-SHA-256 und die aggregierten Basiskatalog-Hashes werden vor dem Schreiben geprüft. Abweichungen, fehlende IDs, unerwartete Bestandsabweichungen oder doppelte Quell-IDs stoppen den Lauf. CoFID wird wegen eines belegten doppelten Codes über Code und exakten Lebensmittelnamen verbunden (siehe unten). Der Import schreibt ausschließlich die 64 v2-Shards und ihre Metadatei. Ausgabe ist deterministisch und enthält keinen variablen Zeitstempel. Tests benötigen keine Rohdaten.
+Ohne Argument gilt `catalog-raw/` im Repository; in diesem Worktree liegen die Rohdaten außerhalb unter `C:/Users/selvir/Documents/Projekte/puls/catalog-raw` und werden nur gelesen. Der Import liest die unten fixierten Rohdateien direkt aus XLSX/CSV/JSON. Entpackte XML-Dateien und Inventare sind keine Eingabeabhängigkeit. Alle Rohdatei-SHA-256 und die aggregierten Basiskatalog-Hashes werden vor dem Schreiben geprüft. Abweichungen, fehlende IDs, unerwartete Bestandsabweichungen oder doppelte Quell-IDs stoppen den Lauf. Der Import schreibt ausschließlich die 64 v2-Shards und ihre Metadatei. Ausgabe ist deterministisch und enthält keinen variablen Zeitstempel. Tests benötigen keine Rohdaten.
 
 ## Format und Identität
 
 Dateien heißen nutrients-v2-00.json bis nutrients-v2-63.json, die Meta nutrients-v2.json. Jede enthält weiterhin schemaVersion 1, eine keys-Liste mit 67 Spalten und rows als Objekt. Die Liste entspricht der Reihenfolge von PULS_NUTRIENT_DEFS nach Ausschluss der neun Altschlüssel. Die öffentliche Registry umfasst weiterhin 76 Definitionen. catalogKey besteht exakt aus unveränderter Katalogquelle, Doppelpunkt und Record-ID. FNV-1a-32 über UTF-8-Bytes, Start 0x811c9dc5, Multiplikator 0x01000193, unsigned modulo 64 bestimmt den Shard. Zeilen sind lexikographisch nach catalogKey sortiert.
 
-Die Werte einer Zeile stehen als Semikolon-String in keys-Reihenfolge. Leeres Feld bedeutet unbekannt, 0 bedeutet bekannte Null. Die ersten vier Werte sind kcal, p, c und f exakt aus dem Basiskatalog. Nur Lebensmittel mit mindestens einem bekannten neuen Schlüssel aus D4 erhalten eine Zeile: insgesamt 28.827. Die 53 regionalen Einträge und zwölf CoFID-Getränke mit ml-Basis bleiben ohne Zeile. SR Legacy 167617 (Duck, scoter, white-winged) besitzt ebenfalls keinen bekannten erweiterten Wert. Meta enthält Rohdatei-Herkunft/Hashes, Basisdatei-Hashes, Shard-Hashes und Abdeckung je Quelle/Schlüssel.
+Die Werte einer Zeile stehen als Semikolon-String in keys-Reihenfolge. Leeres Feld bedeutet unbekannt, 0 bedeutet bekannte Null. Die ersten vier Werte sind kcal, p, c und f exakt aus dem Basiskatalog. Nur Lebensmittel mit mindestens einem bekannten neuen Schlüssel aus D4 erhalten eine Zeile: insgesamt 20.772. Die 53 regionalen Einträge bleiben ohne Zeile, ebenso jedes Lebensmittel mit ml-Basis (derzeit gibt es keines). SR Legacy 167617 (Duck, scoter, white-winged) besitzt ebenfalls keinen bekannten erweiterten Wert. Meta enthält Rohdatei-Herkunft/Hashes, Basisdatei-Hashes, Shard-Hashes und Abdeckung je Quelle/Schlüssel.
 
 ## Rohdateien und Selbstprüfung
 
@@ -59,10 +59,10 @@ Die Prüfung vergleicht zusätzlich das Fehlen aller neun Legacy-Zusatzwerte. BL
 3. **R3** Positive Quellwerte bleiben erhalten. Bei Null mit Datenherkunft Formelberechnung werden die Bestandteile der Components-Formel geprüft. Bestandteile dürfen Zahlen oder Messgrenzen/Spuren sein. Fehlende Bestandteile verhindern eine Null. Verschachtelte Formelnullen werden rekursiv geprüft. Bei OR genügt eine vollständig belegte Alternative. Unlesbare Formeln und Zyklen bleiben konservativ unbekannt. Null mit jeder anderen Datenherkunft außer dem Fehlend-Marker '-' wird übernommen. Alle Formeln der fixierten Ausgabe konnten gelesen werden. Die über dieselben bisherigen BLS-Zuordnungen gezählten Unterdrückungen sinken von 2549 auf 2331. Der Import berechnet die Quellformeln nicht neu.
 4. **R4** Ausschließlich Einheitenumrechnung zwischen µg/mg/g. BLS B6, Kupfer und Mangan werden durch 1000 geteilt. Keine Umrechnung von g in ml, RE in RAE, Folatformen oder Niacin in Äquivalente. Einzige zusätzliche Ableitung ist Ciqual RAE als Retinol + Beta-Carotin/12 mit zwei numerischen Eingaben.
 5. **R5** USDA verwendet die unten festgelegten IDs. ALA 1404, EPA 1278, DHA 1272, Linolsäure 1316 und Arachidonsäure 1408 sind spezifisch. Arachidonsäure hat in beiden Quellen die Nährstoffnummer 855. Die SR-Beschriftung für 1406/853 ist falsch, diese Nummer gehört zu 20:3 n-6. Undifferenzierte oder lediglich cis-benannte Spalten werden nicht ersatzweise verwendet. Es entstehen keine eigenen Omega-Summen. Foundation verwendet ausschließlich amount, weder median noch min/max. Identische nutrient.id dürfen nicht doppelt vorkommen. In den fixierten Daten gibt es keine solchen Duplikate. Zucker stammt bei SR aus 2000/269, bei Foundation aus 1063/269.3. Diese unterschiedlichen Rohdefinitionen werden getrennt behandelt. Bei Foundation hat 1063 Vorrang vor dem redundanten Feld 2000, das bei ID 1750342 abweicht. Die beiden Felder werden nicht addiert.
-6. **R6** Erweiterte Werte besitzen höchstens fünf signifikante Stellen als einfache Dezimalzahl ohne Exponentenschreibweise. Alle Basis-Makros bleiben exakt erhalten: 838 Makrozellen haben mehr als fünf signifikante Stellen (BLS 6, CNF 830, CoFID 2). Die sechs BLS-Fälle sind H739400/p, C111000/p, C211100/p, C113000/p, Q400000/c und Q4C1000/c.
+6. **R6** Erweiterte Werte besitzen höchstens fünf signifikante Stellen als einfache Dezimalzahl ohne Exponentenschreibweise. Alle Basis-Makros bleiben exakt erhalten: 836 Makrozellen haben mehr als fünf signifikante Stellen (BLS 6, CNF 830). Die sechs BLS-Fälle sind H739400/p, C111000/p, C211100/p, C113000/p, Q400000/c und Q4C1000/c.
 7. **R7** Negative Werte bleiben unbekannt und werden gezählt. Foundation enthält zehn negative Kohlenhydratwerte außerhalb der 311 Katalogeinträge. Die anderen Quellen enthalten keine negativen Zellen in den geprüften Nährstoffbereichen.
 8. **R8** Plausibilität wird ausschließlich berichtet. Quellenwerte bleiben erhalten. Warnschwellen sind Zucker > 1.1 × Kohlenhydrate + 0.5 g und Summe gesättigt/einfach/mehrfach > 1.1 × Fett + 0.5 g. Die 49 bekannten Fälle (24 v1, 25 neu) stehen unten und sind im Test ausdrücklich hinterlegt.
-9. **R9** CoFID: `Tr`, `N`, leere Zellen und eingeklammerte Schätzwerte wie `(0.11)` bleiben unbekannt. Fettsäuren werden nur aus den ausdrücklich als je 100 g Lebensmittel bezeichneten Spalten übernommen. Lebensmittel mit Katalogeinheit `ml` erhalten keine Sidecar-Zeile.
+9. **R9** Lebensmittel mit Katalogeinheit `ml` erhalten keine Sidecar-Zeile. (Die CoFID-Regeln zu `Tr`, `N` und Klammerwerten entfielen mit der Quelle am 14.11.2026.)
 
 ## Definitionen zwischen Quellen
 
@@ -335,32 +335,22 @@ Nach proportionalen Mengenänderungen wächst der absolute Rundungsfehler mit `g
 
 Die drei Formularfelder verwenden Zucker g, gesättigte Fettsäuren g und Salz g. Gespeichert wird Natrium in mg. Es gilt `Salz_g=Natrium_mg*0.0025`, entsprechend `Natrium_mg=Salz_g*400`. OFF übernimmt ausschließlich die drei bestätigten Werte `sugars`, `satfat` und `sodium`, auch bei zubereiteten Produkten. Natrium stammt zuerst aus dem normalisierten Natriumfeld und ersatzweise aus Salz. Weitere OFF-Zuordnungen wie Stärke, Polyole, Fettsäuren und Cholesterin benötigen künftig eigene sichtbare Bestätigung. OCR erkennt DE/EN-Zeilen, grenzt ungesättigte Fettsäuren und Zuckeralkohole/Polyole aus, lässt Grenzwerte und abweichende Einheiten unbekannt und speichert erst nach bestätigtem Kontrollformular.
 
-Der Kompatibilitätstest verwendet eingefrorene Originalregeln aus `ad92acf` (v94) und `2ad15cb` (v95): Kern-/Alt-Nährstoffvalidator, Produkt-/Eintrags-Einheiten, Optionsbereinigung sowie in v95 die `ck`/`nx`-Validierung. Ein v96-Profil mit `cnf`/`cofid`/`fndds`, `catalogueSourcesVersion:1`, vier gespeicherten Quellenprodukten (darunter CoFID ml) und Einträgen mit neuen `ck` wird akzeptiert. Beide alten Optionsbereinigungen entfernen die gesamte Quellenliste mit unbekannten Kürzeln und die Versionsmarkierung. Bei Rücksync bleiben Produkte, Einträge, `ck`, Einheiten, Makros, Alt-Nährstoff-Snapshots und IDs erhalten; v96 setzt aber die Quellenfilter auf alle Standardquellen zurück. Bewusste Filterabwahl geht damit dauerhaft verloren. Weitere damalige Validator-Wrapper und echter Cloud-Sync sind nicht durch diesen Teiltest abgedeckt.
+Der Kompatibilitätstest verwendet eingefrorene Originalregeln aus `ad92acf` (v94) und `2ad15cb` (v95): Kern-/Alt-Nährstoffvalidator, Produkt-/Eintrags-Einheiten, Optionsbereinigung sowie in v95 die `ck`/`nx`-Validierung. Ein v96-Profil mit `cnf`/`cofid`/`fndds`, `catalogueSourcesVersion:1`, vier gespeicherten Quellenprodukten (darunter eines aus dem inzwischen entfernten CoFID, ml) und Einträgen mit neuen `ck` wird akzeptiert. Beide alten Optionsbereinigungen entfernen die gesamte Quellenliste mit unbekannten Kürzeln und die Versionsmarkierung. Bei Rücksync bleiben Produkte, Einträge, `ck`, Einheiten, Makros, Alt-Nährstoff-Snapshots und IDs erhalten; v96 setzt aber die Quellenfilter auf alle Standardquellen zurück. Bewusste Filterabwahl geht damit dauerhaft verloren. Weitere damalige Validator-Wrapper und echter Cloud-Sync sind nicht durch diesen Teiltest abgedeckt.
 
-Der Service Worker lädt und hält ausschließlich v2 im bestehenden `puls-catalog-v3`; Vorladen umfasst 126 Dateien (59 foods, Manifest, Portionen, 64 Shards, Sidecar-Meta). Beim Aktivieren entfernt er gezielt v1-Einträge aus diesem Cache. Basiskatalog und bereits geladene v2-Einträge bleiben erhalten. Eine offene v95-Seite kann v1 weiter über das Netzwerk lesen; v96 speichert und lädt v1 nicht vor. Die v1-Dateien bleiben unverändert im Repository und werden erst in einer späteren Version entfernt. Ein Shard mit falscher Form bleibt nicht verfügbar. App-/Asset-Versionen erhöht ausschließlich der Koordinator.
+Der Service Worker lädt und hält ausschließlich v2 im Cache `puls-catalog-v4` (seit 14.11.2026; vorher v3); Vorladen umfasst 110 Dateien (43 foods, Manifest, Portionen, 64 Shards, Sidecar-Meta). Der Wechsel auf v4 verwirft beim Aktivieren alle alten Chunks, Portionen und Sidecars zugleich, damit kein Gerät alte Sidecars mit neuen Chunks mischt. Der Sidecar-Name bleibt `nutrients-v2`: Die übrigen Zeilen sind byte-gleich, eine neue Generation (`nutrients-v3`) wäre 65 Umbenennungen ohne Gewinn. Der Resolver erkennt `CoFID 2021:`/`USDA FNDDS 2021-2023:` weiterhin als bekannte Schlüsselmuster, damit ein veralteter, noch zwischengespeicherter Shard mit diesen Zeilen beim Aktivieren des neuen Service Workers nicht als Ganzes abgelehnt wird. Für bereits gespeicherte Einträge dieser Quellen fehlen die erweiterten Nährwerte (Zeilen entfernt); Snapshot-Makros und die neun Altmikros bleiben. Beim Aktivieren entfernt er gezielt v1-Einträge aus diesem Cache. Basiskatalog und bereits geladene v2-Einträge bleiben erhalten. Eine offene v95-Seite kann v1 weiter über das Netzwerk lesen; v96 speichert und lädt v1 nicht vor. Die v1-Dateien bleiben unverändert im Repository und werden erst in einer späteren Version entfernt. Ein Shard mit falscher Form bleibt nicht verfügbar. App-/Asset-Versionen erhöht ausschließlich der Koordinator.
 
 ## v2: zusätzliche Quellen
 
-Die Konstanten in `scripts/lib/nutrient-new-mapping.cjs` stammen aus den Rohdefinitionen. Der Import prüft für CNF Code, Einheit, englischen Namen und INFOODS-Tag; für CoFID Code und beide Beschriftungen der drei Kopfzeilen jedes verwendeten Blatts; für FNDDS bei jedem gemappten Wert ID, Nummer, Einheit und Name. Jede unerwartete Abweichung bricht vor dem Schreiben ab. Es werden keine Summen oder Äquivalente abgeleitet. CNF-Cystin wird wie bei USDA unter `cysteine` ohne Stoffumrechnung geführt. Vitamin K ist in allen drei neuen Quellen Phyllochinon/K1.
+Die Konstanten in `scripts/lib/nutrient-new-mapping.cjs` stammen aus den Rohdefinitionen. Der Import prüft für CNF Code, Einheit, englischen Namen und INFOODS-Tag; Jede unerwartete Abweichung bricht vor dem Schreiben ab. Es werden keine Summen oder Äquivalente abgeleitet. CNF-Cystin wird wie bei USDA unter `cysteine` ohne Stoffumrechnung geführt. Vitamin K ist in CNF Phyllochinon/K1.
 
 ### Ausgelassen, Definition weicht ab oder Feld fehlt
 
 - CNF: `618`/`619`/`620` sind undifferenzierte Fettsäuren; nur `675`/`851`/`855` passen zu Linolsäure/ALA/Arachidonsäure. `324` (Vitamin D IU), D-Fraktionen, zusätzliches Alpha-Tocopherol `573`, K-Fraktionen und andere Carotinoide ersetzen keine Zielfelder. `409` wird als mg Niacin-Äquivalent (`niacin_ne`) übernommen. Die Rohdatei nennt die Einheit „Niacin Equivalents“ (NE); ausschließlich Code 409 mit exaktem Namen und INFOODS-Tag `NIAEQ` akzeptiert diese Einheit. Der unabhängige Rohdatenabgleich bestätigt bei allen 3.574 vergleichbaren Datensätzen 409 = 406 + Tryptophan (mg)/60. Die bereits vorhandenen 409-Werte werden direkt übernommen; der Import berechnet keine Ersatzwerte. DFE nur `435`, Folsäure nur `431`. Mannitol und Sorbitol ergeben ohne Gesamtfeld keine Polyol-Summe. Kein Stärke-, lösliche/unlösliche Faser- oder Omega-Summenfeld. Nicht vorhandene Mineralstoffe bleiben unbekannt.
-- CoFID: `RETEQU` ist Retinol-Äquivalent, kein RAE; `CAREQU` ist Carotin-Äquivalent, kein reines Beta-Carotin. `VITE` heißt „Total Vitamin E“ und wird ausgelassen; stattdessen nur `ATOPH` aus Blatt 1.6. Beta-Carotin kommt nur aus `BCAR` desselben Blatts. `FOLT` und `5METHF` ersetzen weder DFE noch Folsäure; beide Schlüssel bleiben leer. `TRYP60` ist kein Tryptophan in g. Keine Aminosäure-Zuordnung. Alle je-100-g-Fettsäuren-Spalten (`FAC`) und unspezifische einzelne PUFA bleiben ungenutzt; nur explizite `FOD…cn3/cn6` werden übernommen. `ENGFIB` ist kein AOAC-Gesamtballaststoff.
-- FNDDS: `1269/618` (18:2), `1270/619` (18:3) und `1271/620` (20:4) sind undifferenziert: keine Ersatzwerte für `linoleic`, `ala`, `arachidonic`. Vitamin E added `1242` wird nicht addiert, Gesamtfolat `1177` und food folate `1187` ersetzen keine DFE-/Folsäurefelder. Keine Aminosäuren, Omega-Summen, Stärke oder Zuckerarten in dieser Ausgabe.
 - Alle neun Altschlüssel bleiben ausschließlich im Katalog/Snapshot. Wasserwerte werden bei der Selbstprüfung nur mit dem bestehenden Zahlenwert verglichen; keine g/ml-Umrechnung.
 
-### Definitionsunterschiede der zusätzlichen Quellen
+### Selbstprüfung
 
-- CoFID-Kohlenhydrate, Gesamtzucker, einzelne Zuckerarten und Stärke sind Monosaccharid-Äquivalente. Disaccharide liegen dadurch bis etwa 5 %, Stärke bis etwa 10 % höher als bei BLS/USDA/Ciqual. Bei `COFID_17-061` (Demerara) betragen `sucrose` und `sugars` jeweils 104,5 g. Die Quellenwerte werden nach R4 unverändert übernommen, ohne Umrechnung.
-- CoFID `VITD` enthält 25-Hydroxy-D3 mit Faktor 5; betroffen sind 56 Katalog-Lebensmittel. USDA, CNF und FNDDS führen D2 + D3. Der jeweilige Quellenwert bleibt erhalten.
-- CoFID `FOD20:5` und `FOD22:6` sind im Rohblatt als EPA/DHA beschriftet, bleiben nach R5 ungenutzt. Ausschließlich die ausdrücklich spezifizierten `cn3`-Spalten werden übernommen. Dadurch fehlen EPA bei 31 und DHA bei 64 Katalog-Lebensmitteln bewusst.
-
-### Selbstprüfung und Korrektur vor Veröffentlichung
-
-Die sieben Bestandsabweichungen wurden vor der Veröffentlichung korrigiert. Der alte CoFID-Import verknüpfte Blätter nur über den doppelt vergebenen Code 13-669 und übernahm sechs Brunnenkresse-Mikrowerte an die Aubergine. Der Import verbindet jetzt Code und exakten Namen. Zusätzlich wurde der in der XLSX belegte Eisenwert der Ananas (COFID_14-377, 0,07 mg) ergänzt. Die historische CSV-Darstellung ist nicht mehr verfügbar. Alle übrigen Basiswerte, Manifest, Portionen und Sidecar-Nährstoffzeilen bleiben inhaltsgleich. Die Selbstprüfung der drei zusätzlichen Quellen läuft ohne Bestandsausnahmen oder Abweichungen.
-
-CNF prüft 65 Definitionen, CoFID 54 dreifache Spaltenbeschriftungen, FNDDS 217.240 gemappte Definitionen an Einzelwerten (40 je vollständigem Datensatz). Neue Quellen enthalten keine negativen Zellen in den gelesenen Bereichen. In den gemappten CoFID-Blättern wurden keine Klammerwerte gefunden; R9 wird zusätzlich synthetisch getestet. Zwölf ml-Datensätze werden gegen die Basis geprüft, dann von v2 ausgeschlossen. Alle 18.199 alten Zeilen werden beim Import und im Test vollständig als Strings gegen v1 verglichen.
+CNF prüft 65 Definitionen. CNF enthält keine negativen Zellen in den gelesenen Bereichen. Alle 18.199 alten Zeilen werden beim Import und im Test vollständig als Strings gegen v1 verglichen. Beim Entfernen von CoFID/FNDDS (14.11.2026) wurden alle übrigen 20.826 Datensätze, 10.373 Portionsgruppen und 20.772 Sidecar-Zeilen je ID/Schlüssel vorher/nachher als identisch belegt.
 
 Lokale Prüfung: Import mit fixierten Rohdaten, Daten-/Runtime-/Kompatibilitäts-/Cachetests mit lokalen Fixtures/Mocks. Kein Browser-/iPhone-/Live-RLS-Test. Unabhängiges Review, CURRENT-STATE und Release-Versionierung übernimmt der Koordinator.
 
@@ -376,171 +366,161 @@ Lokale Prüfung: Import mit fixierten Rohdaten, Daten-/Runtime-/Kompatibilitäts
 - `cnf-2026/cnf_fcen_all-files-data_2026_extracted/Measure_Name.csv` – `429cf2e8d4bbd2b732a6e9acf35427ce6d3b4e9447aabaf86b427c48833b112f`
 - `cnf-2026/cnf_fcen_all-files-data_2026_extracted/Measure_Weight_Conversion.csv` – `9d41fac4ba1471fddd25ea7e51a8352aec66de4f3c88802b0a2e02a85ebc3e6f`
 
-**CoFID 2021**
-
-- `cofid-2021/McCance_Widdowsons_Composition_of_Foods_Integrated_Dataset_2021..xlsx` – `436e9445ef2adb2a75f3d7edd51302de3adad25385f9795fc94ba58bd030e97d`
-
-**USDA FNDDS 2021-2023**
-
-- `usda-fndds/FoodData_Central_survey_food_json_2024-10-31_extracted/surveyDownload.json` – `2e7eb9fda92adf1d4d784dba5eaa3a7fd4418cd86ccff383c7c9294d79e9b808`
-
 ### Vergleichsumfang
 
 | Quelle | Katalog-IDs | v2-Zeilen | alle Vergleiche inkl. unbekannt | vorhandene Werte | bekannte Abweichungen | unerwartet |
 |---|---:|---:|---:|---:|---:|---:|
 | CNF 2026 | 2573 | 2573 | 33449 | 32315 | 0 | 0 |
-| CoFID 2021 | 2636 | 2624 | 34268 | 31210 | 0 | 0 |
-| USDA FNDDS 2021-2023 | 5431 | 5431 | 70603 | 70603 | 0 | 0 |
 
-### Zuordnung der drei neuen Quellen
+### Zuordnung der CNF-Quelle
 
-CoFID-Blätter: P = 1.3 Proximates, I = 1.4 Inorganics, V = 1.5 Vitamins, VF = 1.6 Vitamin Fractions, FA = 1.12 (PUFA per 100gFood). Alle Zuordnungen sind direkte Übernahmen mit identischer Einheit. „—“ bleibt unbekannt. Die neun Alt-Zuordnungen dienen ausschließlich der Selbstprüfung und stehen in der Mapping-Datei.
+Alle Zuordnungen sind direkte Übernahmen mit identischer Einheit. „—“ bleibt unbekannt. Die neun Alt-Zuordnungen dienen ausschließlich der Selbstprüfung und stehen in der Mapping-Datei.
 
-| Schlüssel | Einheit | CNF Code (Einheit) | CoFID Blatt:Code (Einheit) | FNDDS ID/Nummer (Einheit) |
-|---|---|---|---|---|
-| kcal | kcal | `208` kcal | `P:KCALS` kcal | `1008/208` kcal |
-| p | g | `203` g | `P:PROT` g | `1003/203` g |
-| c | g | `205` g | `P:CHO` g | `1005/205` g |
-| f | g | `204` g | `P:FAT` g | `1004/204` g |
-| sugars | g | `269` g | `P:TOTSUG` g | `2000/269` g |
-| starch | g | — | `P:STAR` g | — |
-| polyols | g | — | — | — |
-| glucose | g | `211` g | `P:GLUC` g | — |
-| fructose | g | `212` g | `P:FRUCT` g | — |
-| galactose | g | `287` g | `P:GALACT` g | — |
-| sucrose | g | `210` g | `P:SUCR` g | — |
-| lactose | g | `213` g | `P:LACT` g | — |
-| maltose | g | `214` g | `P:MALT` g | — |
-| fiber_sol | g | — | — | — |
-| fiber_insol | g | — | — | — |
-| satfat | g | `606` g | `P:SATFOD` g | `1258/606` g |
-| mufat | g | `645` g | `P:MONOFOD` g | `1292/645` g |
-| pufat | g | `646` g | `P:POLYFOD` g | `1293/646` g |
-| transfat | g | `605` g | `P:FODTRANS` g | — |
-| omega3 | g | — | `P:TOTn3PFOD` g | — |
-| omega6 | g | — | `P:TOTn6PFOD` g | — |
-| ala | g | `851` g | `FA:FOD18:3cn3` g | — |
-| epa | g | `629` g | `FA:FOD20:5cn3` g | `1278/629` g |
-| dha | g | `621` g | `FA:FOD22:6cn3` g | `1272/621` g |
-| linoleic | g | `675` g | `FA:FOD18:2cn6` g | — |
-| arachidonic | g | `855` g | `FA:FOD20:4cn6` g | — |
-| cholesterol | mg | `601` mg | `P:CHOL` mg | `1253/601` mg |
-| histidine | g | `512` g | — | — |
-| isoleucine | g | `503` g | — | — |
-| leucine | g | `504` g | — | — |
-| lysine | g | `505` g | — | — |
-| methionine | g | `506` g | — | — |
-| phenylalanine | g | `508` g | — | — |
-| threonine | g | `502` g | — | — |
-| tryptophan | g | `501` g | — | — |
-| valine | g | `510` g | — | — |
-| cysteine | g | `507` g | — | — |
-| tyrosine | g | `509` g | — | — |
-| vita_rae | µg | `320` µg | — | `1106/320` µg |
-| retinol | µg | `319` µg | `V:RET` µg | `1105/319` µg |
-| beta_carotene | µg | `321` µg | `VF:BCAR` µg | `1107/321` µg |
-| vitd | µg | `328` µg | `V:VITD` µg | `1114/328` µg |
-| vite | mg | `323` mg | `VF:ATOPH` mg | `1109/323` mg |
-| vitk | µg | `430` µg | `V:VITK1` µg | `1185/430` µg |
-| b1 | mg | `404` mg | `V:THIA` mg | `1165/404` mg |
-| b2 | mg | `405` mg | `V:RIBO` mg | `1166/405` mg |
-| niacin | mg | `406` mg | `V:NIAC` mg | `1167/406` mg |
-| niacin_ne | mg | `409` NE (mg, siehe Definition) | `V:NIACEQU` mg | — |
-| b5 | mg | `410` mg | `V:PANTO` mg | — |
-| b6 | mg | `415` mg | `V:VITB6` mg | `1175/415` mg |
-| biotin | µg | `416` µg | `V:BIOT` µg | — |
-| folate_dfe | µg | `435` µg | — | `1190/435` µg |
-| folic_acid | µg | `431` µg | — | `1186/431` µg |
-| choline | mg | `421` mg | — | `1180/421` mg |
-| sodium | mg | `307` mg | `I:NA` mg | `1093/307` mg |
-| chloride | mg | — | `I:CL` mg | — |
-| phosphorus | mg | `305` mg | `I:P` mg | `1091/305` mg |
-| zinc | mg | `309` mg | `I:ZN` mg | `1095/309` mg |
-| copper | mg | `312` mg | `I:CU` mg | `1098/312` mg |
-| manganese | mg | `315` mg | `I:MN` mg | — |
-| selenium | µg | `317` µg | `I:SE` µg | `1103/317` µg |
-| iodine | µg | — | `I:I` µg | — |
-| fluoride | µg | — | — | — |
-| chromium | µg | — | — | — |
-| molybdenum | µg | — | — | — |
-| alcohol | g | `221` g | `P:ALCO` g | `1018/221` g |
-| caffeine | mg | `262` mg | — | `1057/262` mg |
+| Schlüssel | Einheit | CNF Code (Einheit) |
+|---|---|---|
+| kcal | kcal | `208` kcal |
+| p | g | `203` g |
+| c | g | `205` g |
+| f | g | `204` g |
+| sugars | g | `269` g |
+| starch | g | — |
+| polyols | g | — |
+| glucose | g | `211` g |
+| fructose | g | `212` g |
+| galactose | g | `287` g |
+| sucrose | g | `210` g |
+| lactose | g | `213` g |
+| maltose | g | `214` g |
+| fiber_sol | g | — |
+| fiber_insol | g | — |
+| satfat | g | `606` g |
+| mufat | g | `645` g |
+| pufat | g | `646` g |
+| transfat | g | `605` g |
+| omega3 | g | — |
+| omega6 | g | — |
+| ala | g | `851` g |
+| epa | g | `629` g |
+| dha | g | `621` g |
+| linoleic | g | `675` g |
+| arachidonic | g | `855` g |
+| cholesterol | mg | `601` mg |
+| histidine | g | `512` g |
+| isoleucine | g | `503` g |
+| leucine | g | `504` g |
+| lysine | g | `505` g |
+| methionine | g | `506` g |
+| phenylalanine | g | `508` g |
+| threonine | g | `502` g |
+| tryptophan | g | `501` g |
+| valine | g | `510` g |
+| cysteine | g | `507` g |
+| tyrosine | g | `509` g |
+| vita_rae | µg | `320` µg |
+| retinol | µg | `319` µg |
+| beta_carotene | µg | `321` µg |
+| vitd | µg | `328` µg |
+| vite | mg | `323` mg |
+| vitk | µg | `430` µg |
+| b1 | mg | `404` mg |
+| b2 | mg | `405` mg |
+| niacin | mg | `406` mg |
+| niacin_ne | mg | `409` NE (mg, siehe Definition) |
+| b5 | mg | `410` mg |
+| b6 | mg | `415` mg |
+| biotin | µg | `416` µg |
+| folate_dfe | µg | `435` µg |
+| folic_acid | µg | `431` µg |
+| choline | mg | `421` mg |
+| sodium | mg | `307` mg |
+| chloride | mg | — |
+| phosphorus | mg | `305` mg |
+| zinc | mg | `309` mg |
+| copper | mg | `312` mg |
+| manganese | mg | `315` mg |
+| selenium | µg | `317` µg |
+| iodine | µg | — |
+| fluoride | µg | — |
+| chromium | µg | — |
+| molybdenum | µg | — |
+| alcohol | g | `221` g |
+| caffeine | mg | `262` mg |
 
-### Abdeckung (bekannte Zahlen einschließlich Null)
+### Abdeckung CNF (bekannte Zahlen einschließlich Null)
 
-| Schlüssel | CNF | CoFID | FNDDS |
-|---|---:|---:|---:|
-| kcal | 2573 | 2624 | 5431 |
-| p | 2573 | 2624 | 5431 |
-| c | 2573 | 2624 | 5431 |
-| f | 2573 | 2624 | 5431 |
-| sugars | 2337 | 2474 | 5431 |
-| starch | 0 | 2394 | 0 |
-| polyols | 0 | 0 | 0 |
-| glucose | 1706 | 2055 | 0 |
-| fructose | 1703 | 2072 | 0 |
-| galactose | 1691 | 1180 | 0 |
-| sucrose | 1707 | 2127 | 0 |
-| lactose | 1701 | 2337 | 0 |
-| maltose | 1683 | 2295 | 0 |
-| fiber_sol | 0 | 0 | 0 |
-| fiber_insol | 0 | 0 | 0 |
-| satfat | 2440 | 2210 | 5431 |
-| mufat | 2401 | 2124 | 5431 |
-| pufat | 2397 | 2200 | 5431 |
-| transfat | 2200 | 1470 | 0 |
-| omega3 | 0 | 576 | 0 |
-| omega6 | 0 | 589 | 0 |
-| ala | 2161 | 500 | 0 |
-| epa | 2092 | 288 | 5431 |
-| dha | 2490 | 278 | 5431 |
-| linoleic | 1548 | 503 | 0 |
-| arachidonic | 1758 | 353 | 0 |
-| cholesterol | 2382 | 2418 | 5431 |
-| histidine | 1585 | 0 | 0 |
-| isoleucine | 1583 | 0 | 0 |
-| leucine | 1579 | 0 | 0 |
-| lysine | 1582 | 0 | 0 |
-| methionine | 1583 | 0 | 0 |
-| phenylalanine | 1582 | 0 | 0 |
-| threonine | 1582 | 0 | 0 |
-| tryptophan | 1562 | 0 | 0 |
-| valine | 1583 | 0 | 0 |
-| cysteine | 1574 | 0 | 0 |
-| tyrosine | 1580 | 0 | 0 |
-| vita_rae | 2344 | 0 | 5431 |
-| retinol | 2094 | 1870 | 5431 |
-| beta_carotene | 1871 | 683 | 5431 |
-| vitd | 2288 | 1976 | 5431 |
-| vite | 1757 | 426 | 5431 |
-| vitk | 1368 | 262 | 5431 |
-| b1 | 2358 | 2399 | 5431 |
-| b2 | 2377 | 2409 | 5431 |
-| niacin | 2388 | 2461 | 5431 |
-| niacin_ne | 2389 | 2393 | 0 |
-| b5 | 1765 | 2087 | 0 |
-| b6 | 2283 | 2233 | 5431 |
-| biotin | 112 | 1786 | 0 |
-| folate_dfe | 2240 | 0 | 5431 |
-| folic_acid | 2489 | 0 | 5431 |
-| choline | 1160 | 0 | 5431 |
-| sodium | 2532 | 2522 | 5431 |
-| chloride | 0 | 2283 | 0 |
-| phosphorus | 2468 | 2573 | 5431 |
-| zinc | 2423 | 2424 | 5431 |
-| copper | 2389 | 2316 | 5431 |
-| manganese | 2233 | 2132 | 0 |
-| selenium | 2138 | 1694 | 5431 |
-| iodine | 0 | 1333 | 0 |
-| fluoride | 0 | 0 | 0 |
-| chromium | 0 | 0 | 0 |
-| molybdenum | 0 | 0 | 0 |
-| alcohol | 2362 | 1713 | 5431 |
-| caffeine | 2336 | 0 | 5431 |
+| Schlüssel | CNF |
+|---|---:|
+| kcal | 2573 |
+| p | 2573 |
+| c | 2573 |
+| f | 2573 |
+| sugars | 2337 |
+| starch | 0 |
+| polyols | 0 |
+| glucose | 1706 |
+| fructose | 1703 |
+| galactose | 1691 |
+| sucrose | 1707 |
+| lactose | 1701 |
+| maltose | 1683 |
+| fiber_sol | 0 |
+| fiber_insol | 0 |
+| satfat | 2440 |
+| mufat | 2401 |
+| pufat | 2397 |
+| transfat | 2200 |
+| omega3 | 0 |
+| omega6 | 0 |
+| ala | 2161 |
+| epa | 2092 |
+| dha | 2490 |
+| linoleic | 1548 |
+| arachidonic | 1758 |
+| cholesterol | 2382 |
+| histidine | 1585 |
+| isoleucine | 1583 |
+| leucine | 1579 |
+| lysine | 1582 |
+| methionine | 1583 |
+| phenylalanine | 1582 |
+| threonine | 1582 |
+| tryptophan | 1562 |
+| valine | 1583 |
+| cysteine | 1574 |
+| tyrosine | 1580 |
+| vita_rae | 2344 |
+| retinol | 2094 |
+| beta_carotene | 1871 |
+| vitd | 2288 |
+| vite | 1757 |
+| vitk | 1368 |
+| b1 | 2358 |
+| b2 | 2377 |
+| niacin | 2388 |
+| niacin_ne | 2389 |
+| b5 | 1765 |
+| b6 | 2283 |
+| biotin | 112 |
+| folate_dfe | 2240 |
+| folic_acid | 2489 |
+| choline | 1160 |
+| sodium | 2532 |
+| chloride | 0 |
+| phosphorus | 2468 |
+| zinc | 2423 |
+| copper | 2389 |
+| manganese | 2233 |
+| selenium | 2138 |
+| iodine | 0 |
+| fluoride | 0 |
+| chromium | 0 |
+| molybdenum | 0 |
+| alcohol | 2362 |
+| caffeine | 2336 |
 
 ### Neue R8-Plausibilitätsfälle
 
-25 neue Fälle: CNF 21 (18 Fettsäuren, 3 Zucker), CoFID 2 Fettsäuren, FNDDS 2 Zucker. Werte bleiben unverändert. Die Tests hinterlegen die vollständige Liste unabhängig von der Meta.
+21 neue Fälle bei CNF (18 Fettsäuren, 3 Zucker). Werte bleiben unverändert. Die Tests hinterlegen die vollständige Liste unabhängig von der Meta. Die früheren vier Fälle aus CoFID und FNDDS entfielen mit den Quellen.
 
 | catalogKey | Lebensmittel | Regel | Quellenwert/Summe | Basiswert |
 |---|---|---|---:|---:|
@@ -565,7 +545,3 @@ CoFID-Blätter: P = 1.3 Proximates, I = 1.4 Inorganics, V = 1.5 Vitamins, VF = 1
 | CNF 2026:CNF_775 | Turkey, hen, wing, meat and skin, roasted | fatFractions | 12.183 | 10.545 |
 | CNF 2026:CNF_7928 | Tortilla, ready-to-bake / fry, whole wheat,  multigrains, with added fibre  | fatFractions | 3.99365 | 3.09 |
 | CNF 2026:CNF_846 | Chicken, broiler, drumstick, meat and skin, stewed | fatFractions | 12.2363 | 10.34 |
-| CoFID 2021:COFID_16-055 | Haddock, in batter, fried in sunflower oil | fatFractions | 16.1 | 14 |
-| CoFID 2021:COFID_19-614 | Chow mein, pork and chicken, homemade | fatFractions | 10.12 | 1.9 |
-| USDA FNDDS 2021-2023:FNDDS_81100500 | Butter, NFS | sugars | 0.58 | 0.06 |
-| USDA FNDDS 2021-2023:FNDDS_81101000 | Butter, stick | sugars | 0.58 | 0.06 |

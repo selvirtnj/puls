@@ -15,6 +15,7 @@ const plain = x => {
 };
 const finite = x => typeof x === 'number' && Number.isFinite(x) && x >= 0 && x <= 1e9;
 const validKey = key => typeof key === 'string' && key.length >= 3 && key.length <= 140 && !/[\u0000-\u001f\u007f-\u009f]/.test(key) && key.indexOf(':') > 0 && key.indexOf(':') < key.length - 1;
+// CoFID/FNDDS rows left the catalogue on 14.11.2026; the patterns stay so a stale cached shard that still has them decodes instead of failing whole.
 const knownKey = key => validKey(key) && /^(?:(?:BLS 4\.0|USDA SR Legacy 2018|USDA Foundation 2026|Ciqual 2025):[A-Za-z0-9_-]{1,60}|CNF 2026:CNF_\d+|CoFID 2021:COFID_[A-Za-z0-9_-]{1,54}|USDA FNDDS 2021-2023:FNDDS_\d+)$/.test(key);
 const excluded = x => !!(x?.recipeId || x?.aiEstimate || /^KI-Schätzung/.test(x?.source || ''));
 const baseUnit = x => x?.unit === undefined ? 'g' : x.unit;

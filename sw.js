@@ -1,5 +1,5 @@
 /* Static assets only. Auth, API responses and photos are never cached here. */
-const CACHE='puls-static-97',ASSETS=[
+const CACHE='puls-static-98',ASSETS=[
 "js/workout-ranks.js","css/workout-ranks.css",
 "js/routine-favorites.js",
 "js/nutrient-definitions.js","js/nutrient-references.js","js/nutrient-resolver.js",
@@ -7,7 +7,7 @@ const CACHE='puls-static-97',ASSETS=[
 "js/workout-import.js","js/strength-ranks.js", "js/puls-data-v87.js","js/sound-engine.js","js/motion.js","css/motion.css","js/friends.js","css/friends.css","js/color-scheme.js","js/edge-back.js","css/edge-back.css","js/connectivity.js","js/running.js","js/run-metrics.js","js/run-session.js","js/run-map.js","js/activity-overview.js","js/vendor/leaflet.js","css/vendor/leaflet.css","css/running.css","js/exercise-muscles.js","js/food-flow.js","js/food-photo.js","js/training-polish.js","js/app-polish.js","js/haptics.js","js/page-slide.js","js/workout-controls.js","js/rest-popup.js","js/training-tabs.js","js/profile-refresh.js","js/session-focus.js","js/native-bridge.js","js/native-extras.js","js/native-state.js","js/native-projection.js","js/native-training.js","js/native-progress.js","js/native-activity.js","js/native-nutrition.js","js/native-account.js","css/native-shell.css","js/account-refresh.js","js/machine-library.js","js/refinement.js","js/progress-metrics.js","css/design-system.css","js/icons.js","js/design-system.js","js/quick-units.js","js/account-guide.js","./","index.html","js/adaptation.js","js/app.js","js/catalog-search.js","js/catalog-worker.js","js/cloud-config.js","js/cloud.js","js/comfort.js","js/compact.js","js/enhancements.js","js/exercise-catalog.js","js/experience.js","js/finish.js","js/flows.js","js/food-search.js","js/food-upgrade.js","js/i18n.js","icon.svg","icon-install.html","icons/light-180.png","icons/light-512.png","icons/light.svg","icons/light.webmanifest","icons/dark-180.png","icons/dark-512.png","icons/dark.svg","icons/dark.webmanifest","js/insights.js","js/interactions.js","js/lifecycle.js","manifest.webmanifest","js/navigation.js","js/nutrition-input.js","js/personal.js","js/polish.js","js/portions.js","js/preview-mode.js","js/products.js","js/recipes.js","css/style.css","js/tracker-tools.js","js/training.js","js/workout-polish.js","js/food-diary.js","css/food-diary.css","js/food-page.js","css/food-page.css","js/friends-board.js","css/friends-board.css","js/quick-account-v87.js","css/quick-account-v87.css"];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 // Independent of app releases. Bump only when bundled catalogue content changes.
-const CATALOG_CACHE='puls-catalog-v3',CATALOG_PATH=/^catalog\/(foods-\d+|manifest|portions|nutrients-v2(?:-\d{2})?)\.json$/;
+const CATALOG_CACHE='puls-catalog-v4',CATALOG_PATH=/^catalog\/(foods-\d+|manifest|portions|nutrients-v2(?:-\d{2})?)\.json$/;
 self.addEventListener('activate',event=>event.waitUntil((async()=>{
  const keys=await caches.keys();
  await Promise.all(keys.filter(k=>k.startsWith('puls-static-')&&k!==CACHE||k.startsWith('puls-catalog-')&&k!==CATALOG_CACHE).map(k=>caches.delete(k)));

@@ -6,7 +6,7 @@ Live: https://selvirtnj.github.io/puls/
 
 ## Funktionen
 
-- **Essen-Tagebuch:** Lebensmittelsuche im gebündelten Katalog (BLS, USDA SR Legacy/Foundation/FNDDS, Ciqual, CNF, CoFID) und bei Open Food Facts, Barcode-Scan, KI-Foto einer Mahlzeit, Nährwerttabelle per OCR, Favoriten, Kombis, Rezepte, Portionen und Einheiten, Wasser, Rückgängig.
+- **Essen-Tagebuch:** Lebensmittelsuche im gebündelten Katalog (BLS, USDA SR Legacy/Foundation, Ciqual, CNF) und bei Open Food Facts, Barcode-Scan, KI-Foto einer Mahlzeit, Nährwerttabelle per OCR, Favoriten, Kombis, Rezepte, Portionen und Einheiten, Wasser, Rückgängig.
 - **Training:** eigene Routinen, Übungs- und Maschinenbibliothek, Sätze mit Vorwerten, Pausentimer, Supersätze, Workout-Abschluss mit XP und Bestleistungen, kraftbasierte Ränge je Übung und gesamt, CSV-Import aus Liftoff, Strong und Hevy.
 - **Lauf und Aktivität:** GPS-Lauf mit Karte, Routenplaner, Bestzeiten und Wochenziele; weitere Aktivitäten wie Wandern, Fußball oder Padel.
 - **Körper und Fortschritt:** Gewicht mit Trend und Wochenmittel, Körpermaße, Kalender, Wochen-/Monatsrückblick, Gesamtfortschritt.
@@ -71,8 +71,8 @@ docs/archive/                             Historische Unterlagen (u. a. Gesamt-A
 - [docs/AI-TEAM.md](docs/AI-TEAM.md), [AGENTS.md](AGENTS.md): Zusammenarbeit
 - [docs/archive/](docs/archive/): historische Unterlagen, darunter das [Funktionsinventar des Gesamt-Audits](docs/archive/audit/FEATURE-INVENTORY.md) (Stand 26.10.2026)
 
-Lebensmitteldaten stammen aus BLS, USDA SR Legacy/Foundation/FNDDS, Ciqual, CNF, CoFID und Open Food Facts (Details in `catalog/manifest.json`); Übungsnamen aus der Free Exercise DB, Lizenz in [EXERCISE-LICENSE.txt](EXERCISE-LICENSE.txt).
+Lebensmitteldaten stammen aus BLS, USDA SR Legacy/Foundation, Ciqual, CNF und Open Food Facts (Details in `catalog/manifest.json`); Übungsnamen aus der Free Exercise DB, Lizenz in [EXERCISE-LICENSE.txt](EXERCISE-LICENSE.txt).
 
 Weitere Katalogquellen und Importkonventionen: [Lebensmitteldatenbanken](docs/FOOD-DATABASES.md).
 
-Health Canada, Canadian Nutrient File 2026. Contains information licensed under the Open Government Licence – Canada. · Public Health England, McCance and Widdowson's Composition of Foods Integrated Dataset 2021. Contains public sector information licensed under the Open Government Licence v3.0. · U.S. Department of Agriculture, Agricultural Research Service. 2024. USDA Food and Nutrient Database for Dietary Studies 2021-2023. (Public Domain)
+Health Canada, Canadian Nutrient File 2026. Contains information licensed under the Open Government Licence – Canada.

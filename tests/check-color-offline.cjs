@@ -124,7 +124,7 @@ async function checkWorker(){
   return {listeners,staticName:vm.runInContext('CACHE',ctx),catalogName:vm.runInContext('CATALOG_CACHE',ctx)};
  }
  let current=worker();
- assert.equal(current.catalogName,'puls-catalog-v3','Regional catalogue update uses a fresh cache');
+ assert.equal(current.catalogName,'puls-catalog-v4','Removing CoFID/FNDDS uses a fresh catalogue cache so old chunks and sidecars are dropped together');
  async function lifecycle(type){let work;current.listeners[type]({waitUntil:p=>work=p});await work}
  async function preload(){let work;current.listeners.message({data:{type:'puls:cache-catalogue'},waitUntil:p=>work=p});await work}
  const responseFor=async(path,mode='cors')=>{let response;current.listeners.fetch({request:{method:'GET',url:new URL(path,base).href,mode},respondWith:p=>response=p,waitUntil(){}});return response&&await response};
