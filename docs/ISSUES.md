@@ -6,8 +6,8 @@ Stand 12.11.2026. Audit vom 12.11.2026: Tests grün, keine kritischen Defekte. D
 
 1. **validData-Kette:** `validData()` wird rund 30-fach umhüllt, von `js/app.js:151` bis `js/workout-import.js:237`. Ein Fehler in einem Zwischenglied macht das ganze Profil ungültig. Weitere Wrapper-Ketten: `render` 25x, `accountPage` 20x, `openModal` 18x, `workoutPage` und `nutrition` je 14x, `profileForm` 10x; Hotspot ist `js/flows.js`. Die Ladereihenfolge in `index.html` ist dabei Teil der Logik.
 2. **Fehlende Tests:** Kein Test prüft alle gespeicherten `state`-Schlüssel gegen `validData`. Kein Migrationstest über mehrere Versionen mit alten Sicherungen.
-3. **Anzeigeversion** ist hart codiert in `js/account-refresh.js:45` (`.replace(/Version \d+/g,'Version 96')`); `scripts/bump-version.cjs` muss das mitziehen.
-4. **native-*.js** (rund 3.400 Zeilen) werden geladen und patchen `render`, `openModal`, `home` und `go` (`js/native-state.js:809–844`), obwohl die SwiftUI-Zustandsbrücke nicht aktiv sein soll. Ob sie ohne Brücke wirklich untätig sind, ist ungeprüft.
+3. **Anzeigeversion:** erledigt (Refactor Phase 1). Eine Konstante `APP_VERSION` in `js/account-refresh.js`; `scripts/bump-version.cjs` zieht sie mit.
+4. **native-*.js** (rund 3.400 Zeilen): geklärt am 13.11.2026. `native-state`, `-projection`, `-training`, `-progress`, `-activity`, `-nutrition` und `-account` brechen in der ersten Anweisung ab, wenn `webkit.messageHandlers.pulsState` oder das Merkmal `stateBridge` fehlt. Die iOS-Hülle (`ios/PULS/WebViewController.swift`) bietet beides nicht an; im Browser und in der App werden also keine Patches auf `render`, `openModal`, `home` oder `go` gesetzt. Die Dateien werden nur geladen und geparst. Aktiv sind `native-bridge.js` (über `pulsNative`) und `native-extras.js` (dessen `validData`-Wrapper gilt immer). Ob die sieben untätigen Dateien aus `index.html` entfernt werden, ist offen.
 5. **Lesbarkeit:** Stark minifizierter Code in sehr langen Zeilen erschwert Diffs und Reviews.
 
 ## Grenzen der Prüfung
@@ -40,11 +40,11 @@ Regeln: Kein Framework, kein Build-Schritt. Verhalten und Ladereihenfolge bleibe
 
 | Phase | Inhalt |
 |---|---|
-| 0 | Tests für `validData` (alle gespeicherten Schlüssel, alte Sicherungen) und für die Wrapper-Reihenfolge. Grundlage für alles Weitere. |
-| 1 | Anzeigeversion als eine Konstante (statt `js/account-refresh.js:45`); `bump-version.cjs` anpassen. |
-| 2 | Kleine CSS-Dateien in gleicher Reihenfolge zusammenführen (Kaskade unverändert). |
+| 0 ✓ | Tests für `validData` (alle gespeicherten Schlüssel, alte Sicherungen) und für die Wrapper-Reihenfolge. Grundlage für alles Weitere. Erledigt: `tests/check-validdata.cjs` (1.117 Fälle, alle Skripte in echter Ladereihenfolge) und `tests/check-wrapper-order.cjs` (Golden-Datei, bei gewollter Änderung `--update`). |
+| 1 ✓ | Anzeigeversion als eine Konstante (statt `js/account-refresh.js:45`); `bump-version.cjs` anpassen. |
+| 2 ✓ | Kleine CSS-Dateien in gleicher Reihenfolge zusammenführen (Kaskade unverändert). 30 Dateien stecken jetzt in `css/style.css`; im Browser belegt: 3.430 Regeln mit gleichem Hash vorher und nachher. |
 | 3 | `validData`-Kette in eine Funktion zusammenführen. |
 | 4 | Übrige Wrapper (`render`, `accountPage`, `openModal`, dann `workoutPage`, `nutrition`, `profileForm`) schrittweise zusammenlegen. |
 | 5 | Altlasten-Dateinamen (`puls-data-v87.js`, `quick-account-v87.*`, `v90-ui.css`) umbenennen; `index.html`, `sw.js`, Tests mitziehen. |
 
-Offene Vorab-Frage für Phase 4: Ob `native-*.js` ohne Brücke untätig sind (Befund 4), vorher klären; erst dann entscheiden, ob sie nur bedingt geladen werden.
+Vorab-Frage für Phase 4 ist geklärt (Befund 4): Die native-Zustandsdateien sind ohne Brücke untätig und gehören nicht zu den wirksamen Wrapper-Ketten.
