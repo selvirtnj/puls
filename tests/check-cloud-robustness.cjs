@@ -394,7 +394,7 @@ async function checkLostUploadResponse(){
   await h.run('syncCloud()');assert.equal(s.stored.goals.kcal,2222);assert.equal(h.run('cloudRevision'),5);assert(!h.run('cloudDirty'));assert(!h.run('cloudConflict'));
   // Nach Neustart der App gilt der gemerkte Versuch weiter.
   s=server();h=start(s);await h.run('syncCloud()');
-  const again=harness({disk:h.disk,fetchImpl:s.fetchImpl});await tick();await tick();await tick();
+  const again=harness({disk:h.disk,fetchImpl:s.fetchImpl});for(let i=0;i<500&&again.run('cloudRevision')!==4;i++)await tick(); // Startabgleich wartet auf echte Asynchronität, feste Tick-Zahl war unter Last zu knapp
   assert(!again.run('cloudConflict'),'gemerkter Versuch überlebt den Neustart');assert.equal(again.run('cloudRevision'),4);assert(!again.run('cloudDirty'));
   // Echter Konflikt bleibt ein Konflikt: fremder Stand, oder eigener Stand mit späterer Revision.
   s=server();h=start(s);await h.run('syncCloud()');s.stored=reorder({...remote,goals:{...remote.goals,kcal:1800}});await h.run('syncCloud()');
