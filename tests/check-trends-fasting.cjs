@@ -48,11 +48,11 @@ const rowsOf=()=>plain(run('trendData()')).map(r=>({...r,weight:round6(r.weight)
 const EXPECT_ALL=[
  {date:'2026-11-03',weight:null,kcal:1000,strength:100},
  {date:'2026-11-04',weight:null,kcal:1200,strength:null},
- {date:'2026-11-05',weight:null,kcal:999,strength:105},
+ {date:'2026-11-05',weight:null,kcal:999,strength:100},
  {date:'2026-11-08',weight:80,kcal:450,strength:null},
- {date:'2026-11-09',weight:null,kcal:null,strength:108.571429},
+ {date:'2026-11-09',weight:null,kcal:null,strength:103.571429},
  {date:'2026-11-11',weight:null,kcal:1000,strength:null},
- {date:'2026-11-13',weight:78.75,kcal:null,strength:108.571429}
+ {date:'2026-11-13',weight:78.75,kcal:null,strength:103.571429}
 ];
 
 setState({});
@@ -61,28 +61,28 @@ assert.deepEqual(rowsOf(),EXPECT_ALL);
 setState({weights:[],foods:[],workouts:[]});assert.deepEqual(plain(run('trendData()')),[]);
 setState({weights:[{id:'z',date:'2026-11-14',kg:70}],foods:[food('2026-11-14',500)],workouts:[workout('2026-11-14',[ex('bench','B',[{kg:100,reps:5,done:true}])])]});
 assert.deepEqual(plain(run('trendData()')),[],'Zukunftseinträge fehlen vollständig');
-// Zeitraum „Woche“: ältere Tage fehlen, ältere Trainings bleiben in der Kraft-Basis (E: 108,57 statt 100).
+// Zeitraum „Woche“: ältere Tage fehlen, ältere Trainings bleiben in der Kraft-Basis (E: 103,57 statt 100).
 // Grenzen liegen bewusst fern vom Tagesgrenzfall (siehe Hinweis bei der Zeitzone unten).
 setState({chartPeriod:'week'});
 assert.deepEqual(rowsOf(),[
  {date:'2026-11-08',weight:80,kcal:450,strength:null},
- {date:'2026-11-09',weight:null,kcal:null,strength:108.571429},
+ {date:'2026-11-09',weight:null,kcal:null,strength:103.571429},
  {date:'2026-11-11',weight:null,kcal:1000,strength:null},
- {date:'2026-11-13',weight:78.75,kcal:null,strength:108.571429}
+ {date:'2026-11-13',weight:78.75,kcal:null,strength:103.571429}
 ]);
 // Unbekannter Zeitraum und „Monat“ fallen auf 30 Tage zurück; alle Fixture-Tage liegen darin.
 setState({chartPeriod:'bogus'});assert.deepEqual(rowsOf(),EXPECT_ALL);
 setState({chartPeriod:'month'});assert.deepEqual(rowsOf(),EXPECT_ALL);
-// Zukunftsdaten: Zeilen fehlen, Trainings der Zukunft fließen nicht in die Basis (Index bleibt 108,57).
-// BUG (Audit 13.11.2026): flows.js Zeile 60 (weeklyWeights) nimmt ALLE Gewichte der Woche, auch künftige.
-// Das Gewicht vom 13.11. wird hier durch die 100-kg-Messung vom 15.11. auf 85,83 verschoben. So wird es hier
-// festgehalten, bis es korrigiert ist (Fix: in weeklyWeights nur Einträge mit date <= today()).
+// Zukunftsdaten: Zeilen fehlen, Trainings der Zukunft fließen nicht in die Basis (Index bleibt 103,57).
+// Seit Version 109 zählt weeklyWeights nur Messungen bis heute: Die 100 kg vom 15.11. verschieben das
+// Wochenmittel vom 13.11. nicht (vorher 85,83). Sätze mit 11 und 12 Wiederholungen zählen seitdem ins e1RM
+// (Bank 110 × 12 am 03.11. ist deshalb der Bestwert, der Index am 05.11. bleibt 100).
 setState({
  foods:[...fixture().foods,food('2026-11-14',2000)],
  weights:[...fixture().weights,{id:'future',date:'2026-11-15',kg:100}],
  workouts:[...fixture().workouts,workout('2026-11-15',[ex('bench','Bankdrücken',[{kg:200,reps:1,done:true}])])]
 });
-assert.deepEqual(rowsOf(),EXPECT_ALL.map((r,i)=>i===6?{...r,weight:85.833333}:r),'Zukunftswerte: Wochenmittel-BUG festgehalten');
+assert.deepEqual(rowsOf(),EXPECT_ALL,'Zukunftswerte ändern nichts');
 // Mehrere Gewichte am selben Tag und mehrere Workouts: 03.11. zählt beide Messungen in den Wochenschnitt (80,
 // nicht 80,5), und der Tag 03.11. erhält selbst kein Gewicht (nicht der letzte Messtag der Woche).
 // Hinweis: Der Audit-Text nennt „erstes Gewicht per find“. Das gilt nur für die Basisfunktion in experience.js:15;

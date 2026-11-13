@@ -86,3 +86,4 @@ Bestehende funktionierende Abläufe erhalten, zuerst prüfen statt doppelt imple
 - **Hauptchat:** Fable 5.2 bis 16.11.2026, danach Opus 5.5; Aufwand xhigh; automatische Kompaktierung bei 40 %.
 - **Web-App im Stamm:** Die Web-App bleibt im Stamm des Repositories (kein `src/`), weil GitHub Pages den Stamm von `main` ausliefert und es keinen Build-Schritt gibt.
 - **Dokumentation:** Aktueller Stand in `PROGRESS.md`, offene Punkte in `ISSUES.md`, Entscheidungen hier; die frühere `CURRENT-STATE.md` liegt unverändert unter `archive/CURRENT-STATE-bis-v95.md`.
+- e1RM und Rang werten dieselben Sätze: abgeschlossen, 1 bis 12 Wiederholungen (seit Version 109, 13.11.2026).

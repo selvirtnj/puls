@@ -12,7 +12,7 @@ Stand 13.11.2026. Audits vom 12.11. und 13.11.2026: Tests grün, keine kritische
 
 ## Audit vom 13.11.2026 (ganzes Repository, nur Bericht)
 
-Kein Befund der Stufe „muss“. Die Punkte 1 und 3 sind seit Version 107 behoben, 2, 4 bis 7, 10 und 12 bis 14 seit Version 108. Offen sind 8, 9 (beide bewusst so belassen), 11 (Produktfrage) und 15.
+Kein Befund der Stufe „muss“. Die Punkte 1 und 3 sind seit Version 107 behoben, 2, 4 bis 7, 10 und 12 bis 14 seit Version 108. 11 und 15 seit Version 109. 8 und 9 bleiben bewusst so.
 
 Sollte:
 
@@ -29,11 +29,11 @@ Kann:
 8. Offen, bewusst: Nur ein Platz für Konfliktsicherungen (`js/cloud.js:26`); der zweite Konflikt überschreibt den ersten. Die Sicherung ist im Konto herunterladbar; mehrere Plätze würden den Gerätespeicher (bis 4 MB je Stand) schnell füllen.
 9. Kein Fehler: Größenlimit Client 4.000.000 Zeichen, Datenbank 5.000.000 (`backend/accounts.sql:6`). Der Client ist absichtlich strenger, damit ein Upload nie am Server scheitert.
 10. ✓ behoben in Version 108 (einmal nach Tag gruppiert). `trendData()` rechnet quadratisch über die Tage (`js/experience.js:17`); bei mehreren Jahren Daten spürbar.
-11. e1RM zählt Sätze mit 1–10 Wiederholungen (`js/enhancements.js:76`), der Rang 1–12 (`js/strength-ranks.js:169`). Produktfrage.
+11. ✓ behoben in Version 109 (e1RM zählt jetzt 1–12, Selvirs Entscheidung). e1RM zählt Sätze mit 1–10 Wiederholungen (`js/enhancements.js:76`), der Rang 1–12 (`js/strength-ranks.js:169`). Produktfrage.
 12. ✓ behoben in Version 108 (einmaliger Hinweis). Der Lauf-Spurspeicher schluckt Speicherfehler stumm (`js/running.js:95`, `:131`).
 13. ✓ behoben in Version 108 (Stichtag aus lokalen Datumsteilen). `js/experience.js:17` mischt lokale Zeit und UTC; um Mitternacht kann ein Tag verrutschen.
 14. ✓ behoben in Version 108: `tests/check-trends-fasting.cjs`.
-15. Neu (beim Schreiben der Tests gefunden): `weeklyWeights` (`js/flows.js:60`) zählt auch Gewichte mit künftigem Datum ins Wochenmittel des Verlaufs; der Test hält das fest. Die Montagsregel in `js/flows.js:81` ist tot, weil Zeile 88 das Feld überschreibt.
+15. ✓ behoben in Version 109 (nur Messungen bis heute, tote Regel gelöscht). Beim Schreiben der Tests gefunden: `weeklyWeights` (`js/flows.js:60`) zählt auch Gewichte mit künftigem Datum ins Wochenmittel des Verlaufs; der Test hält das fest. Die Montagsregel in `js/flows.js:81` ist tot, weil Zeile 88 das Feld überschreibt.
 
 Ohne Befund: HTML-Ausgabe (`esc`, ID-Prüfung), RLS-SQL, `account-delete`, Edge Function `food-photo`, Freunde-SQL, Import, Geheimnisse im Repository, Einheitenlogik. Nicht gelesen: `js/i18n.js`, Leaflet, CSS, `catalog/`; große Dateien nur punktuell.
 
