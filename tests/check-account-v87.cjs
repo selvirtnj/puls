@@ -21,7 +21,8 @@ const c={console,Math,Number,String,Object,Array,Set,Map,JSON,isFinite,state,dat
  accountGoalSummary:()=>'<section class="accountgoal"></section>',planTargetDate:()=>'März 2027',profileError:()=>'',forecastDays:()=>90,dateAfter:()=>'7. Feb. 2027',
  energyFor:()=>({rmr:1800,tdee:2600}),planNumbers:()=>({change:-.15,kcal:2000}),recordGoalHistory(){calls.push('history')},
  quickAddRun(){},weightForm(){},measurementsForm(){},recipeEditor(){},foodForm(){calls.push('foodForm')},foodTab(){},fpMealEdit(){calls.push('meal')},fpBackTo(p){calls.push('pane:'+p)},
- accountPage:()=>'<div class="accountcompact accountrefresh accountoverview"></div>',
+ // accountPage ist seit Phase 4 eine Funktion: Kern aus flows.js (hier der Stub-Text), darüber das Glied aus quick-account-v87.js.
+ accountPage:()=>c.accountPageAfterQuickAccount('<div class="accountcompact accountrefresh accountoverview"></div>'),
  openAccountSection(key){c.accountSection=key;c.render()},closeAccountSection(){c.accountSection='';c.render()},
  go(next){c.page=next;c.render()},render(){renders++}};
 c.window.pulsData87={display:()=>({...state.display}),water:()=>({mode:'auto',glassMl:state.water.glassMl}),waterRecommendation:()=>({ml:2450,mode:'auto'})};

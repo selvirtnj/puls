@@ -29,13 +29,15 @@ function stubElement(el){
  return {value:'',dataset:{},style:{setProperty(){},removeProperty(){}},innerHTML:'',textContent:'',
   classList:{add(){},remove(){},toggle(){},contains:()=>false},addEventListener(){},removeEventListener(){},
   showModal(){this.open=true},close(){this.open=false},remove(){},querySelector:()=>null,querySelectorAll:()=>[],
-  get content(){return el('c'+Math.random())},appendChild(){},setAttribute(){},getAttribute:()=>null,focus(){},scrollIntoView(){}};
+  get content(){return el('c'+Math.random())},appendChild(){},insertAdjacentHTML(){},setAttribute(){},getAttribute:()=>null,focus(){},scrollIntoView(){}};
 }
 
 // Die eine render() steht in js/app.js (Refactor Phase 4) und reicht von „function render(){“ bis zur schließenden Klammer in Spalte 0.
 // Tests, die einzelne Dateien mit render-Gliedern in einen Stub laden, führen sie dort aus; der Stub liefert nur den Kern als renderBase().
 const renderSource=(text=read('js/app.js'))=>{const start=text.search(/^function render\(\)\{/m);if(start<0)throw Error('render fehlt in js/app.js');return text.slice(start,text.indexOf('\n}',start)+2)};
 
+// options.now: fester Zeitpunkt (ms) für Date. options.search: location.search (z. B. ?erststart=1).
+const fixedDate=now=>class extends Date{constructor(...a){a.length?super(...a):super(now)}static now(){return now}};
 // options.transform: {Datei: text=>neuerText} ändert Quelltexte vor dem Laden. options.storage: Startinhalt von localStorage.
 // options.afterScript(file, {ctx, run}) läuft nach jedem Skript (Zwischenstände während des Ladens).
 function loadApp(options={}){
@@ -46,8 +48,8 @@ function loadApp(options={}){
    createElement:()=>el('x'+Math.random()),documentElement:el('html'),body:el('body'),head:el('head'),activeElement:null,
    hidden:false,visibilityState:'visible',readyState:'complete'},
   localStorage:{getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>{store.set(k,String(v))},removeItem:k=>{store.delete(k)}},
-  crypto:require('node:crypto').webcrypto,Date,Intl,console:{log(){},warn(){},error(){}},
-  location:{protocol:'file:',search:'',href:'',hash:''},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},
+  crypto:require('node:crypto').webcrypto,Date:options.now?fixedDate(options.now):Date,Intl,console:{log(){},warn(){},error(){}},
+  location:{protocol:'file:',search:options.search||'',href:'',hash:''},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},
   navigator:{vibrate(){},onLine:true},alert(){},confirm:()=>true,TextEncoder,TextDecoder,URL,Blob,
   fetch:()=>Promise.reject(Error('kein Netz im Test')),matchMedia:()=>({matches:false,addEventListener(){},addListener(){}}),
   requestAnimationFrame:()=>1,cancelAnimationFrame(){},getComputedStyle:()=>({getPropertyValue:()=>''}),

@@ -460,9 +460,7 @@ if(typeof closeAccountSection==='function'){
 if(typeof go==='function'){const qaGo=go;go=function(next,...args){let before=typeof page!=='undefined'?page:'';qaPage='';qaParent='';qaRatioOpen=false;if(next==='account'&&before!=='account')qaAnimate='list';return qaGo.call(this,next,...args)}}
 
 if(typeof accountPage==='function'){
-  const qaAccountBase=accountPage;
-  accountPage=function(...args){
-    let html=qaAccountBase.apply(this,args);
+  globalThis.accountPageAfterQuickAccount=function accountPageAfterQuickAccount(html){
     if(typeof accountSection!=='undefined'&&accountSection){
       if(qaPages[qaParent])html=html.replace(/(<button type="button" class="accountback"[^>]*>[\s\S]*?<span>)Konto(<\/span>)/,`$1${esc(qaPageTitle(qaParent))}$2`);
       if(accountSection==='body')html=html.replace(/<button class="textbtn" onclick="measurementsForm\(\)">Körpermaße erfassen<\/button><button class="textbtn" onclick="measurementsForm\(\)">Biometrie<\/button>/,'<button class="textbtn" onclick="measurementsForm()">'+qaT('Körpermaße & Biometrie','Body measurements & biometrics')+'</button>');

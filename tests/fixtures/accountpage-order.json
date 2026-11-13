@@ -1,0 +1,283 @@
+{
+ "alt": "fa69804",
+ "standard": {
+  "laden": [],
+  "faelle": {
+   "zustand:initial": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5828,
+    "sha256": "323785269fd4babb89bd2de16ea38830b54ee4d3b787ecfd3fab5098f04942f0",
+    "zustand": "||"
+   },
+   "zustand:urzustand-mit-eintraegen": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5813,
+    "sha256": "5130920a163f58e1e0ce832638afaa075125b71359406d9429a1ce61960ad53b",
+    "zustand": "||"
+   },
+   "zustand:v2-migriert": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5828,
+    "sha256": "323785269fd4babb89bd2de16ea38830b54ee4d3b787ecfd3fab5098f04942f0",
+    "zustand": "||"
+   },
+   "zustand:mit-profil-und-trainingsplan": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5833,
+    "sha256": "a9d7229958f21af1311d1c973c748d79aac4c8b658dd27a1d81059303b55c129",
+    "zustand": "||"
+   },
+   "zustand:mit-tracker-werkzeugen": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5828,
+    "sha256": "381841ad0e19c10ad51dc7adbfb77df5a73cf078b50cdd7b45dec7a179b2cbe5",
+    "zustand": "||"
+   },
+   "zustand:v87-optionen-alter-rangmarker": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5828,
+    "sha256": "323785269fd4babb89bd2de16ea38830b54ee4d3b787ecfd3fab5098f04942f0",
+    "zustand": "||"
+   },
+   "zustand:v90-laeufe-design-und-konto": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5828,
+    "sha256": "323785269fd4babb89bd2de16ea38830b54ee4d3b787ecfd3fab5098f04942f0",
+    "zustand": "||"
+   },
+   "zustand:full": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5825,
+    "sha256": "91c49a9b48d36a5fd0ba17ea74172d0c7425097da0ef18cd9a15b37b0a94b9f4",
+    "zustand": "||"
+   },
+   "en:initial": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5811,
+    "sha256": "97dce23abfae25e20bb3bfd5e5a193c0ad656a8ccf80459413aa008f6b58f920",
+    "zustand": "||"
+   },
+   "en:full": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5825,
+    "sha256": "91c49a9b48d36a5fd0ba17ea74172d0c7425097da0ef18cd9a15b37b0a94b9f4",
+    "zustand": "||"
+   },
+   "en:mit-profil-und-trainingsplan": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5823,
+    "sha256": "8d331909c06feaafa1554c3f172690cde7594abd8a0cd0e232124f16757ba071",
+    "zustand": "||"
+   },
+   "profil": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5835,
+    "sha256": "183d11f553f3def39b9d8fe6763df23760d302a11cf46a08c9bd418e5458b58a",
+    "zustand": "||"
+   },
+   "profil-avatar": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5835,
+    "sha256": "e3a2e350faf358e8d5e595945835b0dc20cd6babe6cc752e753c27829f0e5209",
+    "zustand": "||"
+   },
+   "profil-en": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5825,
+    "sha256": "c3b7e307aa51aa1020e0871144b7a094b53f491d51d7b80d8ffd78bffe83cbde",
+    "zustand": "||"
+   },
+   "ton-aus": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5825,
+    "sha256": "91c49a9b48d36a5fd0ba17ea74172d0c7425097da0ef18cd9a15b37b0a94b9f4",
+    "zustand": "||"
+   },
+   "bereich:plan": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6609,
+    "sha256": "78686275cf251e5c85b975229a37727863758b90a8671e53811cc3dbe44ff324",
+    "zustand": "plan||"
+   },
+   "bereich-en:plan": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6521,
+    "sha256": "fa93085086961ca2c0ce13ff72caca102024ecb21514ddd858b75e4df89eab36",
+    "zustand": "plan||"
+   },
+   "bereich:body": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6609,
+    "sha256": "78686275cf251e5c85b975229a37727863758b90a8671e53811cc3dbe44ff324",
+    "zustand": "body||"
+   },
+   "bereich-en:body": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6521,
+    "sha256": "fa93085086961ca2c0ce13ff72caca102024ecb21514ddd858b75e4df89eab36",
+    "zustand": "body||"
+   },
+   "bereich:adaptive": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6609,
+    "sha256": "78686275cf251e5c85b975229a37727863758b90a8671e53811cc3dbe44ff324",
+    "zustand": "adaptive||"
+   },
+   "bereich-en:adaptive": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6521,
+    "sha256": "fa93085086961ca2c0ce13ff72caca102024ecb21514ddd858b75e4df89eab36",
+    "zustand": "adaptive||"
+   },
+   "bereich:design": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6609,
+    "sha256": "78686275cf251e5c85b975229a37727863758b90a8671e53811cc3dbe44ff324",
+    "zustand": "design||"
+   },
+   "bereich-en:design": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6521,
+    "sha256": "fa93085086961ca2c0ce13ff72caca102024ecb21514ddd858b75e4df89eab36",
+    "zustand": "design||"
+   },
+   "bereich:sounds": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6609,
+    "sha256": "78686275cf251e5c85b975229a37727863758b90a8671e53811cc3dbe44ff324",
+    "zustand": "sounds||"
+   },
+   "bereich-en:sounds": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6521,
+    "sha256": "fa93085086961ca2c0ce13ff72caca102024ecb21514ddd858b75e4df89eab36",
+    "zustand": "sounds||"
+   },
+   "bereich:manage": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6609,
+    "sha256": "78686275cf251e5c85b975229a37727863758b90a8671e53811cc3dbe44ff324",
+    "zustand": "manage||"
+   },
+   "bereich-en:manage": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6521,
+    "sha256": "fa93085086961ca2c0ce13ff72caca102024ecb21514ddd858b75e4df89eab36",
+    "zustand": "manage||"
+   },
+   "bereich:unbekannt": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6609,
+    "sha256": "78686275cf251e5c85b975229a37727863758b90a8671e53811cc3dbe44ff324",
+    "zustand": "unbekannt||"
+   },
+   "bereich-en:unbekannt": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6521,
+    "sha256": "fa93085086961ca2c0ce13ff72caca102024ecb21514ddd858b75e4df89eab36",
+    "zustand": "unbekannt||"
+   },
+   "qa:account": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1",
+    "laenge": 1986,
+    "sha256": "1907b940484dae3013af807a48ee28f86b03f77ba2740f2976644a8f58ff3da9",
+    "zustand": "|account|"
+   },
+   "qa:profile": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 7106,
+    "sha256": "faf2ce23882c4e19a2445eb22940d143424d22da06b5267768f121feb7fbc2fd",
+    "zustand": "|profile|"
+   },
+   "qa:targets": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 15055,
+    "sha256": "15922765c893f34a59b641bb1c4a0c75ac135f8dbc23cb63667f57538efb56b3",
+    "zustand": "|targets|"
+   },
+   "qa:display": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 7632,
+    "sha256": "9467b03a644b4be3f7d67204b792f4b2cc8d9bd3aa5de9e3b2a0d20606f2b309",
+    "zustand": "|display|"
+   },
+   "qa:unbekannt": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5825,
+    "sha256": "70f6aa924bbeff8142c63e24c224224f837eee95d46cba1b577f0a8c55aa7d26",
+    "zustand": "|unbekannt|"
+   },
+   "qa-eltern-body": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5867,
+    "sha256": "431c78fedc743c05623559c4f1f2c140fdea53e7c983773bf1c0b9dba408bff6",
+    "zustand": "body||targets"
+   },
+   "qa-eltern-plan": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5867,
+    "sha256": "431c78fedc743c05623559c4f1f2c140fdea53e7c983773bf1c0b9dba408bff6",
+    "zustand": "plan||account"
+   },
+   "qa-bereich-vor-seite": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5867,
+    "sha256": "431c78fedc743c05623559c4f1f2c140fdea53e7c983773bf1c0b9dba408bff6",
+    "zustand": "design|profile|"
+   },
+   "anmeldung": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5836,
+    "sha256": "4a055347629cfb4d76bb6ace1eb66bfba50764bb6ebb2b13a9a18fb1b4e32bba",
+    "zustand": "||"
+   },
+   "anmeldung-manage": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 6296,
+    "sha256": "6b2d515bfb660572970d9e4760f52c80acb564caa1f7892a5161075fb4641d5d",
+    "zustand": "manage||"
+   },
+   "anmeldung-qa": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1",
+    "laenge": 1986,
+    "sha256": "1907b940484dae3013af807a48ee28f86b03f77ba2740f2976644a8f58ff3da9",
+    "zustand": "|account|"
+   },
+   "render:konto": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5825,
+    "sha256": "5556bb1b3eb853babaa58ae276958214d1c46aa8c3ac6d6ff9a897ded648ebd5",
+    "zustand": "||"
+   },
+   "render:konto-bereich": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5868,
+    "sha256": "2caee6fa86898c5a7aa83be9d0e5ff365f1e7a81b74f01517ac6af082a54406c",
+    "zustand": "manage||"
+   },
+   "render:konto-en": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5823,
+    "sha256": "ce3593d86aeda1a99466cf3d0bb0912107bc32816221a84bbb2e6088952d8b92",
+    "zustand": "||"
+   }
+  }
+ },
+ "erststart": {
+  "laden": [],
+  "faelle": {
+   "erststart": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5849,
+    "sha256": "1d2b49bcdae7be955740ec97da09db2dca2e3218de3a22c283af971c8a1862c5",
+    "zustand": "||"
+   },
+   "erststart-render": {
+    "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account-v87#1",
+    "laenge": 5844,
+    "sha256": "2c457ffa37c1301078c729fc2c3db43fa8efdd4b032bf04c3741fa1a6a5653e3",
+    "zustand": "||"
+   }
+  }
+ }
+}

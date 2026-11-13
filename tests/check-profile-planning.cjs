@@ -144,8 +144,8 @@ for(const change of ["state.plan.mode='manual'","state.profile.special=true","st
   selected.run(fs.readFileSync('js/account-refresh.js','utf8').split('\n').find(line=>line.startsWith('function accountGoalSummary(')));
   const shown=selected.run('n(dayGoals(date).kcal)');assert.notEqual(selected.run('dayGoals(date).kcal'),selected.run('state.goals.kcal'));
   assert(selected.run('accountGoalSummary()').includes(shown+' <small>kcal / Tag'));
-  selected.run(fs.readFileSync('js/flows.js','utf8').split('\n').find(line=>line.startsWith('accountPage=function')));
-  assert(selected.run('accountPage()').includes(shown+' kcal</dd>'));
+  selected.run(fs.readFileSync('js/flows.js','utf8').split('\n').find(line=>line.startsWith('globalThis.accountPageBase=function')));
+  assert(selected.run('accountPageBase()').includes(shown+' kcal</dd>'));
   assert(selected.run('goalCard()').includes(shown+' KCAL'));
   selected.run('forecastDays=function(weight,target,tdee,intake){globalThis.projectedIntake=intake;return null};planTargetDate()');assert.equal(selected.run('projectedIntake'),selected.run('dayGoals(date).kcal'));
 }

@@ -44,5 +44,5 @@ document.addEventListener('pointerup',cancelExerciseHold);document.addEventListe
 const workout29Open=openModal;openModal=function(title,body){modal.classList.toggle('planningsheet',title==='Dein Profil & deine Ziele');workout29Open(title,body)};
 const workout29Profile=profileForm;profileForm=function(){workout29Profile();let panel=$('profile-form');if(panel)panel.scrollTop=0};
 const workout29Data=dataSettings;dataSettings=function(){workout29Data();let panel=$('profile-form');if(panel)panel.scrollTop=0};
-const workout29Account=accountPage;accountPage=function(){return workout29Account().replace(/(<div class="versionstamp">PULS <span>)Version \d+/,'$1Version 29').replaceAll('Tageserie','Trainingsserie')};
+globalThis.accountPageAfterWorkoutPolish=function accountPageAfterWorkoutPolish(html){return html.replace(/(<div class="versionstamp">PULS <span>)Version \d+/,'$1Version 29').replaceAll('Tageserie','Trainingsserie')};
 render();

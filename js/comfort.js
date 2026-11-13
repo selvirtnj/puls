@@ -22,5 +22,5 @@ swipeDiaryEntry=function(x){return `<div class="swipediary" data-diary-id="${x.i
 const comfortOpen=openModal;openModal=function(title,body){comfortOpen(title,body);applyAppIcon()};
 document.addEventListener('click',event=>{let row=event.target.closest('.swiperevealed');if(row&&event.target.closest('.diaryrow')){event.preventDefault();event.stopImmediatePropagation();resetDiaryRow(row)}},true);
 globalThis.renderAfterComfort=function renderAfterComfort(){applyAppIcon()};
-const comfortAccount=accountPage;accountPage=function(){return comfortAccount().replace('<section class="card compactbody">',`<section class="card preferencescard"><button class="textbtn full" onclick="appearanceSettings()">Sprache & App-Icon <span>→</span></button></section><section class="card compactbody">`).replace(/(<div class="versionstamp">PULS <span>)Version \d+/,'$1Version 32')};
+globalThis.accountPageAfterComfort=function accountPageAfterComfort(html){return html.replace('<section class="card compactbody">',`<section class="card preferencescard"><button class="textbtn full" onclick="appearanceSettings()">Sprache & App-Icon <span>→</span></button></section><section class="card compactbody">`).replace(/(<div class="versionstamp">PULS <span>)Version \d+/,'$1Version 32')};
 let requestedIcon=/[?&]icon=([a-z]+)/.exec(location.search||'')?.[1];applyAppIcon();
