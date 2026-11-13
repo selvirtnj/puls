@@ -43,6 +43,7 @@ const openModalSource=(text=read('js/app.js'))=>{const start=text.search(/^funct
 const fixedDate=now=>class extends Date{constructor(...a){a.length?super(...a):super(now)}static now(){return now}};
 // options.transform: {Datei: text=>neuerText} ändert Quelltexte vor dem Laden. options.storage: Startinhalt von localStorage.
 // options.afterScript(file, {ctx, run}) läuft nach jedem Skript (Zwischenstände während des Ladens).
+// options.setup(ctx) läuft einmal vor dem ersten Skript; Tests ersetzen dort Teile des DOM-Stubs (z. B. document.getElementById).
 function loadApp(options={}){
  const els=new Map(),el=id=>{if(!els.has(id))els.set(id,stubElement(el));return els.get(id)};
  const store=new Map(Object.entries(options.storage||{}));
@@ -62,6 +63,7 @@ function loadApp(options={}){
  };
  ctx.window=ctx;ctx.self=ctx;ctx.globalThis=ctx;ctx.scrollTo=()=>{};ctx.innerWidth=390;
  vm.createContext(ctx);
+ if(options.setup)options.setup(ctx);
  const run=text=>vm.runInContext(text,ctx),loaded=[],errors=[];
  for(const file of scriptList()){
   let text=read(file);

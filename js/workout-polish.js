@@ -42,7 +42,7 @@ document.addEventListener('pointerdown',event=>{let button=event.target.closest(
 document.addEventListener('pointermove',event=>{if(exerciseHold&&Math.hypot(event.clientX-exerciseHold.x,event.clientY-exerciseHold.y)>10)cancelExerciseHold()},{passive:true});
 document.addEventListener('pointerup',cancelExerciseHold);document.addEventListener('pointercancel',cancelExerciseHold);document.addEventListener('contextmenu',event=>{if(event.target.closest('.exercisename'))event.preventDefault()});
 globalThis.openModalBeforeWorkoutPolish=function openModalBeforeWorkoutPolish(title){modal.classList.toggle('planningsheet',title==='Dein Profil & deine Ziele')};
-const workout29Profile=profileForm;profileForm=function(){workout29Profile();let panel=$('profile-form');if(panel)panel.scrollTop=0};
+globalThis.profileFormAfterWorkoutPolish=function profileFormAfterWorkoutPolish(){let panel=$('profile-form');if(panel)panel.scrollTop=0};
 const workout29Data=dataSettings;dataSettings=function(){workout29Data();let panel=$('profile-form');if(panel)panel.scrollTop=0};
 globalThis.accountPageAfterWorkoutPolish=function accountPageAfterWorkoutPolish(html){return html.replace(/(<div class="versionstamp">PULS <span>)Version \d+/,'$1Version 29').replaceAll('Tageserie','Trainingsserie')};
 render();

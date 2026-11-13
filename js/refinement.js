@@ -1,6 +1,5 @@
 /* PULS 34: focused screens and compatibility with existing account data. */
 function stripRetiredControls(html){let template=document.createElement('template');template.innerHTML=html;for(let button of template.content.querySelectorAll('[onclick]')){let action=button.getAttribute('onclick');if(/(?:mealPlanning|fastingForm|weeklyCheckinForm|progressPhotos|liftingTools)\(/.test(action)){let card=button.closest('section.card');if(card&&/Ernährung planen|Wochen-Check-in|Dein Wochen-Check-in/.test(card.textContent))card.remove();else button.remove()}}return template.innerHTML}
-const focusedFoodBase=nutrition;nutrition=function(){return stripRetiredControls(focusedFoodBase())};
 const focusedHomeBase=home;home=function(){return stripRetiredControls(focusedHomeBase())};
 globalThis.workoutPageAfterRefinement=function workoutPageAfterRefinement(base){let html=stripRetiredControls(base),template=document.createElement('template');template.innerHTML=html;template.content.querySelectorAll('.trainingutilities').forEach(row=>{if(!row.children.length)row.remove()});return template.innerHTML};
 const focusedOrderBase=openExerciseOrder;openExerciseOrder=function(...args){focusedOrderBase(...args);for(let button of $('mb').querySelectorAll('[onclick]'))if(/liftingTools\(/.test(button.getAttribute('onclick')))button.remove()};

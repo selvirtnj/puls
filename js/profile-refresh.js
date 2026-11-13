@@ -70,7 +70,7 @@ function refineProfileForm(){
 }
 function refinePlannerTabs(){let tabs=document.querySelectorAll('#mb .plannertabs button');if(tabs[1])tabs[1].textContent='Sicherung'}
 
-const profileRefreshForm=profileForm;profileForm=function(...args){let result=profileRefreshForm.apply(this,args);refinePlannerTabs();refineProfileForm();return result};
+globalThis.profileFormAfterProfileRefresh=function profileFormAfterProfileRefresh(){refinePlannerTabs();refineProfileForm()};
 const profileRefreshPreview=updatePlanPreview;updatePlanPreview=function(...args){let result=profileRefreshPreview.apply(this,args);let info=$('kcal-mode-info'),mode=$('pr-kcal-mode')?.value;if(info){info.textContent='';info.hidden=true}syncProfileSegments();return result};
 // Sicherung: nur Export, Wiederherstellen und CSV; Methoden- und Quellentexte entfallen.
 const profileRefreshData=dataSettings;dataSettings=function(...args){

@@ -174,9 +174,7 @@ function qaFullSetup(){if(typeof settings==='function')settings()}
 // experience.js ersetzt das Geschlecht im Planer durch ein verstecktes Feld „male“ und blendet „special“ aus.
 // Gespeicherte Werte vorbelegen, damit Speichern im vollen Bogen sie nicht überschreibt; neue Profile bleiben beim bisherigen Standard.
 if(typeof profileForm==='function'){
-  const qaProfileFormBase=profileForm;
-  profileForm=function(...args){
-    let result=qaProfileFormBase.apply(this,args);
+  globalThis.profileFormAfterQuickAccount=function profileFormAfterQuickAccount(){
     try{
       let sex=document.getElementById('pr-sex'),saved=state.profile?.sex;
       if(sex&&sex.type==='hidden'&&['male','female'].includes(saved))sex.value=saved;
@@ -184,7 +182,6 @@ if(typeof profileForm==='function'){
       // Die Vorschau wurde in der Basis schon mit „male“ berechnet; mit den gespeicherten Werten neu rechnen.
       if(document.getElementById('plan-preview')&&typeof updatePlanPreview==='function')updatePlanPreview();
     }catch(error){console.error(error)}
-    return result;
   };
 }
 

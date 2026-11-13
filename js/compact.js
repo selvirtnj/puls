@@ -14,5 +14,4 @@ document.addEventListener('click',event=>{let row=event.target.closest('.swipedi
 globalThis.openModalBeforeCompact=function openModalBeforeCompact(title){modal.classList.toggle('foodsheet',title==='Essen hinzufügen')};
 const simpleActiveExercise=exerciseCard;exerciseCard=function(w,e,i){let html=simpleActiveExercise(w,e,i);return w.finished?html:html.replace(/<div class="exerciseinsight">[\s\S]*?<\/div>/g,'')};
 themedFoodActions=function(){return `<div class="foodtools compactfoodtools"><button class="btn" onclick="foodForm();foodTab('search')">＋ Essen hinzufügen</button><button class="btn secondary" onclick="foodForm();foodTab('barcode')">Barcode scannen</button><button class="btn secondary" onclick="foodForm();foodTab('recipes')">Meine Rezepte</button></div>`};
-const compactNutritionBase=nutrition;nutrition=function(){return compactNutritionBase().replace(`<div class="actionrow"><button class="btn" onclick="foodForm();foodTab('search')">`,`<div class="foodtools compactfoodtools"><button class="btn" onclick="foodForm();foodTab('search')">`)};
 render();

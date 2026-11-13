@@ -17,32 +17,10 @@
   "js/flows.js#1"
  ],
  "nutrition": [
-  "js/app.js#1",
-  "js/products.js#1",
-  "js/recipes.js#1",
-  "js/experience.js#1",
-  "js/insights.js#1",
-  "js/flows.js#1",
-  "js/flows.js#2",
-  "js/flows.js#3",
-  "js/flows.js#4",
-  "js/compact.js#1",
-  "js/tracker-tools.js#1",
-  "js/adaptation.js#1",
-  "js/refinement.js#1",
   "js/food-diary.js#1"
  ],
  "profileForm": [
-  "js/enhancements.js#1",
-  "js/experience.js#1",
-  "js/experience.js#2",
-  "js/flows.js#1",
-  "js/flows.js#2",
-  "js/lifecycle.js#1",
-  "js/workout-polish.js#1",
-  "js/adaptation.js#1",
-  "js/profile-refresh.js#1",
-  "js/quick-account-v87.js#1"
+  "js/enhancements.js#1"
  ],
  "home": [
   "js/app.js#1",

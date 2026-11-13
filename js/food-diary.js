@@ -1,6 +1,6 @@
 ﻿/* PULS v87 · Essen-Tab als Tagebuch: Kopfzeile (Datum, Plus), wischbares Zusammenfassungs-Deck
    (Start bei Makro-Zielen, Energie links davon), Wasserkarte mit Gläsern und chronologisches Tagebuch ohne Kategorien.
-   Ersetzt die gesamte nutrition()-Kette. Datenwege bleiben die bestehenden: addWaterGlass(ml), waterForm/logWater,
+   Ist die einzige nutrition() (Refactor Phase 4; die frühere Kette aus 14 überschriebenen Funktionen lag unter ihr und lief nie). Datenwege bleiben die bestehenden: addWaterGlass(ml), waterForm/logWater,
    editDiaryFood, deleteSwipeDiary/undoDiaryDelete (Rückgängig), markFoodDayComplete, microTargetForm.
    Optionale v87-Felder (display, water, meals, foodSearch) werden nur über geschützte Getter gelesen. */
 
@@ -272,10 +272,10 @@ function fdDiaryList(){
 function fdSaveCombo(){foodForm();if($('foodbody')&&typeof fpMealEdit==='function')fpMealEdit(null,true)}
 
 /* ---------- Seite ---------- */
-nutrition=function(){
+function nutrition(){
   let suggestion='';try{suggestion=typeof foodSuggestionCard==='function'?foodSuggestionCard():''}catch{}
   return `<div class="fdroot${fdEnter&&!fdReduced()?' fdenter':''}">${fdHead()}${fdDeck()}${fdWaterCard()}${fdDiaryList()}<div class="fdextras">${suggestion}${typeof productAttribution==='string'?productAttribution:''}</div></div>`;
-};
+}
 globalThis.renderBeforeFoodDiary=function renderBeforeFoodDiary(){
   let key=page==='food'?'food|'+date:'';
   fdEnter=!!key&&key!==fdLastKey;if(fdEnter){fdSlide=fdViews().indexOf('macros');fdKnownIds=null;fdWaterMemory={key:'',filled:-1}}

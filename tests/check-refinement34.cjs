@@ -12,7 +12,7 @@ run("state.foods=[{id:'f1',date:today(),kcal:100,p:10,c:10,f:2,nutrients:{vitc:0
 assert.equal(run("value('food:kcal')"),100);assert.equal(run("result.definitions.find(x=>x.key==='nutrient:vitc').points.length"),1);assert.equal(run("value('nutrient:vitc')"),0);assert(Math.abs(run("value('bmi')")-25)<1e-9);
 assert.equal(run("filteredMetricPoints({points:[{date:daysAgo(6),value:1},{date:daysAgo(7),value:2}]},'week').length"),1);
 assert(!run("metricPlot([{date:today(),value:0}],'Test','').includes('NaN')"));assert(!run('progressExplorer().includes("Einzelne Übungen")')&&!run('progressExplorer().includes("Messwerte dieser Gruppe")'));
-run('state=initial();migrate()');for(let design of ['terra','volt','blueprint','nocturne']){run('state.appDesign='+JSON.stringify(design));assert(run('home().includes("nutrition-track")'));assert(run('nutrition().includes("compactfoodtools")'));assert(run('validData(state)'));}
+run('state=initial();migrate()');for(let design of ['terra','volt','blueprint','nocturne']){run('state.appDesign='+JSON.stringify(design));assert(run('home().includes("nutrition-track")'));assert(liveNutrition().includes("fdOpenAdd()"));assert(run('validData(state)'));}
 console.log('PASS: all progress aggregations, unknown duration and nutrients, high-rep exclusions, BMI, date windows, legacy design keys and chart rendering');
 `;
 vm34.runInNewContext(harness34+'\n'+tests34,{require,console,__dirname:process.cwd(),process,Buffer},{filename:'refinement34-test'});
