@@ -20,3 +20,9 @@ ios/PULS/Assets.xcassets/AppIcon-*.appiconset/
 
 # Rohdaten der Lebensmittelquellen (siehe docs/CATALOG-SOURCES.md)
 catalog-raw/
+
+# Persoenliche Claude-Code-Einstellungen (z. B. Modell)
+.claude/settings.local.json
+
+# graphify (lokal erzeugter Wissensgraph)
+graphify-out/

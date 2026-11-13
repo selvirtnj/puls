@@ -1,3 +1,5 @@
+Archiv, Stand 12.11.2026; aktuell ist docs/PROGRESS.md
+
 # PULS — aktueller Stand und Übergabe
 
 ### Version 95 (12.11.2026, veröffentlicht)

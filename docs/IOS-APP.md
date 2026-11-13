@@ -2,7 +2,7 @@
 
 PULS gibt es zusätzlich als echte iOS-App für iPhone und iPad. Die App ist eine native Hülle (Swift, `WKWebView`) um die veröffentlichte Web-App `https://selvirtnj.github.io/puls/`. Dadurch kommen alle Web-Updates automatisch in der App an; eine neue `.ipa` ist nur nötig, wenn sich etwas in `ios/` ändert.
 
-**Entscheidung 08.11.2026:** Die SwiftUI-Umstellung ist gestoppt und unter Tag `native-swiftui-archiv` archiviert. Nicht löschen oder fortsetzen. Basis der aktiven Hülle ist wieder `main`/`ios-build-9`, die geladene Web-App steht derzeit bei v83. Neue native Funktionen werden in dieser Hülle ergänzt. Die folgenden Extras sind lokal vorbereitet, noch nicht kompiliert oder veröffentlicht.
+**Entscheidung 08.11.2026:** Die SwiftUI-Umstellung ist gestoppt und unter Tag `native-swiftui-archiv` archiviert. Nicht löschen oder fortsetzen. Basis der aktiven Hülle ist wieder `main`/`ios-build-9`, die Hülle lädt immer die aktuelle Live-Web-App (Stand siehe PROGRESS.md). Neue native Funktionen werden in dieser Hülle ergänzt. Die folgenden Extras sind lokal vorbereitet, noch nicht kompiliert oder veröffentlicht.
 
 ## Neue Hüllen-Extras (lokal vorbereitet)
 

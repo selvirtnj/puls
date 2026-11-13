@@ -1,6 +1,6 @@
 # Fixtures Zustandsbrücke
 
-Synthetische, anonyme Testdaten für [docs/native/NATIVE-BRIDGE-PROTOCOL.md](../../../docs/native/NATIVE-BRIDGE-PROTOCOL.md). Genutzt von `tests/check-native-state.cjs` (Web) und `ios/PULSCoreTests` (Swift). Keine echten Daten. Änderungen nur durch Koordinator oder ausdrücklich freigegebenes Paket (M3/H).
+Synthetische, anonyme Testdaten für [docs/archive/native/NATIVE-BRIDGE-PROTOCOL.md](../../../docs/archive/native/NATIVE-BRIDGE-PROTOCOL.md). Genutzt von `tests/check-native-state.cjs` (Web) und `ios/PULSCoreTests` (Swift). Keine echten Daten. Änderungen nur durch Koordinator oder ausdrücklich freigegebenes Paket (M3/H).
 
 - `profile-full.json`: alle bekannten Feldarten, ms-Zeitstempel, leere Satzwerte `""`, `null`, unbekannte `x…`-Felder auf mehreren Ebenen (müssen verlustfrei erhalten bleiben).
 - `hello`, `snapshot`, `ack-*`, `open-native`, `navigate`: Web → Native.

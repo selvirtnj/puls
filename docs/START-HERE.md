@@ -1,26 +1,17 @@
 # PULS — hier weiterarbeiten
 
-**Hauptchat:** Claude Code im PULS-Ordner („PULS · Hauptchat“). Claude koordiniert Codex, Gemini und die Claude-Agenten selbst; einfach den nächsten Wunsch schreiben.
+**Hauptchat:** Claude Code im PULS-Ordner. Er koordiniert seine Agenten, Codex und Gemini selbst; einfach den nächsten Wunsch schreiben.
 
 Wer direkt in Codex arbeitet, öffnet diesen Ordner als Projekt und schreibt:
 
-> Weiter mit PULS. Lies AGENTS.md, docs/PROJECT-CONTEXT.md und docs/CURRENT-STATE.md. Du bist mein Hauptansprechpartner und koordinierst Frontend, Backend und unabhängige Prüfung. Mein nächster Wunsch ist: …
-
-## Was vorbereitet ist
-
-- Git-Klon des veröffentlichten PULS-Repositories; Push auf `main` geht live.
-- `AGENTS.md` mit Produkt-, Qualitäts-, Daten- und Veröffentlichungsregeln.
-- Rollen Frontend, Backend und Prüfer in `.codex/agents/` (gemeinsame Quelle für Claude, Codex und Gemini).
-- Brücken `scripts/codex-bridge.ps1` und `scripts/gemini-bridge.ps1`, Aufteilung in `docs/AI-TEAM.md`.
-- Automatisierte Tests plus Prüfung der Übergabedokumentation.
+> Weiter mit PULS. Lies AGENTS.md, docs/PROGRESS.md und docs/DECISIONS.md. Du bist mein Hauptansprechpartner. Mein nächster Wunsch ist: …
 
 ## Zum Nachlesen
 
-- [Produkt und Entscheidungen](PROJECT-CONTEXT.md)
-- [Aktueller Stand und nächste Schritte](CURRENT-STATE.md)
+- [Aktueller Stand und nächste Schritte](PROGRESS.md)
+- [Produkt und Entscheidungen](DECISIONS.md)
+- [Bekannte Fehler, Grenzen, Refactor-Plan](ISSUES.md)
 - [KI-Team: wer macht was](AI-TEAM.md)
-- [Agenten und Arbeitsablauf](TEAM-WORKFLOW.md)
-- [Backend-Übergabe](BACKEND-HANDOFF.md)
-- [Projektstruktur](ARCHITECTURE.md)
+- [Projektstruktur](ARCHITECTURE.md) · [Backend-Übergabe](BACKEND-HANDOFF.md)
 
-Ein neuer Chat kennt frühere Gespräche nicht. Die Agenten lesen diese Dateien und halten sie nach relevanten Änderungen aktuell.
+Ein neuer Chat kennt frühere Gespräche nicht. Der Hauptchat hält diese Dateien nach relevanten Änderungen aktuell.

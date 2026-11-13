@@ -2,69 +2,56 @@
 
 ## Zuerst lesen
 
-1. `docs/PROJECT-CONTEXT.md`: Produkt, Nutzerwünsche und verbindliche Entscheidungen.
-2. `docs/CURRENT-STATE.md`: aktueller Stand, Grenzen, offene Aufgaben und Arbeitsübergabe.
-3. `docs/ARCHITECTURE.md` sowie die für den Auftrag relevanten Dateien.
-4. Bei Backend-Arbeit zusätzlich `docs/BACKEND-HANDOFF.md`; bei Delegation `docs/TEAM-WORKFLOW.md`.
+1. `docs/PROGRESS.md`: aktueller Stand, was in Arbeit ist, nächste Schritte.
+2. `docs/DECISIONS.md`: Produkt, Nutzerwünsche und Entscheidungen.
+3. `docs/ISSUES.md`: bekannte Fehler, Grenzen und der Refactor-Plan.
+4. Je nach Auftrag `docs/ARCHITECTURE.md`, bei Daten und Sync `docs/BACKEND-HANDOFF.md`.
 
-Diese Dateien sind die gemeinsame Wissensbasis. Ein neuer Chat kennt nicht automatisch frühere Gespräche. Prüfe Code und Git-Stand, statt historische Dokumentation als Live-Nachweis zu behandeln. Aktueller Code und aktuelle ausdrückliche Nutzerwünsche haben Vorrang vor älteren Entscheidungen.
+Ein neuer Chat kennt frühere Gespräche nicht; diese Dateien sind das gemeinsame Gedächtnis. Sie können veralten. Bei Widerspruch gelten der aktuelle Code, der Git-Stand und Selvirs aktueller Wunsch. `docs/archive/` ist Geschichte und kein Arbeitsauftrag.
 
 ## Zusammenarbeit mit Selvir
 
-- Deutsch, kurze verständliche Antworten. Wünsche wie „kannst du“ als Arbeitsauftrag ausführen, soweit aus dem Kontext erkennbar.
-- Routineentscheidungen eigenständig treffen. Nur bei tatsächlich fehlenden Angaben, irreversiblen Folgen oder nötigen neuen Berechtigungen fragen; niemals dieselbe Zustimmung erneut verlangen.
-- Änderungen vollständig vorbereiten, prüfen und dann mit konkretem Ergebnis berichten. Keine vollständige Fehlerfreiheit versprechen.
-- Keine kostenpflichtigen Dienste oder neue laufende Kosten ohne ausdrücklichen Auftrag.
-- Produktinformationen gehören in Dokumente; keine privaten Profile, Passwörter, Tokens oder persönliche Gesundheitsdaten ins Repository.
+- Deutsch, kurz und verständlich. „Kannst du …“ ist ein Arbeitsauftrag.
+- Routineentscheidungen triffst du selbst. Frag, wenn eine Angabe wirklich fehlt, etwas nicht rückgängig zu machen ist oder neue Berechtigungen nötig sind, und frag dieselbe Zustimmung nicht zweimal.
+- Änderungen vollständig vorbereiten, prüfen und mit konkretem Ergebnis berichten. Sag ehrlich, was ungeprüft ist.
+- Keine kostenpflichtigen Dienste und keine neuen laufenden Kosten ohne Auftrag.
+- Passwörter, Tokens, private Profile und persönliche Gesundheitsdaten gehören nicht ins Repository.
 
-## Koordinator und Spezialisten
+## Team
 
-Der Hauptchat koordiniert und bleibt Selvirs einziger nötiger Ansprechpartner. Nutze bei größeren Aufgaben gezielt Subagenten, wenn unabhängige Arbeit tatsächlich hilft:
+Der Hauptchat koordiniert und ist Selvirs einziger Ansprechpartner. Wer was übernimmt und mit welchem Modell, steht in `docs/AI-TEAM.md`. Die Arbeitsanweisungen der Rollen liegen einmal in `.claude/skills/` und gelten für Claude, Codex und Gemini.
 
-- `puls_frontend`: Oberfläche, iPhone, Bedienung und Design.
-- `puls_backend`: Auth, Zustand, Synchronisierung und SQL.
-- `puls_reviewer`: unabhängige Prüfung, Tests, Datenintegrität und Sicherheit.
+- Einfache Änderungen macht der Koordinator selbst. Größere oder riskante Änderungen sieht eine zweite KI an.
+- Schreibende Agenten arbeiten in getrennten Dateien oder Worktrees (`node scripts/new-worktree.cjs`), damit sie sich nichts überschreiben.
+- Der Koordinator integriert, committet und veröffentlicht. Ein Auftrag über `scripts/codex-bridge.ps1` oder `scripts/gemini-bridge.ps1` ist ein Koordinator-Auftrag: ausführen, Rückfragen unter `RÜCKFRAGEN:` stellen, nicht committen.
 
-Rollen stehen in `.codex/agents/*.toml`. Falls ein Client diese Rollen nicht automatisch lädt, lies die entsprechende Datei und gib deren Anweisung einem normalen Subagenten mit.
+## Repository
 
-Claude Code, Codex und Gemini (Antigravity CLI) arbeiten als ein Team. Wer welche Aufgabe übernimmt, welches Modell und welchen Denkaufwand, steht in `docs/AI-TEAM.md`; der Koordinator wählt danach selbst. Ein Auftrag von Claude Code an Codex oder Gemini (über `scripts/codex-bridge.ps1` bzw. `scripts/gemini-bridge.ps1`) ist ein Koordinator-Auftrag: ausführen, Rückfragen unter `RÜCKFRAGEN:` stellen, nicht committen oder veröffentlichen.
+- Ein Hauptordner: dieses Repository. Die Web-App liegt im Stamm (`index.html`, `sw.js`, Manifest), Skripte in `js/`, Styles in `css/`. Kein Build-Schritt.
+- Repository `https://github.com/selvirtnj/puls`, live `https://selvirtnj.github.io/puls/`. GitHub Pages liefert `main` aus; ein Push auf `main` ändert die Live-App sofort.
+- Vor der Arbeit `git status --short` und `git log -1 --oneline` ansehen und vorhandene Änderungen erhalten. `reset --hard`, `clean -fd` und Force-Push nur nach Rückfrage.
+- Die iOS-App in `ios/` ist eine WebView-Hülle, die die Live-Web-App lädt (`docs/IOS-APP.md`). Daten, Anmeldung und Sync bleiben im Web. Native Extras kommen in die `pulsNative`-Brücke. Die SwiftUI-Umstellung ist gestoppt und unter Tag `native-swiftui-archiv` aufbewahrt.
 
-**Web-App und iOS-Hülle (Entscheidung 08.11.2026):** Die SwiftUI-Umstellung ist gestoppt und unter Tag `native-swiftui-archiv` archiviert; nicht löschen oder weiter ausbauen. Die iOS-App ist wieder die WebView-Hülle von `main` (Basis `ios-build-9`) und lädt die Live-Web-App. Daten, Auth und Sync bleiben vollständig im Web. Neue native Extras gehören in die bestehende `pulsNative`-Brücke der Hülle. Die Aufgaben in `docs/native/` sind historisch und kein aktiver Arbeitsauftrag.
+## Bestehendes erhalten
 
-Für einfache Änderungen keinen Agentenverbund starten. Größere Implementierungen anschließend unabhängig prüfen lassen. Der zuständige Entwickler behebt Befunde, der Prüfer prüft relevante Korrekturen erneut. Höchstens zwei schreibende Agenten parallel und nur bei klar getrennten Dateien/Arbeitskopien. Nebenagenten dürfen nicht selbst veröffentlichen, keine fremden Chats anschreiben und keine Live-Backend-Änderungen vornehmen.
-
-## Ein Repository, ein maßgeblicher Codebestand
-
-- Dieses Repository ist die Arbeitsgrundlage. Die Web-App: `index.html`, `sw.js` und Manifest im Stamm, Skripte in `js/`, Styles in `css/` (Übersicht in `docs/ARCHITECTURE.md`). Kein Build-Schritt, kein `dist/`.
-- Alte Bauordner und Skripte aus früheren Chats sind historische Werkzeuge. Sie können neuere Dateien überschreiben und werden nicht blind erneut ausgeführt.
-- Repository: `https://github.com/selvirtnj/puls`; Live: `https://selvirtnj.github.io/puls/`.
-- GitHub Pages veröffentlicht `main`. Ein Push auf `main` kann unmittelbar die Live-App ändern.
-- Vor Arbeit `git status --short` und `git log -1 --oneline` prüfen; vorhandene Nutzeränderungen erhalten. Kein `reset --hard`, `clean -fd` oder Force-Push als Routine.
-- Vor parallelen Änderungen Git-Worktrees oder eindeutig getrennte Dateien verwenden. Nur der Koordinator integriert und veröffentlicht. Bestehende Freigaben gelten weiter; keine neue pauschale Freigabepflicht erfinden.
-
-## Bestehende Funktionen erhalten
-
-- Erst Code lesen und vorhandene Funktion verbessern; keine parallelen Zustände, Profile, Routinen- oder Ernährungsmodelle bauen.
-- Die JS-Ladereihenfolge in `index.html` ist wichtig. Mehrere Dateien erweitern dieselben globalen Funktionen. Vor Änderung die letzte wirksame Definition und Wrapper-Kette prüfen.
-- Neue persistierte Felder in `validData()` berücksichtigen, alte Sicherungen akzeptieren und bei Bedarf verlustfrei migrieren.
-- Workout-IDs, Übungs-IDs, gespeicherte Nährwert-Snapshots und historische Messungen erhalten.
-- Keine fehlenden Nährwerte, Trainingszeiten oder Messpunkte erfinden. Gramm und Milliliter nur mit ausdrücklicher Dichte ineinander umrechnen.
-- Die entfernten Features aus `docs/PROJECT-CONTEXT.md` nicht ungefragt wieder einführen.
-- Die native iOS-Hülle in `ios/` lädt die Live-Web-App (AltStore, siehe `docs/IOS-APP.md`). Native Brücken ergänzen Pausen-Mitteilung/Live-Aktivität, Haptik und Lauf-GPS. Seit 08.11.2026 zusätzlich beauftragt: nativer Barcode-Scanner, ausschließlich schreibender Apple-Health-Export mit Opt-in und lokale Trainings-/Wiege-Erinnerungen. Bestehende Funktionen erhalten; keine SwiftUI-Zustandsbrücke aktivieren. Home-Bildschirm-Widgets nicht neu ausbauen.
+- Erst den Code lesen und die vorhandene Funktion verbessern, statt ein zweites Modell daneben zu bauen.
+- Mehrere JS-Dateien umhüllen dieselben globalen Funktionen; die Ladereihenfolge in `index.html` entscheidet, welche Definition gilt. Vor einer Änderung die wirksame Stelle suchen.
+- Neue gespeicherte Felder in `validData()` aufnehmen; alte Sicherungen müssen weiter laden. IDs, Nährwert-Snapshots und alte Messungen bleiben unverändert.
+- Fehlende Nährwerte, Zeiten oder Messpunkte bleiben leer. Gramm und Milliliter nur mit ausdrücklicher Dichte umrechnen.
+- Was `docs/DECISIONS.md` als entfernt nennt, kommt nur auf Wunsch zurück.
 
 ## Backend und Datenschutz
 
-- Öffentlicher Supabase-Publishable-Key ist Client-Konfiguration. Niemals `service_role`, Secret Keys, Passwörter oder Zugriffstokens veröffentlichen.
-- RLS nach eigener Nutzer-ID, revisionsgeprüften Sync und Konfliktsicherungen erhalten. Keine Sicherheitsprüfung behaupten, die nur aus Mock-Tests besteht.
-- Tests mit lokalen Fixtures/Mocks und `?erststart=1`. Niemals echte Konten, Profile oder Logs zu Testzwecken löschen oder zurücksetzen.
-- SQL-Dateien sind Quelltext, kein Nachweis einer aktuellen Live-Einrichtung. Serveränderungen klar von Frontend-Änderungen trennen und nötige Berechtigungen beachten.
+- Der Supabase-Publishable-Key ist öffentliche Client-Konfiguration. `service_role`, Secret Keys, Passwörter und Tokens werden nie veröffentlicht.
+- RLS nach eigener Nutzer-ID, revisionsgeprüfter Sync und Konfliktsicherungen bleiben erhalten.
+- Getestet wird mit lokalen Fixtures, Mocks und `?erststart=1`. Echte Konten, Profile und Logs werden zum Testen nicht verändert.
+- SQL-Dateien sind Quelltext und kein Nachweis der Live-Einrichtung. Mock-Tests belegen keine echte RLS.
 
 ## Prüfen und veröffentlichen
 
-- Node.js 24+. Keine npm-Installationen nötig. `node scripts/check.cjs` ist derselbe Testlauf wie `npm test` und funktioniert auch ohne npm im PATH.
-- Vorschau: `node scripts/serve.cjs`, dann `http://127.0.0.1:4173/?erststart=1`.
-- UI-Änderungen zusätzlich auf schmalem iPhone-Bildschirm, mindestens 390 × 844, prüfen; relevante Interaktionen und Kontraste über betroffene Designs testen.
-- VM-Tests prüfen kein echtes Layout, Kameraverhalten oder echte RLS. Passende Prüfung wählen und Einschränkungen ehrlich nennen.
-- Nur bei Änderungen an ausgelieferten App-Dateien Asset-Versionen, Anzeigeversion und SW-Cache konsistent erhöhen; neue Offline-Dateien in `sw.js` ergänzen. Für reine Doku-/Agentenänderungen keine App-Version erfinden.
-- Vor Veröffentlichung Diff und Tests prüfen; nach Veröffentlichung Web checks, GitHub Pages und betroffene Live-Dateien prüfen. Bei Connector-Push erwartete Branch-SHA als Lease verwenden; lokalen Klon danach per Fast-forward aktualisieren.
-- Nach relevanter Arbeit `docs/CURRENT-STATE.md` und dauerhafte Entscheidungen aktualisieren. Ergebnis: Änderung, Prüfung, offene Grenzen, veröffentlichter Stand.
+- `node scripts/check.cjs` (Node 24 oder neuer, keine Installation nötig; entspricht `npm test`).
+- Vorschau: `node scripts/serve.cjs`, dann `http://127.0.0.1:4173/?erststart=1`. Sichtbare Änderungen bei 390 × 844 ansehen.
+- Die Tests prüfen kein echtes Layout, keine Kamera und keine echte RLS. Nenne, was offen bleibt.
+- Bei Änderungen an ausgelieferten App-Dateien `node scripts/bump-version.cjs` ausführen und neue Offline-Dateien in `sw.js` eintragen. Reine Doku- und Agentenänderungen bekommen keine neue App-Version.
+- Nach dem Push „Web checks“ auf GitHub und die Live-Seite kurz prüfen.
+- Danach `docs/PROGRESS.md` aktualisieren; dauerhafte Entscheidungen nach `docs/DECISIONS.md`, neue bekannte Fehler nach `docs/ISSUES.md`.

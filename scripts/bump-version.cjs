@@ -11,11 +11,11 @@ const edits = [
   ['sw.js', `?v=${old}`, `?v=${next}`, true],
   ['package.json', `"version": "${old}.0.0"`, `"version": "${next}.0.0"`],
   ['js/account-refresh.js', `'Version ${old}'`, `'Version ${next}'`],
-  ['docs/CURRENT-STATE.md', `?v=${old}`, `?v=${next}`]
+  ['docs/PROGRESS.md', `Version ${old}`, `Version ${next}`, true]
 ];
 for (const [name, from, to, optional] of edits) {
   const text = fs.readFileSync(file(name), 'utf8');
   if (!text.includes(from)) { if (optional) continue; throw new Error(`${name}: "${from}" nicht gefunden`); }
   fs.writeFileSync(file(name), text.split(from).join(to));
 }
-console.log(`Version ${old} -> ${next}. Versionseintrag in docs/CURRENT-STATE.md selbst ergänzen.`);
+console.log(`Version ${old} -> ${next}. Versionseintrag in docs/PROGRESS.md selbst ergänzen.`);

@@ -44,8 +44,12 @@ $prompt = $Task
 if (-not $Resume) {
   $roleText = ''
   if ($Role -ne 'general') {
-    $toml = [IO.File]::ReadAllText((Join-Path $repo ".codex\agents\puls_$Role.toml"), $utf8)
-    if ($toml -match "(?s)developer_instructions = '''(.*?)'''") { $roleText = $Matches[1].Trim() }
+    # Gemeinsame Quelle für Claude, Codex und Gemini: die Skills in .claude/skills/.
+    $skills = if ($Role -eq 'reviewer') { @('code-review', 'test-runner') } else { @($Role, 'test-runner') }
+    $roleText = ($skills | ForEach-Object {
+      $md = [IO.File]::ReadAllText((Join-Path $repo ".claude\skills\$_\SKILL.md"), $utf8)
+      ($md -replace '(?s)^---.*?---\s*', '').Trim()
+    }) -join "`n`n"
   }
   $prompt = @"
 Du arbeitest im PULS-Team (Claude Code koordiniert, dazu Codex und du, Gemini). Der Koordinator hat dir diesen Auftrag gegeben und liest deine Antwort.

@@ -1,0 +1,4 @@
+Repo: https://github.com/blader/humanizer
+Commit: b48c832f0f809c1b5658edbb838c2521b72f2413
+Licence: MIT
+Original path: SKILL.md (repo root)

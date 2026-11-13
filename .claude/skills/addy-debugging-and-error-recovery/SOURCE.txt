@@ -1,0 +1,5 @@
+Repo: https://github.com/addyosmani/agent-skills
+Commit: 301b02b12bff98e4688e6984af6556802322bbde
+Licence: MIT
+Original path: skills/debugging-and-error-recovery
+Copied: only *.md files of the folder (non-md files such as yaml/json/sh omitted)

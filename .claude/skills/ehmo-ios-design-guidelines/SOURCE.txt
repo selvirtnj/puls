@@ -1,0 +1,5 @@
+Repo: https://github.com/ehmo/platform-design-skills
+Commit: dc2be825d8b439caea78e9eaa8fb3ac23b0ff3e9
+Licence: MIT
+Original path: skills/ios
+Copied: SKILL.md and rules/_sections.md only

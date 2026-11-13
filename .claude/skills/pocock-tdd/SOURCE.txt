@@ -1,0 +1,5 @@
+Repo: https://github.com/mattpocock/skills
+Commit: 5863806dd4e15c63174bee4e7515a4256792ecfa
+Licence: MIT
+Original path: skills/engineering/tdd
+Copied: only *.md files of the folder (non-md files such as yaml/json/sh omitted)

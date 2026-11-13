@@ -1,4 +1,4 @@
-# PULS — gemeinsamer Produktkontext
+# PULS — Entscheidungen und Produktkontext
 
 Stand der Übergabe: 24.10.2026. Dieser Text fasst die wichtigen Produktentscheidungen aus der Entwicklung mit Selvir zusammen. Er ist keine Behauptung, dass jedes Detail auf jedem Gerät fehlerfrei funktioniert. Code und neue Nutzerwünsche prüfen.
 
@@ -78,3 +78,11 @@ Native App, echte Dynamic Island, Apple Health/Google Fit/Garmin/Withings und na
 Bestätigtes Aktivitäten-Paket vom 25.10.2026 (Version 64): alte Arten bleiben erhalten. Baseline-Kalorienmodus mit Alltagsfaktor und Netto-Sportzulage nach Zu-/Abschlägen. Zeitbasierte Gym-kcal nur als MET-Schätzung, keine Schätzung bei automatischem 5-Stunden-Abschluss. Dauer-XP nur für neue Sessions, gemeinsam maximal 100 pro Tag zusätzlich zu PR-XP; aktive Minuten als weiteres Wochenziel. Datenformate, Quellen, Kalibrierungsgrenze und Frontend-Schnittstellen: [ACTIVITY-DATA.md](ACTIVITY-DATA.md).
 
 Bestehende funktionierende Abläufe erhalten, zuerst prüfen statt doppelt implementieren. Methodik belegen und Schätzgrenzen nennen, keine „neueste/beste Formel“ ohne Begründung versprechen. Nutzer muss nur nötige Zugänge/Entscheidungen liefern. Kein unnötiges Rückfragen oder neues Abo. Neue Funktionen müssen zu Navigation, Datenmodell, Offline- und Sync-Verhalten passen.
+
+## Entscheidungen 12.11.2026
+
+- **Ein Hauptordner:** `Documents\Projekte\puls` ist das einzige Arbeitsverzeichnis. Der alte Codex-Klon unter `Documents\Codex\PULS` wurde gelöscht, nachdem alles in dieses Repository übernommen war (der Stash liegt als Branch `sicherung/alt-klon-stash`).
+- **Agenten-Setup neu:** Gemeinsame Skills in `.claude/skills/` (frontend, backend, test-runner, code-review, reflect). Claude-Agenten: `builder` (Haiku), `specialist` (Sonnet), `reviewer` (Sonnet, lesend), `scout` (Haiku, lesend). Codex und Gemini lesen dieselben Skills über `scripts/codex-bridge.ps1` und `scripts/gemini-bridge.ps1`.
+- **Hauptchat:** Fable 5.2 bis 16.11.2026, danach Opus 5.5; Aufwand xhigh; automatische Kompaktierung bei 40 %.
+- **Web-App im Stamm:** Die Web-App bleibt im Stamm des Repositories (kein `src/`), weil GitHub Pages den Stamm von `main` ausliefert und es keinen Build-Schritt gibt.
+- **Dokumentation:** Aktueller Stand in `PROGRESS.md`, offene Punkte in `ISSUES.md`, Entscheidungen hier; die frühere `CURRENT-STATE.md` liegt unverändert unter `archive/CURRENT-STATE-bis-v95.md`.
