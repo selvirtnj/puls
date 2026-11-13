@@ -1,5 +1,0 @@
-Repo: https://github.com/DietrichGebert/ponytail
-Commit: 96608e078b2d5ea607c5c3b8b5a54d1c1fba6846
-Licence: MIT
-Original path: skills/ponytail-debt
-Copied: only *.md files of the folder (non-md files such as yaml/json/sh omitted)

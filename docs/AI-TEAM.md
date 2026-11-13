@@ -71,4 +71,7 @@ Für den Prüfer: Diff seit [SHA], Schwerpunkt [Funktion], nur belegte Befunde m
 
 - Node: `C:\Program Files\nodejs` (im PATH). Git für Windows mit Credential Manager (im PATH); damit wird gepusht.
 - Codex-CLI: `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`; die Brücke findet sie selbst.
+- ponytail: Claude-Code-Plugin, für dieses Projekt in `.claude/settings.json` aktiviert. Es bringt eigene Hooks mit; die Skills heißen `ponytail`, `ponytail-review`, `ponytail-audit`, `ponytail-debt`.
+- graphify: `%USERPROFILE%\.local\bin\graphify.exe` (über uv installiert, uv-Ordner unter `%USERPROFILE%\.uv`). `graphify update .` baut den Code-Graphen ohne KI-Aufrufe nach `graphify-out/` (nicht im Repository). Die optionalen Such- und Git-Hooks sind nicht eingerichtet.
+- OmniRoute: `omniroute` (npm global, Daten unter `%APPDATA%\omniroute`). Installiert, aber nicht gestartet und ohne Anbieter. Der Server hält Zugangsdaten; Anmeldungen richtet nur Selvir ein.
 - Gemini: Antigravity CLI `%LOCALAPPDATA%\agy\bin\agy.exe`, angemeldet mit Selvirs Google-Konto. Modelle: `agy models`.
