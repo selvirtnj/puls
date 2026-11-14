@@ -262,9 +262,28 @@ function fdDiaryList(){
   let rows=items.map(x=>fdDiaryRow(x,!!known&&!known.has(x.id))).join('');
   let kcal=items.reduce((s,x)=>s+(Number(x.kcal)||0),0);
   let head=`<div class="fdcardhead"><div><h2>${fdT('Tagebuch','Diary')}</h2><small>${items.length} ${items.length===1?fdT('Eintrag','entry'):fdT('Einträge','entries')} · ${fdNum(kcal)} kcal</small></div></div>`;
-  let body=rows?`<div class="fdentries">${rows}</div>`:`<div class="fdemptystate"><p>${fdT('Noch nichts eingetragen.','Nothing logged yet.')}</p><button type="button" class="btn" onclick="fdOpenAdd()">${phIcon('plus')} ${fdT('Lebensmittel hinzufügen','Add food')}</button></div>`;
+  let body=rows?`<div class="fdentries">${rows}</div>`:`<div class="fdemptystate"><p>${fdT('Noch nichts eingetragen.','Nothing logged yet.')}</p><button type="button" class="btn" onclick="fdOpenAdd()">${phIcon('plus')} ${fdT('Lebensmittel hinzufügen','Add food')}</button>${fdRepeatButton()}</div>`;
   let done=(state.foodLogCompleted||[]).includes(date);
   return `<section class="fdcard fddiary">${head}${body}${done?`<p class="fdnote fddonenote">${phIcon('check-circle')} ${fdT('Tag vollständig erfasst','Day complete')}</p>`:''}</section>`;
+}
+
+/* ---------- Vortag übernehmen (nur bei leerem Tagebuch) ---------- */
+function fdPrevDay(day=date){let d=new Date(day+'T12:00:00');d.setDate(d.getDate()-1);return localISO(d)}
+function fdRepeatSource(){return fdDayFoods(fdPrevDay()).filter(x=>!fdIsWater(x))}
+function fdRepeatButton(){
+  if(fdDayFoods().some(x=>!fdIsWater(x))||!fdRepeatSource().length)return '';
+  let label=date===today()?fdT('Gestern nochmal','Repeat yesterday'):fdT('Vortag übernehmen','Copy previous day');
+  return `<button type="button" class="btn secondary fdrepeat" onclick="fdRepeatDay()">${phIcon('arrow-counter-clockwise')} ${label}</button>`;
+}
+// Kopie aller Essens-Einträge des Vortags (ohne reines Wasser); Originale bleiben unverändert.
+function fdRepeatDay(){
+  let source=fdRepeatSource();
+  if(!source.length||fdDayFoods().some(x=>!fdIsWater(x)))return;
+  let stamp=Date.now(),copies=source.map((x,i)=>{let copy=JSON.parse(JSON.stringify(x));copy.id=uid();copy.date=date;if(copy.loggedAt!==undefined)copy.loggedAt=stamp+i;return copy});
+  let ids=new Set(copies.map(x=>x.id));
+  state.foods.push(...copies);save();render();fdSound('save');
+  let count=copies.length;
+  fdUndoToast(fdT(`${count} ${count===1?'Eintrag':'Einträge'} übernommen`,`${count} ${count===1?'entry':'entries'} copied`),()=>{state.foods=state.foods.filter(x=>!ids.has(x.id));save();render()});
 }
 
 /* ---------- Seite ---------- */
@@ -284,4 +303,5 @@ globalThis.renderAfterFoodDiary=function renderAfterFoodDiary(){
 window.addEventListener('resize',()=>{let track=$('fd-track');if(track)track.scrollTo({left:fdSlide*track.clientWidth,behavior:'auto'})});
 
 if(typeof englishUI==='object')for(let [k,v] of Object.entries({'Tagebuch':'Diary','Wasser':'Water','Makro-Ziele':'Macro targets','Gegessen':'Eaten','Übrig':'Left','Wochenschnitt':'Weekly average','Hervorgehobene Nährstoffe':'Highlighted nutrients','Lebensmittel hinzufügen':'Add food','Als Kombi':'As combo','Wasserziel':'Water target','Rückgängig':'Undo'}))if(!(k in englishUI))englishUI[k]=v;
+if(typeof englishUI==='object')Object.assign(englishUI,{'Gestern nochmal':'Repeat yesterday','Vortag übernehmen':'Copy previous day'});
 if(typeof page!=='undefined'&&page==='food')render();

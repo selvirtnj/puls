@@ -66,6 +66,7 @@ function runCaloriesEstimate(options={}){let {weightKg,movingSeconds}=options,me
 const WORKOUT_MET=3.5;
 function workoutKcalEstimate(workout){
   if(!workout?.finished||workout.autoFinished||!(workout.durationSeconds>0)||!Number.isFinite(workout.durationSeconds))return null;
+  if(Number.isFinite(workout.kcal))return workout.kcal; // gemessen (Apple Health, nur Aktivenergie), geht der Schätzung vor
   let kg=runLatestWeight(state,workout.date);return kg>=30&&kg<=300?Math.round(WORKOUT_MET*kg*workout.durationSeconds/3600):null;
 }
 // Uses the same speed/ascent MET as gross estimates; never subtract resting energy
@@ -182,16 +183,6 @@ function runMaxSpeed(points){
   measure(group);return best===null?null:Math.round(best*10)/10;
 }
 
-// Time between accepted fixes in the same segment; includes unmarked stops and
-// signal gaps. This is segment time, not an inferred auto-pause measurement.
-function runMovingStats(points){
-  const accepted=runAcceptedPoints(points);let movingSeconds=0,meters=0;
-  for(let i=1;i<accepted.length;i++){
-    const a=accepted[i-1],b=accepted[i];if(a[4]!==b[4])continue;
-    movingSeconds+=Math.max(0,(b[0]-a[0])/1000);meters+=runMeters(a,b);
-  }
-  return {movingSeconds,distanceKm:meters/1000};
-}
 
 // Baseline goals wait for this complete activity module; earlier render calls
 // must not persist a temporary target without sport. Later renders are idempotent.

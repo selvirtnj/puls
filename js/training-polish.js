@@ -58,3 +58,40 @@ const polishWorkoutCard=workoutCard;workoutCard=function(w,...args){
   return w&&!w.finished?html.replace(/<span class="badge">(Läuft|Running)<\/span>/,'<span class="badge runningbadge"><i aria-hidden="true"></i>$1</span>'):html;
 };
 if(typeof englishUI==='object')Object.assign(englishUI,{'Übung suchen oder neu benennen':'Search or name a new exercise','Als eigene Übung hinzufügen':'Add as your own exercise'});
+
+// Satzvorschlag (doppelte Progression) aus dem letzten Training; nur Vorschlag, nie als erledigt markiert.
+// Gewichte sind in PULS immer kg (Importe rechnen lbs um), deshalb kein lb-Schritt.
+function nextSetSuggestion(w,e,setIndex){
+  let old=previousPerformance(w,e)?.sets[setIndex];
+  if(!old)return null;
+  let reps=Number(old.reps),kg=old.kg===''||old.kg==null?'':Number(old.kg);
+  if(!Number.isInteger(reps)||reps<1||(kg!==''&&!Number.isFinite(kg)))return null;
+  if(kg===''||kg<=0||reps<12)return {kg,reps:reps+1};
+  return {kg:Math.round((kg+(kg>=20?2.5:1))*10)/10,reps:8};
+}
+function applySetSuggestion(wid,eid,index){
+  let w=state.workouts.find(x=>x.id===wid),e=w?.exercises.find(x=>x.id===eid),s=e?.sets[index];
+  if(!w||w.finished||!s||s.done)return;
+  let suggestion=nextSetSuggestion(w,e,index);
+  if(!suggestion)return;
+  setValue(wid,eid,index,'kg',suggestion.kg);
+  setValue(wid,eid,index,'reps',suggestion.reps);
+  render();
+  if(typeof pulsSound==='function')pulsSound('save');
+}
+// Importierte RPE und Notizen nur lesend; Schlüssel wie im CSV-Kopf, Groß-/Kleinschreibung egal.
+function setHintMarkup(w,e,index,s){
+  if(!s)return '';
+  let fields=Object.entries(s.csvFields||{}).map(([k,v])=>[String(k).trim().toLowerCase(),String(v).replace(/\s+/g,' ').trim()]).filter(([,v])=>v);
+  let rpe=fields.find(([k])=>k==='rpe')?.[1],notes=fields.filter(([k])=>['notes','notiz','note','exercise_notes'].includes(k)).map(([,v])=>v).join(' · ');
+  let note=rpe||notes?`<p class="setnote">${rpe?`<span>RPE</span> ${esc(rpe)}`:''}${rpe&&notes?' · ':''}${notes?`<span>Notiz</span>: ${esc(notes)}`:''}</p>`:'';
+  let suggestion=w.finished||s.done?null:nextSetSuggestion(w,e,index);
+  if(!suggestion)return note;
+  let target=suggestion.kg===''||suggestion.kg===0?`${suggestion.reps} <span>Wdh</span>`:`${n(suggestion.kg)} × ${suggestion.reps}`;
+  return note+`<button class="setsuggest" aria-label="Ziel übernehmen" onclick="applySetSuggestion('${w.id}','${e.id}',${index})"><span>Ziel</span> ${target}</button>`;
+}
+const setHintExerciseCard=exerciseCard;exerciseCard=function(w,e,index){
+  let k=0;
+  return setHintExerciseCard(w,e,index).replace(/<div class="liveset (?!setlabels)[^"]*">[\s\S]*?<\/div>/g,row=>{let i=k++;return row+setHintMarkup(w,e,i,e.sets[i])});
+};
+if(typeof englishUI==='object')Object.assign(englishUI,{'Notiz':'Note','Wdh':'reps','Ziel übernehmen':'Apply target'});

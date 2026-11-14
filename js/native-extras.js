@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const bridge=window.webkit?.messageHandlers?.pulsNative,features=window.pulsNativeFeatures||[];
-if(!bridge||!features.some(f=>['barcodeScanner','healthWrite','localReminders'].includes(f)))return;
+if(!bridge||!features.some(f=>['barcodeScanner','healthWrite','healthRead','localReminders'].includes(f)))return;
 const has=f=>features.includes(f),pending=new Map();
 const session=globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
 let serial=0,scan=null,contextOwner=null,healthActive=false,syncTimer=null,syncing=false,syncAgain=false,statusText='',healthRevision=0,reminderRevision=0,deviceReminders={};
@@ -21,6 +21,8 @@ window.pulsNativeExtrasReceive=function(message){
   clearTimeout(p.timer);pending.delete(message.requestId);
   if(message.ok===false)p.reject(Error(message.status||'unavailable'));else p.resolve(message);
 };
+// Gemeinsame Anbindung für js/health-read.js (Lesen aus Apple Health); nur in der Hülle vorhanden.
+globalThis.pulsNativeExtras={request,owner,has,preview,safe:()=>safeToExport(),showStatus:text=>showStatus(text)};
 // Reuse the final web lookup path, including checksum, cached products and OFF review.
 if(has('barcodeScanner')&&typeof startBarcodeCamera==='function'){
   const webStart=startBarcodeCamera,webStop=stopBarcode;
@@ -49,7 +51,7 @@ function samples(){
   const result=[],now=Date.now(),finite=x=>typeof x==='number'&&Number.isFinite(x);
   for(const w of state.weights||[]){
     // A weight has day resolution only. Health gets the start of that local calendar day.
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(w.date)||!finite(w.kg)||w.kg<20||w.kg>400)continue;
+    if(w.source==='health'||!/^\d{4}-\d{2}-\d{2}$/.test(w.date)||!finite(w.kg)||w.kg<20||w.kg>400)continue;
     const day=new Date(w.date+'T00:00:00'),start=day.getTime();if(!finite(start)||start>now||day.getFullYear()!==Number(w.date.slice(0,4))||day.getMonth()+1!==Number(w.date.slice(5,7))||day.getDate()!==Number(w.date.slice(8,10)))continue;
     result.push({key:'weight:'+w.date,kind:'weight',start,end:start,kg:w.kg,dateOnly:true});
   }
@@ -58,7 +60,7 @@ function samples(){
     result.push({key:'workout:'+w.id,kind:'strength',start:w.startedAt,end:w.finishedAt,duration:w.durationSeconds});
   }
   for(const r of state.runs||[]){
-    if(!r.id||!finite(r.startedAt)||!finite(r.durationSeconds)||r.durationSeconds<=0)continue;
+    if(r.source==='health'||!r.id||!finite(r.startedAt)||!finite(r.durationSeconds)||r.durationSeconds<=0)continue;
     if(!finite(r.pauseSeconds)||r.pauseSeconds<0)continue;
     const pause=r.pauseSeconds,end=r.startedAt+(r.durationSeconds+pause)*1000;
     if(end>now||end<=r.startedAt||r.durationSeconds+pause>345600)continue;
@@ -96,9 +98,10 @@ function schedule(){clearTimeout(syncTimer);syncTimer=setTimeout(sync,350)}
 window.pulsNativeExtrasOpen=function(){
   if(preview()){openModal(txt('iPhone-Funktionen','iPhone features'),`<p class="note">${txt('Vorschau: Health und Erinnerungen werden hier nicht verändert.','Preview: Health and reminders are not changed here.')}</p>`);return}
   const health=has('healthWrite')?`<section class="dsgroup nativeextras-card"><label class="dsrow"><span class="dsrowtext"><span>Apple Health</span><small id="native-health-status">${healthActive&&preferences().healthEnabled?txt('Aktiv · Export','On · Export'):txt('Aus','Off')}</small></span><input class="qaswitch" id="native-health-enabled" type="checkbox" role="switch" aria-label="Apple Health" ${healthActive&&preferences().healthEnabled?'checked':''} onchange="pulsNativeHealthToggle(this.checked)"></label></section>`:`<section class="dsgroup nativeextras-card"><div class="dsrow"><span class="dsrowtext"><span>Apple Health</span><small>${txt('Nicht verfügbar','Unavailable')}</small></span></div></section>`;
+  const readRow=has('healthRead')&&typeof window.pulsNativeHealthReadRow==='function'?window.pulsNativeHealthReadRow():'';
   const weekdays=en()?['Sun','Mon','Tue','Wed','Thu','Fri','Sat']:['So','Mo','Di','Mi','Do','Fr','Sa'];
   const reminders=has('localReminders')?`<form onsubmit="pulsNativeRemindersSave(event)">${['training','weight'].map(key=>{const r=reminder(key),label=key==='training'?txt('Trainings-Erinnerung','Training reminder'):txt('Wiege-Erinnerung','Weight reminder');return `<fieldset class="dsgroup nativeextras-card"><legend>${label}</legend><label class="dsrow"><span class="dsrowtext">${txt('Aktiv','Enabled')}</span><input class="qaswitch" id="native-${key}-enabled" type="checkbox" role="switch" ${r.enabled?'checked':''}></label><label class="dsrow nativeextras-time"><span>${txt('Uhrzeit','Time')}</span><input id="native-${key}-time" type="time" value="${r.time}" required></label><div class="nativeextras-days" role="group" aria-label="${txt('Wochentage','Weekdays')}">${[2,3,4,5,6,7,1].map(day=>`<label><input type="checkbox" name="native-${key}-day" value="${day}" aria-label="${weekdays[day-1]}" ${r.days.includes(day)?'checked':''}><span aria-hidden="true">${weekdays[day-1].slice(0,1)}</span></label>`).join('')}</div></fieldset>`}).join('')}<button class="btn full">${txt('Speichern','Save')}</button></form>`:'';
-  openModal(txt('iPhone-Funktionen','iPhone features'),`<div class="nativeextras">${health}${reminders}<p id="native-extras-status" class="note" role="status">${statusText}</p></div>`);
+  openModal(txt('iPhone-Funktionen','iPhone features'),`<div class="nativeextras">${health}${readRow}${reminders}<p id="native-extras-status" class="note" role="status">${statusText}</p></div>`);
 };
 function paintHealth(){const node=$('native-health-enabled'),active=healthActive&&!!preferences().healthEnabled;if(node)node.checked=active;const status=$('native-health-status');if(status)status.textContent=active?txt('Aktiv · Export','On · Export'):txt('Aus','Off')}
 function showStatus(text){statusText=text;const node=$('native-extras-status');if(node)node.textContent=text}

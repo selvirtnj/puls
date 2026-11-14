@@ -78,7 +78,7 @@ function dsSeriesColors(html){
 if(typeof progressChart==='function'){const dsChartBase=progressChart;progressChart=function(...args){return dsSeriesColors(dsChartBase.apply(this,args))}}
 function homeDesign(){
   let chart=typeof progressChart==='function'?`<h2 class="dsgrouptitle">${dsText('Verlauf','Progress')}</h2><div class="dschart">${progressChart()}</div>`:'';
-  return `<div class="dshome">${dsEnergyCard()}${dsFoodGroup()}${dsTrainingGroup()}${dsBodyGroup()}${chart}</div>`;
+  return `<div class="dshome">${dsEnergyCard()}${dsFoodGroup()}${dsTrainingGroup()}${dsBodyGroup()}${typeof healthReadCard==='function'?healthReadCard():''}${chart}</div>`;
 }
 
 /* ---------- Passwort anzeigen/verbergen ---------- */

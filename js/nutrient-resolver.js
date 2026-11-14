@@ -93,7 +93,9 @@ async function ensure(catalogKeys) {
   await Promise.all([...new Set(valid.map(shardFor))].map(loadShard));
   return {ready:requested.filter(key => knownKey(key) && rowFor(key)), unavailable:requested.filter(key => !knownKey(key) || !rowFor(key))};
 }
-function ensureForEntries(entries) { return ensure((Array.isArray(entries) ? entries : []).map(entryKey).filter(Boolean)); }
+function recipeFor(entry) { return entry?.recipeId && typeof state === 'object' && Array.isArray(state.recipes) ? state.recipes.find(r => r.id === entry.recipeId) : null; }
+function entryKeys(entry) { const r = recipeFor(entry); return r && Array.isArray(r.ingredients) ? r.ingredients.map(x => x?.ck) : [entryKey(entry)]; }
+function ensureForEntries(entries) { return ensure((Array.isArray(entries) ? entries : []).flatMap(entryKeys).filter(Boolean)); }
 
 function consistent(item, row, amount, product = false) {
   if (!row || !Number.isFinite(amount) || amount <= 0 || baseUnit(item) !== 'g' || excluded(item)) return false;
@@ -135,9 +137,27 @@ function initialValues(item, amount, isProduct) {
   }
   return {values,origin,pending:false};
 }
+// Rezept-Eintrag: Zutaten (ck/nx/nutrients je 100 g) werden auf das Fertiggewicht umgelegt. Ein Wert gilt nur, wenn jede Zutat ihn kennt; sonst bleibt er unbekannt.
+// Passen die Makros des Eintrags nicht mehr zum Rezept (Rezept später geändert, stark vergrößert), gibt es keine Zusatzwerte.
+function resolveRecipeEntry(entry, recipe, result) {
+  const amount = entry.grams, ings = recipe.ingredients;
+  if (!Array.isArray(ings) || !ings.length || !(recipe.yield > 0) || !(amount > 0) || baseUnit(entry) !== 'g') return result;
+  const parts = ings.map(x => resolveProduct({...x, catalogKey:x?.ck}, {amount:x?.amount, unit:x?.unit}));
+  if (!parts.every(r => macros.every(k => r.values[k] !== null))) return result;
+  const row = Object.fromEntries(macros.map(k => [k, parts.reduce((s,r) => s + r.values[k], 0) * 100 / recipe.yield]));
+  if (!consistent({...entry, recipeId:undefined}, row, amount)) return result;
+  result.pending = parts.some(r => r.pending);
+  for (const key of keys) if (!macros.includes(key) && result.values[key] === null && parts.every(r => r.values[key] !== null)) {
+    const value = parts.reduce((s,r) => s + r.values[key], 0) * amount / recipe.yield;
+    if (finite(value)) { result.values[key] = value; result.origin[key] = parts.some(r => r.origin[key] === 'catalog') ? 'catalog' : 'snapshot'; }
+  }
+  return result;
+}
 function resolveEntry(entry) {
   const amount = entry?.grams;
   const result = initialValues(entry,amount,false);
+  const recipe = recipeFor(entry);
+  if (recipe) return resolveRecipeEntry(entry, recipe, result);
   const key = entryKey(entry);
   if (!knownKey(key)) return result;
   const row = rowFor(key), linked = validKey(entry.ck) ? null : linkedProduct(entry);

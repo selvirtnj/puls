@@ -31,7 +31,8 @@ function runRoundState(run=state.activeRun,elapsed=runElapsed(run)){
 function runAddLap(){let run=state.activeRun,seconds=runElapsed(run);if(!run||seconds<=0||seconds>172800||(run.laps?.length||0)>=1000||seconds<=(run.laps?.at(-1)||0))return null;(run.laps??=[]).push(seconds);save();return seconds}
 
 // Bestleistung: kein bisheriger Lauf war mindestens genauso weit und mindestens genauso schnell.
-function runAwards(){let previous=[],awards={};for(let r of pastRuns().filter(x=>runIsRun(x)&&x.distanceKm>0)){let pace=runPace(r),best=r.distanceKm>=1&&previous.length&&!previous.some(p=>p.distanceKm>=r.distanceKm&&runPace(p)<=pace);awards[r.id]={xp:best?25:0,wins:best?[runText('Lauf','Run')+' · '+runKm(r.distanceKm)+' km']:[],run:true};previous.push(r)}return awards}
+// Aus Apple Health importierte Läufe (source:'health') bringen weder XP noch Bestleistungen.
+function runAwards(){let previous=[],awards={};for(let r of pastRuns().filter(x=>runIsRun(x)&&x.distanceKm>0&&x.source!=='health')){let pace=runPace(r),best=r.distanceKm>=1&&previous.length&&!previous.some(p=>p.distanceKm>=r.distanceKm&&runPace(p)<=pace);awards[r.id]={xp:best?25:0,wins:best?[runText('Lauf','Run')+' · '+runKm(r.distanceKm)+' km']:[],run:true};previous.push(r)}return awards}
 const runningAwardsBase=workoutAwards;workoutAwards=function(...args){let awards=Object.assign(runAwards(),runningAwardsBase.apply(this,args));if(typeof activityDurationAwards==='function')for(let [id,a] of Object.entries(activityDurationAwards())){let old=awards[id]||{xp:0,wins:[],run:a.run};awards[id]={...old,xp:old.xp+a.xp,durationXp:a.xp}}return awards};
 
 // Trainingsserie: Lauftage zählen wie Trainingstage (drei volle Tage Pause unterbrechen weiterhin).
@@ -118,12 +119,6 @@ function runRouteString(points,limit=300){
   return parts.map(x=>x.pts.join(';')).join('|');
 }
 function runRoutePoints(route){return String(route||'').split('|').map(s=>s.split(';').map(x=>x.split(',').map(Number)).filter(p=>p.length===2&&p.every(Number.isFinite))).filter(s=>s.length>1)}
-function runRouteSvg(route){
-  let segs=runRoutePoints(route);if(!segs.length)return '';
-  let all=segs.flat(),lat0=all.reduce((a,p)=>a+p[0],0)/all.length,k=Math.cos(lat0*Math.PI/180),xs=all.map(p=>p[1]*k),ys=all.map(p=>p[0]),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),span=Math.max(maxX-minX,maxY-minY)||1e-6;
-  let pt=p=>`${(10+(p[1]*k-minX)/span*180+(180-(maxX-minX)/span*180)/2).toFixed(1)},${(10+(maxY-p[0])/span*180+(180-(maxY-minY)/span*180)/2).toFixed(1)}`;
-  return `<svg class="runroute" viewBox="0 0 200 200" role="img" aria-label="${runText('Strecke','Route')}">${segs.map(s=>`<polyline points="${s.map(pt).join(' ')}"/>`).join('')}<circle cx="${pt(segs[0][0]).split(',')[0]}" cy="${pt(segs[0][0]).split(',')[1]}" r="4"/></svg>`;
-}
 // Zwischengespeicherte Positionen von vor dem Lauf- bzw. Abschnittsbeginn werden verworfen.
 // Höhe (run-metrics.js): alt in m, altAcc in m; altAcc -1 = unbekannt (gleiche Konvention wie RunTracker.swift).
 function addRunPoint(t,lat,lon,acc,seg,alt,altAcc){
