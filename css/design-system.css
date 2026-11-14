@@ -1014,3 +1014,58 @@ html body .dshome .dsgrouplink { display: inline-flex; align-items: center; gap:
 html body .dshome .dsgrouplink svg { width: 16px; height: 16px; color: var(--ds-label-3); }
 /* Nicht antippbare Info-Zeile in einer Gruppe (z. B. Aktiv diese Woche). */
 html body .dshome .dsrow.dsinfo { cursor: default; }
+/* ---------- Runde 3 (HIG): Abschluss, Optionsblätter, Pausen-Popup, Erststart ---------- */
+/* Workout abschließen: Zusammenfassung und Körpergewicht als Gruppe, eine gefüllte Aktion, Zurück als Textknopf. */
+html body #modal .finishform { display: grid; gap: 12px; }
+html body #modal .finishform > h3 { margin: 0; font-size: 17px; font-weight: 600; line-height: 22px; color: var(--ds-label); letter-spacing: normal; }
+html body #modal .finishform > .finishsummary { display: grid; max-width: none; margin: 0; border-radius: 12px; background: var(--ds-surface); overflow: hidden; color: var(--ds-label); font-size: 17px; font-weight: 400; line-height: 22px; font-variant-numeric: tabular-nums; }
+html body #modal .finishform > .finishsummary > span { display: block; padding: 11px 16px; }
+html body #modal .finishform > .finishsummary > span + span { border-top: .5px solid var(--ds-separator); }
+html body #modal .finishform > .finishsummary .finishwarn { font-size: 17px; }
+html body #modal .finishform label.finishweight { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; margin: 0; padding: 0 16px; border-radius: 12px; background: var(--ds-surface); color: var(--ds-label); font-size: 17px; font-weight: 400; }
+html body #modal .finishform label.finishweight > input { width: 120px; min-height: 44px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent !important; color: var(--ds-label); font-size: 17px; text-align: right; }
+html body #modal .finishform .finishback { min-height: 44px; }
+html body #modal .dangertext { color: var(--ds-red-text) !important; }
+/* Bestätigungen und Optionsblätter: Beschreibung über der Aktionsgruppe. */
+#modal .exerciseactions { margin-top: 4px; }
+#modal #mb > p:has(+ .exerciseactions) { margin: 0 0 12px; font-size: 15px; line-height: 20px; color: var(--ds-label-2); }
+/* Pausen-Standardeinstellung: Schalter statt Häkchen. */
+#mb .restgroup .restapply > input.qaswitch[type=checkbox] { margin: 0 0 0 12px !important; }
+/* Pausen-Pop-up: Zwischentitel in normaler Schrift. */
+html body #rest-popup .restpopupnext { text-transform: none !important; letter-spacing: normal !important; }
+/* Abschlussseiten: Inhalt mittig, Hauptaktion unten. */
+html body #session-root .completion:not(.activitydone):not(.workout-ranks) > :is(.celebration, .streakhero), html body #session-root .completion:not(.activitydone):not(.workout-ranks) > .completioncontinue { margin-top: auto; }
+html body #session-root .completion:not(.activitydone):not(.workout-ranks) > :nth-last-child(2) { margin-bottom: 24px; }
+html body #session-root .completion .dsgroup { width: 100%; margin: 16px 0 0; text-align: left; }
+html body #session-root .completion .dsrow { font-size: 17px; }
+html body #session-root .completionwins .recordwin { display: flex; gap: 12px; color: var(--ds-label) !important; font-size: 17px; }
+html body #session-root .completionwins .recordwin > svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--ds-green-text); }
+html body #session-root .completionwins .recordwin small { font-size: 15px; color: var(--ds-label-2); }
+html body #session-root .completion .completionxp { margin: 16px 0 0; }
+html body #session-root .completion details { margin-top: 12px; }
+/* Import (Erststart, Konto): Gruppen, Schalter, Einheit als Segmented Control. */
+html body #modal .importoffer, html body #modal .importfile, html body #modal .importsummary, html body #modal .importroutines { margin: 0 0 12px; }
+html body #modal .importsummary + .importunits, html body #modal .importunits { margin: 0 0 12px; }
+html body #modal .importsummary { margin-top: 12px; }
+html body #modal .importoffer + .btn.full { margin-top: 0; }
+html body #modal .importsummary .dsrow.dsinfo, html body #modal .importroutines .dsrow.dsinfo { cursor: default; }
+/* Profil & Ziele (Erststart und Konto): Abschnitte als gruppierte Listen, Abschnittstitel ohne Großschreibung. */
+html body #modal #mb.profilemodal #planner-form { grid-template-columns: minmax(0, 1fr); }
+html body #modal #mb.profilemodal #planner-form .formsection { min-width: 0; position: relative; display: block; margin: 40px 0 0 !important; padding: 0 !important; border: 0 !important; border-radius: 12px; background: var(--ds-surface) !important; }
+html body #modal #mb.profilemodal #planner-form .formsection > .label { position: absolute; left: 16px; top: -33px; margin: 0 !important; font-size: 20px !important; font-weight: 600 !important; line-height: 25px !important; letter-spacing: normal !important; text-transform: none !important; color: var(--ds-label) !important; }
+html body #modal #mb.profilemodal #planner-form .formsection > :not(.label):not([hidden]):not(.profileoff):not(input) { border-top: .5px solid var(--ds-separator); }
+html body #modal #mb.profilemodal #planner-form .formsection > .label + * { border-top: 0; }
+html body #modal #mb.profilemodal #planner-form .formgrid { display: block; gap: 0; margin: 0 !important; }
+html body #modal #mb.profilemodal #planner-form .formsection .segmented button { font-size: 13px !important; }
+html body #modal #mb.profilemodal #planner-form .formgrid > label:not([hidden]):not(.profileoff) ~ label:not([hidden]):not(.profileoff) { border-top: .5px solid var(--ds-separator); }
+html body #modal #mb.profilemodal #planner-form .formsection label:not(:has(.segmented)):not(.checklabel) { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; margin: 0; padding: 0 16px; color: var(--ds-label); font-size: 17px; font-weight: 400; }
+html body #modal #mb.profilemodal #planner-form .formsection label:not(:has(.segmented)):not(.checklabel) :is(input:not([type=checkbox]), select) { flex: 0 0 auto; width: 104px; min-height: 36px; margin: 0; padding: 0 10px; border: 0 !important; border-radius: 8px; background-color: var(--ds-fill) !important; color: var(--ds-label); font-size: 17px; text-align: right; }
+html body #modal #mb.profilemodal #planner-form .formsection label:not(:has(.segmented)):not(.checklabel) select:not([multiple]) { width: auto; max-width: 72%; padding: 0 22px 0 0; background-color: transparent !important; color: var(--ds-label-2); text-align-last: right; }
+html body #modal #mb.profilemodal #planner-form .formsection label:has(.segmented) { display: grid; gap: 8px; margin: 0; padding: 12px 16px; color: var(--ds-label-2); font-size: 13px; font-weight: 400; }
+html body #modal #mb.profilemodal #planner-form .formsection label.checklabel { display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; margin: 0; padding: 4px 16px; color: var(--ds-label); font-size: 17px; font-weight: 400; cursor: pointer; }
+html body #modal #mb.profilemodal #planner-form .formsection label.checklabel > input.qaswitch { margin: 0 !important; }
+html body #modal #mb.profilemodal #planner-form .formsection .previewbox { padding: 12px 16px; }
+html body #modal #mb.profilemodal #planner-form .formsection:has(> .previewbox:empty) { display: none; }
+html body #modal label.dsselectrow { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; color: var(--ds-label); font-size: 17px; font-weight: 400; }
+html body #modal .dsselectrow > select { flex: 0 0 auto; width: auto; max-width: 55%; min-height: 44px; margin: 0; padding: 0 22px 0 0; border: 0; background-color: transparent !important; color: var(--ds-label-2); font-size: 17px; text-align-last: right; }
+html body #modal #mb.profilemodal #planner-form #pace-info { margin: 0; padding: 8px 16px; font-size: 13px; color: var(--ds-label-2); }

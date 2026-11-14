@@ -15,7 +15,7 @@ const profileLabelText={
   'pr-age':'Alter','pr-height':'Größe (cm)','pr-weight':'Gewicht (kg)','pr-target':'Zielgewicht (kg)',
   'pr-activity':'Aktivität','pr-method':'Ruheumsatz','pr-kcal-mode':'Kalorienberechnung','pr-baseline-factor':'Alltag ohne Sport','pr-rmr':'Gemessener Ruheumsatz (kcal)',
   'pl-mode':'Kalorienziel','pl-direction':'Richtung','pl-pace':'Tempo','manual-kcal':'Kalorien (kcal/Tag)',
-  'pl-macros':'Makros','pl-protein':'Protein (g/kg)','pl-fat':'Fett (g/kg)',
+  'pl-macros':'Berechnung','pl-protein':'Protein (g/kg)','pl-fat':'Fett (g/kg)',
   'manual-p':'Protein (g)','manual-c':'Kohlenhydrate (g)','manual-f':'Fett (g)',
   'pl-adaptive':'Ziele bei neuen Gewichtseinträgen anpassen','pl-learn-tdee':'Erhalt aus Tagebuch und Gewicht lernen'
 };

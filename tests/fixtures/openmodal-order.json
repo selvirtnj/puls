@@ -272,8 +272,8 @@
    },
    "de:globalRestSettings()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Globale Trainingspause | body=523:62f0ffedd237 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
-    "titel": "Globale Trainingspause",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Standardpause | body=523:62f0ffedd237 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "titel": "Standardpause",
     "laenge": 523,
     "sha256": "62f0ffedd2375387ae90ee7b6127d4a2361f58835f662d398e558afd9b9366d9",
     "rueckgabe": "!minutes?.closest is not a function",
@@ -285,8 +285,8 @@
    },
    "en:globalRestSettings()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Globale Trainingspause | body=523:62f0ffedd237 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
-    "titel": "Globale Trainingspause",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Standardpause | body=523:62f0ffedd237 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "titel": "Standardpause",
     "laenge": 523,
     "sha256": "62f0ffedd2375387ae90ee7b6127d4a2361f58835f662d398e558afd9b9366d9",
     "rueckgabe": "!minutes?.closest is not a function",
@@ -1350,8 +1350,8 @@
    },
    "de:globalRestSettings()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher preview-mode#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Globale Trainingspause | body=523:62f0ffedd237 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
-    "titel": "Globale Trainingspause",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Standardpause | body=523:62f0ffedd237 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "titel": "Standardpause",
     "laenge": 523,
     "sha256": "62f0ffedd2375387ae90ee7b6127d4a2361f58835f662d398e558afd9b9366d9",
     "rueckgabe": "!minutes?.closest is not a function",
@@ -1363,8 +1363,8 @@
    },
    "en:globalRestSettings()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher preview-mode#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Globale Trainingspause | body=523:62f0ffedd237 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
-    "titel": "Globale Trainingspause",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Standardpause | body=523:62f0ffedd237 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "titel": "Standardpause",
     "laenge": 523,
     "sha256": "62f0ffedd2375387ae90ee7b6127d4a2361f58835f662d398e558afd9b9366d9",
     "rueckgabe": "!minutes?.closest is not a function",

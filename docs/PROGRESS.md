@@ -4,11 +4,13 @@ Stand 14.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Live
 
-- **Version 115** auf `main` (Überarbeitung nach Apple HIG, Runde 2: Fenster und Unterseiten, 14.11.). Offen für eine dritte Runde: Workout-Abschluss-Ablauf, Übungs-Optionsblätter, Erststart-Ablauf nach dem Willkommen, Englisch und VoiceOver im Ganzen, Prüfung auf dem iPhone. GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
+- **Version 116** auf `main` (Überarbeitung nach Apple HIG abgeschlossen: Tabs, Fenster, Unterseiten und Abläufe, 14.11.). Offen: Prüfung auf dem iPhone (Safe Areas, Profilbogen mit `:has()`), VoiceOver, Freunde mit echtem Konto. GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
 - Der Refactor nach [ISSUES.md](ISSUES.md) ist mit den Phasen 0 bis 5 abgeschlossen (Versionen 99 bis 105); Version 106 hat die Reste aufgeräumt. Vom Audit vom 13.11.2026 (ISSUES.md) sind die Punkte 1 und 3 (Version 107) sowie 2, 4 bis 7, 10 und 12 bis 14 (Version 108) und 11 und 15 (Version 109) behoben; 8 und 9 bleiben bewusst so. Es gibt nur den Branch `main`.
 
 ## Letzte Versionen
+
+- **116** (14.11.): Apple-HIG-Überarbeitung Runde 3. Workout abschließen als Gruppen (Körpergewicht-Zeile, Schalter „Pausen übernehmen“), Erfolgsansicht mit Level-Fortschrittsbalken, „Workout verwerfen?“ als Action-Sheet mit rotem Knopf. Übungen sortieren, Superset und Standardpause als iOS-Sheets. Erststart-Bogen Profil & Ziele und Workout-Import als gruppierte Listen mit Segmented Controls. Englische Texte ergänzt; Standardname neuer Workouts „Empty workout“ bzw. „Freies Training“. Neuer Test `check-hig-workout`. Von Codex gegengeprüft.
 
 - **115** (14.11.): Apple-HIG-Überarbeitung Runde 2. Laufendes Workout: „Beenden“ einzige gefüllte Aktion, „Verwerfen“ rot, Pausenknopf „Stopp“, Übungsfilter und Fortschritt „Woche/Monat“ als Segmented Control; Workout-Name optional (leer = „Freies Training“). Essen-Fenster: Titelzeile „Essen hinzufügen“, Produktdetail (Deckfläche verdeckte „Portion speichern“ und Quellenhinweis — behoben), „Eintrag bearbeiten“ mit rotem Löschen, Wasser-/Nährstoffziele, Eigene Werte, Rezepte, Kombis als Gruppenzeilen, Reiterschrift 13 px. Konto: „Rang unbekannt“ nicht mehr doppelt, Freunde & Bestenliste als gruppierte Listen (Statusmeldungen bleiben in allen Bestenlisten-Ansichten sichtbar), Gewichtsverlauf als eigene Unterseite, Sprache als Segmented Control. Lauf: Startansicht lesbar, Routen, Routen-Planer (echter Schalter „Wegen folgen“), Zusammenfassung und Aktivität ansehen als Gruppen. Neue Tests `check-food-hig2`, `check-hig-account`. Von Codex gegengeprüft.
 

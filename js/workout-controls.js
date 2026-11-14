@@ -29,10 +29,10 @@ const controlsFinish=finishWorkout;finishWorkout=function(...args){
   if(w){
     let sets=w.exercises.flatMap(e=>e.sets||[]),done=sets.filter(s=>s.done).length,open=sets.length-done,summary=form.querySelector(':scope > p');
     // Kurz, aber die Warnung bleibt: nicht abgehakte Sätze werden beim Abschließen verworfen.
-    if(summary)summary.innerHTML=(en?`${done} of ${sets.length} sets done`:`${done} von ${sets.length} ${sets.length===1?'Satz':'Sätzen'} erledigt`)+(open?`<br><span class="finishwarn">${en?`${open} open ${open===1?'set is':'sets are'} discarded`:`${open} offene${open===1?'r Satz wird':' Sätze werden'} verworfen`}</span>`:'');
+    if(summary){summary.className='finishsummary';summary.innerHTML=`<span>${en?`${done} of ${sets.length} sets done`:`${done} von ${sets.length} ${sets.length===1?'Satz':'Sätzen'} erledigt`}</span>`+(open?`<span class="finishwarn">${en?`${open} open ${open===1?'set is':'sets are'} discarded`:`${open} offene${open===1?'r Satz wird':' Sätze werden'} verworfen`}</span>`:'')}
   }
-  let label=$('finish-bodyweight')?.closest('label');if(label)label.firstChild.textContent=en?'Body weight · kg (optional) ':'Körpergewicht · kg (optional) ';
-  let [submit,back]=form.querySelectorAll('button');if(submit)submit.textContent=en?'Finish workout':'Workout abschließen';if(back)back.textContent=en?'Back':'Zurück';
+  let label=$('finish-bodyweight')?.closest('label');if(label){label.classList.add('finishweight');label.firstChild.textContent=en?'Body weight (kg) ':'Körpergewicht (kg) ';$('finish-bodyweight').placeholder='optional'}
+  let [submit,back]=form.querySelectorAll('button');if(submit)submit.textContent=en?'Finish workout':'Workout abschließen';if(back){back.className='textbtn full finishback';back.textContent=en?'Back':'Zurück'}
   return result;
 };
 
@@ -48,7 +48,7 @@ const controlsSession=renderWorkoutSession;renderWorkoutSession=function(...args
   if(content&&!content.querySelector('.sessionrestsetting')){
     let seconds=state.workoutSettings?.restSeconds??120,button=document.createElement('button');
     button.type='button';button.className='textbtn sessionrestsetting';button.setAttribute('onclick','globalRestSettings()');
-    button.textContent=(state.language==='en'?'Rest timer ':'Pausenzeit ')+formatClock(seconds);
+    button.textContent=(state.language==='en'?'Default rest ':'Standardpause ')+formatClock(seconds);
     content.querySelector(':scope > h2')?.insertAdjacentElement('afterend',button);
   }
   // „Workout verwerfen“ oben rechts neben dem Routinennamen (bestehende requestDiscardWorkout mit Bestätigung).
@@ -84,7 +84,7 @@ const controlsRestSettings=globalRestSettings;globalRestSettings=function(...arg
   plus.addEventListener('click',()=>set(Math.floor(total()/restStep)*restStep+restStep));
   let apply=$('rest-apply')?.closest('label');
   if(apply){
-    apply.classList.add('restrow','restapply');
+    apply.classList.add('restrow','restapply');$('rest-apply').classList.add('qaswitch');$('rest-apply').setAttribute('role','switch');
     apply.lastChild.textContent='';
     let text=document.createElement('span');text.className='restlabel';text.textContent=en?'Also apply to routines and the running workout':'Auch für Routinen und das laufende Workout';
     apply.prepend(text);group.append(apply);

@@ -636,3 +636,4 @@ Object.assign(englishUI,{
  "Alle Nährwerte": "All nutrients",
  "Alle Nährstoffe": "All nutrients"
 });
+Object.assign(englishUI,{'Beenden':'Finish','Supersatz':'Superset','Übungen verschieben':'Reorder exercises','Workout verwerfen?':'Discard workout?','Übung entfernen?':'Remove exercise?','Standardpause':'Default rest','Berechnung':'Calculation','Bestleistung':'Personal best'});

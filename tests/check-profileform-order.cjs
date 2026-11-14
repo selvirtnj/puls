@@ -219,6 +219,7 @@ assert.deepEqual(jsFiles.filter(f=>/=\s*profileForm\s*;/.test(code(f))),[],'kein
 
 // 2. Ablauf und Ergebnis wie in der alten Kette.
 const golden=JSON.parse(fs.readFileSync(FIXTURE,'utf8')),now=both('new');
+if(process.argv.includes('--accept-ui')){require('./accept-ui.cjs')(FIXTURE,golden,{alt:golden.alt,...now},{html:['ops','opsSha256','formLaenge','formSha256']});process.exit(0)} // nur HTML- und Beschriftungswerte neu, nach gewollter UI-Änderung
 assert.deepEqual(Object.keys(now.standard.faelle),Object.keys(golden.standard.faelle),'Zustände weichen vom Golden ab');
 for(const group of ['standard','erststart']){
  assert.equal(now[group].laden,golden[group].laden,`${group}: Aufrufe von profileForm während des Ladens weichen ab`);
