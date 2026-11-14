@@ -19,6 +19,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var locatePending = false
     private var locateTimeout: DispatchWorkItem?
     private let healthExporter = HealthExporter()
+    private let healthReader = HealthReader()
     private let reminderScheduler = ReminderScheduler()
     private var barcodeScanner: BarcodeScanner?
     private var barcodeScanID: String?
@@ -56,8 +57,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             guard let self = self, !loaded else { return }
             loaded = true
             if healthAvailable {
+                self.healthReader.available = true
                 self.webView.configuration.userContentController.addUserScript(WKUserScript(
-                    source: "window.pulsNativeFeatures.push('healthWrite');", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+                    source: "window.pulsNativeFeatures.push('healthWrite','healthRead');", injectionTime: .atDocumentStart, forMainFrameOnly: true))
             }
             self.webView.load(URLRequest(url: Self.home))
         }
@@ -121,8 +123,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                   !owner.isEmpty, owner.count <= 150 else { return }
             extrasOwner = owner
             healthExporter.setContext(owner)
+            healthReader.setContext(owner)
             reminderScheduler.setContext(owner)
-            sendExtras(requestID, ["healthEnabled": healthExporter.enabled(owner), "reminders": reminderScheduler.settings])
+            sendExtras(requestID, ["healthEnabled": healthExporter.enabled(owner), "healthReadEnabled": healthReader.enabled(owner), "reminders": reminderScheduler.settings])
         case "healthEnable":
             guard let requestID = body["requestId"] as? String, let owner = body["owner"] as? String,
                   owner == extrasOwner, let enabled = body["enabled"] as? Bool else { return }
@@ -134,6 +137,19 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                   owner == extrasOwner, let rows = body["samples"] as? [[String: Any]] else { return }
             healthExporter.sync(rows, owner: owner) { [weak self] status in
                 self?.sendExtras(requestID, ["ok": status != "unavailable", "status": status])
+            }
+        case "healthReadEnable":
+            guard let requestID = body["requestId"] as? String, let owner = body["owner"] as? String,
+                  owner == extrasOwner, let enabled = body["enabled"] as? Bool else { return }
+            healthReader.setEnabled(enabled, owner: owner) { [weak self] enabled in
+                self?.sendExtras(requestID, ["healthReadEnabled": enabled])
+            }
+        case "healthRead":
+            guard let requestID = body["requestId"] as? String, let owner = body["owner"] as? String,
+                  owner == extrasOwner else { return }
+            let days = min(35, max(1, (body["days"] as? NSNumber)?.intValue ?? 35))
+            healthReader.read(days: days, owner: owner) { [weak self] result in
+                self?.sendExtras(requestID, result)
             }
         case "remindersSet":
             guard let requestID = body["requestId"] as? String, let owner = body["owner"] as? String,
