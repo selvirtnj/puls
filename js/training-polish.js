@@ -88,7 +88,8 @@ function setHintMarkup(w,e,index,s){
   let suggestion=w.finished||s.done?null:nextSetSuggestion(w,e,index);
   if(!suggestion)return note;
   let target=suggestion.kg===''||suggestion.kg===0?`${suggestion.reps} <span>Wdh</span>`:`${n(suggestion.kg)} × ${suggestion.reps}`;
-  return note+`<button class="setsuggest" aria-label="Ziel übernehmen" onclick="applySetSuggestion('${w.id}','${e.id}',${index})"><span>Ziel</span> ${target}</button>`;
+  let amount=suggestion.kg===''||suggestion.kg===0?`${suggestion.reps} ${state.language==='en'?'reps':'Wdh'}`:`${n(suggestion.kg)} kg × ${suggestion.reps}`,aria=state.language==='en'?`Use target ${amount}`:`Ziel ${amount} übernehmen`;
+  return note+`<button class="setsuggest" aria-label="${esc(aria)}" onclick="applySetSuggestion('${w.id}','${e.id}',${index})"><span>Ziel</span> ${target}</button>`;
 }
 const setHintExerciseCard=exerciseCard;exerciseCard=function(w,e,index){
   let k=0;

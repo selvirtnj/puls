@@ -807,7 +807,7 @@ html body .actday { border: 0 !important; }
 html body .actday.future { opacity: 1 !important; color: var(--ds-label-2) !important; background: transparent !important; }
 html body .actday.today { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
 html body #content .metricgroups { display: flex !important; }
-html body #content .metricgroups > .btn { flex: 1 1 auto; padding: 0 6px !important; }
+html body #content .metricgroups > .btn { flex: 1 1 auto; min-height: 44px !important; padding: 0 6px !important; }
 .historyplot { color: var(--ds-accent); }
 html body .accountoverview .accountgoal, html body .accountoverview .accountbody { margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 12px !important; background: var(--ds-surface) !important; }
 .dsrowvalue { white-space: nowrap; }
@@ -925,7 +925,7 @@ html body .puls-splash.splashout { opacity: 0 !important; transition: opacity .2
    *-text erreicht 4.5:1 auf der Kartenfläche, *-fill trägt weiße Symbole/Schrift mit mindestens 4.5:1. */
 :root, :root[data-scheme=light] {
   --ds-cat-energy: #E2620B; --ds-cat-protein: #C42D4E; --ds-cat-carbs: #A87E00; --ds-cat-fat: #6E8424; --ds-cat-training: #1F63D1; --ds-cat-body: #23854A;
-  --ds-cat-energy-text: #B04A06; --ds-cat-training-text: #1A56B8; --ds-cat-body-text: #1D7340;
+  --ds-cat-energy-text: #A34505; --ds-cat-training-text: #1A56B8; --ds-cat-body-text: #1D7340;
   --ds-cat-training-fill: #1F63D1; --ds-cat-body-fill: #23854A;
   --ds-cat-over: #D70015;
 }
@@ -989,9 +989,9 @@ html body .fb-meter i { background: var(--ds-cat-training); }
 :root[data-scheme=light][data-palette=fresh] {
   --ds-bg: #F3F6F2; --ds-surface: #FDFEFC; --ds-surface-2: #EEF3EC; --ds-field: #E8EEE6; --ds-fill: #DFE7DC; --ds-selected: #FDFEFC;
   --ds-sheet: #F3F6F2; --ds-bar: #F8FAF7; --ds-separator: #C9D3C6; --ds-label: #121812; --ds-label-2: #56625A; --ds-label-3: #7E8A82; --ds-placeholder: #5F6B63;
-  --ds-accent: #1E8E4E; --ds-accent-text: #187A42; --ds-accent-fill: #1A7F45; --ds-button-2: #DFE7DC;
+  --ds-accent: #1E8E4E; --ds-accent-text: #166E3B; --ds-accent-fill: #1A7F45; --ds-button-2: #DFE7DC;
   --ds-cat-energy: #D9640F; --ds-cat-energy-text: #A94A06; --ds-cat-energy-fill: #C2540A;
-  --ds-cat-body: #1E8E4E; --ds-cat-body-text: #187A42; --ds-cat-body-fill: #1A7F45;
+  --ds-cat-body: #1E8E4E; --ds-cat-body-text: #166E3B; --ds-cat-body-fill: #1A7F45;
 }
 :root[data-scheme=light][data-palette=fresh] dialog { --ds-surface: #FDFEFC; --ds-field: #E8EEE6; }
 :root[data-scheme=dark][data-palette=midnight] {

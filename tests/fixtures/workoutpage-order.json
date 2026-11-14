@@ -95,8 +95,8 @@
    },
    "verlauf-en": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
-    "laenge": 11370,
-    "sha256": "c05da9f76b4b03e277fbe80fb301e453cc3c8e3a52faba13541fb4d5247a87d6",
+    "laenge": 11360,
+    "sha256": "5534a551f878194333477ed94410cf42880fe214917db2229b20b08ef5d0ad10",
     "zustand": "b98d1efb18bcb31fb31b2297565a5f849e1546dfa5d3a23b417a35667b619294"
    },
    "verlauf-anderer-tag": {
@@ -191,8 +191,8 @@
    },
    "design-liftoff": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
-    "laenge": 12002,
-    "sha256": "0433b2f00942604bcd2cffca3ed93aa650f85308c9fd8acaa1730c4b7fe8bcd4",
+    "laenge": 11982,
+    "sha256": "24a6dfb42032d41d080b4a716ab2138def0de06be884c2726bc9bf6511520726",
     "zustand": "18b47cbce4bc711840f9e92f443522881bec9708adb4263f8f281ced36116212"
    },
    "favoriten": {
@@ -270,13 +270,13 @@
    "tab:insights:verlauf": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
     "laenge": 13927,
-    "sha256": "dfc4c9c0f82275c3a2eff0a2bad15be68a98a8d121bd0fe842ced8d231b76bba",
+    "sha256": "9a95432fb9f30ceb163655171319583127580eb590bfe335b2b58b50b7a5cfc0",
     "zustand": "791cd3cc537368c63f917758bead41a4ebedbbaddee6017b4ce2d27ef4b96456"
    },
    "tab:insights:verlauf-en": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
     "laenge": 13927,
-    "sha256": "dfc4c9c0f82275c3a2eff0a2bad15be68a98a8d121bd0fe842ced8d231b76bba",
+    "sha256": "9a95432fb9f30ceb163655171319583127580eb590bfe335b2b58b50b7a5cfc0",
     "zustand": "791cd3cc537368c63f917758bead41a4ebedbbaddee6017b4ce2d27ef4b96456"
    },
    "tab:insights:aktiv": {
@@ -294,13 +294,13 @@
    "tab:records:verlauf": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
     "laenge": 13937,
-    "sha256": "3ff1aa4e6f7bf09d84e9962608ae7547953cc8aecc4850b98bdbe64836c0f9f9",
+    "sha256": "be73004cc32d7950233062dbef16dce309fc81784314512a134b291f8016757b",
     "zustand": "e3fb58682fc480aada268f3fc4f485b7f6c13de7d7050217215209df9d2f0c87"
    },
    "tab:records:verlauf-en": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
     "laenge": 13937,
-    "sha256": "3ff1aa4e6f7bf09d84e9962608ae7547953cc8aecc4850b98bdbe64836c0f9f9",
+    "sha256": "be73004cc32d7950233062dbef16dce309fc81784314512a134b291f8016757b",
     "zustand": "e3fb58682fc480aada268f3fc4f485b7f6c13de7d7050217215209df9d2f0c87"
    },
    "tab:records:aktiv": {
@@ -317,14 +317,14 @@
    },
    "tab:unbekannt:verlauf": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
-    "laenge": 12012,
-    "sha256": "cb68fb11adda2347422947a54a4706d517b511c88b66bffd8c826da765f97b73",
+    "laenge": 11992,
+    "sha256": "89ca1563d552bb34238c22c82604e05b3e36fa7604b69dac04b431420c2a9d8f",
     "zustand": "2aee1f798254c2dbf4d779b2df5b132f80c42fc1cb6a50978f2bd5ee562bfe66"
    },
    "tab:unbekannt:verlauf-en": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
-    "laenge": 12012,
-    "sha256": "cb68fb11adda2347422947a54a4706d517b511c88b66bffd8c826da765f97b73",
+    "laenge": 11992,
+    "sha256": "89ca1563d552bb34238c22c82604e05b3e36fa7604b69dac04b431420c2a9d8f",
     "zustand": "2aee1f798254c2dbf4d779b2df5b132f80c42fc1cb6a50978f2bd5ee562bfe66"
    },
    "tab:unbekannt:aktiv": {
@@ -371,8 +371,8 @@
    },
    "render:training": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
-    "laenge": 12002,
-    "sha256": "0433b2f00942604bcd2cffca3ed93aa650f85308c9fd8acaa1730c4b7fe8bcd4",
+    "laenge": 11982,
+    "sha256": "24a6dfb42032d41d080b4a716ab2138def0de06be884c2726bc9bf6511520726",
     "zustand": "00ef7c7be5b3be32feadc4fee559e66bac733af25dac89bbe32004d72519f03f"
    },
    "render:training-aktiv": {
@@ -389,8 +389,8 @@
    },
    "render:training-en": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
-    "laenge": 12002,
-    "sha256": "0433b2f00942604bcd2cffca3ed93aa650f85308c9fd8acaa1730c4b7fe8bcd4",
+    "laenge": 11982,
+    "sha256": "24a6dfb42032d41d080b4a716ab2138def0de06be884c2726bc9bf6511520726",
     "zustand": "00ef7c7be5b3be32feadc4fee559e66bac733af25dac89bbe32004d72519f03f"
    },
    "render:kalender": {
@@ -408,13 +408,13 @@
    "render:fortschritt": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
     "laenge": 12015,
-    "sha256": "2a0ae8bc6090850d4d35c7b8c30827f098a2359fc67b0a2dc8409a36b12f5014",
+    "sha256": "96c617ec11c364630a6df4cc7edf0fa0139dfd4cbda91f2c547d7a497dedc3be",
     "zustand": "2520d7a175185ac423032eda270063f52b4979b0d6cec4a630bfd052d3a9931b"
    },
    "go:training": {
     "ablauf": "kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1 kern:flows tracker-tools#1 account-guide#1 refinement#1 training-polish#1 running#1",
-    "laenge": 12002,
-    "sha256": "0433b2f00942604bcd2cffca3ed93aa650f85308c9fd8acaa1730c4b7fe8bcd4",
+    "laenge": 11982,
+    "sha256": "24a6dfb42032d41d080b4a716ab2138def0de06be884c2726bc9bf6511520726",
     "zustand": "00ef7c7be5b3be32feadc4fee559e66bac733af25dac89bbe32004d72519f03f"
    }
   }

@@ -70,7 +70,7 @@ html body .fdswitch { background: color-mix(in srgb, var(--ds-cat-energy) 14%, v
 html body .fdswitch button { position: relative; min-height: 32px; }
 /* 32 px Segment wie iOS, Tippfläche unsichtbar auf 44 px erweitert. */
 html body .fdswitch button::after { content: ""; position: absolute; inset: -6px 0; }
-html body .fddot { width: 36px; }
+html body .fddot { width: 44px; }
 html body .fdswitch button[aria-pressed=true] { background: var(--ds-cat-energy-fill) !important; color: #FFFFFF !important; }
 
 /* Spuren je Kategorie getönt, Balken etwas kräftiger. */

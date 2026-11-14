@@ -94,10 +94,12 @@ assert.equal(run('chestAfter(rw("a",20,rsets(12)),rw("b",60,rsets(6)))'),27);
 assert.equal(run('muscleRecovery(RNOW).triceps'),null);
 assert.equal(run('chestAfter(rw("a",24,rsets(6)));Object.entries(muscleRecovery(RNOW)).filter(([,v])=>v!==null).length'),1);
 const cardNow=run('state.workouts=[rw("a",24,rsets(6))];muscleRecoveryCard(RNOW)');
-for(const [key,name] of Object.entries(JSON.parse(run('JSON.stringify(muscleNames)'))))assert(cardNow.includes('role="img" aria-label="'+name+' '+(key==='chest'?'50 % erholt':'frisch')+'"><title>'),'Figur ohne beschriftete Form: '+name);
+for(const [key,name] of Object.entries(JSON.parse(run('JSON.stringify(muscleNames)'))))assert(cardNow.includes('><title>'+name+' '+(key==='chest'?'50 % erholt':'frisch')+'</title>'),'Figur ohne Titel: '+name);
+assert(cardNow.includes('<svg class="mrfigure" viewBox="0 0 220 172" role="img" aria-label="Muskel-Erholung: Brust 50 % erholt"'),'Figur ohne Gesamtbeschriftung');
+assert(cardNow.includes('role="img" aria-label')===true&&(cardNow.match(/role="img"/g)||[]).length===1,'nur der svg soll role=img tragen');
 assert(cardNow.includes('<li><i class="mr-mid" aria-hidden="true"></i><span>Brust</span><strong>50 %</strong></li>'));
 assert(cardNow.includes('mr-high')===false&&cardNow.includes('<ul class="recoverylist">'));
-assert(run('state.language="en";muscleRecoveryCard(RNOW)').includes('aria-label="Chest 50 % recovered"'));run('state.language="de"');
+assert(run('state.language="en";muscleRecoveryCard(RNOW)').includes('aria-label="Muscle recovery: Chest 50 % recovered"'));run('state.language="de"');
 // Alles erholt: Figur grün, keine Liste. Einbau in den Training-Tab: tests/check-workoutpage-order.cjs.
 const calm=run('state.workouts=[rw("a",80,rsets(6))];muscleRecoveryCard(RNOW)');assert(calm.includes('mr-high')&&!calm.includes('recoverylist'));
 // Einbau am Ende von .workoutbody (der DOM-Stub kennt kein echtes template): nur in der Startansicht und nur mit abgeschlossenem Workout.

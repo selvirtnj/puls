@@ -114,13 +114,15 @@ const recoveryShapes={
 function muscleRecoveryName(m){const name=muscleNames[m]||m;return state.language==='en'&&typeof englishUI==='object'?englishUI[name]||name:name}
 function muscleRecoveryLabel(m,v){const en=state.language==='en',name=muscleRecoveryName(m);return v===null?`${name} ${en?'fresh':'frisch'}`:`${name} ${v} % ${en?'recovered':'erholt'}`}
 function muscleRecoveryFigure(values){
- const rect=(m,x,y,w,h,r)=>{const v=values[m],label=esc(muscleRecoveryLabel(m,v));return `<rect class="mr mr-${v===null?'none':v<50?'low':v<100?'mid':'high'}" x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" role="img" aria-label="${label}"><title>${label}</title></rect>`};
+ const rect=(m,x,y,w,h,r)=>{const v=values[m],label=esc(muscleRecoveryLabel(m,v));return `<rect class="mr mr-${v===null?'none':v<50?'low':v<100?'mid':'high'}" x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}"><title>${label}</title></rect>`};
  const view=(shapes,dx)=>`<g transform="translate(${dx} 0)"><circle class="mrbase" cx="50" cy="14" r="10"/><rect class="mrbase" x="34" y="32" width="32" height="68" rx="12"/>${shapes.map(([m,x,y,w,h,r,center])=>rect(m,x,y,w,h,r)+(center?'':rect(m,100-x-w,y,w,h,r))).join('')}</g>`;
- return `<svg class="mrfigure" viewBox="0 0 220 172" role="group" aria-label="${state.language==='en'?'Muscle recovery':'Muskel-Erholung'}">${view(recoveryShapes.front,0)}${view(recoveryShapes.back,120)}</svg>`;
+ const en=state.language==='en',open=muscleRecoveryOpen(values),summary=open.length?open.map(([m,v])=>muscleRecoveryLabel(m,v)).join(', '):(en?'all fresh':'alles frisch');
+ return `<svg class="mrfigure" viewBox="0 0 220 172" role="img" aria-label="${esc((en?'Muscle recovery':'Muskel-Erholung')+': '+summary)}">${view(recoveryShapes.front,0)}${view(recoveryShapes.back,120)}</svg>`;
 }
+function muscleRecoveryOpen(values){return Object.entries(values).filter(([,v])=>v!==null&&v<100).sort((a,b)=>a[1]-b[1]||muscleRecoveryName(a[0]).localeCompare(muscleRecoveryName(b[0])))}
 function muscleRecoveryCard(now=Date.now()){
  if(!completedWorkouts().length)return '';
- const values=muscleRecovery(now),open=Object.entries(values).filter(([,v])=>v!==null&&v<100).sort((a,b)=>a[1]-b[1]||muscleRecoveryName(a[0]).localeCompare(muscleRecoveryName(b[0])));
+ const values=muscleRecovery(now),open=muscleRecoveryOpen(values);
  return `<section class="card recoverycard"><div class="cardhead"><h2>${state.language==='en'?'Recovery':'Erholung'}</h2></div>${muscleRecoveryFigure(values)}${open.length?`<ul class="recoverylist">${open.map(([m,v])=>`<li><i class="mr-${v<50?'low':'mid'}" aria-hidden="true"></i><span>${esc(muscleRecoveryName(m))}</span><strong>${v} %</strong></li>`).join('')}</ul>`:''}</section>`;
 }
 // Letztes Glied von workoutPage (js/flows.js): Karte unter den Inhalten der Startansicht; ohne abgeschlossenes Workout bleibt alles unverändert.

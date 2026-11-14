@@ -223,7 +223,7 @@ function dsDateBar(){
   if(bar.parentElement!==line)line.append(bar);
   let identity=$('workout-identity');if(identity&&identity.parentElement===line)line.after(identity);
   let isToday=date===today(),label=esc(friendlyDay(date));
-  bar.innerHTML=`<button type="button" class="quiet" aria-label="${dsText('Vorheriger Tag','Previous day')}" onclick="moveDay(-1)">${phIcon('caret-left')}</button><button type="button" class="daylabel" aria-label="${dsText('Datum auswählen','Choose date')}: ${label}" onclick="pickDiaryDate()">${isToday?phIcon('calendar-blank'):''}<span>${label}</span></button><button type="button" class="quiet" aria-label="${dsText('Nächster Tag','Next day')}" onclick="moveDay(1)">${phIcon('caret-right')}</button><input id="date" type="date" value="${date}" hidden>`;
+  bar.innerHTML=`<button type="button" class="quiet" aria-label="${dsText('Vorheriger Tag','Previous day')}" onclick="moveDay(-1)">${phIcon('caret-left')}</button><button type="button" class="daylabel" aria-label="${dsText('Datum auswählen','Choose date')}: ${isToday?dsText('Heute','Today'):label}" onclick="pickDiaryDate()">${isToday?phIcon('calendar-blank'):''}<span>${label}</span></button><button type="button" class="quiet" aria-label="${dsText('Nächster Tag','Next day')}" onclick="moveDay(1)">${phIcon('caret-right')}</button><input id="date" type="date" value="${date}" hidden>`;
   let back=line.querySelector('.dsbacktoday');
   if(!back){back=document.createElement('button');back.type='button';back.className='dsbacktoday';back.setAttribute('onclick','setDate(today())');line.append(back)}
   back.innerHTML=`${phIcon('arrow-counter-clockwise')}<span>${dsText('Zu Heute','Back to today')}</span>`;

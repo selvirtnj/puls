@@ -308,7 +308,7 @@ body.runviewopen #toast { z-index: 1000; top: calc(env(safe-area-inset-top, 0px)
 .actnav:disabled { opacity: .3; }
 .actfilters { display: flex; gap: 8px; margin: 12px -2px 0; padding: 2px 2px 4px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .actfilters::-webkit-scrollbar { display: none; }
-.actfilters button { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 36px; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--line); background: none; color: inherit; font: inherit; font-size: 13px; white-space: nowrap; }
+.actfilters button { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 44px; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--line); background: none; color: inherit; font: inherit; font-size: 13px; white-space: nowrap; }
 .actfilters button svg { width: 16px; height: 16px; color: var(--lime); }
 .actfilters button.on { border-color: var(--lime); background: var(--lime); color: var(--bg); font-weight: 700; }
 .actfilters button.on svg { color: currentColor; }

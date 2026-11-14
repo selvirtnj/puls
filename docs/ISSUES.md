@@ -39,6 +39,8 @@ Ohne Befund: HTML-Ausgabe (`esc`, ID-Prüfung), RLS-SQL, `account-delete`, Edge 
 
 ## Grenzen der Prüfung
 
+- Dynamic Type: Die Web-App setzt Schriftgrößen in px; die iOS-Hülle (WKWebView) übernimmt die Textgröße aus den iPhone-Einstellungen daher nicht. Umstellung auf skalierbare Größen wäre ein eigener, großer CSS-Umbau (HIG-Durchsicht 14.11.2026).
+
 - Sync-Tests laufen nur gegen Mocks. Echte RLS-Isolation zwischen zwei Konten ist ungeprüft; SQL-Dateien belegen keine aktuelle Live-Einrichtung (Live bestätigt nur wie in [archive/CURRENT-STATE-bis-v95.md](archive/CURRENT-STATE-bis-v95.md) berichtet: `food-photo.sql`, `friends.sql`, `friends-strength-v2.sql`).
 - Echtes iPhone-Layout, Touch-Wischen, Kamera, Klang, Haptik, Service Worker auf dem Gerät und AltStore-Probe sind ungeprüft. VM-Tests prüfen kein echtes Layout.
 - Browserprüfung bei 390 × 844 in Hell/Dunkel wurde mehrfach durch fehlenden Browserhost blockiert; bei jeder UI-Änderung nachholen.
