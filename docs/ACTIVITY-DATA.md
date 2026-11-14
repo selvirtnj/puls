@@ -27,7 +27,7 @@ Gespeicherte `kcal`-Snapshots bleiben unverändert. Brutto-Übersichten bevorzug
 
 Baseline: Grundbedarf = Ruheumsatz × Alltagsfaktor. Zu-/Abschlag sowie Extrem-Defizit und 1500-kcal-Untergrenze wirken auf diesen Grundbedarf; anschließend kommen bekannte Netto-Sport-kcal des Tages dazu. Manuelle Kalorienziele bleiben manuell. `dayGoals()` projiziert das Ziel für den gewählten Tagebuchtag ohne Speicherung. Die Anzeige über `combinedNutrition()` und `macroProgress()` sowie die spätere Überschussdarstellung nutzen diese Projektion. Die automatische Pflege von `state.goals` betrifft weiter heute; im Baseline-Modus bleibt die Sportzulage auch bei ausgeschalteter Gewichtsanpassung aktuell.
 
-Beim Start warten `adaptiveGoals()` und `dayGoals()` im Baseline-Modus auf `dayActivityKcal()`. Bis dahin bleibt das gespeicherte Ziel unverändert. Am Ende von `run-metrics.js` folgt ein Render mit vollständig geladener Aktivitätslogik: ein korrigierter Speicherstand bei veraltetem Ziel, keiner bei bereits korrektem Ziel. `baselineEnergyLine()` bleibt bei manuellen Zielen oder jedem Fallback auf `state.goals` leer; der Darstellungs-Wrapper in `activity-overview.js` bleibt erhalten. Auch Essensvorschläge, Konto-/Zielkarten und Zielprognose verwenden das Ziel des gewählten Tages.
+Beim Start warten `adaptiveGoals()` und `dayGoals()` im Baseline-Modus auf `dayActivityKcal()`. Bis dahin bleibt das gespeicherte Ziel unverändert. Am Ende von `run-metrics.js` folgt ein Render mit vollständig geladener Aktivitätslogik: ein korrigierter Speicherstand bei veraltetem Ziel, keiner bei bereits korrektem Ziel. Auch Essensvorschläge, Konto-/Zielkarten und Zielprognose verwenden das Ziel des gewählten Tages.
 
 Verlaufskalibrierung ist im Baseline-Modus vorerst deaktiviert (Berechnung, Aktualisierung und Formular). Bisherige Kalibrierungen schätzen einen Gesamtverbrauch; unbekannte/fehlende Sportaufzeichnungen lassen sich daraus nicht zuverlässig isolieren. Bestehende Kalibrierungsdaten werden beim reinen Lesen nicht verändert. Ein Moduswechsel beim Profilspeichern invalidiert sie über `profileEnergyKey()` wie andere Energieparameteränderungen.
 
@@ -59,7 +59,6 @@ Dauer-XP = round(Minuten × MET / 5), gemeinsam höchstens 100 pro Eintragsdatum
 | `energyFor(p,weight=p.weight,plan=state.plan,dateKey=today())` | Weiter `{rmr,tdee}`, im Baseline-Modus zusätzlich `{baseline,sport}`. Datum wird durch den Adaptation-Wrapper gereicht. |
 | `planNumbers(p,plan,manual=state.goals,dateKey=today())` | Bisheriges Ergebnis mit korrekter Baseline-Zielkette, ggf. baseline/sport; Extrem-Wrapper reicht Datum durch. |
 | `dayGoals(dateKey=today())` | `{kcal,p,c,f}` für Anzeige; klassisch/manuell unverändert `state.goals`. Keine Speicherung. |
-| `baselineEnergyLine(dateKey=today())` | Kleine DE/EN-HTML-Zeile „Grundbedarf X + Sport Y kcal · geschätzt“, sonst leer. |
 | `activityRecapHtml(start,end)` | Kleine DE/EN-Erweiterung für den bestehenden Wochen-/Monatsrecap in insights.js; leer ohne Einträge. |
 
 ## Integration und Prüfung

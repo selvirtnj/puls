@@ -1,15 +1,16 @@
 # PULS — aktueller Stand
 
-Stand 13.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRENT-STATE-bis-v95.md](archive/CURRENT-STATE-bis-v95.md) und wird nur bei Bedarf gelesen. Entscheidungen: [DECISIONS.md](DECISIONS.md). Offene Punkte: [ISSUES.md](ISSUES.md).
+Stand 14.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRENT-STATE-bis-v95.md](archive/CURRENT-STATE-bis-v95.md) und wird nur bei Bedarf gelesen. Entscheidungen: [DECISIONS.md](DECISIONS.md). Offene Punkte: [ISSUES.md](ISSUES.md).
 
 ## Live
 
-- **Version 110** auf `main` (Commit „Version 110: e1RM zählt 1–12 Wiederholungen, künftige Gewichte nicht im Wochenmittel“). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
+- **Version 110** auf `main` (Commit cbd6ae9, Merge der Funktionen vom 13./14.11.). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
-- Der Refactor nach [ISSUES.md](ISSUES.md) ist mit den Phasen 0 bis 5 abgeschlossen (Versionen 99 bis 105); Version 106 hat die Reste aufgeräumt. Vom Audit vom 13.11.2026 (ISSUES.md) sind die Punkte 1 und 3 (Version 107) sowie 2, 4 bis 7, 10 und 12 bis 14 (Version 108) und 11 und 15 (Version 110) behoben; 8 und 9 bleiben bewusst so. Es gibt nur den Branch `main`.
+- Der Refactor nach [ISSUES.md](ISSUES.md) ist mit den Phasen 0 bis 5 abgeschlossen (Versionen 99 bis 105); Version 106 hat die Reste aufgeräumt. Vom Audit vom 13.11.2026 (ISSUES.md) sind die Punkte 1 und 3 (Version 107) sowie 2, 4 bis 7, 10 und 12 bis 14 (Version 108) und 11 und 15 (Version 109) behoben; 8 und 9 bleiben bewusst so. Es gibt nur den Branch `main`.
 
 ## Letzte Versionen
 
+- **110** (14.11.): Neue Funktionen. Rezepte rechnen die Zusatznährwerte ihrer Zutaten mit. Im laufenden Workout zeigt jeder Satz RPE und Notiz aus dem Import und einen Knopf „Ziel kg × Wdh“ (Vorschlag aus dem letzten Mal). Leeres Essenstagebuch: „Gestern nochmal“ kopiert die Einträge des Vortags (ohne Wasser, mit Rückgängig). Karte „Erholung“ mit Muskelfigur am Ende des Training-Tabs (48–72 h je nach Satzzahl, letzte 7 Tage). Anmelden fragt „Konto laden?“, wenn Gerät und Konto abweichende Daten haben; Abbrechen meldet ab und lässt beide Stände unverändert, während der Frage wird nichts hochgeladen. Apple Health lesen in der iOS-Hülle (Schalter unter iPhone-Funktionen): Tageswerte nur lokal auf dem Gerät, Workouts als Aktivitäten (`runs[].source:'health'`), Herzfrequenz und kcal an passende Krafteinheiten, Gewicht für Tage ohne Eintrag, Erholungswert auf der Übersicht; wirkt erst mit dem nächsten iOS-Build. 2.561 der 2.573 CNF-Namen deutsch, Katalog-Cache `puls-catalog-v5`. Code-Reste aus ISSUES.md Punkt 1 entfernt. Gegengeprüft von Codex und reviewer.
 - **109** (13.11.): Die geschätzte Maximalkraft (e1RM, `js/enhancements.js`) zählt wie der Rang Sätze mit 1 bis 12 Wiederholungen (vorher 1 bis 10); der Zielgewicht-Rechner in der Übungsansicht erlaubt ebenfalls 12. Dadurch können Kraftindex und Bestwerte bei Sätzen mit 11 oder 12 Wiederholungen steigen. `weeklyWeights` zählt nur Messungen bis heute; die tote Montagsregel in `js/flows.js` ist gelöscht.
 - **108** (13.11.): Restliche Audit-Punkte. Ein gespeicherter Stand ohne Grundgerüst gilt beim Start als beschädigt (gesichert, Upload gesperrt) statt den Start abzubrechen. Nach dem Laden eines Kontostands sagt ein Hinweis, dass der bisherige Gerätestand gesichert ist. Der Service Worker fällt bei Fehlerantworten für Skripte und Styles auf den Cache zurück; `scripts/check.cjs` prüft die `ASSETS`-Liste. `trendData` gruppiert einmal nach Tag und bildet den Stichtag in lokaler Zeit. Ein voller Gerätespeicher beim Zwischenspeichern der Laufspur wird einmal gemeldet. iOS-Hülle: genaue Pfadprüfung `/puls`, auch bei Nachrichten und `sendRunGps` (GitHub-Build „iOS app“ grün, auf dem Gerät ungeprüft; wirkt erst mit dem nächsten installierten App-Build). Neu: `tests/check-trends-fasting.cjs`; drei vorhandene Tests laufen jetzt im Sammellauf mit. Gegenprüfung durch Codex, drei kleine Befunde behoben.
 - **107** (13.11.): Zwei Audit-Punkte behoben. Die Open-Food-Facts-Suche (`js/food-flow.js`, `js/food-search.js`) zeigt nur noch Treffer mit gültigem Barcode; ein ungültiger Code konnte vorher gespeichert werden und ließ danach Sync, Export und Import scheitern. `syncCloud` in `js/cloud.js` erkennt den eigenen Upload wieder, wenn nur die Antwort verloren ging: Vor jedem Upload wird ein SHA-256-Fingerabdruck des Stands gemerkt (`cloudAttempts`, auch in den Konto-Metadaten); meldet der Server danach einen Konflikt und liegt genau dieser Stand als nächste Revision vor, wird nur die Revision übernommen. Echte Konflikte bleiben Konflikte. Tests in `tests/check-cloud-robustness.cjs` und `tests/check-food-navy.cjs`. Von Codex gegengeprüft; nicht gegen den echten Server getestet.
@@ -32,9 +33,9 @@ Stand 13.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Nächste Schritte
 
-1. Der Audit vom 13.11.2026 ([ISSUES.md](ISSUES.md)) ist abgearbeitet. Die Swift-Änderung aus Version 108 beim nächsten iOS-Build auf dem Gerät prüfen.
+1. Apple Health lesen und die Swift-Änderung aus Version 108 auf dem iPhone prüfen (Berechtigung, Workouts, Schlaf, HRV). Offene Frage: Wochenwerte mischen Brutto-kcal aus Health mit PULS-Schätzungen.
 2. Keine weiteren Lebensmitteldatenbanken (Entscheidung 13.11.2026, [DECISIONS.md](DECISIONS.md)); neue Quellen nur auf Selvirs ausdrücklichen Wunsch.
-3. iPhone-Test (auch Ladezeit des größeren Katalogs), Freunde mit zwei echten Konten und echte RLS-Prüfung sind weiter offen.
+3. iPhone-Test (auch Ladezeit des größeren Katalogs), Freunde mit zwei echten Konten und echte RLS-Prüfung sind weiter offen; dafür braucht es ein zweites Testkonto von Selvir.
 
 ## Veröffentlichen
 
