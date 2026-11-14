@@ -35,7 +35,7 @@ function instrumentOld(file,text){
 }
 // Neuer Code: Jedes Glied meldet sich beim Eintritt.
 function instrumentNew(file,text){
- text=text.replace(/function (workoutPage(?:Base|After\w+))\(([^)]*)\)\{/g,(m,name)=>LABEL.has(name)?m+`__ev(${JSON.stringify(LABEL.get(name))});`:m); // nur die Glieder der alten Kette; workoutPageAfterExerciseMuscles (Erholungskarte) steht nicht im Golden
+ text=text.replace(/function (workoutPage(?:Base|After\w+))\(([^)]*)\)\{/g,(m,name)=>LABEL.has(name)?m+`__ev(${JSON.stringify(LABEL.get(name))});`:m); // nur die Glieder der alten Kette
  return PREFIX(file)+text;
 }
 const UUID=/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;

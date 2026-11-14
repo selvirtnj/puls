@@ -937,23 +937,6 @@ main { overflow-x: clip; }
 .exercise-muscle-chart .musclerow strong{text-align:right;font-variant-numeric:tabular-nums}
 .exercise-muscle-chart .note{color:var(--muted);font-size:11px;line-height:1.5}
 
-/* Muskel-Erholung (Training-Tab): drei Stufen über Tokens des Designsystems, Bedeutung zusätzlich in der Liste. */
-.recoverycard{min-width:0}
-.recoverycard .mrfigure{display:block;width:100%;max-width:360px;height:auto;margin:0 auto}
-.recoverycard .mrbase{fill:var(--ds-fill)}
-.recoverycard rect.mr{stroke:var(--ds-surface);stroke-width:1}
-.recoverycard rect.mr-none{fill:var(--ds-surface-2);stroke:var(--ds-label-3);stroke-width:.6}
-.recoverycard rect.mr-low{fill:var(--ds-cat-over)}
-.recoverycard rect.mr-mid{fill:var(--ds-cat-carbs)}
-.recoverycard rect.mr-high{fill:var(--ds-cat-body)}
-.recoverylist{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:13px}
-.recoverylist li{display:flex;align-items:center;gap:8px;min-width:0}
-.recoverylist li span{flex:1;min-width:0;overflow-wrap:anywhere}
-.recoverylist li strong{font-variant-numeric:tabular-nums}
-.recoverylist i{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.recoverylist i.mr-low{background:var(--ds-cat-over)}
-.recoverylist i.mr-mid{background:var(--ds-cat-carbs)}
-
 /* ===== ehemals food-flow.css ===== */
 /* Essen hinzufügen: ruhige Bottom-Sheet-Gestaltung für Suche, Portion, Barcode, Rezepte, eigene Werte und Foto. */
 body dialog.ffsheet {

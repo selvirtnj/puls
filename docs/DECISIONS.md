@@ -67,7 +67,7 @@ Konto-Reihenfolge: Profil/Streak → Konto & Synchronisierung → Plan → Körp
 
 ## Ausdrücklich entfernt / derzeit nicht beauftragt
 
-Nicht ungefragt wieder einbauen: Essen-/Meal-Planning, Ernährung-planen-Karte, Fasten-Timer, Wochen-Check-in, Coaching-Modus, Progress-Fotos, Scheiben- und Aufwärmrechner, große separate Farben-Karte, alte „Dein Tempo/Dein Fortschritt“-Slogans, riesige Profilbildkarte, erzwungene Mahlzeitenkategorien.
+Nicht ungefragt wieder einbauen: Erholungskarte mit Muskelfigur im Training-Tab und Ziel-Knopf „Ziel kg × Wdh“ im laufenden Workout (beide am 14.11.2026 auf Selvirs Wunsch entfernt), Essen-/Meal-Planning, Ernährung-planen-Karte, Fasten-Timer, Wochen-Check-in, Coaching-Modus, Progress-Fotos, Scheiben- und Aufwärmrechner, große separate Farben-Karte, alte „Dein Tempo/Dein Fortschritt“-Slogans, riesige Profilbildkarte, erzwungene Mahlzeitenkategorien.
 
 Historische Funktionen/Datenfelder können für Backup-Kompatibilität noch im Code stehen. Sie sind kein Auftrag zur erneuten Anzeige. Existierende Backups nicht beim Aufräumen vernichten.
 

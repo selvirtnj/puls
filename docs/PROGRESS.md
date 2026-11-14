@@ -4,7 +4,7 @@ Stand 14.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Live
 
-- **Version 111** auf `main` (HIG-Durchsicht vom 14.11.). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
+- **Version 112** auf `main` (Erholungskarte und Ziel-Knopf entfernt, 14.11.). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
 - Der Refactor nach [ISSUES.md](ISSUES.md) ist mit den Phasen 0 bis 5 abgeschlossen (Versionen 99 bis 105); Version 106 hat die Reste aufgeräumt. Vom Audit vom 13.11.2026 (ISSUES.md) sind die Punkte 1 und 3 (Version 107) sowie 2, 4 bis 7, 10 und 12 bis 14 (Version 108) und 11 und 15 (Version 109) behoben; 8 und 9 bleiben bewusst so. Es gibt nur den Branch `main`.
 
