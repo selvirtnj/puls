@@ -24,11 +24,12 @@ function csv(text){
 }
 function number(value){if(typeof value==='number')return Number.isFinite(value)&&value>=0?value:undefined;const s=String(value??'').trim();if(!/^\d+(?:\.\d+)?$/.test(s))return undefined;const n=Number(s);return Number.isFinite(n)?n:undefined}
 function objects(rows){const header=rows[0];return rows.slice(1).map(row=>Object.fromEntries(header.map((k,i)=>[k,row[i]??''])))}
-function record(id,name,n,source,unit='g'){
+// display: German label (field 1); name: English search name (field 2). Defaults keep both equal.
+function record(id,name,n,source,unit='g',display=name){
  // Positional macros cannot be omitted: require all four rather than invent zeros.
  if(!name||!['kcal','p','c','f'].every(k=>Number.isFinite(n[k])&&n[k]>=0))return null;
  const micro=Object.fromEntries(Object.values(nutrients).filter(k=>!['kcal','p','c','f'].includes(k)&&Number.isFinite(n[k])).map(k=>[k,n[k]]));
- const row=[id,name,name,n.kcal,n.p,n.c,n.f,source,micro];if(unit!=='g')row.push(unit);return row;
+ const row=[id,display,name,n.kcal,n.p,n.c,n.f,source,micro];if(unit!=='g')row.push(unit);return row;
 }
 function importDatabases(rawDir=path.join(root,'catalog-raw')){
  for(const source of EXTRA_SOURCES)for(const [file,hash]of source.files)if(sha256(fs.readFileSync(path.join(rawDir,file)))!==hash)throw Error('Raw SHA-256 mismatch: '+file);
@@ -47,10 +48,13 @@ function importDatabases(rawDir=path.join(root,'catalog-raw')){
  const cnf=new Map();
  for(const x of objects(read(CNF_DIR+'Nutrient_Amount.csv'))){const key=nutrients[x.Nutrient_Code],value=number(x.Nutrient_Amount);if(key&&value!==undefined){if(!cnf.has(x.Food_Code))cnf.set(x.Food_Code,{});cnf.get(x.Food_Code)[key]=value}}
  const importedCnf=new Set();
+ // Deutsche CNF-Anzeigenamen (KI-übersetzt, nicht amtlich); fehlende IDs bleiben englisch.
+ const cnfNamesDe=require('./lib/cnf-names-de.json');
  for(const x of objects(read(CNF_DIR+'Food_Name.csv'))){
   // Only unchanged USDA data: Canadian adaptations (1/3/4/6/10 etc.) stay.
   if(['0','11'].includes(x.Food_Source_Code)&&legacyNdb.has(String(Number(x.USDA_NDB_Code)))){stats[sources[0]].skipped++;stats[sources[0]].duplicates++;continue}
-  if(add(record('CNF_'+x.Food_Code,x.Food_Description_EN,cnf.get(x.Food_Code)||{},sources[0]),sources[0]))importedCnf.add(x.Food_Code);
+  const de=cnfNamesDe['CNF_'+x.Food_Code]??x.Food_Description_EN;
+  if(add(record('CNF_'+x.Food_Code,x.Food_Description_EN,cnf.get(x.Food_Code)||{},sources[0],'g',de),sources[0]))importedCnf.add(x.Food_Code);
  }
  const measureTypes=auditMeasureTypes(objects(read(CNF_DIR+'Measure_Type.csv')));
  const measures=new Map(objects(read(CNF_DIR+'Measure_Name.csv')).map(x=>[x.Measure_Code,x.Measure_Description_and_Unit_EN]));

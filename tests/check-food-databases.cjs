@@ -17,7 +17,7 @@ assert(!rows.some(r=>/^(COFID_|FNDDS_)/.test(r[0])||/^(CoFID 2021|USDA FNDDS 202
 assert(!Object.keys(manifest.sources).some(s=>/^(CoFID 2021|USDA FNDDS 2021-2023)/.test(s)));assert.equal(manifest.sources['CNF 2026'],2573);
 assert(!lookup('CNF_14'),'unchanged USDA vinegar (NDB 02053) deduplicated by NDB/FDC mapping');
 assert.equal(lookup('167512')[5],41.2,'legacy USDA total carbohydrate remains unchanged');assert.equal(lookup('167512')[8].fiber,1.2);
-for(const r of rows.filter(r=>/^CNF_/.test(r[0]))){assert.equal(r[1],r[2]);assert(Object.keys(r[8]).every(k=>['water','fiber','vitc','calcium','iron','b12','potassium','magnesium','folate'].includes(k)));}
+for(const r of rows.filter(r=>/^CNF_/.test(r[0]))){assert(r[1]&&r[1]===r[1].trim()&&!/[<>]/.test(r[1]),'CNF display name invalid: '+r[0]);assert(r[2]&&typeof r[2]==='string','CNF English search name missing: '+r[0]);assert(Object.keys(r[8]).every(k=>['water','fiber','vitc','calcium','iron','b12','potassium','magnesium','folate'].includes(k)));}
 assert.deepEqual(csv('\uFEFFa,b\r\n"quoted, name","line\nwith ""quote"""\r\n'),[['a','b'],['quoted, name','line\nwith "quote"']]);
 for(const v of ['',null,'N','Tr','-1','NaN','Infinity'])assert.equal(number(v),undefined);assert.equal(number('0'),0);
 assert.equal(record('test','No protein',{kcal:4,c:1,f:0},'fixture'),null);
@@ -103,7 +103,7 @@ const attrs=["Health Canada, Canadian Nutrient File 2026. Contains information l
 for(const f of ['js/catalog-search.js','js/lifecycle.js','README.md'])assert(!/Public Health England|Dietary Studies|CoFID/.test(read(f)),'Catalogue-wide credit lists only databases that are shipped: '+f);
 for(const f of ['js/catalog-search.js','js/lifecycle.js','README.md','docs/FOOD-DATABASES.md'])for(const attr of attrs)assert(read(f).replaceAll("\\'","'").includes(attr),'Attribution '+f);
 assert(read('js/food-page.js').includes('esc(foodCatalogueAttribution)'),'attribution accessible in active DE/EN filter sheet');
-assert(read('sw.js').includes("CATALOG_CACHE='puls-catalog-v4'"));
+assert(read('sw.js').includes("CATALOG_CACHE='puls-catalog-v5'"));
 // Real worker: English searches, BLS preference, and source filtering before limit.
 let replies=[];const worker={postMessage:r=>replies.push(r)};vm.createContext(worker);vm.runInContext(read('js/catalog-worker.js'),worker);
 worker.onmessage({data:{type:'init',rows:[...Array(65).fill('milk whole'),'milk whole'],names:Array(66).fill('milk whole'),sources:[...Array(65).fill(['bls']),['cnf']],priorities:[...Array(65).fill(35),0]}});
