@@ -87,3 +87,8 @@ Bestehende funktionierende Abläufe erhalten, zuerst prüfen statt doppelt imple
 - **Web-App im Stamm:** Die Web-App bleibt im Stamm des Repositories (kein `src/`), weil GitHub Pages den Stamm von `main` ausliefert und es keinen Build-Schritt gibt.
 - **Dokumentation:** Aktueller Stand in `PROGRESS.md`, offene Punkte in `ISSUES.md`, Entscheidungen hier; die frühere `CURRENT-STATE.md` liegt unverändert unter `archive/CURRENT-STATE-bis-v95.md`.
 - e1RM und Rang werten dieselben Sätze: abgeschlossen, 1 bis 12 Wiederholungen (seit Version 109, 13.11.2026).
+
+## Entscheidungen 13.11.2026
+
+- **Keine weiteren Lebensmitteldatenbanken.** Der Katalog bleibt bei BLS 4.0, USDA SR Legacy/Foundation, Ciqual 2025 und CNF 2026. Neue Quellen (auch Fineli) kommen nur auf Selvirs ausdrücklichen Wunsch; mehr Quellen bringen vor allem Dubletten und Ladezeit.
+- **Apple Watch:** Anbindung nur über Apple Health lesen in der iOS-Hülle. Eine eigene Watch-App wird nicht vorgebaut. Tageswerte aus Health (Puls, HRV, Schlaf, Schritte) bleiben auf dem iPhone und gehen nicht ins synchronisierte Profil; importierte Workouts und Läufe werden normale PULS-Einträge.

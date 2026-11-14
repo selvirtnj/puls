@@ -33,7 +33,7 @@ Stand 13.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 ## Nächste Schritte
 
 1. Der Audit vom 13.11.2026 ([ISSUES.md](ISSUES.md)) ist abgearbeitet. Die Swift-Änderung aus Version 108 beim nächsten iOS-Build auf dem Gerät prüfen.
-2. Weitere freie Datenbanken nur mit geklärter Lizenz (Fineli CC BY 4.0 ist nicht geladen; Schweizer Datenbank nur nach schriftlicher Klärung; NCCDB, NEVO, NZ FOODfiles, BDA, BEDCA, ÖNWT scheiden aus Lizenzgründen aus).
+2. Keine weiteren Lebensmitteldatenbanken (Entscheidung 13.11.2026, [DECISIONS.md](DECISIONS.md)); neue Quellen nur auf Selvirs ausdrücklichen Wunsch.
 3. iPhone-Test (auch Ladezeit des größeren Katalogs), Freunde mit zwei echten Konten und echte RLS-Prüfung sind weiter offen.
 
 ## Veröffentlichen
