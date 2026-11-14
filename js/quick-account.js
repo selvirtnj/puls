@@ -411,6 +411,42 @@ function qaDisplayBody(){
   return appearance+language+qaViewsGroup()+remaining+qaGroup(qaT('Klänge & Haptik','Sounds & haptics'),feedback,'qafeedback')+motion;
 }
 
+/* ---------- Unterseite Gewichtsverlauf (aus Profil über qaSection('body')) ---------- */
+// Gleiche Hülle wie die alten Bereiche (Zurück zur Unterseite über closeAccountSection), Inhalt als iOS-Gruppen in Körper-Grün.
+function qaSectionShell(title,body){
+  let parent=qaPages[qaParent]?qaParent:'';
+  return `<div class="accountcompact accountrefresh accountdetail qapage"><div class="accountdetailhead"><button type="button" class="accountback" onclick="closeAccountSection()">${qaIcon('caret-left')}<span>${esc(parent?qaPageTitle(parent):qaT('Konto','Account'))}</span></button></div><h1 id="account-section-title" tabindex="-1">${esc(title)}</h1><div class="accountdetailcontent">${body}</div></div>`;
+}
+function qaTrendChart(rows){
+  if(rows.length<2)return '';
+  let all=rows.flatMap(x=>[x.kg,x.trend]),min=Math.min(...all)-.4,max=Math.max(...all)+.4,from=Date.parse(rows[0].date),span=Math.max(86400000,Date.parse(rows.at(-1).date)-from);
+  let path=key=>rows.map(x=>`${(8+(Date.parse(x.date)-from)/span*304).toFixed(1)},${(100-(x[key]-min)/(max-min)*90).toFixed(1)}`).join(' ');
+  return `<svg class="qatrendplot" viewBox="0 0 320 110" role="img" aria-label="${qaT('Gewicht und geglätteter Trend','Weight and smoothed trend')}"><polyline class="qatrendraw" points="${path('kg')}"/><polyline class="qatrendline" points="${path('trend')}"/></svg>`;
+}
+function qaWeekRow(r,i,weeks){
+  let prev=weeks[i+1],delta=prev?Math.round((r.kg-prev.kg)*10)/10:null,count=r.count+' '+(r.count===1?qaT('Messung','measurement'):qaT('Messungen','measurements'));
+  let change=delta===null?'':' · '+(delta>0?'+':delta<0?'−':'')+qaNum(Math.abs(delta))+' kg';
+  return qaRow({label:esc(qaT('Woche ab ','Week of ')+fmtDate(r.day)),detail:esc(count+change),value:qaNum(Math.round(r.kg*10)/10)+' kg'});
+}
+function qaBodyBody(){
+  let p=state.profile||{},w=typeof currentWeight==='function'?currentWeight():null,h=p.height,bf=null;
+  try{if(typeof currentBodyFat==='function')bf=currentBodyFat()}catch{}
+  let bmi=Number.isFinite(w)&&Number.isFinite(h)&&h>0?w/(h/100)**2:null;
+  let latest=(state.weights||[]).filter(x=>x.date<=today()).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  let current=qaRow({label:qaT('Gewicht','Weight'),detail:latest?esc(fmtDate(latest.date)):'',value:Number.isFinite(w)?qaNum(w)+' kg':'–'})
+    +qaRow({label:'BMI',value:bmi===null?'–':qaNum(Math.round(bmi*10)/10)})
+    +qaRow({label:qaT('Körperfett','Body fat'),value:bf?qaNum(Math.round(bf.value*10)/10)+' %':'–'});
+  let trend=typeof weightTrend==='function'?weightTrend().slice(-60):[],last=trend.at(-1);
+  let trendGroup=last?qaGroup(qaT('Trend','Trend'),qaRow({label:qaT('Geglätteter Trend','Smoothed trend'),value:qaNum(Math.round(last.trend*10)/10)+' kg'})+(trend.length>1?`<div class="qatrendbox">${qaTrendChart(trend)}<div class="qatrendlegend"><span><i class="dsseriesdot" aria-hidden="true"></i>${qaT('Trend','Trend')}</span><span><i class="dsseriesdot dsseriesmuted" aria-hidden="true"></i>${qaT('Messwerte','Measurements')}</span></div></div>`:''),'qatrend'):'';
+  let weeks=typeof weeklyWeights==='function'?weeklyWeights():[],shown=weeks.slice(0,6),more=weeks.slice(6);
+  let weekGroup=shown.length
+    ?`<h2 class="dsgrouptitle">${qaT('Wochenmittel','Weekly average')}</h2><section class="dsgroup qaweeks">${shown.map((r,i)=>qaWeekRow(r,i,weeks)).join('')}</section>`
+      +(more.length?`<details class="dsgroup qaweeks qaweeksmore"><summary class="dsrow dsaction"><span class="dsrowtext"><span>${qaT('Alle Wochen','All weeks')}</span></span><span class="dsrowchevron" aria-hidden="true">${qaIcon('caret-right')}</span></summary>${more.map((r,i)=>qaWeekRow(r,i+6,weeks)).join('')}</details>`:'')
+    :qaGroup(qaT('Wochenmittel','Weekly average'),`<div class="dsrow dsempty">${qaT('Noch keine Gewichtseinträge','No weight entries yet')}</div>`);
+  let measures=qaGroup('',qaRow({label:qaT('Körpermaße & Biometrie','Body measurements & biometrics'),icon:'ruler',action:'measurementsForm()',chevron:true}));
+  return `<div class="qabodypage"><button type="button" class="btn full qabodylog" onclick="weightForm()">${qaIcon('plus')}<span>${qaT('Gewicht erfassen','Log weight')}</span></button>${qaGroup(qaT('Aktuell','Current'),current)}${trendGroup}${weekGroup}${measures}</div>`;
+}
+
 /* ---------- Navigation ---------- */
 function qaOpen(key){
   if(!qaPages[key])return;
@@ -446,8 +482,8 @@ if(typeof go==='function'){globalThis.goBeforeQuickAccount=function goBeforeQuic
 if(typeof accountPage==='function'){
   globalThis.accountPageAfterQuickAccount=function accountPageAfterQuickAccount(html){
     if(typeof accountSection!=='undefined'&&accountSection){
+      if(accountSection==='body')return qaSectionShell(qaT('Gewichtsverlauf','Weight trend'),qaBodyBody());
       if(qaPages[qaParent])html=html.replace(/(<button type="button" class="accountback"[^>]*>[\s\S]*?<span>)Konto(<\/span>)/,`$1${esc(qaPageTitle(qaParent))}$2`);
-      if(accountSection==='body')html=html.replace(/<button class="textbtn" onclick="measurementsForm\(\)">Körpermaße erfassen<\/button><button class="textbtn" onclick="measurementsForm\(\)">Biometrie<\/button>/,'<button class="textbtn" onclick="measurementsForm()">'+qaT('Körpermaße & Biometrie','Body measurements & biometrics')+'</button>');
       return html;
     }
     if(qaPages[qaPage])return qaDetail(qaPage);
@@ -578,5 +614,7 @@ if(typeof commitProfile==='function'&&typeof collectManual==='function'){
   };
 }
 
+// design-system.js nennt den Bereich „Darstellung“, wie die Seite davor; die Unterseite heißt wie ihre Zeile.
+if(typeof accountSections!=='undefined'){let entry=accountSections.find(x=>x.key==='design');if(entry)entry.title='Sprache & App-Icon'}
 if(typeof englishUI==='object')Object.assign(englishUI,{'Entdecken':'Discover','Schnell hinzufügen':'Quick add'});
 if(typeof page!=='undefined'&&page==='account'&&typeof render==='function')render();

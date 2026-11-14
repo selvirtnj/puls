@@ -161,35 +161,38 @@ async function refresh(force=false){
  finally{loading=false;if(context()===expected){mount();paint()}}
 }
 function button(label,action,secondary=true,disabled=false){return `<button type="button" class="btn${secondary?' secondary':''}" onclick="${action}" ${disabled?'disabled':''}>${label}</button>`}
+// Textknopf innerhalb einer Zeile (iOS-Aktion am Zeilenende); `strong` hebt die Hauptaktion der Zeile hervor.
+function rowButton(label,action,{strong=false,disabled=false}={}){return `<button type="button" class="friends-act${strong?' strong':''}" onclick="${action}" ${disabled?'disabled':''}>${label}</button>`}
+function groupList(rows,title=''){return `${title?`<h2 class="dsgrouptitle">${title}</h2>`:''}<ul class="dsgroup friends-list">${rows}</ul>`}
 function personRows(rows,kind){
  return rows.map(p=>{
+  if(kind==='incoming')return `<li class="dsrow friends-row"><span class="dsrowtext"><span data-no-translate>${esc(p.name)}</span></span><span class="friends-actions">${rowButton(text('Annehmen','Accept'),`pulsFriends.action('${p.code}','accept')`,{strong:true,disabled:acting})}${rowButton(text('Ablehnen','Decline'),`pulsFriends.action('${p.code}','decline')`,{disabled:acting})}</span></li>`;
+  if(kind==='outgoing')return `<li class="dsrow friends-row"><span class="dsrowtext"><span data-no-translate>${esc(p.code)}</span></span><span class="friends-actions">${rowButton(text('Zurückziehen','Cancel'),`pulsFriends.action('${p.code}','remove')`,{disabled:acting})}</span></li>`;
+  // Rückfallliste, falls die Bestenliste (friends-board.js) nicht geladen ist.
+  const stale=dayOK(p.last_training)&&new Date(today()+'T12:00:00Z')-new Date(p.last_training+'T12:00:00Z')>=4*86400000;
+  const cooldown=p.last_nudge&&Date.now()-Date.parse(p.last_nudge)<12*3600000;
   let actions='';
-  if(kind==='incoming')actions=button(text('Annehmen','Accept'),`pulsFriends.action('${p.code}','accept')`,false,acting)+button(text('Ablehnen','Decline'),`pulsFriends.action('${p.code}','decline')`,true,acting);
-  if(kind==='outgoing')actions=button(text('Zurückziehen','Cancel'),`pulsFriends.action('${p.code}','remove')`,true,acting);
-  if(kind==='friends'){
-   const stale=dayOK(p.last_training)&&new Date(today()+'T12:00:00Z')-new Date(p.last_training+'T12:00:00Z')>=4*86400000;
-   const cooldown=p.last_nudge&&Date.now()-Date.parse(p.last_nudge)<12*3600000;
-   if(p.broken||stale)actions+=button(cooldown?text('Bereits gestupst','Already nudged'):'Stop slacking off',`pulsFriends.nudge('${p.code}')`,false,acting||!!cooldown);
-   actions+=button(text('Entfernen','Remove'),`pulsFriends.action('${p.code}','remove')`,true,acting);
-   const count=stale?0:Number.isInteger(p.streak)?p.streak:0;
-   const status=p.broken||stale?text('Serie gerissen','Streak broken'):p.last_training?text('Serie aktiv','Streak active'):text('Noch kein Training','No training yet');
-   return `<li><strong data-no-translate>${esc(p.name)}</strong><p>${count} ${text('Trainingstage · ','training days · ')}${status}</p><p class="note">${text('Letztes Training: ','Last training: ')}${dayOK(p.last_training)?esc(p.last_training):'–'}</p><p class="note">${text('Stand: ','Updated: ')}${esc(p.updated_at?.slice(0,10)||'–')}</p><div class="friends-actions">${actions}</div></li>`;
-  }
-  return `<li><strong data-no-translate>${esc(kind==='outgoing'?p.code:p.name)}</strong><div class="friends-actions">${actions}</div></li>`;
+  if(p.broken||stale)actions+=rowButton(cooldown?text('Bereits gestupst','Already nudged'):'Stop slacking off',`pulsFriends.nudge('${p.code}')`,{strong:true,disabled:acting||!!cooldown});
+  actions+=rowButton(text('Entfernen','Remove'),`pulsFriends.action('${p.code}','remove')`,{disabled:acting});
+  const count=stale?0:Number.isInteger(p.streak)?p.streak:0;
+  const status=p.broken||stale?text('Serie gerissen','Streak broken'):p.last_training?text('Serie aktiv','Streak active'):text('Noch kein Training','No training yet');
+  return `<li class="dsrow friends-row friends-person"><span class="dsrowtext"><span data-no-translate>${esc(p.name)}</span><small>${count} ${text('Trainingstage · ','training days · ')}${status}</small><small>${text('Letztes Training: ','Last training: ')}${dayOK(p.last_training)?esc(p.last_training):'–'} · ${text('Stand: ','Updated: ')}${esc(p.updated_at?.slice(0,10)||'–')}</small></span><span class="friends-actions">${actions}</span></li>`;
  }).join('');
 }
+function stateHTML(icon,message,extra=''){return `<div class="friends-state">${typeof phIcon==='function'?`<span class="friends-stateicon" aria-hidden="true">${phIcon(icon)}</span>`:''}<p role="status">${message}</p>${extra}</div>`}
 function panelHTML(){
- if(!context())return `<p>${text('Freunde sind nur angemeldet und online verfügbar.','Friends require sign-in and an internet connection.')}</p>`;
- const status=`<p class="note" role="status">${esc(message)}</p>`;
- if(!snapshot)return `<p class="note" role="status">${esc(message||waitingMessage())}</p>`+button(text('Erneut laden','Reload'),'pulsFriends.refresh(true)');
- if(!snapshot.self)return `<p>${text('Freunde sehen deinen Namen, deine Trainingsserie, das letzte Trainingsdatum und deine Kraftränge mit Übungsnamen und kg/KG-Verhältnis. Anfragen zeigen deinen Namen.','Friends see your name, training streak, last training date and strength ranks with exercise names and kg/BW ratios. Requests show your name.')}</p><form onsubmit="pulsFriends.enable(event)"><label>${text('Anzeigename für Freunde','Name for friends')}<input id="friends-name" maxlength="80" required autocomplete="off" value="${esc(state.displayName||'')}"></label><button class="btn full" ${acting?'disabled':''}>${text('Freunde aktivieren','Enable friends')}</button></form>${status}`;
- return `<div class="friends-code"><small>${text('Dein Freundescode','Your friend code')}</small><strong data-no-translate>${snapshot.self.code}</strong>${button(text('Code teilen / kopieren','Share / copy code'),'pulsFriends.share()')}</div><form onsubmit="pulsFriends.add(event)"><label>${text('Freundescode','Friend code')}<input id="friends-code" maxlength="12" minlength="12" pattern="[A-Fa-f0-9]{12}" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label><button class="btn full" ${acting?'disabled':''}>${text('Anfrage senden','Send request')}</button></form>${status}
-  ${snapshot.nudges.length?`<h3>${text('Stupse','Nudges')}</h3><ul class="friends-list">${snapshot.nudges.map(p=>`<li><strong data-no-translate>${esc(p.name)}</strong><p>Stop slacking off</p><small>${esc(p.sent_at?.slice(0,10)||'')}</small>${button(text('Gelesen','Dismiss'),`pulsFriends.read('${esc(p.id)}')`,true,acting)}</li>`).join('')}</ul>`:''}
-  ${snapshot.incoming.length?`<h3>${text('Anfragen','Requests')}</h3><ul class="friends-list">${personRows(snapshot.incoming,'incoming')}</ul>`:''}
-  ${snapshot.outgoing.length?`<h3>${text('Gesendet','Sent')}</h3><ul class="friends-list">${personRows(snapshot.outgoing,'outgoing')}</ul>`:''}
-  <section id="puls-friends-board-mount"><h3>${text('Freunde','Friends')}</h3><ul class="friends-list">${personRows(snapshot.friends,'friends')||`<li>${text('Noch keine Freunde. Teile deinen Code.','No friends yet. Share your code.')}</li>`}</ul></section>
-  ${button(text('Aktualisieren','Refresh'),'pulsFriends.refresh(true)',true,acting)}
-  ${button(text('Freunde deaktivieren','Disable friends'),'pulsFriends.disable()',true,acting)}`;
+ if(!context())return stateHTML('cloud-slash',text('Freunde sind nur angemeldet und online verfügbar.','Friends require sign-in and an internet connection.'));
+ const status=`<p class="dsgroupfoot friends-status" role="status">${esc(message)}</p>`;
+ if(!snapshot)return stateHTML('arrows-clockwise',esc(message||waitingMessage()),button(text('Erneut laden','Reload'),'pulsFriends.refresh(true)'));
+ if(!snapshot.self)return `<form class="friends-enable" onsubmit="pulsFriends.enable(event)"><section class="dsgroup"><label class="dsrow friends-field"><span class="dsrowtext"><span>${text('Anzeigename für Freunde','Name for friends')}</span></span><input id="friends-name" maxlength="80" required autocomplete="off" placeholder="${text('Name','Name')}" value="${esc(state.displayName||'')}"></label></section><p class="dsgroupfoot">${text('Freunde sehen deinen Namen, deine Trainingsserie, das letzte Trainingsdatum und deine Kraftränge mit Übungsnamen und kg/KG-Verhältnis. Anfragen zeigen deinen Namen.','Friends see your name, training streak, last training date and strength ranks with exercise names and kg/BW ratios. Requests show your name.')}</p><button class="btn full" ${acting?'disabled':''}>${text('Freunde aktivieren','Enable friends')}</button></form>${status}`;
+ const nudges=snapshot.nudges.length?groupList(snapshot.nudges.map(p=>`<li class="dsrow friends-row"><span class="dsrowtext"><span data-no-translate>${esc(p.name)}</span><small data-no-translate>Stop slacking off · ${esc(p.sent_at?.slice(0,10)||'')}</small></span><span class="friends-actions">${rowButton(text('Gelesen','Dismiss'),`pulsFriends.read('${esc(p.id)}')`,{disabled:acting})}</span></li>`).join(''),text('Stupse','Nudges')):'';
+ const incoming=snapshot.incoming.length?groupList(personRows(snapshot.incoming,'incoming'),text('Anfragen','Requests')):'';
+ const outgoing=snapshot.outgoing.length?groupList(personRows(snapshot.outgoing,'outgoing'),text('Gesendet','Sent')):'';
+ return `<section id="puls-friends-board-mount"><h2 class="dsgrouptitle">${text('Freunde','Friends')}</h2>${groupList(personRows(snapshot.friends,'friends')||`<li class="dsrow dsempty">${text('Noch keine Freunde. Teile deinen Code.','No friends yet. Share your code.')}</li>`)}</section>
+  ${status}<div class="friends-manage"><h2 class="dsgrouptitle">${text('Dein Freundescode','Your friend code')}</h2><section class="dsgroup friends-code"><div class="dsrow"><span class="dsrowtext"><strong data-no-translate>${snapshot.self.code}</strong></span>${rowButton(text('Teilen','Share'),'pulsFriends.share()',{strong:true})}</div></section>
+  <form onsubmit="pulsFriends.add(event)"><h2 class="dsgrouptitle">${text('Freund hinzufügen','Add a friend')}</h2><section class="dsgroup"><label class="dsrow friends-field"><span class="dsrowtext"><span>${text('Freundescode','Friend code')}</span></span><input id="friends-code" placeholder="${text('Code eingeben','Enter code')}" maxlength="12" minlength="12" pattern="[A-Fa-f0-9]{12}" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label></section><button class="btn full" ${acting?'disabled':''}>${text('Anfrage senden','Send request')}</button></form>
+  ${nudges}${incoming}${outgoing}
+  <section class="dsgroup friends-foot"><button type="button" class="dsrow dsaction" onclick="pulsFriends.refresh(true)" ${acting?'disabled':''}>${text('Aktualisieren','Refresh')}</button><button type="button" class="dsrow dangertext" onclick="pulsFriends.disable()" ${acting?'disabled':''}>${text('Freunde deaktivieren','Disable friends')}</button></section></div>`;
 }
 function paint(force=false){
  const panel=document.getElementById('puls-friends-panel');
@@ -205,7 +208,13 @@ function mount(){
  const available=context()&&backendAvailable===true,link=document.getElementById('puls-friends-link');
  if(!available){link?.remove();document.getElementById('puls-friends-notice')?.remove();return}
  const menu=document.querySelector('.accountoverview .accountmenugroup');
- if(menu&&!link){const row=document.createElement('button');row.id='puls-friends-link';row.type='button';row.className='dsrow dsaction';row.setAttribute('data-no-translate','');row.textContent=text('Freunde','Friends');row.addEventListener('click',open);menu.appendChild(row)}
+ // Wie die Zeilen darüber: Symbol, Titel, Chevron. Der onclick-Verweis hält die Trainings-Blau-Regel für „riend“-Zeilen (css/design-system.css) wirksam.
+ if(menu&&!link){
+  const row=document.createElement('button'),icon=typeof phIcon==='function';
+  row.id='puls-friends-link';row.type='button';row.className='dsrow'+(icon?' dsiconrow':'')+' accountmenulink qamenulink';row.setAttribute('data-no-translate','');row.setAttribute('onclick','pulsFriends.open()');
+  row.innerHTML=`${icon?`<span class="dsrowicon" aria-hidden="true">${phIcon('trophy')}</span>`:''}<span class="dsrowtext"><span>${text('Freunde & Bestenliste','Friends & leaderboard')}</span></span>${icon?`<span class="dsrowchevron" aria-hidden="true">${phIcon('caret-right')}</span>`:''}`;
+  menu.appendChild(row);
+ }
 }
 function open(){
  if(!context())return;

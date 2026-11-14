@@ -12,3 +12,72 @@
 #puls-friends-notice { position:fixed; z-index:40; left:max(12px,env(safe-area-inset-left)); right:max(12px,env(safe-area-inset-right)); bottom:calc(80px + env(safe-area-inset-bottom)); max-width:480px; margin:auto; display:flex; align-items:center; gap:12px; padding:12px 16px; border:1px solid var(--ds-separator); border-radius:12px; background:var(--ds-surface); color:var(--ds-label); font-size:14px; }
 #puls-friends-notice span { flex:1; min-width:0; overflow-wrap:anywhere; }
 #puls-friends-notice button { min-height:44px; flex-shrink:0; }
+
+/* Runde 2 (Konto-Kopf und Unterseiten): Name darf umbrechen statt abzuschneiden; Seitentitel ohne Fokusrahmen beim Öffnen. */
+html body .accountprofilegroup .accountname strong { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+html body #account-section-title:focus:not(:focus-visible) { outline: none; }
+/* ---------- Überarbeitung nach Apple HIG: Freunde, Gewichtsverlauf, Sprache & App-Icon ----------
+   Freunde-Fenster und Konto-Unterseiten als gruppierte Listen (.dsgrouptitle / .dsgroup / .dsrow), eine gefüllte Hauptaktion je Ansicht. */
+#puls-friends-panel .dsgrouptitle, html body #modal #mb #puls-friends-panel .dsgrouptitle { margin: 22px 16px 6px !important; font-size: 13px !important; line-height: 18px !important; font-weight: 400 !important; color: var(--ds-label-2) !important; text-transform: uppercase !important; letter-spacing: .02em !important; }
+#puls-friends-panel .friends-manage > .dsgrouptitle:first-child, #puls-friends-panel form > .dsgrouptitle:first-child { margin-top: 24px !important; }
+#puls-friends-board-mount > .dsgrouptitle:first-child { margin-top: 4px !important; }
+#puls-friends-panel .friends-list { margin: 0; padding: 0; list-style: none; }
+#puls-friends-panel .friends-list li.dsrow { flex-wrap: wrap; padding: 6px 8px 6px 16px; border-bottom: 0; }
+#puls-friends-panel .friends-list li.dsempty { padding: 12px 16px; }
+#puls-friends-panel .friends-list li.dsrow:not(:last-child) { border-bottom: 0; }
+#puls-friends-panel .friends-row .dsrowtext { flex: 1 1 80px; padding: 5px 0; }
+#puls-friends-panel .friends-row .dsrowtext > span { white-space: normal; overflow-wrap: anywhere; }
+#puls-friends-panel .friends-row .dsrowtext small { overflow-wrap: anywhere; }
+#puls-friends-panel .friends-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; margin: 0; }
+#puls-friends-panel .friends-act { min-width: 44px; min-height: 44px; margin: 0; padding: 0 10px; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-accent-text) !important; font: 400 17px/22px var(--font); }
+#puls-friends-panel .friends-act.strong { font-weight: 600; }
+#puls-friends-panel .friends-act:disabled { color: var(--ds-label-3) !important; }
+#puls-friends-panel .friends-code .dsrow { padding-right: 8px; }
+#puls-friends-panel .friends-code strong { font: 600 20px/26px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+html body #modal #mb #puls-friends-panel label.friends-field { display: flex; flex-direction: row; align-items: center; gap: 12px; cursor: text; }
+html body #puls-friends-panel .friends-field .dsrowtext { flex: 0 0 auto; color: var(--ds-label); font: 400 17px/22px var(--font); }
+html body #puls-friends-panel .friends-field .dsrowtext > span { font-weight: 400; white-space: nowrap; }
+html body #puls-friends-panel .friends-field input { flex: 1 1 0; width: auto; min-width: 0; max-width: none; min-height: 44px; margin: 0; padding: 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-label) !important; text-align: right; font-size: 17px !important; }
+html body #puls-friends-panel .friends-field input:focus-visible { outline-offset: 4px !important; }
+#puls-friends-panel form > .btn.full { margin: 16px 0 0; }
+#puls-friends-panel .friends-status { margin: 8px 16px 0; }
+#puls-friends-panel .friends-status:empty { display: none; }
+#puls-friends-panel .friends-foot { margin-top: 24px; }
+#puls-friends-panel .friends-foot .dsrow { width: 100%; justify-content: flex-start; }
+#puls-friends-panel .friends-foot .dsrow:disabled { opacity: .4; }
+#puls-friends-panel .friends-foot .dangertext { color: var(--ds-red-text); }
+#puls-friends-panel .friends-state { display: grid; justify-items: center; gap: 12px; padding: 32px 16px; text-align: center; color: var(--ds-label-2); }
+#puls-friends-panel .friends-stateicon svg { width: 40px; height: 40px; color: var(--ds-label-3); }
+#puls-friends-panel .friends-state p { margin: 0; font-size: 15px; line-height: 20px; }
+/* Code, Anfragen und Verwaltung gehören zur Ansicht „Freunde“; Bestenliste, Übungen und Ränge bleiben frei davon. */
+#puls-friends-panel:has(.fb[data-view]:not([data-view=friends])) .friends-manage { display: none; }
+html body #modal #mb #puls-friends-panel .fb .fb-title, html body #modal #mb .fb-standalone .fb-title { margin: 22px 16px 6px !important; font-size: 13px !important; line-height: 18px !important; font-weight: 400 !important; color: var(--ds-label-2) !important; text-transform: uppercase !important; letter-spacing: .02em !important; }
+#puls-friends-panel .fb .fb-tabs { display: grid !important; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); overflow: hidden; }
+html body #puls-friends-panel .fb .fb-tabs button { flex: none; padding: 4px 2px; font-size: 13px; }
+html body #puls-friends-panel .fb-me-text strong small, html body #puls-friends-panel .fb-pod-name small, html body #puls-friends-panel .fb-rowtext strong small { display: inline; }
+
+/* Gewichtsverlauf (Konto, Körper-Grün) */
+html body .accountdetailcontent:has(.qabodypage) { --ds-accent: var(--ds-cat-body); --ds-accent-text: var(--ds-cat-body-text); --ds-accent-fill: var(--ds-cat-body-fill); }
+.qabodypage .qabodylog { margin: 0 0 8px; }
+.qabodypage .qatrendbox { padding: 0 16px 14px; border-top: .5px solid var(--ds-separator); }
+.qabodypage .qatrendplot { display: block; width: 100%; height: auto; margin-top: 12px; overflow: visible; }
+.qabodypage .qatrendraw { fill: none; stroke: var(--ds-label-3); stroke-width: 1.5; }
+.qabodypage .qatrendline { fill: none; stroke: var(--ds-accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.qabodypage .qatrendlegend { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; line-height: 18px; color: var(--ds-label-2); }
+.qabodypage .qatrendlegend span { display: inline-flex; align-items: center; gap: 6px; }
+.qabodypage .dsseriesdot { width: 8px; height: 8px; border-radius: 50%; background: var(--ds-accent); }
+.qabodypage .dsseriesdot.dsseriesmuted { background: var(--ds-label-3); }
+.qabodypage .qaweeksmore summary { list-style: none; cursor: pointer; }
+.qabodypage .qaweeksmore summary::-webkit-details-marker { display: none; }
+.qabodypage .qaweeksmore summary .dsrowchevron { transition: transform var(--motion-fast, 120ms); }
+.qabodypage .qaweeksmore[open] summary .dsrowchevron { transform: rotate(90deg); }
+html.reduce-motion .qabodypage .qaweeksmore summary .dsrowchevron { transition: none; }
+.qabodypage .qaweeksmore summary:focus-visible { outline-offset: -2px; }
+.qabodypage .dsrowicon { color: var(--ds-cat-body-text); }
+
+/* Sprache & App-Icon */
+.accountdetailcontent > .accountappearance > .dsgrouptitle:first-child { margin-top: 0; }
+html body .accountappearance .langswitch { margin: 0; }
+html body .accountappearance .iconchoices.dsgroup { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 12px; }
+html body .accountappearance .iconchoices button { min-height: 44px; margin: 0; padding: 10px 0 8px; }
+html body .accountappearance a.dsrow { text-decoration: none; }

@@ -344,3 +344,81 @@ body #session-root .activitydone h2 { margin: 16px 0 0; }
 body #session-root .activitydone .completionxp { margin: 12px 0 8px; }
 body #session-root .activitydone .completioncontinue { margin-top: 24px; }
 body #session-root .activitydone .textbtn { min-height: 44px; margin-top: 8px; }
+
+/* Runde 2: Startansicht als helles Blatt über der Karte, damit Beschriftungen lesbar bleiben (Apple-Karten-Muster). */
+.runview.ready .runpanel { background: var(--ds-surface); border-top: .5px solid var(--ds-separator); border-radius: 16px 16px 0 0; }
+.runview.ready .runpanelstats { background: var(--ds-fill); border: 0; }
+.runview.ready .runpanelstats small, .runview.ready .runside small { color: var(--ds-label-2); }
+/* ---------- Überarbeitung nach Apple HIG: Routen, Routen-Planer, Zusammenfassung, Aktivität ansehen ----------
+   Gruppierte Listen (.dsgroup / .dsrow), eine gefüllte Hauptaktion je Ansicht, Training-Blau. */
+html body #modal:has(.runmodal), html body #run-root.summary {
+  --ds-accent: var(--ds-cat-training); --ds-accent-text: var(--ds-cat-training-text); --ds-accent-fill: var(--ds-cat-training-fill);
+  --lime: var(--ds-cat-training-text);
+}
+html body .runmodal .runmap { margin: 0 0 12px; border: 0; }
+html body .runmodal .runmap.detail { height: 220px; }
+html body .runmodal .runmap.planner { height: min(40vh, 320px); }
+html body .runmodal .rundetaildate { margin: 0 0 8px; font-size: 15px; line-height: 20px; color: var(--ds-label-2); }
+html body .runmodal .runsumbig { margin: 4px 0 16px; }
+html body .runmodal .runsumbig small, html body .runsummary .runsumbig small { font-size: 12px; letter-spacing: .04em; color: var(--ds-label-2); }
+html body .runmodal .btn.full + .dsgroup { margin-top: 16px; }
+html body .runmodal .dsgroup + .dsgroup, html body .runmodal .dsgroup + .runsectiontitle { margin-top: 16px; }
+html body .runmodal .runsectiontitle { margin: 22px 16px 6px; }
+html body .runroutelist .dsrowtext > span { white-space: normal; overflow-wrap: anywhere; }
+html body .runroutelist .dsrowtext small { font-variant-numeric: tabular-nums; }
+html body .runmodal .dangertext { color: var(--ds-red-text); }
+html body .runmodal button.dsrow:disabled { opacity: .4; }
+/* Routen-Planer */
+html body .runmodal .runplanstats { margin: 0 0 4px; }
+html body .runmodal .runplanstats strong { font-size: 22px; line-height: 28px; }
+html body .runmodal .runplanstats small { font-size: 13px; color: var(--ds-label-2); }
+.runplanhint { min-height: 18px; margin: 4px 0 8px; text-align: center; font-size: 13px; line-height: 18px; color: var(--ds-label-2); }
+html body .runmodal .runplantools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
+html body .runmodal .runplantools .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; margin: 0; padding: 0 8px; font-size: 15px; }
+html body .runmodal .runplantools .btn .pulsicon { width: 20px; height: 20px; }
+html body #modal #mb .runmodal label.dsrow { display: flex; flex-direction: row; align-items: center; gap: 12px; cursor: pointer; }
+html body #modal #mb .runmodal label.dsrow .dsrowtext { flex: 0 0 auto; color: var(--ds-label); font: 400 17px/22px var(--font); }
+html body #modal #mb .runmodal label.dsrow .dsrowtext > span { font-weight: 400; white-space: nowrap; }
+html body #modal #mb .runmodal label.runplanname { cursor: text; }
+html body #modal #mb .runmodal label.runplanname input { flex: 1 1 0; width: auto; min-width: 0; min-height: 44px; margin: 0; padding: 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-label) !important; text-align: right; font-size: 17px !important; }
+html body .runmodal .runplantools + .dsgroup { margin-bottom: 0; }
+html body .runmodal form { margin-top: 12px; }
+html body .runmodal form > .btn.full { margin-top: 16px; }
+html body .runmapbtn { width: 44px; height: 44px; }
+html body .runmaptrails { bottom: 76px; }
+html body .runmaptrails .runround { width: 44px; height: 44px; padding: 11px; }
+
+/* Zusammenfassung nach der Aktivität */
+html body #run-root.summary .runviewtop.solid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; padding-bottom: 6px; border-bottom: .5px solid var(--ds-separator); background: var(--ds-bg); }
+html body #run-root.summary .runresume { justify-self: start; min-height: 44px; margin: 0 0 0 -8px; padding: 0 8px; border: 0 !important; background: transparent !important; color: var(--ds-accent-text) !important; font: 400 17px/22px var(--font); }
+html body #run-root.summary .runlivetitle { margin: 0; font: 600 17px/22px var(--font); color: var(--ds-label); text-align: center; }
+html body #run-root.summary .runsummary { padding: 12px 16px 16px; }
+html body #run-root.summary .runsumwhen { font-size: 15px; line-height: 20px; color: var(--ds-label-2); }
+html body #run-root.summary .runsumwhen svg { color: var(--ds-accent-text); }
+html body #run-root.summary .runsumbig strong { font-size: 32px; line-height: 38px; letter-spacing: normal; }
+html body #run-root.summary .runsectiontitle, html body .runsummary .runsectiontitle { margin: 22px 16px 6px; }
+html body #run-root.summary .runsummary > .dsgroup { margin: 0; }
+html body #run-root.summary .runsummary > .dsgroup + .dsgroup, html body #run-root.summary .runsummary > .runmap + .runsumbig { margin-top: 0; }
+html body #run-root.summary .runfeel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; margin: 0; padding: 2px; border-radius: 12px; background: var(--ds-surface); }
+html body #run-root.summary .runfeel button { min-height: 64px; padding: 8px 0 6px; border: 0; border-radius: 10px; background: transparent; color: var(--ds-label); }
+html body #run-root.summary .runfeel button.on { background: var(--ds-fill); }
+html body #run-root.summary .runfeel span { opacity: .55; filter: none; }
+html body #run-root.summary .runfeel button.on span { opacity: 1; transform: none; color: var(--ds-accent-text); }
+html body #run-root.summary .runfeel small { font-size: 12px; color: var(--ds-label-2); }
+html body #run-root.summary .runfeel button.on small { color: var(--ds-label); font-weight: 600; }
+html body #run-root.summary label.dsrow { display: flex; flex-direction: row; align-items: center; gap: 12px; color: var(--ds-label); font-size: 17px; }
+html body #run-root.summary label.dsrow .dsrowtext > span { font-weight: 400; }
+html body #run-root.summary label.dsrow input, html body #run-root.summary label.dsrow select { flex: 1 1 0; width: auto; min-width: 0; min-height: 44px; margin: 0; padding: 0 !important; border: 0 !important; background: transparent !important; color: var(--ds-label) !important; text-align: right; font-size: 17px !important; }
+html body #run-root.summary label.dsrow select { text-align-last: right; color: var(--ds-accent-text) !important; }
+html body #run-root.summary .runkmfix { display: flex; }
+html body #run-root.summary .runnote { display: block; width: 100%; min-height: 88px; margin: 0; padding: 11px 16px; border: 0; border-radius: 12px; background: transparent; color: var(--ds-label); font: 400 17px/22px var(--font); resize: none; }
+html body #run-root.summary .rundetaillist, html body .runmodal .rundetaillist { margin: 0; border: 0; }
+html body #run-root.summary .rundetaillist .dsrow, html body .runmodal .rundetaillist .dsrow { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-bottom: 0; }
+html body #run-root.summary .rundetaillist .dsrowtext > span, html body .runmodal .rundetaillist .dsrowtext > span { color: var(--ds-label); font-size: 17px; white-space: normal; }
+html body #run-root.summary .rundetaillist .dsrowvalue, html body .runmodal .rundetaillist .dsrowvalue { color: var(--ds-label-2); font-size: 17px; }
+html body #run-root.summary .runsplits, html body .runmodal .runsplits { margin: 0; padding: 12px 16px; gap: 8px; }
+html body .runsplit span { font-size: 13px; color: var(--ds-label-2); }
+html body .runsplit strong { font-size: 15px; font-weight: 600; }
+html body #run-root.summary .runlivebar.stacked { gap: 0; border-top: .5px solid var(--ds-separator); }
+html body #run-root.summary .rundiscard { min-height: 44px; margin: 6px auto 0; color: var(--ds-red-text) !important; font-size: 17px; }
+html body #run-root.summary .runsummary > .runfeel + .dsgroup, html body #run-root.summary .runsummary > .runkmfix-group + .dsgroup { margin-top: 16px; }

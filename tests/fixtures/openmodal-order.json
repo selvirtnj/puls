@@ -142,10 +142,10 @@
    },
    "de:exerciseForm('wa')": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Übung auswählen | body=1249:a38ced53e10d | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0 | modal.add exercisesheet",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Übung auswählen | body=1262:78f1f5feaf40 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0 | modal.add exercisesheet",
     "titel": "Übung auswählen",
-    "laenge": 1249,
-    "sha256": "a38ced53e10d6274c9160f1a0c7dda07650bc10404678ea29f7bee24c78e5cf1",
+    "laenge": 1262,
+    "sha256": "78f1f5feaf40c1b73886845d655a3f2115c8d334e8be42875560d3e650060d8e",
     "rueckgabe": "!custom?.closest is not a function",
     "danach": {
      "modal": "exercisesheet sheetarriving",
@@ -155,10 +155,10 @@
    },
    "en:exerciseForm('wa')": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Übung auswählen | body=1249:a38ced53e10d | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0 | modal.add exercisesheet",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Übung auswählen | body=1262:78f1f5feaf40 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0 | modal.add exercisesheet",
     "titel": "Übung auswählen",
-    "laenge": 1249,
-    "sha256": "a38ced53e10d6274c9160f1a0c7dda07650bc10404678ea29f7bee24c78e5cf1",
+    "laenge": 1262,
+    "sha256": "78f1f5feaf40c1b73886845d655a3f2115c8d334e8be42875560d3e650060d8e",
     "rueckgabe": "!custom?.closest is not a function",
     "danach": {
      "modal": "exercisesheet sheetarriving",
@@ -168,10 +168,10 @@
    },
    "de:waterForm()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Wasser erfassen | body=238:0b619537aae0 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Wasser erfassen | body=258:4df3e757dc72 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
     "titel": "Wasser erfassen",
-    "laenge": 238,
-    "sha256": "0b619537aae0fd1f99da0714188f65dd85c0edd35be4451176cddd7cae137e23",
+    "laenge": 258,
+    "sha256": "4df3e757dc72eba128da08f972fb402abfcad295e9c6fb5c2a40abd45e667883",
     "rueckgabe": "undefined:undefined",
     "danach": {
      "modal": "sheetarriving",
@@ -181,10 +181,10 @@
    },
    "en:waterForm()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Wasser erfassen | body=238:0b619537aae0 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Wasser erfassen | body=258:4df3e757dc72 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
     "titel": "Wasser erfassen",
-    "laenge": 238,
-    "sha256": "0b619537aae0fd1f99da0714188f65dd85c0edd35be4451176cddd7cae137e23",
+    "laenge": 258,
+    "sha256": "4df3e757dc72eba128da08f972fb402abfcad295e9c6fb5c2a40abd45e667883",
     "rueckgabe": "undefined:undefined",
     "danach": {
      "modal": "sheetarriving",
@@ -220,10 +220,10 @@
    },
    "de:microTargetForm()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Eigene Nährstoffziele | body=1000:d0e6f918905e | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Eigene Nährstoffziele | body=1020:c59d5ae6cde2 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
     "titel": "Eigene Nährstoffziele",
-    "laenge": 1000,
-    "sha256": "d0e6f918905e860b8779f997908acfd47cc8bc16cedf8de83171b6b5ea2d565b",
+    "laenge": 1020,
+    "sha256": "c59d5ae6cde25db88be61894ccb94e0110b015f19dcc1bb12be998d4790f912e",
     "rueckgabe": "undefined:undefined",
     "danach": {
      "modal": "sheetarriving",
@@ -233,10 +233,10 @@
    },
    "en:microTargetForm()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Eigene Nährstoffziele | body=1000:d0e6f918905e | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Eigene Nährstoffziele | body=1020:c59d5ae6cde2 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
     "titel": "Eigene Nährstoffziele",
-    "laenge": 1000,
-    "sha256": "d0e6f918905e860b8779f997908acfd47cc8bc16cedf8de83171b6b5ea2d565b",
+    "laenge": 1020,
+    "sha256": "c59d5ae6cde25db88be61894ccb94e0110b015f19dcc1bb12be998d4790f912e",
     "rueckgabe": "undefined:undefined",
     "danach": {
      "modal": "sheetarriving",
@@ -1220,10 +1220,10 @@
    },
    "de:exerciseForm('wa')": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher preview-mode#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Übung auswählen | body=1249:a38ced53e10d | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0 | modal.add exercisesheet",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Übung auswählen | body=1262:78f1f5feaf40 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0 | modal.add exercisesheet",
     "titel": "Übung auswählen",
-    "laenge": 1249,
-    "sha256": "a38ced53e10d6274c9160f1a0c7dda07650bc10404678ea29f7bee24c78e5cf1",
+    "laenge": 1262,
+    "sha256": "78f1f5feaf40c1b73886845d655a3f2115c8d334e8be42875560d3e650060d8e",
     "rueckgabe": "!custom?.closest is not a function",
     "danach": {
      "modal": "exercisesheet sheetarriving",
@@ -1233,10 +1233,10 @@
    },
    "en:exerciseForm('wa')": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher preview-mode#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Übung auswählen | body=1249:a38ced53e10d | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0 | modal.add exercisesheet",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Übung auswählen | body=1262:78f1f5feaf40 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0 | modal.add exercisesheet",
     "titel": "Übung auswählen",
-    "laenge": 1249,
-    "sha256": "a38ced53e10d6274c9160f1a0c7dda07650bc10404678ea29f7bee24c78e5cf1",
+    "laenge": 1262,
+    "sha256": "78f1f5feaf40c1b73886845d655a3f2115c8d334e8be42875560d3e650060d8e",
     "rueckgabe": "!custom?.closest is not a function",
     "danach": {
      "modal": "exercisesheet sheetarriving",
@@ -1246,10 +1246,10 @@
    },
    "de:waterForm()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher preview-mode#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Wasser erfassen | body=238:0b619537aae0 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Wasser erfassen | body=258:4df3e757dc72 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
     "titel": "Wasser erfassen",
-    "laenge": 238,
-    "sha256": "0b619537aae0fd1f99da0714188f65dd85c0edd35be4451176cddd7cae137e23",
+    "laenge": 258,
+    "sha256": "4df3e757dc72eba128da08f972fb402abfcad295e9c6fb5c2a40abd45e667883",
     "rueckgabe": "undefined:undefined",
     "danach": {
      "modal": "sheetarriving",
@@ -1259,10 +1259,10 @@
    },
    "en:waterForm()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher preview-mode#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Wasser erfassen | body=238:0b619537aae0 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Wasser erfassen | body=258:4df3e757dc72 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
     "titel": "Wasser erfassen",
-    "laenge": 238,
-    "sha256": "0b619537aae0fd1f99da0714188f65dd85c0edd35be4451176cddd7cae137e23",
+    "laenge": 258,
+    "sha256": "4df3e757dc72eba128da08f972fb402abfcad295e9c6fb5c2a40abd45e667883",
     "rueckgabe": "undefined:undefined",
     "danach": {
      "modal": "sheetarriving",
@@ -1298,10 +1298,10 @@
    },
    "de:microTargetForm()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher preview-mode#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Eigene Nährstoffziele | body=1000:d0e6f918905e | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Eigene Nährstoffziele | body=1020:c59d5ae6cde2 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
     "titel": "Eigene Nährstoffziele",
-    "laenge": 1000,
-    "sha256": "d0e6f918905e860b8779f997908acfd47cc8bc16cedf8de83171b6b5ea2d565b",
+    "laenge": 1020,
+    "sha256": "c59d5ae6cde25db88be61894ccb94e0110b015f19dcc1bb12be998d4790f912e",
     "rueckgabe": "undefined:undefined",
     "danach": {
      "modal": "sheetarriving",
@@ -1311,10 +1311,10 @@
    },
    "en:microTargetForm()": {
     "glieder": "food-page#1.vorher sound-engine#1.vorher app-polish#1.vorher training-polish#1.vorher food-flow#1.vorher workout-polish#1.vorher compact#1.vorher interactions#1.vorher products#1.vorher kern:app flows#1.nachher polish#1.nachher preview-mode#1.nachher comfort#1.nachher i18n#1.nachher app-polish#1.nachher sound-engine#1.nachher design-system#1.nachher motion#1.nachher",
-    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Eigene Nährstoffziele | body=1000:d0e6f918905e | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
+    "wirkung": "modal.toggle fpage false | modal.remove exercisesheet | modal.toggle ffsheet false | modal.toggle planningsheet false | modal.toggle foodsheet false | clearTimeout | modal.remove sheetclosing | modal.style.removeProperty transform | stopBarcode() | cancelLookup() | title=Eigene Nährstoffziele | body=1020:c59d5ae6cde2 | modal.showModal | scrollViewTop(modal) | modal.scrollTop=0 | modal.scrollTop=0 | modal.remove sheetarriving | modal.offsetWidth | modal.add sheetarriving | decorateFirstRunPreview() | applyAppIcon() | translateUI(modal) | pulsSound(sheetOpen) | dsDecorateSheet() | scrollViewTop(modal) | modal.scrollTop=0",
     "titel": "Eigene Nährstoffziele",
-    "laenge": 1000,
-    "sha256": "d0e6f918905e860b8779f997908acfd47cc8bc16cedf8de83171b6b5ea2d565b",
+    "laenge": 1020,
+    "sha256": "c59d5ae6cde25db88be61894ccb94e0110b015f19dcc1bb12be998d4790f912e",
     "rueckgabe": "undefined:undefined",
     "danach": {
      "modal": "sheetarriving",

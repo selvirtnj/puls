@@ -107,14 +107,14 @@
    },
    "bereich:body": {
     "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account#1",
-    "laenge": 6609,
-    "sha256": "78686275cf251e5c85b975229a37727863758b90a8671e53811cc3dbe44ff324",
+    "laenge": 3580,
+    "sha256": "eeeda3a353e1985511f317262007e042bf24408dee0018f5d4facb454e3212de",
     "zustand": "body||"
    },
    "bereich-en:body": {
     "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account#1",
-    "laenge": 6521,
-    "sha256": "fa93085086961ca2c0ce13ff72caca102024ecb21514ddd858b75e4df89eab36",
+    "laenge": 3580,
+    "sha256": "329abbb8f2548e0f12beea6afa1b77e5ceabf568bf303512c0c389e6d51ceaca",
     "zustand": "body||"
    },
    "bereich:adaptive": {
@@ -209,8 +209,8 @@
    },
    "qa-eltern-body": {
     "ablauf": "kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 kern:flows flows#1 flows#2 flows#3 flows#4 interactions#1 workout-polish#1 comfort#1 tracker-tools#1 adaptation#1 cloud#1 account-guide#1 refinement#1 account-refresh#1 quick-account#1",
-    "laenge": 5867,
-    "sha256": "431c78fedc743c05623559c4f1f2c140fdea53e7c983773bf1c0b9dba408bff6",
+    "laenge": 2786,
+    "sha256": "297b1be3db56bfa6f34e2b4298049a4f982638c794ff6d8309ad435e36aadac4",
     "zustand": "body||targets"
    },
    "qa-eltern-plan": {

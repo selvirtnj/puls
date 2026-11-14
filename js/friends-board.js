@@ -240,7 +240,7 @@ function friendsHTML(list,play){
  const me=list.find(p=>p.self),friends=list.filter(p=>!p.self).sort((a,b)=>String(b.last_training||'').localeCompare(String(a.last_training||''))||String(a.name).localeCompare(String(b.name)));
  return `${me?meHTML(me):''}
   <h3 class="fb-title">${t('Freunde','Friends')} <small>${friends.length}</small></h3>
-  ${friends.length?`<ul class="fb-cards">${friends.map((p,i)=>cardHTML(p,i,play)).join('')}</ul>`:`<p class="fb-empty">${t('Noch keine Freunde. Teile unten deinen Code und schick eine Anfrage.','No friends yet. Share your code below and send a request.')}</p>`}`;
+  ${friends.length?`<ul class="fb-cards">${friends.map((p,i)=>cardHTML(p,i,play)).join('')}</ul>`:`<p class="fb-empty">${t('Noch keine Freunde. Teile unten deinen Code.','No friends yet. Share your code below.')}</p>`}`;
 }
 function valueHTML(p,small=false){
  if(metric==='streak')return flame(p.streak,small?'sm':'');
@@ -344,7 +344,8 @@ function draw(mount,play){
  const list=leaderboard(snap,metric);
  const key=view+'|'+metric,animate=play!==false&&anim(key);
  const body=view==='board'?boardHTML(list,animate):view==='ranks'?ranksHTML(animate):view==='exercises'?exercisesHTML(snap):friendsHTML(list,animate);
- mount.dataset.fb='1';mount.classList.add('fb');mount.setAttribute('data-no-translate','');
+ // data-view: Code, Anfragen und Verwaltung (friends.css) erscheinen nur in der Ansicht „Freunde“.
+ mount.dataset.fb='1';mount.dataset.view=view;mount.classList.add('fb');mount.setAttribute('data-no-translate','');
  mount.innerHTML=`${tabsHTML()}<div class="fb-view fb-view-${view}">${body}</div>`;
  const panel=document.getElementById('puls-friends-panel');if(panel&&panel.firstElementChild!==mount)panel.prepend(mount);
  if(view!=='board')celebrate(mount);
@@ -360,7 +361,7 @@ function profileRow(){
  const r=ownRank();
  group.insertAdjacentHTML('beforeend',`<button type="button" id="fb-profile-rank" class="dsrow fb-profilerank" data-no-translate onclick="pulsFriendsBoard.openRanks()">
   <span class="fb-profile-emblem" data-fb-own-emblem>${emblem(r?.index,r?.stage,40)}</span>
-  <span class="dsrowtext"><span>${rankText(r)}</span><small>${nextText(r)}</small></span>
+  <span class="dsrowtext"><span>${rankText(r)}</span><small>${r?nextText(r):`Level ${typeof xpProgress==='function'?xpProgress(localXp()||0).level:1}`}</small></span>
   <span class="dsrowchevron" aria-hidden="true">${icon('caret-right')}</span></button>`);
  celebrate(group);
 }

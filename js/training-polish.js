@@ -71,4 +71,4 @@ const setHintExerciseCard=exerciseCard;exerciseCard=function(w,e,index){
   let k=0;
   return setHintExerciseCard(w,e,index).replace(/<div class="liveset (?!setlabels)[^"]*">[\s\S]*?<\/div>/g,row=>{let i=k++;return row+setHintMarkup(w,e,i,e.sets[i])});
 };
-if(typeof englishUI==='object')Object.assign(englishUI,{'Notiz':'Note','Wdh':'reps'});
+if(typeof englishUI==='object')Object.assign(englishUI,{'Notiz':'Note','Wdh':'reps','Stopp':'Stop'});

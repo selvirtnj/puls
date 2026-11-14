@@ -29,7 +29,7 @@ const controlsFinish=finishWorkout;finishWorkout=function(...args){
   if(w){
     let sets=w.exercises.flatMap(e=>e.sets||[]),done=sets.filter(s=>s.done).length,open=sets.length-done,summary=form.querySelector(':scope > p');
     // Kurz, aber die Warnung bleibt: nicht abgehakte Sätze werden beim Abschließen verworfen.
-    if(summary)summary.innerHTML=(en?`${done} of ${sets.length} sets done`:`${done} von ${sets.length} Sätzen erledigt`)+(open?`<br><span class="finishwarn">${en?`${open} open ${open===1?'set is':'sets are'} discarded`:`${open} offene${open===1?'r Satz wird':' Sätze werden'} verworfen`}</span>`:'');
+    if(summary)summary.innerHTML=(en?`${done} of ${sets.length} sets done`:`${done} von ${sets.length} ${sets.length===1?'Satz':'Sätzen'} erledigt`)+(open?`<br><span class="finishwarn">${en?`${open} open ${open===1?'set is':'sets are'} discarded`:`${open} offene${open===1?'r Satz wird':' Sätze werden'} verworfen`}</span>`:'');
   }
   let label=$('finish-bodyweight')?.closest('label');if(label)label.firstChild.textContent=en?'Body weight · kg (optional) ':'Körpergewicht · kg (optional) ';
   let [submit,back]=form.querySelectorAll('button');if(submit)submit.textContent=en?'Finish workout':'Workout abschließen';if(back)back.textContent=en?'Back':'Zurück';
