@@ -8,7 +8,7 @@ const {EXTRA_SOURCES,readCnf} = require('./lib/nutrient-new-sources.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const BASE_DIGEST = 'b628e42785483adeae717bfdc15c9026306445f3ca37fb39da463937fc884a2d';
-const EXTENSION_DIGEST = '6ec107b126e59a9893a8a1b8990f30ef7e020d13752e9947d61eae994f6604b2';
+const EXTENSION_DIGEST = '24834ab92bdbc794e2c456edb89b2a121db221b7aed65a8b6d68a3ef97aa6959';
 const BLS_DIR = 'bls-4.0/BLS_4_0_2025_DE_extracted/BLS_4_0_2025_DE/';
 const SR_DIR = 'usda-sr-legacy-2018/FoodData_Central_sr_legacy_food_csv_2018-04_extracted/FoodData_Central_sr_legacy_food_csv_2018-04/';
 const SOURCES = [

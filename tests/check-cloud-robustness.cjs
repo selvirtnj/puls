@@ -229,6 +229,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
       let {h,d,done}=login(mine,theirs,[['puls-cloud-local-before-login','ALTE-SICHERUNG']]),before=h.run('JSON.stringify(state)');await tick();await tick();
       assert(h.run('modal.open')&&h.run('cloudLoadAsk!==null'),'Rückfrage erscheint');assert.equal(h.run("$('mt').textContent"),'Konto laden?');
       assert.equal(h.run('state.goals.kcal'),2300,'vor der Antwort bleibt der Gerätestand');
+      h.run('cloudDirty=true');await h.run('syncCloud()');assert(!upload(h),'kein Upload während der Rückfrage');
       h.run(how==='button'?'cloudLoadAnswer(false)':'modal.ls.close()');await done;
       assert.equal(h.run('state.goals.kcal'),2300);assert.equal(h.run('state.weights[0].id'),'mine-1');assert.equal(h.run('JSON.stringify(state)'),before);assert.deepEqual(JSON.parse(d.get('puls-v1')),JSON.parse(before),'Gerätestand unverändert');
       assert.equal(d.get('puls-cloud-local-before-login'),'ALTE-SICHERUNG','Sicherung nicht überschrieben');
@@ -239,6 +240,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
       assert.equal(h.run('state.goals.kcal'),1700,'Konto laden ersetzt wie bisher');assert.equal(h.run('cloudRevision'),5);assert(h.run('cloudSession'));assert(d.has('puls-cloud-session'));
       assert.equal(JSON.parse(d.get('puls-cloud-local-before-login')).weights[0].id,'mine-1','Gerätestand gesichert');assert(!upload(h));
     }
+    {let {h,done}=login({...remote,runs:[{id:'r1',date:'2026-10-01',distanceKm:5,durationSeconds:1800}]},theirs);await tick();await tick();assert(h.run('cloudLoadAsk!==null'),'Rückfrage auch, wenn das Gerät nur Aktivitäten hat');h.run('cloudLoadAnswer(false)');await done}
     // Keine Rückfrage: leeres Gerät, identische Stände.
     let same=JSON.parse(harness({disk:new Map([['puls-v1',JSON.stringify(mine)]]),fetchImpl:async()=>json(null)}).run('JSON.stringify(state)'));
     for(let [device,account] of [[remote,theirs],[mine,same]]){
