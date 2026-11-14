@@ -117,3 +117,11 @@ html body .qadetail .qafullsetup:focus-visible { outline: 2px solid var(--ds-cat
   html body #modal .qatile { min-height: 72px !important; font-size: 12px !important; }
   .qaratiogrid { gap: 6px; }
 }
+
+/* Konto-Umbau nach iOS-Einstellungen: Freunde-Gruppe nur mit Zeile, Körper-Grün, Kopfzeile. */
+.qamore .qafriends:not(:has(.dsrow)) { display: none; }
+.qamore .qafriends .dsgroup { margin-top: 0; }
+.qadetail .qabody .dsrowicon { color: var(--ds-cat-body-text); }
+.qamore .accountprofilegroup .accountidentity { display: flex; align-items: center; gap: 12px; }
+.qamore .accountprofilegroup .accountstreak { padding: 0 16px 12px; }
+.qamore .accountprofilegroup .accountstreak small { color: var(--ds-label-2); }

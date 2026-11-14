@@ -229,7 +229,7 @@ for(const text of ['Farbschema','Folien der Tagesübersicht','Haptik','Bewegung'
 run("qaOpen('profile')");html=run('accountPage()');assert(html.includes('25.3'),'BMI berechnet');
 for(const key of ['age','sex','height','weight','target'])assert(html.includes(`qaEdit('${key}')`),key);
 assert(!html.includes('settings()'));
-assert(!/Rezepte|Kombis|Kalender|Trainingsfortschritt|Level & Rekorde/.test(run('qaDiscoverRows()')));
+assert(!/Rezepte|Kombis|Kalender|Trainingsfortschritt|Level & Rekorde/.test(run('qaOverview(null)')));
 
 // BMI fallback: sex parameter, current non-future weight, no writes, measurement priority.
 const profileSource=fs.readFileSync('js/profile-refresh.js','utf8');

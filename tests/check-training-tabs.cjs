@@ -71,7 +71,7 @@ for(const lang of ['de','en']){
   const f=fixture(lang),before=JSON.stringify(f.c.state),group=f.body.querySelector('.quickroutines');
   assert.equal(f.body.children[0],f.empty);assert.equal(f.empty.getAttribute('onclick'),'startWorkout()');
   assert.equal(group.querySelector('summary').textContent,lang==='en'?'My routines (2)':'Meine Routinen (2)');
-  assert.equal(f.body.querySelector('.quicknewroutine').textContent,lang==='en'?'New routine':'Neue Routine');
+  assert.equal(f.body.querySelector('.quicknewroutine'),null,'Neue Routine steht nur einmal, als Zeile der Routinen-Gruppe (Apple HIG, ein Ort, eine Aktion)');
   assert.equal(f.active.parent,f.body);assert.equal(f.done.parent,f.body);assert(f.body.querySelector('.runcard'));
   for(const [i,card] of group.querySelectorAll('.quickstart').entries()){
     assert.equal(card.children.at(-1),f.starts[i]);assert.equal(card.querySelector('.actionrow'),null);

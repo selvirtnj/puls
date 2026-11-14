@@ -795,6 +795,7 @@ html body #modal .finishwarn { color: var(--ds-red-text) !important; }
 html body .calroutines { display: none !important; }
 html body .actnav { display: grid !important; place-items: center !important; min-width: 44px; min-height: 44px; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: var(--ds-accent-text) !important; }
 html body .actnav svg { width: 20px; height: 20px; }
+html body .actnav[hidden] { display: none !important; }
 html body .actnav:disabled { color: var(--ds-label-3) !important; }
 html body .actday { border: 0 !important; }
 html body .actday.future { opacity: 1 !important; color: var(--ds-label-2) !important; background: transparent !important; }
@@ -1003,3 +1004,13 @@ html body .qapalettes .qaswatch-midnight { background: #0B1120; border-right: 10
 html body .qapalettes { margin-top: 8px; }
 html body .qapalettecheck { color: var(--ds-accent); }
 html body .qapalettecheck svg { width: 20px; height: 20px; }
+
+/* Übersicht HIG */
+/* Einheitliche Abschnittstitel (Title 2, normale Schrift, ohne Großschreibung und ohne Farbpunkt). */
+html body .dshome .dsgrouptitle { margin: 24px 16px 8px; font-size: 20px; font-weight: 600; line-height: 25px; color: var(--ds-label); text-transform: none; letter-spacing: normal; }
+html body .dshome .dsgrouptitle:has(+ *)::before { content: none !important; }
+/* Der Titel „Heute eingetragen“ führt ins Ernährungstagebuch; Touch-Ziel mindestens 44 pt. */
+html body .dshome .dsgrouplink { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+html body .dshome .dsgrouplink svg { width: 16px; height: 16px; color: var(--ds-label-3); }
+/* Nicht antippbare Info-Zeile in einer Gruppe (z. B. Aktiv diese Woche). */
+html body .dshome .dsrow.dsinfo { cursor: default; }

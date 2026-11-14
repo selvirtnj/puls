@@ -5,626 +5,626 @@
   "faelle": {
    "zustand:initial": {
     "ablauf": "kern:food-diary",
-    "laenge": 13860,
-    "sha256": "35ef129a5788266379e5a8a9f1d437a17662223ca428b8749158d6faddfc4502",
+    "laenge": 14413,
+    "sha256": "daa121f27e732603269b7d514c7bf3d3c2f537dbb892bd0162708d01b6312213",
     "zustand": "d89537b572399838a60af409a99e65456a1339c828f8e25468646f0b5f6d4c16"
    },
    "zustand-render:initial": {
     "ablauf": "kern:food-diary",
-    "laenge": 13868,
-    "sha256": "d12ae06821aed4026e623f977ae1e4380b400a30df247cf576d4ff9c0faa71dc",
+    "laenge": 14421,
+    "sha256": "1ff9abb903a1e96ef2b3b8a8604e7c8a4b8c7b45c230d9cbe36a81d3a6473658",
     "zustand": "7c27f8255d3474686c7bda56f4555d1270e5e833a750e33e06b5545316ed6ff9"
    },
    "zustand:urzustand-mit-eintraegen": {
     "ablauf": "kern:food-diary",
-    "laenge": 13860,
-    "sha256": "7152e5ed36d966130881e3ab690fbf64e98b898e9d76ab3880b8db0cdc797bb0",
+    "laenge": 14413,
+    "sha256": "b669e5f95dcd5836f2a9524d48e5689998ca04f9e64ccc381f5b36e3ebeb93c3",
     "zustand": "46fc40f348d84e12bff38ae73301dc0cb0b14e31583ebda5b0c28241f766acc8"
    },
    "zustand-render:urzustand-mit-eintraegen": {
     "ablauf": "kern:food-diary",
-    "laenge": 13868,
-    "sha256": "88708549e1d150afb8ecb8166b90bf8ff8bb610ac5534836c66ffb3ada49bbe8",
+    "laenge": 14421,
+    "sha256": "92d82500a44e00b7e95e57d0ece4784f3156b90271e94fef915653e6ba9ba42f",
     "zustand": "63a4ff22fd6ec0be50e74998f55bdedd51dac2cbe650961f9876b35d603b7be7"
    },
    "zustand:v2-migriert": {
     "ablauf": "kern:food-diary",
-    "laenge": 13860,
-    "sha256": "35ef129a5788266379e5a8a9f1d437a17662223ca428b8749158d6faddfc4502",
+    "laenge": 14413,
+    "sha256": "daa121f27e732603269b7d514c7bf3d3c2f537dbb892bd0162708d01b6312213",
     "zustand": "d89537b572399838a60af409a99e65456a1339c828f8e25468646f0b5f6d4c16"
    },
    "zustand-render:v2-migriert": {
     "ablauf": "kern:food-diary",
-    "laenge": 13868,
-    "sha256": "d12ae06821aed4026e623f977ae1e4380b400a30df247cf576d4ff9c0faa71dc",
+    "laenge": 14421,
+    "sha256": "1ff9abb903a1e96ef2b3b8a8604e7c8a4b8c7b45c230d9cbe36a81d3a6473658",
     "zustand": "7c27f8255d3474686c7bda56f4555d1270e5e833a750e33e06b5545316ed6ff9"
    },
    "zustand:mit-profil-und-trainingsplan": {
     "ablauf": "kern:food-diary",
-    "laenge": 14158,
-    "sha256": "37353274f808d589e6d90b65a66cfe50e9abc9d19906a503705ffdcc8916a645",
+    "laenge": 14711,
+    "sha256": "916c543c4f1a8215ca9de2b68ca6d2e2c2d9e6a811be8878dcb29957f5161645",
     "zustand": "440108adf66fed9c9c8047e8fcd8f7385e3ad611fdd53d3d40e4ae994e66c9b6"
    },
    "zustand-render:mit-profil-und-trainingsplan": {
     "ablauf": "kern:food-diary",
-    "laenge": 14166,
-    "sha256": "59f31d1695ba83ae958f9e8d5a7c1a23fad5749f2ff66d1d375b06c44735e09c",
+    "laenge": 14719,
+    "sha256": "38f7982584f3971f318f1d4528f081edd01a71870795f571eb4d7e9084a4ebe0",
     "zustand": "625b8190f7a645f1943469626a344f63f4cc550f9e5c704a2b72c430f51326ab"
    },
    "zustand:mit-tracker-werkzeugen": {
     "ablauf": "kern:food-diary",
-    "laenge": 13849,
-    "sha256": "c40770e987de24e091af83acbda9d224a7405e8a16dfd3bf75313be499199b55",
+    "laenge": 14402,
+    "sha256": "25ec7ff8f07e989f00e81bc809ec7b94e8f80ce4fd32dc5c7832fba3f5a80663",
     "zustand": "64231df2d17537856bc3503059fd27ab4b57173fc8dbafc5cfa4bdfff4abc7dd"
    },
    "zustand-render:mit-tracker-werkzeugen": {
     "ablauf": "kern:food-diary",
-    "laenge": 13857,
-    "sha256": "92d830c55ee567fbc9953030ec5d201f79ac4a8a02d2d4157c1d6d9965f9aef6",
+    "laenge": 14410,
+    "sha256": "c6d9cf13e0c2dba617314ea6c112a3e30e122d1932ebfcb02b8daa2d5b33cf0d",
     "zustand": "a5e7a96c310c3840768caea58620952faadd000bed91096b1ed126488e930cc6"
    },
    "zustand:v87-optionen-alter-rangmarker": {
     "ablauf": "kern:food-diary",
-    "laenge": 12709,
-    "sha256": "33a3b5e13fe16e49a6496f977a6985f4581959459a1848515104e73cf4358bb9",
+    "laenge": 13262,
+    "sha256": "f919eefc25e7490b78aa2b2eca4ed2059880825d6510d448b4712e32e11d13c6",
     "zustand": "415b1acfc26de3591377261e96aade21b39a9de614d33b2bf50f576019a27307"
    },
    "zustand-render:v87-optionen-alter-rangmarker": {
     "ablauf": "kern:food-diary",
-    "laenge": 12717,
-    "sha256": "4416ab44f096bb00f0fd6adb9b9c98ade1a784c17f8dd343842c61c9d58b4fa3",
+    "laenge": 13270,
+    "sha256": "a738d85f28ea72ede4969c831a06df8c32c118ad0208d7d08262549a529d3525",
     "zustand": "22d5e9dc91d662d14f87258fa27f1a245bdf4cf85de8fe23edfb698a5cbca3df"
    },
    "zustand:v90-laeufe-design-und-konto": {
     "ablauf": "kern:food-diary",
-    "laenge": 13860,
-    "sha256": "35ef129a5788266379e5a8a9f1d437a17662223ca428b8749158d6faddfc4502",
+    "laenge": 14413,
+    "sha256": "daa121f27e732603269b7d514c7bf3d3c2f537dbb892bd0162708d01b6312213",
     "zustand": "2f895eb0e6a612f1956d3f6532d9f4a7343f8b5f0949e9420f59544f350c8df7"
    },
    "zustand-render:v90-laeufe-design-und-konto": {
     "ablauf": "kern:food-diary",
-    "laenge": 13868,
-    "sha256": "d12ae06821aed4026e623f977ae1e4380b400a30df247cf576d4ff9c0faa71dc",
+    "laenge": 14421,
+    "sha256": "1ff9abb903a1e96ef2b3b8a8604e7c8a4b8c7b45c230d9cbe36a81d3a6473658",
     "zustand": "9748101d84ba584888e8743371be539d0f1a12e48ffa00a7abed881b28d13908"
    },
    "zustand:full": {
     "ablauf": "kern:food-diary",
-    "laenge": 11163,
-    "sha256": "9693f61e072a998bc64cd71286673986893559cccb46a8737ede509eb5088a89",
+    "laenge": 11719,
+    "sha256": "2259662f9356be24af37733f55d71dd48696d66beeb5abe03791c9654dfd0ae1",
     "zustand": "f42dadcf33cee8dd7ad1e2826296e85ce4c1ed3e14ce70b178c67ad13dde6e86"
    },
    "zustand-render:full": {
     "ablauf": "kern:food-diary",
-    "laenge": 11171,
-    "sha256": "f2fe36d1e20da82f22dcd2b089cb44658ceca9212a37d333c9b01279020573c0",
+    "laenge": 11727,
+    "sha256": "cbd61c88c07da2f290cda2b595e25ec9210d946cef4dc4e282065dd2fa38c5c2",
     "zustand": "5c74aadca757a4dec5838bfa84db5e0b6d0369c64a302d96ab5f3c10924f23b8"
    },
    "en:initial": {
     "ablauf": "kern:food-diary",
-    "laenge": 13669,
-    "sha256": "8907c36b9a8864caa361f69013413f90db1ecf6950fe616e854246768b458d8d",
+    "laenge": 14225,
+    "sha256": "b69f2fe4d7065efecf3f1c4a77797f8110c0f096540f220e5955f68700b7921d",
     "zustand": "ffc1826d626ffa79234e8bcd052bcbcdc6d20adb09ee2311471f5e6b30df6f87"
    },
    "en:full": {
     "ablauf": "kern:food-diary",
-    "laenge": 11163,
-    "sha256": "9693f61e072a998bc64cd71286673986893559cccb46a8737ede509eb5088a89",
+    "laenge": 11719,
+    "sha256": "2259662f9356be24af37733f55d71dd48696d66beeb5abe03791c9654dfd0ae1",
     "zustand": "f42dadcf33cee8dd7ad1e2826296e85ce4c1ed3e14ce70b178c67ad13dde6e86"
    },
    "en:mit-profil-und-trainingsplan": {
     "ablauf": "kern:food-diary",
-    "laenge": 13965,
-    "sha256": "1e43fbfe6d73d907fa70f0163e903e23b48d40d47ac5dc98a178b480e803f19f",
+    "laenge": 14521,
+    "sha256": "ece5d90e7b866e8f68caf6e9823b3c2199fe770ae974f6ce7a2b578abfe7295b",
     "zustand": "e357807f865290b00f269179efaec6ddb4892a993960ce9f0d979cc931834ab0"
    },
    "leer": {
     "ablauf": "kern:food-diary",
-    "laenge": 13860,
-    "sha256": "35ef129a5788266379e5a8a9f1d437a17662223ca428b8749158d6faddfc4502",
+    "laenge": 14413,
+    "sha256": "daa121f27e732603269b7d514c7bf3d3c2f537dbb892bd0162708d01b6312213",
     "zustand": "d89537b572399838a60af409a99e65456a1339c828f8e25468646f0b5f6d4c16"
    },
    "eintraege": {
     "ablauf": "kern:food-diary",
-    "laenge": 16725,
-    "sha256": "5fe399b1599913ed67f5aac5335c05280e7ae6b67d350fe5eaefd00f7471fac2",
+    "laenge": 17278,
+    "sha256": "4a9a9df3c319a9f385cb65232266252306ec5bccf8cff754f0ba1b8ba3af814a",
     "zustand": "db50ee66a35a95402d6cc6f4c4ba869cfada5509a51317e4200c10343d2f2a25"
    },
    "eintraege-en": {
     "ablauf": "kern:food-diary",
-    "laenge": 16599,
-    "sha256": "4f2f929f71b2ace3eff92f5394f9d37ecf3ce1a25125c3da9bc47659d197a626",
+    "laenge": 17155,
+    "sha256": "72fa900cf0d11d461866e01a971921db33fde41f3c331196c92c6714d1a7d45a",
     "zustand": "3ab62232c488d439924cc7fd4bd8210d6d472e890761a80331172642d5fe6cfa"
    },
    "eintraege-anderer-tag": {
     "ablauf": "kern:food-diary",
-    "laenge": 15196,
-    "sha256": "02ecd4840944e08aad4ed34159f7fa7c184daf76d767dccf77228e4d82c4daaa",
+    "laenge": 15749,
+    "sha256": "b98c2039c90d352a5e2fc5679cb3121cad24ce90739447e3819d72681aef5d3a",
     "zustand": "4da1e7f67f05e3ae2e7dfbd575cc923017c3a7668b408bcf8e0b0de00faf1ef3"
    },
    "eintraege-leerer-tag": {
     "ablauf": "kern:food-diary",
-    "laenge": 13874,
-    "sha256": "10ebd51d28bb8c182f397014e9e7a5ecbbd352417c486f0130a3ed98b15652d2",
+    "laenge": 14427,
+    "sha256": "c5cf28a9dd240f6615f1ea52bf98fdb441a547aa5fbe0de23cf8ab1b2a749e7a",
     "zustand": "bb5395e693eb7eb6fec0662b040f5ff51e927a9d4e98aaee341a7d3dfc0d44b7"
    },
    "eintraege-zukunft": {
     "ablauf": "kern:food-diary",
-    "laenge": 13873,
-    "sha256": "6ab16ac54cc010b91dacf37e32d1020ea5f3e87c9d49d07f444f9558b53875ec",
+    "laenge": 14426,
+    "sha256": "cbfced024cec273ff4d749da33cc3b2b2c53e4e7bf2cbd4dc861e53aacc83e0a",
     "zustand": "6e9b01ab88b074760ec04e97b3c6c8bc082da0b848d7e88ed15074079e58adc9"
    },
    "eintraege-voriges-jahr": {
     "ablauf": "kern:food-diary",
-    "laenge": 13876,
-    "sha256": "1c163176066423f16e575bcac49dbe11cc4e635da451512b0c77980bb37e1a81",
+    "laenge": 14429,
+    "sha256": "b5f121946593d7ae9f7cc8132b985c10bc3d9473fa4a9d1f4c55079a88183287",
     "zustand": "ed160e9ba6913e2cd431a3e8285621862bc128f71edb1226b88b2c03da298d8e"
    },
    "viele-eintraege": {
     "ablauf": "kern:food-diary",
-    "laenge": 24839,
-    "sha256": "bddcdb1688536fb1365630bf75c3be9f8d15bda8720fe0399999f8e35de5e7ed",
+    "laenge": 25392,
+    "sha256": "691c7e1a6eaac931acd1728feb7ba7d9f85101d2c0b381c0c7e93eb5054baa55",
     "zustand": "0f17ed9b9795ae11007a4df5a6c4dfb801f35c6dc41219dffca38fecf3376582"
    },
    "ueber-ziel": {
     "ablauf": "kern:food-diary",
-    "laenge": 14026,
-    "sha256": "aed99a3d87b656f0d05adbf457119020990fb1c06043685392439509a5052bde",
+    "laenge": 14579,
+    "sha256": "e963e681fd63a9815673d73c79b41c7cf74f2b369bc687620551782df34fde2f",
     "zustand": "78d2e2eb32d5b64fad619b7dfac3d3931a33223020cc075b4dfd9509982dc79c"
    },
    "ki-eintrag": {
     "ablauf": "kern:food-diary",
-    "laenge": 15151,
-    "sha256": "169a59956573cfea97e8749ccd7d3d300128271e223b3b283aaee75a78551315",
+    "laenge": 15704,
+    "sha256": "a13ad117b30baffd9539611526f45bd92536dc280c34d14f2841661c6c9fd893",
     "zustand": "72ddd7f03a9181a7c51af04ef03d79d36df8db19c15a012fd20433fb8205ba2b"
    },
    "ziele-gesetzt": {
     "ablauf": "kern:food-diary",
-    "laenge": 16705,
-    "sha256": "6ffc2214f87aeea23a6d36fc0ab08e494e5a8bc3bd695a96d91f543d7e37898b",
+    "laenge": 17258,
+    "sha256": "7e28dd4858fbdad8f7eaf19d4fdd645ea96b654fd3f1e5c55f1d55d2e3d1a41d",
     "zustand": "33f4a4a6ea5f702347005e86feff39ff09ff2cae7f455c32f32f080f4a38de47"
    },
    "ziele-leer": {
     "ablauf": "kern:food-diary",
-    "laenge": 14936,
-    "sha256": "1da7d14f35d148a5b91498ef61fb341e76f027ff8d758791db88d24b8d23956b",
+    "laenge": 15489,
+    "sha256": "68edd16cd40ca4fd281bf0000f94e198989a117119f42814c756f3c48d6a70da",
     "zustand": "b19a123f924dca111a87349f75b0de272f402d0429465414fc0350fc69df621b"
    },
    "ziele-leer-ohne-eintraege": {
     "ablauf": "kern:food-diary",
-    "laenge": 12376,
-    "sha256": "50dbe3031bac0fd4400c8945ed530af9ed538bbf0af481e2c1e6eb8039d0eb65",
+    "laenge": 12929,
+    "sha256": "0a2dca563ae6b68f06f72006a2375019a09c2c3d5a3bef6f91452dece13f3c82",
     "zustand": "18bc10d36b6fc66ea92d03016d0c08b5e717d4e99cb3f1a404739aa34345b1ed"
    },
    "ziele-profil": {
     "ablauf": "kern:food-diary",
-    "laenge": 17082,
-    "sha256": "64e259b52119b06bd6842e2046332cd34cdd60f61a21edc492fdc568f550fa65",
+    "laenge": 17635,
+    "sha256": "9ec223af9647052bceb97563c76ddfa394ee1b4493794e60bc9c7409479930b6",
     "zustand": "aec6bf8e1e4b340da9e6786cc8a12ea893526f5f89b0595940f5f80315b683d8"
    },
    "ziele-profil-en": {
     "ablauf": "kern:food-diary",
-    "laenge": 16954,
-    "sha256": "ab8bd75a9202b2276c284e7307cd2cf0eb50760e3f9329d3551698e974ced0f7",
+    "laenge": 17510,
+    "sha256": "8c79b639dc59d6326e1f36305b54470931a2e576b19a104b2d588d573f0b2adb",
     "zustand": "ded0d4c90a199b55e06101fed67f8fe88a7a684f7a4d366f1168ce0ef4c90deb"
    },
    "ziele-pro-tag": {
     "ablauf": "kern:food-diary",
-    "laenge": 16705,
-    "sha256": "6ffc2214f87aeea23a6d36fc0ab08e494e5a8bc3bd695a96d91f543d7e37898b",
+    "laenge": 17258,
+    "sha256": "7e28dd4858fbdad8f7eaf19d4fdd645ea96b654fd3f1e5c55f1d55d2e3d1a41d",
     "zustand": "6dd82a03f082f95f72a5569a68e72f1a67c3f82a0f4f67ef2414dae1ab384759"
    },
    "wasser": {
     "ablauf": "kern:food-diary",
-    "laenge": 17038,
-    "sha256": "b871ba78b01a81d58f23ac1b28352048ea9b7bb8f50444f40121710dd08eb499",
+    "laenge": 17591,
+    "sha256": "c72633441b1e7db0cfbfbd40285c61c69807b6dda425c3aab737e61077c0f529",
     "zustand": "10fe7cbb60a3f0bef17d2bb5bb3c612dad864f1b366217ec21c9e5aa90ed9e91"
    },
    "wasser-ziel": {
     "ablauf": "kern:food-diary",
-    "laenge": 17040,
-    "sha256": "5d0adf04b0252eef450e676f5d0ddbf68cf58b06ce9588cd074f6d5a87402379",
+    "laenge": 17593,
+    "sha256": "11aa1263d2fd36b10b18354cc0fe2737025ea75e70122178fb4348ffb9405772",
     "zustand": "13a63f3a9f7e6e548b2c2a8d05b5fbf8b0be8e1f51e9381da1ed133fa0b36158"
    },
    "wasser-manuell": {
     "ablauf": "kern:food-diary",
-    "laenge": 17046,
-    "sha256": "ce05e2066762d015fd11356e2dbd0ac454e6765009a47498ce3aec78d729d97f",
+    "laenge": 17599,
+    "sha256": "9ec8a1f64abc17f2aa8ad588554c6ba4c08f03288f2b51ba95ba18a910ede252",
     "zustand": "ecaa7bcd5d3d75429c52e80c2a3a31640b74e5ea826682248d2355f04e1915d7"
    },
    "wasser-erreicht": {
     "ablauf": "kern:food-diary",
-    "laenge": 15856,
-    "sha256": "8933f64bcc7a49446d3e679a4eadd6dbe692b603f2957a25b0ba0b7a8a99ded6",
+    "laenge": 16409,
+    "sha256": "00ac56bb8ed89dc2898326f97b2eadbd14b3b7eadd098c62911e90a34bf81808",
     "zustand": "4a243cbc46ff1654522ca46604dffa72e9ad8484febc858e6f22d0ce5559887f"
    },
    "wasser-en": {
     "ablauf": "kern:food-diary",
-    "laenge": 16923,
-    "sha256": "6ad6e06e961081b5737f3b7a4507ce627e78f31ecadceadbacd7490a22d10542",
+    "laenge": 17479,
+    "sha256": "afb4ed68af24a83847686fe02dc714b4616fb1d69cd57d3ce7fae5977836c07c",
     "zustand": "81d08740e74c107ffc44852da516e6033d24a5ce02926dae7b78ef92bc010e49"
    },
    "nur-wasser": {
     "ablauf": "kern:food-diary",
-    "laenge": 14178,
-    "sha256": "60844c6d1a7031fcf6448d7263a38bebefed59e177f8bb86301c19e8405e462e",
+    "laenge": 14731,
+    "sha256": "4076980559ad1760b2b949c9a085029e20ae41bdb58861ccef019c70ebf546cc",
     "zustand": "6126a0cd6173c7d5d18d839005af60d872960de188500608f62d16dae4ed4b53"
    },
    "mikro-ziele": {
     "ablauf": "kern:food-diary",
-    "laenge": 16754,
-    "sha256": "ee220815d977ddd4edd25282765e945496a09ae14465d3e62eea98aee1fa0c79",
+    "laenge": 17307,
+    "sha256": "f3639d1d67c188eeba83f0e8a7a744868660067e6ae196a8e747b4ff62402aa2",
     "zustand": "3dba4addfba4b4c67921ef5591ce6a36276b64db5bba9a17b2174a175856f246"
    },
    "mikro-hervorgehoben": {
     "ablauf": "kern:food-diary",
-    "laenge": 16725,
-    "sha256": "5fe399b1599913ed67f5aac5335c05280e7ae6b67d350fe5eaefd00f7471fac2",
+    "laenge": 17278,
+    "sha256": "4a9a9df3c319a9f385cb65232266252306ec5bccf8cff754f0ba1b8ba3af814a",
     "zustand": "5a68e7516dcb329625d720bc12dedd88be587575419ffc4e04735665d9b3f9df"
    },
    "mikro-keine": {
     "ablauf": "kern:food-diary",
-    "laenge": 15534,
-    "sha256": "6a81008cb5caa68aa19dfa4c7dfb8ba400a5a7ae32ff147ffff2b6a0efe717c8",
+    "laenge": 16087,
+    "sha256": "2f3332e46e527230e93855e2c34200f22472187122c1f6f7c423bf9616c64c35",
     "zustand": "d0ea0920cb9e5e8676fb408e5baea111794d9548a03064b340b3c4925dd921a4"
    },
    "verbleibend": {
     "ablauf": "kern:food-diary",
-    "laenge": 16708,
-    "sha256": "01a034d02da1398974d100dcecbe6e6185db8a77d8d6dc3cfdf74c69b44340b0",
+    "laenge": 17261,
+    "sha256": "5df7cc8d9c9cbb76711c66535228127a9ee154c0a0bad155981f3d9466e93916",
     "zustand": "596e841812ad637e4a6d3efe26eacc289fd4f23793a5b36f4cb2c8e7c24e3f14"
    },
    "verbleibend-en": {
     "ablauf": "kern:food-diary",
-    "laenge": 16578,
-    "sha256": "ee104473cea8f86b814246ac5f79def0dd98fd25d058693b0da63df5453e1727",
+    "laenge": 17134,
+    "sha256": "6ac0d0aae74e06f4f132b0c00eee42d3238b40d6fdfb31bca75a2951b13bd399",
     "zustand": "98ac110853e47da98e27425fcf23d367ccdf15a0548cfe91e5949f4deacbe92a"
    },
    "ansichten:week+energy:makro": {
     "ablauf": "kern:food-diary",
-    "laenge": 14753,
-    "sha256": "136079c0ea7d5907cd6bfb123ce323f86be0e29d86ba454942a7c1634667a9aa",
+    "laenge": 15306,
+    "sha256": "b75ef9ab9fae37e9b2d8ed88410c8aa04304fe624203f82beafe762c60bf87bb",
     "zustand": "ebf11f83e895012a092cf621e11af9a06b787aab2622f616ff7db246a415635a"
    },
    "ansichten:week+energy:folie0": {
     "ablauf": "kern:food-diary",
-    "laenge": 14753,
-    "sha256": "136079c0ea7d5907cd6bfb123ce323f86be0e29d86ba454942a7c1634667a9aa",
+    "laenge": 15306,
+    "sha256": "b75ef9ab9fae37e9b2d8ed88410c8aa04304fe624203f82beafe762c60bf87bb",
     "zustand": "9bdad2c7aa9beb380896ea4db124bf6850d4a6bdbdb82477b141d85585183499"
    },
    "ansichten:week+energy:folie1": {
     "ablauf": "kern:food-diary",
-    "laenge": 14753,
-    "sha256": "c3b14d5abd4e679afb695f2ac7cde9a990558f0892d1bc17481633c9620e4818",
+    "laenge": 15306,
+    "sha256": "33f0af71801a2d65416f86e488e92bbc07b78f292fd54a149b564cc590351abf",
     "zustand": "b1aa2c4618830b09685a332ee4759254a82b68b882814bb092804d6c098bc2d5"
    },
    "ansichten:week+energy:folie2": {
     "ablauf": "kern:food-diary",
-    "laenge": 14753,
-    "sha256": "71ba19c50dd6a863690a56b2e056992284837b90bfb228a9439b48262c55eff0",
+    "laenge": 15306,
+    "sha256": "2555d30e82ca245e53cefc0747394e9fd475c70cb0179f702c083627f44e09ed",
     "zustand": "c857550eeeee8b691584e041595c8ed489160f9f29e99c5f1d602a36bc7a6cfc"
    },
    "ansichten:week+energy:folie3": {
     "ablauf": "kern:food-diary",
-    "laenge": 14753,
-    "sha256": "71ba19c50dd6a863690a56b2e056992284837b90bfb228a9439b48262c55eff0",
+    "laenge": 15306,
+    "sha256": "2555d30e82ca245e53cefc0747394e9fd475c70cb0179f702c083627f44e09ed",
     "zustand": "c857550eeeee8b691584e041595c8ed489160f9f29e99c5f1d602a36bc7a6cfc"
    },
    "ansichten:micros:makro": {
     "ablauf": "kern:food-diary",
-    "laenge": 14364,
-    "sha256": "98ef2ab1e59c0123ac082184008af370771e664d560a8079bc2dbe69eb4e7e0d",
+    "laenge": 14917,
+    "sha256": "e82207ff24fe0aa5c71372f641362a70e2b07ed0cb2f2600eeb5fa643bb02c47",
     "zustand": "73d72d27444dffa5c6855c06e1b876d53923add4e6f7dd5f6e35b7e34b90d599"
    },
    "ansichten:micros:folie0": {
     "ablauf": "kern:food-diary",
-    "laenge": 14364,
-    "sha256": "98ef2ab1e59c0123ac082184008af370771e664d560a8079bc2dbe69eb4e7e0d",
+    "laenge": 14917,
+    "sha256": "e82207ff24fe0aa5c71372f641362a70e2b07ed0cb2f2600eeb5fa643bb02c47",
     "zustand": "f97d5897e8e4437610adfbcd3bbecdf37bf6f971656a4915d58640622ccfa531"
    },
    "ansichten:micros:folie1": {
     "ablauf": "kern:food-diary",
-    "laenge": 14364,
-    "sha256": "fed4ac05c89c4a1e2d604b1be46b353b8695695a635d8c11fbd92dbf66b72955",
+    "laenge": 14917,
+    "sha256": "f5e34e94093f612ab1bf34c237684aeac3fb490d2c98ca91291790537e86296a",
     "zustand": "31385cc3fe59824d650c1c8fe2f749aa6d16788a0fb5954193e1408d0c183a08"
    },
    "ansichten:micros:folie2": {
     "ablauf": "kern:food-diary",
-    "laenge": 14364,
-    "sha256": "fed4ac05c89c4a1e2d604b1be46b353b8695695a635d8c11fbd92dbf66b72955",
+    "laenge": 14917,
+    "sha256": "f5e34e94093f612ab1bf34c237684aeac3fb490d2c98ca91291790537e86296a",
     "zustand": "31385cc3fe59824d650c1c8fe2f749aa6d16788a0fb5954193e1408d0c183a08"
    },
    "ansichten:micros:folie3": {
     "ablauf": "kern:food-diary",
-    "laenge": 14364,
-    "sha256": "fed4ac05c89c4a1e2d604b1be46b353b8695695a635d8c11fbd92dbf66b72955",
+    "laenge": 14917,
+    "sha256": "f5e34e94093f612ab1bf34c237684aeac3fb490d2c98ca91291790537e86296a",
     "zustand": "31385cc3fe59824d650c1c8fe2f749aa6d16788a0fb5954193e1408d0c183a08"
    },
    "ansichten:energy:makro": {
     "ablauf": "kern:food-diary",
-    "laenge": 13763,
-    "sha256": "aab19ce4285bc9b5b9f336dec580dda3c366cde4dde1a3622ea14efaa999fb3e",
+    "laenge": 14316,
+    "sha256": "6de201192bdab82cb80a33aa86d03d86919b14d4b521e43527fd1917e7ab0914",
     "zustand": "472dbb9c9beab1fc69ba21ddf197f666c566295ca8d42afa1929f2e45910cace"
    },
    "ansichten:energy:folie0": {
     "ablauf": "kern:food-diary",
-    "laenge": 13763,
-    "sha256": "aab19ce4285bc9b5b9f336dec580dda3c366cde4dde1a3622ea14efaa999fb3e",
+    "laenge": 14316,
+    "sha256": "6de201192bdab82cb80a33aa86d03d86919b14d4b521e43527fd1917e7ab0914",
     "zustand": "bae145c4a1f57a1fcb84d22c03a268ec0ba3c1804bda785ef8fb95be9e34b9a4"
    },
    "ansichten:energy:folie1": {
     "ablauf": "kern:food-diary",
-    "laenge": 13763,
-    "sha256": "47081f9d85fbdf644c0b44f719fd30222d9d2a2a2e9eb60e4d6966c973231c59",
+    "laenge": 14316,
+    "sha256": "6fed7bb17dcb958de96c20061438d81938abbfaae4bfbea9234eb905f4e58407",
     "zustand": "22a7bb436bc97d2c211e6d70f119418b3bec958902419fa1dc6dae8bea091202"
    },
    "ansichten:energy:folie2": {
     "ablauf": "kern:food-diary",
-    "laenge": 13763,
-    "sha256": "47081f9d85fbdf644c0b44f719fd30222d9d2a2a2e9eb60e4d6966c973231c59",
+    "laenge": 14316,
+    "sha256": "6fed7bb17dcb958de96c20061438d81938abbfaae4bfbea9234eb905f4e58407",
     "zustand": "22a7bb436bc97d2c211e6d70f119418b3bec958902419fa1dc6dae8bea091202"
    },
    "ansichten:energy:folie3": {
     "ablauf": "kern:food-diary",
-    "laenge": 13763,
-    "sha256": "47081f9d85fbdf644c0b44f719fd30222d9d2a2a2e9eb60e4d6966c973231c59",
+    "laenge": 14316,
+    "sha256": "6fed7bb17dcb958de96c20061438d81938abbfaae4bfbea9234eb905f4e58407",
     "zustand": "22a7bb436bc97d2c211e6d70f119418b3bec958902419fa1dc6dae8bea091202"
    },
    "ansichten:week+micros+energy:makro": {
     "ablauf": "kern:food-diary",
-    "laenge": 16705,
-    "sha256": "7ca01b24179921a0901d26326bda16ff134131dc60d5ccf639730f04b0b7a16f",
+    "laenge": 17258,
+    "sha256": "eb8daff22c34249a9c3cf8d4ee03ea3d1bcca8721811d291a70c402dcbd4cdde",
     "zustand": "1fa552a23774f9f425f1ede2cf985662b0940fe714a0fc96aa0505b03aca14ee"
    },
    "ansichten:week+micros+energy:folie0": {
     "ablauf": "kern:food-diary",
-    "laenge": 16705,
-    "sha256": "7ca01b24179921a0901d26326bda16ff134131dc60d5ccf639730f04b0b7a16f",
+    "laenge": 17258,
+    "sha256": "eb8daff22c34249a9c3cf8d4ee03ea3d1bcca8721811d291a70c402dcbd4cdde",
     "zustand": "a5e32507845417149045f734af916688b297529114991c356b13ec8d8163b573"
    },
    "ansichten:week+micros+energy:folie1": {
     "ablauf": "kern:food-diary",
-    "laenge": 16705,
-    "sha256": "cde6da4053a069b3feadfb4d323d70ce891b024f38611fb9a8f42f2f65f848e9",
+    "laenge": 17258,
+    "sha256": "0c9521fc34d40dc5e5c19bf749a0a9ab3d6b56c7ac7ffa6e72a13a3b5398d8f8",
     "zustand": "e705a43124f15a9e496fa0959813a00386fdd98243b5eb7b75dab03ee2f5b4da"
    },
    "ansichten:week+micros+energy:folie2": {
     "ablauf": "kern:food-diary",
-    "laenge": 16705,
-    "sha256": "47e7b75b8f7578b8e785ff109bcc0bb5c958b4563aeea65cf4524fd5c04c0f63",
+    "laenge": 17258,
+    "sha256": "1ceda2f002e62954c45648c4550414f78a2eddeb4f75247277b183192923e719",
     "zustand": "cb556113daff2c364e59ff235a2228a3db475e5e9183591697acb10b5e94cd3e"
    },
    "ansichten:week+micros+energy:folie3": {
     "ablauf": "kern:food-diary",
-    "laenge": 16705,
-    "sha256": "7af1acc2aa35b06e617d74e22f331c3a144be9bd235e7b9c102d2d129d9662b6",
+    "laenge": 17258,
+    "sha256": "b2d8ed3a34347d76f6f127418e59989a21bc10dafea359188986ff73df5974cc",
     "zustand": "167e710a5d068a95b5c3480af59664aa007d43401889f2acc91678d1c358e33f"
    },
    "ansichten::makro": {
     "ablauf": "kern:food-diary",
-    "laenge": 12412,
-    "sha256": "8241d5c05662f495245ac7102c93a5ec5695de3496c794506aef41c5c3e5a34d",
+    "laenge": 12965,
+    "sha256": "c14884525331176706aa070d2cf0179db92302d36ea1dd76e9f8cc64acd9b881",
     "zustand": "584f9a534c7a59d4742b2e5ad75c0b7063cb2af2442fcdd29f14b3b3ef9799ee"
    },
    "ansichten::folie0": {
     "ablauf": "kern:food-diary",
-    "laenge": 12412,
-    "sha256": "8241d5c05662f495245ac7102c93a5ec5695de3496c794506aef41c5c3e5a34d",
+    "laenge": 12965,
+    "sha256": "c14884525331176706aa070d2cf0179db92302d36ea1dd76e9f8cc64acd9b881",
     "zustand": "dd124207c287f286564864dc2c7cc98100ce76ea44358a0430b2b8f8b69c631f"
    },
    "ansichten::folie1": {
     "ablauf": "kern:food-diary",
-    "laenge": 12412,
-    "sha256": "8241d5c05662f495245ac7102c93a5ec5695de3496c794506aef41c5c3e5a34d",
+    "laenge": 12965,
+    "sha256": "c14884525331176706aa070d2cf0179db92302d36ea1dd76e9f8cc64acd9b881",
     "zustand": "dd124207c287f286564864dc2c7cc98100ce76ea44358a0430b2b8f8b69c631f"
    },
    "ansichten::folie2": {
     "ablauf": "kern:food-diary",
-    "laenge": 12412,
-    "sha256": "8241d5c05662f495245ac7102c93a5ec5695de3496c794506aef41c5c3e5a34d",
+    "laenge": 12965,
+    "sha256": "c14884525331176706aa070d2cf0179db92302d36ea1dd76e9f8cc64acd9b881",
     "zustand": "dd124207c287f286564864dc2c7cc98100ce76ea44358a0430b2b8f8b69c631f"
    },
    "ansichten::folie3": {
     "ablauf": "kern:food-diary",
-    "laenge": 12412,
-    "sha256": "8241d5c05662f495245ac7102c93a5ec5695de3496c794506aef41c5c3e5a34d",
+    "laenge": 12965,
+    "sha256": "c14884525331176706aa070d2cf0179db92302d36ea1dd76e9f8cc64acd9b881",
     "zustand": "dd124207c287f286564864dc2c7cc98100ce76ea44358a0430b2b8f8b69c631f"
    },
    "tag-abgeschlossen": {
     "ablauf": "kern:food-diary",
-    "laenge": 17148,
-    "sha256": "5e935668c25b7e52ddaedc3dd5e9fc35e9117852c1f99c10a754885e294c40e7",
+    "laenge": 17701,
+    "sha256": "845ba5de46b9e105650493d92038d5fc47e88bf6efac780efa7da416282fbd9d",
     "zustand": "b08951c3ac162c115a13e1aa2148072fd7fe29ff2d4987f78c75bb6f32814524"
    },
    "tag-abgeschlossen-en": {
     "ablauf": "kern:food-diary",
-    "laenge": 17011,
-    "sha256": "b11d5bf3f1f25728ab03fdabe5b82f81b3c4d788d12531e740fa8f30c5218568",
+    "laenge": 17567,
+    "sha256": "68a408555a50b4e09f9247a2346f33002bbf49aaea83dd91c6daf6470998f97a",
     "zustand": "b35916b232a31baa889c51a756fe415cacaf369a76063ba3b7daf8475ad3b29e"
    },
    "mahlzeiten": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "13d88fceaa11720f299de7e04d6a728874577959ffb38f381f9d3f06db411573"
    },
    "mahlzeiten-en": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "13d88fceaa11720f299de7e04d6a728874577959ffb38f381f9d3f06db411573"
    },
    "rezepte": {
     "ablauf": "kern:food-diary",
-    "laenge": 16725,
-    "sha256": "5fe399b1599913ed67f5aac5335c05280e7ae6b67d350fe5eaefd00f7471fac2",
+    "laenge": 17278,
+    "sha256": "4a9a9df3c319a9f385cb65232266252306ec5bccf8cff754f0ba1b8ba3af814a",
     "zustand": "d01a410f49e05ae2996222a79579e0bb6614a0727488cf538a425c9c30856e5a"
    },
    "plaene-fasten": {
     "ablauf": "kern:food-diary",
-    "laenge": 16713,
-    "sha256": "5dce862cd400fa528ad5126231a6e0dfa6e8b7042c9fb1e6d225570fe7c2b682",
+    "laenge": 17266,
+    "sha256": "c4dbfa2f90625e71a5783c07b129d389d2075708c6788a647f795ad5fac00cd0",
     "zustand": "9c4d577daddd77849401bdededeff38029b5b6f660e43567260a3ac05346a151"
    },
    "vorschlaege-offen": {
     "ablauf": "kern:food-diary",
-    "laenge": 13860,
-    "sha256": "a461c5b157d899403faf58fe8fe73f9175239ddccfe9e741b1e834f98612b21d",
+    "laenge": 14413,
+    "sha256": "c0ac39dc290a72bea36c531a2d855d341c7aa15492ecec2806aa8ce313cdd2ab",
     "zustand": "8db8ca0023f5d687dc6d99f0d7274dc9dddb9715266692028af3a1a921cfb7af"
    },
    "vorschlaege-fast-voll": {
     "ablauf": "kern:food-diary",
-    "laenge": 14038,
-    "sha256": "a587f0600782a4247192ae23adae52929b9669145325961780826853978b732e",
+    "laenge": 14591,
+    "sha256": "a98ba64885ef71fd6a58d75e30c006f2fb4744785c22978aee8563baf0fc8a29",
     "zustand": "470622277d496cbb16de3d5026fa585be75babf2517f082226788f91adb04738"
    },
    "wiedereintrag-eintragung": {
     "ablauf": "kern:food-diary",
-    "laenge": 16725,
-    "sha256": "5fe399b1599913ed67f5aac5335c05280e7ae6b67d350fe5eaefd00f7471fac2",
+    "laenge": 17278,
+    "sha256": "4a9a9df3c319a9f385cb65232266252306ec5bccf8cff754f0ba1b8ba3af814a",
     "zustand": "f4b0b895688a913777058e894d85d985d89d3bd569761c38ab4e31509226321e"
    },
    "einstieg-animation": {
     "ablauf": "kern:food-diary",
-    "laenge": 16733,
-    "sha256": "a104218f0e5525a71b33668629b3d088a3dcca53f882fe86f41e5e29d91b1aaa",
+    "laenge": 17286,
+    "sha256": "15cae19fc9591688bc183ac67d167702131e3f6ec2c347a542309096f892f3fd",
     "zustand": "6c3aa1529f94bdc8403ef6cfa23d2d58b8caeefce9f7d7b5ddce115d47d5ee83"
    },
    "design:classic": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "13d88fceaa11720f299de7e04d6a728874577959ffb38f381f9d3f06db411573"
    },
    "design:apple": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "0ed4e9aa30f2d4dded0e973200548b2c13e319958e4d632bf6b9af13aa40adab"
    },
    "design:cronometer": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "aaeadc4b4781c809090ec63ce0c5f71b936637a7e7c8d0f2ec52196593d28a64"
    },
    "design:liftoff": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "740abd27aa99de179c025c6ba6bfc3f7f3a95d655468a4109b3e4c9db3e8a0b2"
    },
    "design:hevy": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "85787cbe97e56276d4aceb48c1b9124f0408c3d028551ba9d215ba4e240bb309"
    },
    "design:aurora": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "c2f881a92dc32a813e2bf404fd42b9c5542732bf8ddc62370b493da9303be5fb"
    },
    "design:mono": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "da75e15cf567c0cb873fed8b331d3d8f22a75e0c6d8f6c184feee553d2ecc46b"
    },
    "design:terra": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "73b7e95c4a9d89554be020a4d2025dd344186d180287c34bf46337ed78cff890"
    },
    "design:volt": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "39acb400c76e2ea80a59f44e5294243ff70f2d34ca920f15b569d2446d273f80"
    },
    "design:blueprint": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "ddff1c6baf1c902589f35e900f6548747ae5720067b7ffffe615cf85d09c84e2"
    },
    "design:nocturne": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "e65f1ecf4613a9f0696e98c6119cd0eb7f4255a9451ea9e6e85e118ee4a7d907"
    },
    "design-en": {
     "ablauf": "kern:food-diary",
-    "laenge": 14203,
-    "sha256": "b3ebf01e44bebdba2467628952164a0af32a626e97e700604bdeac53f01dadc2",
+    "laenge": 14759,
+    "sha256": "615646fe8dbca375c0478e27ea44a9f899ccf626b653e2f1f1701c429aadd12b",
     "zustand": "740abd27aa99de179c025c6ba6bfc3f7f3a95d655468a4109b3e4c9db3e8a0b2"
    },
    "seite-home": {
     "ablauf": "kern:food-diary",
-    "laenge": 16725,
-    "sha256": "5fe399b1599913ed67f5aac5335c05280e7ae6b67d350fe5eaefd00f7471fac2",
+    "laenge": 17278,
+    "sha256": "4a9a9df3c319a9f385cb65232266252306ec5bccf8cff754f0ba1b8ba3af814a",
     "zustand": "720908ceb42217c878a09e1ed4484401ea44bb293e49491db85750ba2d1a3f5f"
    },
    "render:essen": {
     "ablauf": "kern:food-diary",
-    "laenge": 14211,
-    "sha256": "dd36a6bd2f92615acd7bc185a22fc099267e8c8f3e83ee65a0eebdc0449e9ede",
+    "laenge": 14767,
+    "sha256": "cbe3cff8b369d531d855b61df63c94ccfae9615773636272c395f5229897778a",
     "zustand": "a8dbbaa5f841b79e8a45389b22e8f83121acebcf74bb8af688bf90c8b6c88bf6"
    },
    "render:essen-en": {
     "ablauf": "kern:food-diary",
-    "laenge": 14211,
-    "sha256": "dd36a6bd2f92615acd7bc185a22fc099267e8c8f3e83ee65a0eebdc0449e9ede",
+    "laenge": 14767,
+    "sha256": "cbe3cff8b369d531d855b61df63c94ccfae9615773636272c395f5229897778a",
     "zustand": "a8dbbaa5f841b79e8a45389b22e8f83121acebcf74bb8af688bf90c8b6c88bf6"
    },
    "render:essen-leer": {
     "ablauf": "kern:food-diary",
-    "laenge": 13868,
-    "sha256": "d12ae06821aed4026e623f977ae1e4380b400a30df247cf576d4ff9c0faa71dc",
+    "laenge": 14421,
+    "sha256": "1ff9abb903a1e96ef2b3b8a8604e7c8a4b8c7b45c230d9cbe36a81d3a6473658",
     "zustand": "7c27f8255d3474686c7bda56f4555d1270e5e833a750e33e06b5545316ed6ff9"
    },
    "render:essen-wasser": {
     "ablauf": "kern:food-diary",
-    "laenge": 17048,
-    "sha256": "7b0523a663f7f50b37ef1a92baf93ab0d8ddf459077e1644c4c2ce4a6874dbd7",
+    "laenge": 17601,
+    "sha256": "eea2bd0d0757375955fafdd8b1dcfa3d45a9754ec66f2a9693377adcbc2dde6e",
     "zustand": "8e79d629f526a8af657d7a0c8ce39debd2c527fe1ba8efdd1ed39307c3881b4f"
    },
    "render:essen-anderer-tag": {
     "ablauf": "kern:food-diary",
-    "laenge": 15204,
-    "sha256": "036a5860ea53d48a9bdd38cfa1d1cb3df62f6c80a62f7f9cd9a8ea72aad32da1",
+    "laenge": 15757,
+    "sha256": "d29f111ca158afbabde9be50030284ec2e88869f3a51c7d1dc2c1337523b89ac",
     "zustand": "b370f375e38d642a03c1ec86924b44b9a421f441f37a68ced55528a456e7a17c"
    },
    "render:essen-design": {
     "ablauf": "kern:food-diary",
-    "laenge": 14211,
-    "sha256": "dd36a6bd2f92615acd7bc185a22fc099267e8c8f3e83ee65a0eebdc0449e9ede",
+    "laenge": 14767,
+    "sha256": "cbe3cff8b369d531d855b61df63c94ccfae9615773636272c395f5229897778a",
     "zustand": "08a010bc9f7d13b84baa8b08e3e4acb12041c4988be751c2cb47f6471c2bb582"
    },
    "render:home": {
     "ablauf": "",
-    "laenge": 10854,
-    "sha256": "f62ad5f27d043d840a4f1f1c52a54a05cfb77951ada0c83a4318cca1de51bb2a",
+    "laenge": 10873,
+    "sha256": "cdf36d8211da950b6d92f26a6e51709993449cd8f5f7247c778a46616af86240",
     "zustand": "0f1e97b36ed5070fa1c64ff6cf6c8c4ea5c28a50a9c1dccf1607a10de5ef4189"
    },
    "go:essen": {
     "ablauf": "kern:food-diary",
-    "laenge": 14211,
-    "sha256": "dd36a6bd2f92615acd7bc185a22fc099267e8c8f3e83ee65a0eebdc0449e9ede",
+    "laenge": 14767,
+    "sha256": "cbe3cff8b369d531d855b61df63c94ccfae9615773636272c395f5229897778a",
     "zustand": "a8dbbaa5f841b79e8a45389b22e8f83121acebcf74bb8af688bf90c8b6c88bf6"
    },
    "go:essen-leer": {
     "ablauf": "kern:food-diary",
-    "laenge": 13868,
-    "sha256": "d12ae06821aed4026e623f977ae1e4380b400a30df247cf576d4ff9c0faa71dc",
+    "laenge": 14421,
+    "sha256": "1ff9abb903a1e96ef2b3b8a8604e7c8a4b8c7b45c230d9cbe36a81d3a6473658",
     "zustand": "7c27f8255d3474686c7bda56f4555d1270e5e833a750e33e06b5545316ed6ff9"
    },
    "go:essen-en": {
     "ablauf": "kern:food-diary",
-    "laenge": 14211,
-    "sha256": "dd36a6bd2f92615acd7bc185a22fc099267e8c8f3e83ee65a0eebdc0449e9ede",
+    "laenge": 14767,
+    "sha256": "cbe3cff8b369d531d855b61df63c94ccfae9615773636272c395f5229897778a",
     "zustand": "a8dbbaa5f841b79e8a45389b22e8f83121acebcf74bb8af688bf90c8b6c88bf6"
    }
   }
@@ -634,26 +634,26 @@
   "faelle": {
    "erststart": {
     "ablauf": "kern:food-diary",
-    "laenge": 13860,
-    "sha256": "35ef129a5788266379e5a8a9f1d437a17662223ca428b8749158d6faddfc4502",
+    "laenge": 14413,
+    "sha256": "daa121f27e732603269b7d514c7bf3d3c2f537dbb892bd0162708d01b6312213",
     "zustand": "d89537b572399838a60af409a99e65456a1339c828f8e25468646f0b5f6d4c16"
    },
    "erststart-render": {
     "ablauf": "kern:food-diary",
-    "laenge": 13868,
-    "sha256": "d12ae06821aed4026e623f977ae1e4380b400a30df247cf576d4ff9c0faa71dc",
+    "laenge": 14421,
+    "sha256": "1ff9abb903a1e96ef2b3b8a8604e7c8a4b8c7b45c230d9cbe36a81d3a6473658",
     "zustand": "7c27f8255d3474686c7bda56f4555d1270e5e833a750e33e06b5545316ed6ff9"
    },
    "erststart-go": {
     "ablauf": "kern:food-diary",
-    "laenge": 13868,
-    "sha256": "d12ae06821aed4026e623f977ae1e4380b400a30df247cf576d4ff9c0faa71dc",
+    "laenge": 14421,
+    "sha256": "1ff9abb903a1e96ef2b3b8a8604e7c8a4b8c7b45c230d9cbe36a81d3a6473658",
     "zustand": "7c27f8255d3474686c7bda56f4555d1270e5e833a750e33e06b5545316ed6ff9"
    },
    "erststart-eintraege": {
     "ablauf": "kern:food-diary",
-    "laenge": 16725,
-    "sha256": "5fe399b1599913ed67f5aac5335c05280e7ae6b67d350fe5eaefd00f7471fac2",
+    "laenge": 17278,
+    "sha256": "4a9a9df3c319a9f385cb65232266252306ec5bccf8cff754f0ba1b8ba3af814a",
     "zustand": "db50ee66a35a95402d6cc6f4c4ba869cfada5509a51317e4200c10343d2f2a25"
    }
   }

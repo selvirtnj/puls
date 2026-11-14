@@ -39,8 +39,10 @@ function dsFoodGroup(){
   let entries=state.foods.filter(x=>x.date===date&&!(typeof fdIsWater==='function'&&fdIsWater(x))),shown=entries.slice(-5).reverse();
   let rows=shown.map(x=>typeof swipeDiaryEntry==='function'?swipeDiaryEntry(x):dsRow({label:esc(x.name),detail:`${n(x.grams)} ${x.unit==='ml'?'ml':'g'}`,value:dsKcal(x.kcal)+' kcal'})).join('');
   if(!rows)rows=dsRow({label:dsText('Noch nichts eingetragen.','Nothing logged yet.'),cls:'dsempty'});
-  rows+=dsRow({label:entries.length>shown.length?dsText(`Alle ${entries.length} anzeigen`,`Show all ${entries.length}`):dsText('Zum Ernährungstagebuch','Open food diary'),action:"go('food')",chevron:true,cls:'dsaction'});
-  return dsGroup(date===today()?dsText('Heute eingetragen','Logged today'):dsText('Eingetragen','Logged'),rows,'','dscat dscatfood');
+  // Der Abschnittstitel ist selbst der Weg ins Tagebuch (eine Hauptaktion „Essen eintragen“ bleibt in der Kalorienkarte).
+  if(entries.length>shown.length)rows+=dsRow({label:dsText(`Alle ${entries.length} anzeigen`,`Show all ${entries.length}`),action:"go('food')",chevron:true,cls:'dsaction'});
+  let title=date===today()?dsText('Heute eingetragen','Logged today'):dsText('Eingetragen','Logged');
+  return dsGroup(`<button type="button" class="dsgrouplink" onclick="go('food')" aria-label="${title}, ${dsText('Ernährungstagebuch öffnen','open food diary')}">${title}${typeof phIcon==='function'?phIcon('caret-right'):''}</button>`,rows,'','dscat dscatfood');
 }
 function dsTrainingGroup(){
   let active=typeof activeWorkout==='function'?activeWorkout():null,rows='';
@@ -55,13 +57,13 @@ function dsTrainingGroup(){
     rows+=dsRow({label:dsText('Freies Training','Empty workout'),icon:'plus-circle',action:'startWorkout()',chevron:true});
   }
   rows+=dsRow({label:dsText('Alle Routinen','All routines'),action:"trainTab='routines';go('workout')",chevron:true,cls:'dsaction'});
-  let foot='';
+  // „Aktiv diese Woche“ gehört als nicht antippbare Zeile in dieselbe Gruppe.
   if(typeof activeMinutesWeek==='function'){
-    let mins=Math.floor(activeMinutesWeek()),goal=typeof activeMinutesGoal==='function'?activeMinutesGoal():0;
-    foot=dsText('Aktiv diese Woche','Active this week')+': '+n(mins)+(goal?' / '+n(goal):'')+' min';
-    if(typeof runWeekRange==='function'&&typeof runKmBetween==='function'&&typeof runKm==='function'){let {start,end}=runWeekRange();foot+=' · '+runKm(Math.round(runKmBetween(start,end)*10)/10)+' km'}
+    let mins=Math.floor(activeMinutesWeek()),goal=typeof activeMinutesGoal==='function'?activeMinutesGoal():0,km='';
+    if(typeof runWeekRange==='function'&&typeof runKmBetween==='function'&&typeof runKm==='function'){let {start,end}=runWeekRange();km=runKm(Math.round(runKmBetween(start,end)*10)/10)+' km'}
+    rows+=dsRow({label:dsText('Aktiv diese Woche','Active this week'),detail:km,value:n(mins)+(goal?' / '+n(goal):'')+' min',cls:'dsinfo'});
   }
-  return dsGroup(dsText('Training','Training'),rows,foot,'dscat dscattraining');
+  return dsGroup(dsText('Training','Training'),rows,'','dscat dscattraining');
 }
 function dsBodyGroup(){
   let latest=[...state.weights].filter(x=>x.date<=today()).sort((a,b)=>b.date.localeCompare(a.date))[0];
@@ -264,7 +266,7 @@ function dsDecorateSheet(){
   let skip=typeof setupPending!=='undefined'&&!!setupPending;
   if(close){
     close.classList.toggle('dsskip',skip);
-    if(skip){if(close.textContent!=='Skip'){close.textContent='Skip';close.setAttribute('aria-label','Skip')}}
+    if(skip){let label=dsText('Überspringen','Skip');if(close.textContent!==label){close.textContent=label;close.setAttribute('aria-label',label)}}
     else if(!close.querySelector('.pulsicon')){close.innerHTML=phIcon('x');close.setAttribute('aria-label',dsText('Schließen','Close'))}
   }
   if($('cloud-email'))body.querySelector('form')?.classList.add('dsauth');

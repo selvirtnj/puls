@@ -121,6 +121,7 @@ assert.deepEqual(jsFiles.filter(f=>/=\s*go\s*;/.test(code(f))),[],'keine Datei h
 
 // 2. Ablauf und Ergebnis wie in der alten Kette.
 const golden=JSON.parse(fs.readFileSync(FIXTURE,'utf8')),now=both('new');
+if(process.argv.includes('--accept-ui')){require('./accept-ui.cjs')(FIXTURE,golden,{alt:golden.alt,...now},{html:['inhalt'],mask:/content\.html[0-9a-f]{12}/g});process.exit(0)} // nur HTML-Werte neu, nach gewollter UI-Änderung
 for(const group of ['standard','erststart']){
  assert.equal(golden[group].laden.includes('kern('),false,`${group}: go() läuft beim Laden nicht`);
  assert.deepEqual(Object.keys(now[group].faelle),Object.keys(golden[group].faelle),`${group}: Zustände weichen vom Golden ab`);

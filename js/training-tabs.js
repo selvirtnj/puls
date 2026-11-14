@@ -34,8 +34,6 @@ function refineTrainingTabs(){
   let head=body.querySelector(':scope > .sectionhead'),title=head?.querySelector('h2');
   let cards=[...body.querySelectorAll(':scope > .routinepreview')],en=state.language==='en';
   if(title)title.textContent=en?'Routines':'Routinen';
-  let create=head?.querySelector('[onclick="routineForm()"]');
-  if(create){create.className='textbtn quicknewroutine';create.textContent=en?'New routine':'Neue Routine'}
   let empty=body.querySelector(':scope > [onclick^="startWorkout"]');
   if(empty){
     // startWorkout öffnet die Namenseingabe, deren Submit startEmptyWorkout nutzt.
@@ -48,6 +46,8 @@ function refineTrainingTabs(){
     group.className='quickroutines';group.open=!trainingRoutinesCollapsed;
     summary.textContent=(en?'My routines':'Meine Routinen')+' ('+cards.length+')';group.appendChild(summary);
     head.insertAdjacentElement('afterend',group);
+    // Die Überschrift wird zur Gruppenzeile; die eine Aktion „Neue Routine“ bleibt am Ende der Liste.
+    head.remove();
     group.addEventListener('toggle',()=>{trainingRoutinesCollapsed=!group.open});
     for(let card of cards){
       let start=card.querySelector('.actionrow [onclick^="startRoutine"]');
@@ -69,6 +69,8 @@ function refineTrainingTabs(){
       cardhead?.insertAdjacentElement('afterend',preview);group.appendChild(card);
     }
     let blank=body.querySelector(':scope > .card.empty');if(blank)group.appendChild(blank);
+    // Außerhalb der aufklappbaren Gruppe, damit „Neue Routine“ auch zugeklappt erreichbar bleibt.
+    let add=body.querySelector(':scope > .routineadd');if(add)group.after(add);
   }
   let done=[...body.querySelectorAll(':scope > h3')].find(h=>h.nextElementSibling?.classList.contains('completedworkout'));
   if(done){done.classList.add('donehead');let day=done.textContent.split('·').slice(1).join('·').trim();done.textContent=(date===today()?(en?'Done today':'Heute erledigt'):(en?'Done':'Erledigt'))+(day?' · '+day:'')}

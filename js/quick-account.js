@@ -37,7 +37,7 @@ function qaGoals(){try{if(typeof dayGoals==='function')return dayGoals(typeof to
 /* ---------- Plus-Menü ---------- */
 const qaKnownQuick=new Set(['food','barcode','camera','recipe','water','weight','workout','run','ruler']);
 function qaQuickTiles(){return [
-  ['search','magnifying-glass',qaT('Essen suchen','Find food'),"foodForm();foodTab('search')"],
+  ['search','magnifying-glass',qaT('Essen','Food'),"foodForm();foodTab('search')"],
   ['barcode','barcode',qaT('Barcode','Barcode'),"foodForm();foodTab('barcode')"],
   ['photo','camera',qaT('KI-Foto','AI photo'),'qaQuickPhoto()'],
   ['run','person-simple-run',qaT('Aktivität','Activity'),'quickAddRun()'],
@@ -87,9 +87,9 @@ quickAddMenu=function(){
 
 /* ---------- Konto: Übersicht ---------- */
 const qaPages={
-  account:{title:['Konto','Account'],icon:'user-gear',body:()=>qaAccountBody()},
+  account:{title:['Anmeldung & Sync','Sign-in & sync'],icon:'user-gear',body:()=>qaAccountBody()},
   profile:{title:['Profil','Profile'],icon:'user-circle',body:()=>qaProfileBody()},
-  targets:{title:['Deine Ziele','Your targets'],icon:'target',body:()=>qaTargetsBody()},
+  targets:{title:['Ziele','Targets'],icon:'target',body:()=>qaTargetsBody()},
   display:{title:['Darstellung','Display'],icon:'circle-half',body:()=>qaDisplayBody()}
 };
 function qaPageTitle(key){let t=qaPages[key]?.title;return t?qaT(t[0],t[1]):''}
@@ -107,20 +107,16 @@ function qaDisplayDetail(){
   let names={system:qaT('System','System'),light:qaT('Hell','Light'),dark:qaT('Dunkel','Dark'),fresh:qaT('Frisch','Fresh'),midnight:qaT('Mitternacht','Midnight')};
   return (names[scheme]||names.system)+' · '+(state.language==='en'?'English':'Deutsch');
 }
-function qaMainRows(){
+// Übersicht in drei Gruppen wie iOS-Einstellungen: Ich (Profil mit Körper, Ziele), App (Darstellung), Daten (Anmeldung & Sync).
+function qaMainRows(keys){
   let detail={account:typeof accountCloudDetail==='function'?accountCloudDetail():qaT('Anmeldung & Daten','Sign-in & data'),profile:qaProfileDetail(),targets:qaTargetsDetail(),display:qaDisplayDetail()};
-  return Object.entries(qaPages).map(([key,page])=>qaRow({label:esc(qaPageTitle(key)),detail:esc(detail[key]),icon:page.icon,action:`qaOpen('${key}')`,chevron:true,cls:'accountmenulink qamenulink',id:'qa-link-'+key}));
-}
-function qaDiscoverRows(){
-  let rows=[
-    {label:qaT('Körper & Entwicklung','Body & progress'),detail:qaT('Gewichtstrend & Wochenmittel','Weight trend & weekly averages'),icon:'scales',action:"qaSection('body')"}
-  ];
-  return rows.map(r=>qaRow({...r,label:esc(r.label),detail:esc(r.detail),chevron:true,cls:'qamenulink'})).join('');
+  return keys.map(key=>{let page=qaPages[key];return qaRow({label:esc(qaPageTitle(key)),detail:esc(detail[key]),icon:page.icon,action:`qaOpen('${key}')`,chevron:true,cls:'accountmenulink qamenulink',id:'qa-link-'+key})});
 }
 function qaOverview(template){
   let content=template?.content,identity=content?.querySelector?.('.accountprofilegroup')?.outerHTML||'',version=content?.querySelector?.('.versionstamp')?.outerHTML||'';
-  // „Entdecken“ trägt die Klasse accountmenugroup, damit friends.js die Zeile „Freunde“ dort einhängt.
-  return `<div class="accountcompact accountrefresh accountoverview qapage qamore">${identity}<nav class="dsgroup qamenu" aria-label="${qaT('Einstellungen','Settings')}">${qaMainRows().join('')}</nav><h2 class="dsgrouptitle" id="qa-discover-title">${qaT('Entdecken','Discover')}</h2><nav class="dsgroup accountmenugroup qadiscover" aria-labelledby="qa-discover-title">${qaDiscoverRows()}</nav>${version}</div>`;
+  let group=(title,keys)=>`<h2 class="dsgrouptitle">${title}</h2><nav class="dsgroup qamenu" aria-label="${title}">${qaMainRows(keys).join('')}</nav>`;
+  // Die Gruppe „Freunde“ trägt die Klasse accountmenugroup, damit friends.js die Zeile „Freunde“ dort einhängt; ohne Zeile bleibt sie verborgen.
+  return `<div class="accountcompact accountrefresh accountoverview qapage qamore">${identity}${group(qaT('Ich','Me'),['profile','targets'])}${group(qaT('App','App'),['display'])}${group(qaT('Daten','Data'),['account'])}<div class="qafriends"><h2 class="dsgrouptitle" id="qa-friends-title">${qaT('Freunde','Friends')}</h2><nav class="dsgroup accountmenugroup qadiscover" aria-labelledby="qa-friends-title"></nav></div>${version}</div>`;
 }
 function qaDetail(key){
   let body='';try{body=qaPages[key].body()}catch(error){console.error(error);body=`<p class="note">${qaT('Dieser Bereich konnte nicht geladen werden.','This section could not be loaded.')}</p>`}
@@ -129,8 +125,6 @@ function qaDetail(key){
 
 /* ---------- Unterseite Konto ---------- */
 function qaAccountBody(){
-  let name=state.displayName?.trim();
-  let profile=qaRow({label:qaT('Name','Name'),value:name?esc(name):qaT('Nicht festgelegt','Not set'),icon:'user',action:'nameProfile()',chevron:true});
   let manage='';
   try{
     if(typeof accountRefreshBase==='function'&&typeof accountManageBody==='function'){
@@ -141,7 +135,7 @@ function qaAccountBody(){
   if(!manage)manage=qaGroup('',qaRow({label:qaT('Konto verwalten','Manage account'),action:"qaSection('manage')",chevron:true,cls:'dsaction'}));
   let shell=typeof window!=='undefined'&&window.webkit?.messageHandlers?.pulsNative&&typeof pulsNativeExtrasOpen==='function';
   let native=shell?qaGroup('iPhone',qaRow({label:qaT('Erinnerungen & Apple Health','Reminders & Apple Health'),icon:'heartbeat',action:'pulsNativeExtrasOpen()',chevron:true})):'';
-  return qaGroup(qaT('Profil','Profile'),profile)+manage+native;
+  return manage+native;
 }
 
 /* ---------- Unterseite Profil ---------- */
@@ -165,7 +159,8 @@ function qaProfileBody(){
     qaRow({label:qaT('Gewicht erfassen','Log weight'),icon:'scales',action:'weightForm()',chevron:true,cls:'dsaction'})
   ].join('');
   let full=typeof settings==='function'?`<button type="button" class="btn full qafullsetup" onclick="qaFullSetup()"><span aria-hidden="true">${qaIcon('pencil-simple')}</span><span>${qaT('Alles eintragen','Fill in everything')}</span></button>`:'';
-  return full+qaGroup('',rows,'qaprofile')+qaGroup(qaT('Körper & Entwicklung','Body & progress'),body);
+  let name=state.displayName?.trim(),nameRow=qaRow({label:qaT('Name','Name'),value:name?esc(name):qaT('Nicht festgelegt','Not set'),icon:'user',action:'nameProfile()',chevron:true});
+  return full+qaGroup('',nameRow)+qaGroup('',rows,'qaprofile')+qaGroup(qaT('Körper & Entwicklung','Body & progress'),body,'qabody');
 }
 // v92: öffnet denselben Profil-&-Ziele-Bogen wie der Erststart (settings → profileForm), vorausgefüllt aus state.
 // Ohne setupPending: Schließen verwirft alle Eingaben, nur „Speichern“ übernimmt sie über die bestehende commitProfile-Kette.

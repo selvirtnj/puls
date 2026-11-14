@@ -146,6 +146,7 @@ assert.deepEqual(jsFiles.filter(f=>/=\s*nutrition\s*;/.test(code(f))),[],'keine 
 
 // 2. Ablauf und Ergebnis wie in der alten Kette.
 const golden=JSON.parse(fs.readFileSync(FIXTURE,'utf8')),now=both('new');
+if(process.argv.includes('--accept-ui')){require('./accept-ui.cjs')(FIXTURE,golden,{alt:golden.alt,...now},{html:['laenge','sha256']});process.exit(0)} // nur HTML-Werte neu, nach gewollter UI-Änderung
 assert.deepEqual(Object.keys(now.standard.faelle),Object.keys(golden.standard.faelle),'Zustände weichen vom Golden ab');
 for(const group of ['standard','erststart']){
  assert.deepEqual(now[group].laden,golden[group].laden,`${group}: Aufrufe von nutrition während des Ladens weichen ab`);

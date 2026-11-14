@@ -196,3 +196,18 @@ dialog[open] #fd-undo { bottom: calc(16px + env(safe-area-inset-bottom)); }
 #modal .fdallrow .fdbarline strong small { display: inline; margin-top: 0; }
 #modal .fdallrow .fdbarline strong small.fdcover { margin-left: 6px; }
 #modal .fdallrow .fdbarline strong small.fdpct { margin-left: 4px; }
+
+/* ---------- Essen: Abschnitte als gruppierte Listen (Stil .dsgrouptitle / .dsgroup) ---------- */
+/* Überschrift steht über der Gruppe; der Inhalt liegt in einer .dsgroup-Karte. */
+html body .fdroot .fdsec { display: grid; gap: 0; min-width: 0; }
+html body .fdroot .fdsechead { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin: 4px 16px 6px; }
+html body .fdroot .fdsechead h2 { font-size: 20px !important; line-height: 25px !important; font-weight: 600 !important; text-transform: none; letter-spacing: normal; color: var(--ds-label) !important; }
+html body .fdroot .fdsechead small { margin-top: 0; font-size: 13px; line-height: 18px; color: var(--ds-label-2); }
+html body .fdroot .fdsechead .fdcardactions { margin: -10px -10px -6px 0; }
+html body .fdroot .fdsechead .fdcardactions .fdicon { width: 44px; height: 44px; }
+html body .fdroot .fdsec .fdcard { margin: 0; }
+html body .fdroot .fdwatersec .fdcard { padding: 10px 14px 12px; }
+
+/* Vorschläge unter dem Tagebuch im selben Stil. */
+html body .fdextras > .card { margin: 0; padding: 0 0 4px; border-radius: 12px; background: var(--ds-surface); overflow: hidden; }
+html body .fdextras > .card > h3 { margin: 0; padding: 12px 16px 6px; font-size: 20px !important; font-weight: 600 !important; line-height: 25px !important; text-transform: none; letter-spacing: normal; color: var(--ds-label) !important; }

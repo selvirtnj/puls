@@ -157,6 +157,7 @@ assert.deepEqual(jsFiles.filter(f=>/=\s*openModal\s*;/.test(code(f))),[],'keine 
 
 // 2. Ablauf und Ergebnis wie in der alten Kette.
 const golden=JSON.parse(fs.readFileSync(FIXTURE,'utf8')),now=both('new');
+if(process.argv.includes('--accept-ui')){require('./accept-ui.cjs')(FIXTURE,golden,{alt:golden.alt,...now},{html:['laenge','sha256'],mask:/body=\d+:[0-9a-f]{12}/g});process.exit(0)} // nur HTML-Werte neu, nach gewollter UI-Änderung
 for(const group of ['standard','erststart']){
  assert.deepEqual(Object.keys(now[group].faelle),Object.keys(golden[group].faelle),`${group}: Zustände weichen vom Golden ab`);
  assert.deepEqual(now[group].laden,golden[group].laden,`${group}: Aufrufe von openModal während des Ladens weichen ab`);

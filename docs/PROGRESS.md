@@ -4,11 +4,14 @@ Stand 14.11.2026. Kurzfassung; Geschichte bis Version 95 steht in [archive/CURRE
 
 ## Live
 
-- **Version 113** auf `main` (Tab-Leiste nach Apple-Muster: Übersicht, Training, Essen, Konto; „+“ oben rechts auf Übersicht und Training, 14.11.). Geplant: App-Überarbeitung nach Apple HIG Bereich für Bereich (Übersicht, Training, Essen, Konto, Dialoge). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
+- **Version 114** auf `main` (Überarbeitung nach Apple HIG, erste Runde über alle vier Tabs, 14.11.). Nächste Runde: laufendes Workout, Pausen-Popup, Übungsauswahl, Lauf-Detail, Essen-Fenster (Suche, Barcode, Portion, Rezept), Fortschritt „Woche/Monat“, Konto-Kopfkarte („Rang unbekannt“ doppelt). GitHub Pages: https://selvirtnj.github.io/puls/ . Repository: https://github.com/selvirtnj/puls .
 - Ein Push auf `main` ändert sofort die Live-App. Die iOS-App ist die WebView-Hülle (`ios/`, Basis `ios-build-9`) und lädt die Live-Web-App.
 - Der Refactor nach [ISSUES.md](ISSUES.md) ist mit den Phasen 0 bis 5 abgeschlossen (Versionen 99 bis 105); Version 106 hat die Reste aufgeräumt. Vom Audit vom 13.11.2026 (ISSUES.md) sind die Punkte 1 und 3 (Version 107) sowie 2, 4 bis 7, 10 und 12 bis 14 (Version 108) und 11 und 15 (Version 109) behoben; 8 und 9 bleiben bewusst so. Es gibt nur den Branch `main`.
 
 ## Letzte Versionen
+
+- **114** (14.11.): Apple-HIG-Überarbeitung der vier Tabs. Übersicht: eine Hauptaktion „Essen eintragen“, Titel „Heute eingetragen“ führt ins Tagebuch, einheitliche Abschnittstitel, „Aktiv diese Woche“ als Zeile; Schnellmenü-Kachel „Essen“; Willkommen „Überspringen“. Training: Umschalter als Segmented Control, Standardpause als Einstellungszeile, „Neue Routine“ nur einmal (auch bei zugeklappter Gruppe), Routen/Ziele/Aktivität starten als Zeilen. Essen: Makro-Folien ohne Pfeile (Wischen + Punkte), Wasser und Tagebuch als Gruppen, Wasser-Einstellungen als Zahnrad. Konto: Gruppen Ich/App/Daten wie iOS-Einstellungen, „Konto“ heißt „Anmeldung & Sync“, Name und „Körper & Entwicklung“ im Profil, Abmelden/Zurücksetzen/Löschen rot unten. „+“ auf Konto und Essen wieder verborgen (Fehler aus 113). Tests: Modus `--accept-ui` in den *-order-Tests übernimmt nur HTML-Werte. Von reviewer gegengeprüft.
+- **113** (14.11.): Tab-Leiste Übersicht, Training, Essen, Konto; „Hinzufügen“ als „+“ oben rechts.
 
 - **112** (14.11.): Auf Selvirs Wunsch entfernt: Karte „Erholung“ mit Muskelfigur am Ende des Training-Tabs und der Knopf „Ziel kg × Wdh“ unter den Sätzen im laufenden Workout. RPE und Notiz aus dem Import bleiben, ebenso der Erholungswert aus Apple Health auf der Übersicht.
 

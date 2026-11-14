@@ -168,7 +168,7 @@ function fdDeck(){
   let make={macros:fdSlideMacros,energy:fdSlideEnergy,micros:fdSlideMicros,week:fdSlideWeek};
   let slides=views.map((v,i)=>`<article class="fdslide" data-view="${v}" role="group" aria-roledescription="${fdT('Folie','slide')}" aria-label="${fdT(...fdViewNames[v])} (${i+1}/${views.length})">${make[v]()}</article>`).join('');
   let dots=views.map((v,i)=>`<button type="button" class="fddot" aria-label="${fdT(...fdViewNames[v])}" aria-current="${i===fdSlide}" onclick="fdGoSlide(${i})"></button>`).join('');
-  return `<section class="fddeck"><div class="fdtrack" id="fd-track" onscroll="fdSlideChanged(this)">${slides}</div><div class="fddecknav"><button type="button" class="fdicon fdarrow" aria-label="${fdT('Vorherige Ansicht','Previous view')}" onclick="fdGoSlide(fdSlide-1)">${phIcon('caret-left')}</button><div class="fddots">${dots}</div><button type="button" class="fdicon fdarrow" aria-label="${fdT('Nächste Ansicht','Next view')}" onclick="fdGoSlide(fdSlide+1)">${phIcon('caret-right')}</button></div></section>`;
+  return `<section class="fddeck"><div class="fdtrack" id="fd-track" onscroll="fdSlideChanged(this)">${slides}</div><div class="fddecknav"><div class="fddots" role="group" aria-label="${fdT('Ansichten wechseln','Switch view')}">${dots}</div></div></section>`;
 }
 function fdMarkDots(){document.querySelectorAll('.fddeck .fddot').forEach((el,i)=>el.setAttribute('aria-current',String(i===fdSlide)))}
 function fdSlideChanged(track){cancelAnimationFrame(fdSlideFrame);fdSlideFrame=requestAnimationFrame(()=>{let i=Math.max(0,Math.min(track.children.length-1,Math.round(track.scrollLeft/Math.max(1,track.clientWidth))));if(i!==fdSlide){fdSlide=i;fdMarkDots()}})}
@@ -195,7 +195,7 @@ function fdWaterCard(){
   let glasses=Array.from({length:w.count},(_,i)=>fdGlass(i,w,i===fresh)).join('');
   if(w.filled>=w.count)glasses+=`<button type="button" class="fdicon" aria-label="${fdT('Wasser hinzufügen','Add water')} ${w.glassMl} ml" onclick="fdGlassTap(${w.filled})">${phIcon('plus')}</button>`;
   let pct=w.goal>0?Math.min(100,total/w.goal*100):0;
-  return `<section class="fdcard fdwater"><div class="fdcardhead"><div><h2>${fdT('Wasser','Water')}</h2><small>${fdNum(w.drink)} / ${fdNum(w.goal)} ml</small></div><div class="fdcardactions"><button type="button" class="fdicon" aria-label="${fdT('Wasserziel und Glasgröße','Water target and glass size')}" onclick="fdWaterInfo()">${phIcon('info')}</button><button type="button" class="fdicon" aria-label="${fdT('Freie Menge Wasser eintragen','Log custom water amount')}" onclick="waterForm()">${phIcon('plus')}</button></div></div><div class="fdglasses" role="group" aria-label="${fdT('Wassergläser','Water glasses')}">${glasses}</div><div class="fdbar fdtotalwater"><div class="fdbarline"><span>${fdT('Gesamtwasser','Total water')}</span><strong>${fdNum(total)} / ${fdNum(w.goal)} ml</strong></div><div class="fdmeter"><i style="--w:${pct}%"></i></div></div></section>`;
+  return `<section class="fdsec fdwatersec"><div class="fdcardhead fdsechead"><div><h2>${fdT('Wasser','Water')}</h2><small>${fdNum(w.drink)} / ${fdNum(w.goal)} ml</small></div><div class="fdcardactions"><button type="button" class="fdicon" aria-label="${fdT('Wasserziel und Glasgröße','Water target and glass size')}" onclick="fdWaterInfo()">${phIcon('gear-six')}</button><button type="button" class="fdicon" aria-label="${fdT('Freie Menge Wasser eintragen','Log custom water amount')}" onclick="waterForm()">${phIcon('plus')}</button></div></div><div class="dsgroup fdcard fdwater"><div class="fdglasses" role="group" aria-label="${fdT('Wassergläser','Water glasses')}">${glasses}</div><div class="fdbar fdtotalwater"><div class="fdbarline"><span>${fdT('Gesamtwasser','Total water')}</span><strong>${fdNum(total)} / ${fdNum(w.goal)} ml</strong></div><div class="fdmeter"><i style="--w:${pct}%"></i></div></div></div></section>`;
 }
 function fdGlassTap(i){
   let w=fdWaterState();
@@ -261,10 +261,10 @@ function fdDiaryList(){
   fdKnownIds={key:date,ids};
   let rows=items.map(x=>fdDiaryRow(x,!!known&&!known.has(x.id))).join('');
   let kcal=items.reduce((s,x)=>s+(Number(x.kcal)||0),0);
-  let head=`<div class="fdcardhead"><div><h2>${fdT('Tagebuch','Diary')}</h2><small>${items.length} ${items.length===1?fdT('Eintrag','entry'):fdT('Einträge','entries')} · ${fdNum(kcal)} kcal</small></div></div>`;
+  let head=`<div class="fdcardhead fdsechead"><div><h2>${fdT('Tagebuch','Diary')}</h2><small>${items.length} ${items.length===1?fdT('Eintrag','entry'):fdT('Einträge','entries')} · ${fdNum(kcal)} kcal</small></div></div>`;
   let body=rows?`<div class="fdentries">${rows}</div>`:`<div class="fdemptystate"><p>${fdT('Noch nichts eingetragen.','Nothing logged yet.')}</p><button type="button" class="btn" onclick="fdOpenAdd()">${phIcon('plus')} ${fdT('Lebensmittel hinzufügen','Add food')}</button>${fdRepeatButton()}</div>`;
   let done=(state.foodLogCompleted||[]).includes(date);
-  return `<section class="fdcard fddiary">${head}${body}${done?`<p class="fdnote fddonenote">${phIcon('check-circle')} ${fdT('Tag vollständig erfasst','Day complete')}</p>`:''}</section>`;
+  return `<section class="fdsec">${head}<div class="dsgroup fdcard fddiary">${body}${done?`<p class="fdnote fddonenote">${phIcon('check-circle')} ${fdT('Tag vollständig erfasst','Day complete')}</p>`:''}</div></section>`;
 }
 
 /* ---------- Vortag übernehmen (nur bei leerem Tagebuch) ---------- */

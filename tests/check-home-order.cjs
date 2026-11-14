@@ -120,6 +120,7 @@ assert.deepEqual(jsFiles.filter(f=>/homeSetCore|homeAddLayer|homeCore|homeLayers
 
 // 2. Nach dem Laden wie die alte Kette.
 const golden=JSON.parse(fs.readFileSync(FIXTURE,'utf8')),now=all('new');
+if(process.argv.includes('--accept-ui')){const f=l=>l.indexOf('call@js/design-system.js');require('./accept-ui.cjs')(FIXTURE,golden,{alt:golden.alt,varianten:Object.fromEntries(Object.entries(now).map(([k,v])=>[k,{...v,laden:[...golden.varianten[k].laden.slice(0,f(golden.varianten[k].laden)),...v.laden.slice(f(v.laden))]}]))},{html:['laenge','sha256','inhalt'],mask:/ret (?!0:)\d+:[0-9a-f]+/g});process.exit(0)} // nur HTML-Werte neu, nach gewollter UI-Änderung
 assert.deepEqual(Object.keys(now),Object.keys(golden.varianten),'Ladevarianten weichen vom Golden ab');
 let count=0;
 for(const [variant,expected] of Object.entries(golden.varianten)){
