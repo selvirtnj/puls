@@ -1,32 +1,6 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {renderSource}=require('./validdata-env.cjs');
 
-// Synthetic DOM fixture: the language wrapper has already translated the allowance
-// before app-polish.render runs, as in index.html's actual wrapper order.
-function calorieFixture(language,consumed,goal,page='food'){
-  let shown,removed=false;
-  const dial={firstElementChild:{append(value){shown=value}},replaceWith(){}},line={
-    textContent:language==='en'?'0 kcal left · 300 kcal above target':'0 kcal übrig · 300 kcal über Ziel',
-    querySelector:()=>({textContent:Math.max(0,goal-consumed)+' kcal'}),
-    closest:()=>({querySelector:()=>dial}),remove(){removed=true}
-  };
-  const ctx={state:{language,goals:{kcal:goal}},page,date:'2026-10-25',dayGoals:()=>({kcal:goal}),totals:()=>({kcal:consumed}),n:String,
-    renderBase(){},save(){},quickAddMenu(){},openModal(){},markFoodDayComplete(){},nutrientTotals(){},
-    modal:{addEventListener(){}},document:{addEventListener(){},
-      querySelectorAll:selector=>selector.includes('combinedallowance')?[line]:[],querySelector:()=>null,
-      createElement:()=>({append(...values){shown=values.at(-1)}})}};
-  vm.createContext(ctx);vm.runInContext(renderSource(),ctx);vm.runInContext(fs.readFileSync('js/app-polish.js','utf8'),ctx);
-  assert(removed);
-  return shown;
-}
-for(const language of ['de','en'])for(const page of ['food','home']){
-  const over=calorieFixture(language,2500,2200,page);
-  assert.equal(over.textContent,'+300 kcal');assert.equal(over.className,'kcalleft over');
-  const left=calorieFixture(language,1900,2200,page);
-  assert.equal(left.textContent,'300 kcal');assert.equal(left.className,'kcalleft');
-  assert.equal(calorieFixture(language,2200,2200,page).textContent,'0 kcal');
-}
-console.log('PASS: DE/EN calorie surplus, remaining and exact target on food and overview.');
 
 async function ingredientSearchFixture(){
   const timers=new Map(),requests=new Map();let timerId=0,target={innerHTML:'Initial'};

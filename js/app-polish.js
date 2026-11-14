@@ -27,15 +27,6 @@ globalThis.openModalBeforeAppPolish=function openModalBeforeAppPolish(){return d
 globalThis.renderAfterAppPolish=function renderAfterAppPolish(){
   // „Nährstoffwerte & Ziele im Detail“ entfällt auf der Essen-Seite.
   if(page==='food')document.querySelectorAll('#content details.card').forEach(card=>{if(/Nährstoffwerte|Nutrient values/.test(card.querySelector('summary')?.textContent||''))card.remove()});
-  // Übrige Kalorien nur als Zahl: Essen rechts neben „0 von 2.200 kcal“, Übersicht direkt unter dem Ring.
-  document.querySelectorAll('#content .nutritionslide .combinedallowance').forEach(line=>{
-    let strong=line.querySelector('strong'),excess=totals().kcal-dayGoals(date).kcal,over=excess>0?n(Math.round(excess)):null;if(!strong)return;
-    let value=document.createElement('strong');value.className='kcalleft'+(over?' over':'');value.textContent=over?'+'+over+' kcal':strong.textContent;
-    let dial=line.closest('.nutritionslide').querySelector('.caloriedial');
-    if(page==='food'&&dial?.firstElementChild){dial.firstElementChild.append(value);line.remove();return}
-    if(dial){let column=document.createElement('div');column.className='dialcolumn';dial.replaceWith(column);column.append(dial,value);line.remove()}
-  });
-  if(page==='food'){let title=document.querySelector('#content .nutritiondeck .nutritionslide:first-child > h2');if(title)title.textContent=state.language==='en'?'Eaten today':'Heute gegessen'}
 };
 // Getränke ohne bekannten Wasserwert (z. B. Orangina aus Open Food Facts): Wasseranteil aus den bekannten Nährwerten
 // schätzen – Menge minus Kohlenhydrate, Eiweiß, Fett und Ballaststoffe (1 g ≈ 1 ml). Gespeicherte Einträge bleiben unverändert.

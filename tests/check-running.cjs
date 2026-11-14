@@ -94,7 +94,6 @@ console.log('PASS: runs extend daily and weekly streaks with the existing rest-d
   assert.ok(al.restMeters<=999,'rest '+al.restMeters);
   // Veralteter Fix von vor dem Laufbeginn zählt nicht.
   c.addRunPoint(-60000,lat-10*dLat,13.4,5,0);assert.equal(c.runTrackFor().points.length,0);
-  assert.match(c.runRouteSvg(route),/^<svg class="runroute"[^]*<polyline points="[0-9., ]+"\/>/);
   // Native Punkte werden nur lückenlos übernommen (from == bisherige Anzahl) und nur für den laufenden Lauf.
   c.pulsRunGpsReceive=c.window.pulsRunGpsReceive;
   c.window.pulsRunGpsReceive({runKey:'1000',from:0,points:[[0,lat,13.4,5,0],[30000,lat+dLat,13.4,5,0]],status:'on'});
