@@ -214,7 +214,7 @@ const dsControlGlyphs={'⌄':'caret-down','⌃':'caret-up','‹':'caret-left','�
 if(typeof controlIconSvg==='function')controlIconSvg=function(glyph){return phIcon(dsControlGlyphs[glyph]||'x','controlicon')};
 
 /* ---------- Tab-Leiste und Seitenrahmen ---------- */
-const dsTabs=[['workout','barbell','Training','Training'],['home','house','Übersicht','Overview'],['add','plus-circle','Hinzufügen','Add'],['food','fork-knife','Essen','Food'],['account','user-circle','Konto','Account']];
+const dsTabs=[['home','house','Übersicht','Overview'],['workout','barbell','Training','Training'],['food','fork-knife','Essen','Food'],['account','user-circle','Konto','Account']];
 let dsLastPage=null;
 /* Datum rechts neben dem Large Title: Kalender-Knopf (öffnet die bestehende Auswahl) mit ‹ › und, wenn nicht heute, „Zu Heute“. */
 function dsDateBar(){
@@ -228,11 +228,16 @@ function dsDateBar(){
   if(!back){back=document.createElement('button');back.type='button';back.className='dsbacktoday';back.setAttribute('onclick','setDate(today())');line.append(back)}
   back.innerHTML=`${phIcon('arrow-counter-clockwise')}<span>${dsText('Zu Heute','Back to today')}</span>`;
   back.hidden=isToday||bar.hidden;
+  /* Apple-Muster: Hinzufügen sitzt als „+“ in der Kopfzeile, nicht als Tab; Essen hat ein eigenes „+“. */
+  let add=line.querySelector('.dsheaderadd');
+  if(!add){add=document.createElement('button');add.type='button';add.className='actnav dsheaderadd';add.setAttribute('onclick','quickAddMenu()');add.innerHTML=phIcon('plus');line.append(add)}
+  add.setAttribute('aria-label',dsText('Hinzufügen','Add'));
+  add.hidden=page!=='home'&&page!=='workout';
 }
 function dsChrome(){
   dsDateBar();
   let nav=$('nav');
-  if(nav)nav.innerHTML=dsTabs.map(([id,icon,de,en])=>{let current=page===id;return `<button type="button" class="${current?'active ':''}${id==='add'?'centraladd':''}" ${current?'aria-current="page"':''} onclick="${id==='add'?'quickAddMenu()':`go('${id}')`}"><span class="ico" aria-hidden="true">${phIcon(icon)}</span><span class="navlabel">${dsText(de,en)}</span></button>`}).join('');
+  if(nav)nav.innerHTML=dsTabs.map(([id,icon,de,en])=>{let current=page===id;return `<button type="button" class="${current?'active':''}" ${current?'aria-current="page"':''} onclick="go('${id}')"><span class="ico" aria-hidden="true">${phIcon(icon)}</span><span class="navlabel">${dsText(de,en)}</span></button>`}).join('');
   let title=$('title'),subtitle=$('subtitle'),tab=dsTabs.find(x=>x[0]===page);
   if(title&&tab)title.textContent=dsText(tab[2],tab[3]);
   if(subtitle)subtitle.textContent='';

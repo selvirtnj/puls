@@ -14,6 +14,8 @@ Entscheidung vom 09.11.2026 — Selvir will keine Erklär- oder Disclaimer-Texte
 
 Stand Vollversion (09.11.2026): ein Design im iOS-Stil mit Farbschema System/Hell/Dunkel und den Farbvarianten Frisch und Mitternacht; Bereichsfarben Training blau, Essen orange, Körper grün. Weniger verschachtelte Karten, kompakte Zeilen, klare Typografie, gezielte Erfolgsmomente. Konto mit kompakter Übersicht und Unterseiten. Freunde und kraftbasierte Ränge sind Teil der App. Regeln: [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md); der frühere Gestaltungsplan liegt in [archive/DESIGN-WORKPLAN.md](archive/DESIGN-WORKPLAN.md).
 
+Entscheidung vom 14.11.2026 — Tab-Leiste nur mit Seiten: Übersicht, Training, Essen, Konto. „Hinzufügen“ ist kein Tab mehr, sondern ein „+“ oben rechts (Übersicht, Training; Essen hat sein eigenes „+“).
+
 Kreis/Makrobalken, Tagesnavigation, Essenvorschau, Trainingsaktionen und Gesamtfortschritt bleiben erhalten; bestehende Trainingslogik und Daten bleiben maßgeblich.
 
 - Untere Leiste: Training | Übersicht | mittiges Plus | Essen | Konto. Symmetrische Icons und gute Touch-Ziele.

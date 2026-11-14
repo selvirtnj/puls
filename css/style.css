@@ -131,7 +131,7 @@ body main .accountstreak strong{font-size:21px!important;line-height:1.2}.accoun
 .pulsicon{display:block;width:24px;height:24px;overflow:visible;flex:none;pointer-events:none}.chevronback{transform:rotate(180deg)}.datebar .pulsicon{width:17px;height:17px;stroke-width:1.8}
 #nav button{position:relative;isolation:isolate;overflow:hidden}#nav .ico{display:grid;place-items:center;flex:none;width:26px;height:26px;font-size:0;line-height:1}#nav .ico>.pulsicon{width:24px;height:24px}#nav .navlabel{line-height:14px;white-space:nowrap;font-weight:550}#nav .centraladd .ico{width:48px;height:48px;display:grid;place-items:center}#nav .centraladd .pulsicon{width:27px;height:27px;stroke-width:2}#nav .centraladd{overflow:visible}
 @media(max-width:760px){
-#nav{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;align-items:center!important;gap:4px;margin:0;padding:0}
+#nav{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;align-items:center!important;gap:4px;margin:0;padding:0}
 #nav button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;height:62px!important;min-height:62px!important;padding:7px 0!important;text-align:center;font-size:10px!important;border-width:0;box-sizing:border-box}
 #nav .centraladd{gap:0!important;padding:0!important}#nav .centraladd .ico{transform:none!important;margin:0!important;align-self:center}
 #nav .navlabel{display:block;height:14px;width:100%;text-align:center;letter-spacing:.05px}
