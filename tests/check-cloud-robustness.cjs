@@ -3,7 +3,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const files=['js/app.js','js/enhancements.js','js/products.js','js/recipes.js','js/experience.js','js/exercise-catalog.js','js/training.js','js/portions.js','js/insights.js','js/finish.js','js/personal.js'];
 function harness({disk=new Map(),fetchImpl,quota=()=>false,removeQuota=()=>false,preview=false}={}){
   let nodes=new Map(),log={requests:[],writes:[],alerts:[],downloads:[],blobs:new Map()};
-  const element=id=>{if(!nodes.has(id))nodes.set(id,{value:'',dataset:{},style:{setProperty(){},removeProperty(){}},classList:{add(){},remove(){},toggle(){}},innerHTML:'',textContent:'',querySelector:()=>null,remove(){},addEventListener(){},setAttribute(){},insertAdjacentHTML(){},showModal(){this.open=true},close(){this.open=false}});return nodes.get(id)};
+  const element=id=>{if(!nodes.has(id))nodes.set(id,{value:'',dataset:{},style:{setProperty(){},removeProperty(){}},classList:{add(){},remove(){},toggle(){}},innerHTML:'',textContent:'',querySelector:()=>null,remove(){},addEventListener(type,fn){(this.ls??={})[type]=fn},setAttribute(){},insertAdjacentHTML(){},showModal(){this.open=true},close(){this.open=false}});return nodes.get(id)};
   const context={document:{getElementById:element,createElement:()=>({click(){log.downloads.push({filename:this.download,blob:log.blobs.get(this.href)})}}),querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},body:{dataset:{},classList:{add(){},remove(){},toggle(){}}},documentElement:{}},
     localStorage:{getItem:k=>disk.has(k)?disk.get(k):null,setItem:(k,v)=>{if(quota(k))throw Error('QuotaExceededError');log.writes.push({key:k,value:String(v)});disk.set(k,String(v))},removeItem:k=>{if(removeQuota(k))throw Error('Storage removal fixture');disk.delete(k)}},
     crypto:require('crypto').webcrypto,Date,Intl,console,TextEncoder,Blob,URL:{createObjectURL:blob=>{let id='blob:fixture-'+log.blobs.size;log.blobs.set(id,blob);return id},revokeObjectURL(){}},window:{scrollTo(){},addEventListener(){},PULS_CLOUD:{url:'https://unit-test.supabase.co',publicKey:'sb_publishable_abcdefghijklmnopqrstuvwxyz'}},
@@ -220,6 +220,32 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   const switched=harness({fetchImpl:async()=>json([{revision:99,payload:remote}])});switched.run('cloudRejectedRevision=99');
   await switched.run(`activateCloudSession({...${session},expires_in:3600})`);assert.equal(switched.run('cloudRejectedRevision'),null);assert.equal(switched.run('cloudRevision'),99);
   console.log('PASS: Review 3/7 rejected-revision memory, hint retention, forcePull/new revision retry, transport retry and account reset');
+  // Audit 13.11. Punkt 2: Rückfrage vor dem Ersetzen, nur wenn das Gerät eigene Daten hat und das Konto einen abweichenden Stand.
+  {
+    const mine={...remote,goals:{...remote.goals,kcal:2300},weights:[{id:'mine-1',date:'2026-10-01',kg:81}]},theirs={...remote,goals:{...remote.goals,kcal:1700}};
+    const login=(device,account,extra=[])=>{let d=new Map([['puls-v1',JSON.stringify(device)],...extra]),h=harness({disk:d,fetchImpl:async url=>url.includes('/auth/v1/logout')?json({}):json([{payload:account,revision:5}])});return {h,d,done:h.run("activateCloudSession({access_token:'t',refresh_token:'r',expires_in:3600,user:{id:'user-1'}})")}};
+    const upload=h=>h.log.requests.some(u=>u.includes('/rpc/'));
+    for(let how of ['button','close']){
+      let {h,d,done}=login(mine,theirs,[['puls-cloud-local-before-login','ALTE-SICHERUNG']]),before=h.run('JSON.stringify(state)');await tick();await tick();
+      assert(h.run('modal.open')&&h.run('cloudLoadAsk!==null'),'Rückfrage erscheint');assert.equal(h.run("$('mt').textContent"),'Konto laden?');
+      assert.equal(h.run('state.goals.kcal'),2300,'vor der Antwort bleibt der Gerätestand');
+      h.run(how==='button'?'cloudLoadAnswer(false)':'modal.ls.close()');await done;
+      assert.equal(h.run('state.goals.kcal'),2300);assert.equal(h.run('state.weights[0].id'),'mine-1');assert.equal(h.run('JSON.stringify(state)'),before);assert.deepEqual(JSON.parse(d.get('puls-v1')),JSON.parse(before),'Gerätestand unverändert');
+      assert.equal(d.get('puls-cloud-local-before-login'),'ALTE-SICHERUNG','Sicherung nicht überschrieben');
+      assert.equal(h.run('cloudSession'),null);assert(!d.has('puls-cloud-session'));assert.equal(h.run('cloudRevision'),0);assert(!h.run('cloudDirty'));assert(!upload(h),'kein Upload');
+    }
+    {
+      let {h,d,done}=login(mine,theirs);await tick();await tick();h.run('cloudLoadAnswer(true)');await done;
+      assert.equal(h.run('state.goals.kcal'),1700,'Konto laden ersetzt wie bisher');assert.equal(h.run('cloudRevision'),5);assert(h.run('cloudSession'));assert(d.has('puls-cloud-session'));
+      assert.equal(JSON.parse(d.get('puls-cloud-local-before-login')).weights[0].id,'mine-1','Gerätestand gesichert');assert(!upload(h));
+    }
+    // Keine Rückfrage: leeres Gerät, identische Stände.
+    let same=JSON.parse(harness({disk:new Map([['puls-v1',JSON.stringify(mine)]]),fetchImpl:async()=>json(null)}).run('JSON.stringify(state)'));
+    for(let [device,account] of [[remote,theirs],[mine,same]]){
+      let {h,done}=login(device,account);await done;assert(h.run('cloudLoadAsk===null'));assert(h.run('cloudSession'),'ohne Rückfrage angemeldet');assert.equal(h.run('state.goals.kcal'),account.goals.kcal);
+    }
+    console.log('PASS: Rückfrage vor Konto laden nur bei Gerätedaten und abweichendem Konto; Abbrechen ändert nichts, Konto laden wie bisher');
+  }
   // Review 3/4: UTF-8 byte limit reserves jsonb::text spacing overhead below the SQL 5 MB limit.
   assert.match(fs.readFileSync('backend/accounts.sql','utf8'),/octet_length\(payload::text\)<=5000000/);
   for(let [unit,count,uploads] of [['a',3990000,true],['a',4010000,false],['ä',2010000,false],['😀',1005000,false]]){
@@ -328,7 +354,7 @@ async function checkRecoveryStandChoices(){
     fixture.run('save()');armed=true;
     const choose=async()=>{
       if(route==='local'||route==='remote')await fixture.run(`resolveCloudConflict('${route}')`);
-      else if(route==='login'||route==='pending')await fixture.run(`activateCloudSession({...${session},expires_in:3600})`);
+      else if(route==='login'||route==='pending'){let done=fixture.run(`activateCloudSession({...${session},expires_in:3600})`);await tick();await tick();if(fixture.run('cloudLoadAsk!==null'))fixture.run('cloudLoadAnswer(true)');await done}
       else if(route==='initialize'){fixture.run('cloudRevision=7;cloudConflict=false');await fixture.run('initializeCloudProfile()')}
       else await fixture.run(`importData({size:1000,text:async()=>${JSON.stringify(JSON.stringify(imported))}})`);
     };
