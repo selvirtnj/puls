@@ -96,7 +96,7 @@ let reading=false,lastRead=0,ctxOwner=null,ctxActive=false,toggleRevision=0,pend
 const active=()=>{const x=X();return !!x&&ctxOwner===x.owner()&&ctxActive&&!!prefs().healthReadEnabled};
 function flush(){
   const x=X();if(!pending||!x)return;
-  if(x.owner()!==pending.owner){pending=null;return}
+  if(x.owner()!==pending.owner||!prefs().healthReadEnabled){pending=null;return}
   if(!x.safe()){if(++tries<=12)setTimeout(flush,5000);else pending=null;return}
   const r=pending;pending=null;tries=0;
   const workouts=importWorkouts(r.workouts,r.owner),weights=importWeights(r.weights);
@@ -130,7 +130,7 @@ async function readHealth(force=false){
 // Übersicht: kompakte Gruppe nur mit gelesenen Werten für heute und letzte Nacht (Bereichsfarbe Körper).
 globalThis.healthReadCard=function(){
   const x=X();if(!x||!x.has('healthRead')||x.preview()||typeof dsRow!=='function')return '';
-  if(!prefs().healthReadEnabled)return '';
+  if(!prefs().healthReadEnabled){if(read(DAYS_KEY))write(DAYS_KEY,null);return ''}
   const days=cachedDays(x.owner()),now=days.find(d=>d.date===today());if(!now)return '';
   const score=recoveryScore(days,today()),rows=[],row=(label,icon,value)=>rows.push(dsRow({label,icon,value}));
   if(score!==null)row(txt('Erholung','Recovery'),'lightning',String(score));
