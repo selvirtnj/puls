@@ -66,6 +66,7 @@ function runCaloriesEstimate(options={}){let {weightKg,movingSeconds}=options,me
 const WORKOUT_MET=3.5;
 function workoutKcalEstimate(workout){
   if(!workout?.finished||workout.autoFinished||!(workout.durationSeconds>0)||!Number.isFinite(workout.durationSeconds))return null;
+  if(Number.isFinite(workout.kcal))return workout.kcal; // gemessen (Apple Health, nur Aktivenergie), geht der Schätzung vor
   let kg=runLatestWeight(state,workout.date);return kg>=30&&kg<=300?Math.round(WORKOUT_MET*kg*workout.durationSeconds/3600):null;
 }
 // Uses the same speed/ascent MET as gross estimates; never subtract resting energy

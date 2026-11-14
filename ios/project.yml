@@ -65,7 +65,7 @@ targets:
         NSMicrophoneUsageDescription: PULS nutzt das Mikrofon für die Spracheingabe.
         NSPhotoLibraryUsageDescription: PULS nutzt Fotos, wenn du ein Bild hinzufügst.
         NSHealthUpdateUsageDescription: PULS schreibt auf deinen Wunsch Gewicht und abgeschlossene Trainings in Apple Health.
-        NSHealthShareUsageDescription: PULS liest keine Gesundheitsdaten. Die Verbindung wird nur zum Schreiben deiner Einträge verwendet.
+        NSHealthShareUsageDescription: PULS liest auf deinen Wunsch Schritte, Schlaf, Puls, Training und Gewicht aus Apple Health und zeigt sie nur auf diesem Gerät an.
         # GPS für Läufe (RunTracker.swift), auch bei gesperrtem iPhone; nur während eines GPS-Laufs aktiv.
         NSLocationWhenInUseUsageDescription: PULS misst während eines Laufs mit GPS Distanz, Pace und Strecke.
         UIBackgroundModes:

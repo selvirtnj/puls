@@ -31,7 +31,8 @@ function runRoundState(run=state.activeRun,elapsed=runElapsed(run)){
 function runAddLap(){let run=state.activeRun,seconds=runElapsed(run);if(!run||seconds<=0||seconds>172800||(run.laps?.length||0)>=1000||seconds<=(run.laps?.at(-1)||0))return null;(run.laps??=[]).push(seconds);save();return seconds}
 
 // Bestleistung: kein bisheriger Lauf war mindestens genauso weit und mindestens genauso schnell.
-function runAwards(){let previous=[],awards={};for(let r of pastRuns().filter(x=>runIsRun(x)&&x.distanceKm>0)){let pace=runPace(r),best=r.distanceKm>=1&&previous.length&&!previous.some(p=>p.distanceKm>=r.distanceKm&&runPace(p)<=pace);awards[r.id]={xp:best?25:0,wins:best?[runText('Lauf','Run')+' · '+runKm(r.distanceKm)+' km']:[],run:true};previous.push(r)}return awards}
+// Aus Apple Health importierte Läufe (source:'health') bringen weder XP noch Bestleistungen.
+function runAwards(){let previous=[],awards={};for(let r of pastRuns().filter(x=>runIsRun(x)&&x.distanceKm>0&&x.source!=='health')){let pace=runPace(r),best=r.distanceKm>=1&&previous.length&&!previous.some(p=>p.distanceKm>=r.distanceKm&&runPace(p)<=pace);awards[r.id]={xp:best?25:0,wins:best?[runText('Lauf','Run')+' · '+runKm(r.distanceKm)+' km']:[],run:true};previous.push(r)}return awards}
 const runningAwardsBase=workoutAwards;workoutAwards=function(...args){let awards=Object.assign(runAwards(),runningAwardsBase.apply(this,args));if(typeof activityDurationAwards==='function')for(let [id,a] of Object.entries(activityDurationAwards())){let old=awards[id]||{xp:0,wins:[],run:a.run};awards[id]={...old,xp:old.xp+a.xp,durationXp:a.xp}}return awards};
 
 // Trainingsserie: Lauftage zählen wie Trainingstage (drei volle Tage Pause unterbrechen weiterhin).
